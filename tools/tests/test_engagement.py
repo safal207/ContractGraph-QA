@@ -43,7 +43,9 @@ class EngagementEngineTest(unittest.TestCase):
 
     def test_unknown_invariant_is_rejected(self) -> None:
         invalid = copy.deepcopy(self.result)
-        invalid["checks"][2]["invariantId"] = "unknown-invariant"
+        unknown = copy.deepcopy(invalid["checks"][2])
+        unknown["invariantId"] = "unknown-invariant"
+        invalid["checks"].append(unknown)
         with self.assertRaisesRegex(EngagementError, "contains unknown invariants"):
             build_engagement(self.manifest, invalid)
 
