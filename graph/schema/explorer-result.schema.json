@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/explorer-result.schema.json",
+  "title": "ContractGraph-QA Explorer Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["findingId", "invariantId", "replay", "path"],
+  "properties": {
+    "findingId": { "type": "string", "minLength": 1 },
+    "invariantId": { "type": "string", "minLength": 1 },
+    "replay": { "type": "string", "minLength": 1 },
+    "exploredCandidates": { "type": "integer", "minimum": 0 },
+    "notes": { "type": "string", "minLength": 1 },
+    "path": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["actionId", "preState", "postState", "effect"],
+        "properties": {
+          "actionId": { "type": "string", "minLength": 1 },
+          "parameter": {
+            "oneOf": [
+              { "type": "integer" },
+              { "type": "string" }
+            ]
+          },
+          "preState": { "type": "string", "minLength": 1 },
+          "postState": { "type": "string", "minLength": 1 },
+          "effect": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
