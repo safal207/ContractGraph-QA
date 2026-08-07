@@ -4,9 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
-from export_finding import load_json_object, manifest_sha256, validate_manifest
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from contractgraph_qa.finding import load_json_object, manifest_sha256, validate_manifest  # noqa: E402
 
 
 def main() -> int:
