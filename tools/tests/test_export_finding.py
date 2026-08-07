@@ -42,6 +42,12 @@ class ManifestFindingExporterTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "scopeId does not match"):
             export_finding(self.manifest, invalid)
 
+    def test_manifest_fingerprint_mismatch_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.result)
+        invalid["manifestSha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "manifestSha256 does not match"):
+            export_finding(self.manifest, invalid)
+
     def test_path_exceeding_manifest_depth_is_rejected(self) -> None:
         manifest = copy.deepcopy(self.manifest)
         manifest["search"]["maxDepth"] = 2
