@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "engagementId": "CGQA-E-001",
+  "adapterId": "engagement-fixture-v1.2",
+  "scopeId": "local-v1.2-engagement-fixture",
+  "manifestSha256": "039c051eef1a8e0d5d4e6462d4e0eb197221987cb739a169357abaf4c8e92c89",
+  "searchRunId": "local-engagement-search-001",
+  "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
+  "checks": [
+    {
+      "invariantId": "terminal-state-bound",
+      "status": "violated",
+      "findingId": "CGQA-E-001-F01",
+      "exploredCandidates": 6,
+      "notes": "The local fixture reaches the terminal violating state through the minimal three-step advance path.",
+      "path": [
+        {
+          "actionId": "advance",
+          "preState": "phase=0",
+          "postState": "phase=1",
+          "effect": "first future-relevant protocol state is reached"
+        },
+        {
+          "actionId": "advance",
+          "preState": "phase=1",
+          "postState": "phase=2",
+          "effect": "second future-relevant protocol state is reached"
+        },
+        {
+          "actionId": "advance",
+          "preState": "phase=2",
+          "postState": "phase=3",
+          "effect": "terminal-state invariant becomes false"
+        }
+      ]
+    },
+    {
+      "invariantId": "phase-nonnegative",
+      "status": "not_found_within_bound",
+      "exploredCandidates": 12,
+      "notes": "No negative phase was found within the declared action corpus and maxDepth=4 bounded model."
+    },
+    {
+      "invariantId": "budget-sensitive-branch",
+      "status": "inconclusive",
+      "exploredCandidates": 12,
+      "notes": "The example intentionally records an inconclusive outcome to prove that incomplete evidence is not presented as a clean check."
+    }
+  ]
+}
