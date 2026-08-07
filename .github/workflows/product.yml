@@ -54,3 +54,37 @@ jobs:
         run: cmp dist/CGQA-005/CGQA-005.md reports/examples/CGQA-005.md
       - name: Verify evidence bundle outside checkout
         run: cd /tmp && cgqa verify-bundle "$GITHUB_WORKSPACE/dist/CGQA-005/CGQA-005.evidence.zip"
+      - name: Build multi-invariant engagement bundle
+        run: >-
+          cgqa engagement
+          --manifest manifests/examples/engagement-fixture.json
+          --result results/examples/CGQA-E-001.engagement-result.json
+          --output-dir dist/CGQA-E-001
+          --bundle dist/CGQA-E-001/CGQA-E-001.engagement.zip
+      - name: Verify engagement outcome semantics
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('dist/CGQA-E-001/engagement.json').read_text(encoding='utf-8'))
+          assert data['coverage'] == {
+              'declaredInvariants': 3,
+              'checkedInvariants': 3,
+              'violated': 1,
+              'notFoundWithinBound': 1,
+              'inconclusive': 1,
+          }
+          assert Path('dist/CGQA-E-001/findings/CGQA-E-001-F01.finding.json').is_file()
+          PY
+      - name: Rebuild engagement bundle for deterministic byte check
+        run: >-
+          cgqa engagement
+          --manifest manifests/examples/engagement-fixture.json
+          --result results/examples/CGQA-E-001.engagement-result.json
+          --output-dir dist/CGQA-E-001-repeat
+          --bundle dist/CGQA-E-001-repeat/CGQA-E-001.engagement.zip
+      - name: Verify deterministic engagement bundle bytes
+        run: cmp dist/CGQA-E-001/CGQA-E-001.engagement.zip dist/CGQA-E-001-repeat/CGQA-E-001.engagement.zip
+      - name: Verify engagement bundle outside checkout
+        run: cd /tmp && cgqa verify-engagement-bundle "$GITHUB_WORKSPACE/dist/CGQA-E-001/CGQA-E-001.engagement.zip"
