@@ -41,12 +41,24 @@ abstract contract DirectEngagementCaptureHarness is DirectResultCaptureHarness {
         string memory json = string.concat(
             "{\n",
             "  \"schemaVersion\": 1,\n",
-            "  \"engagementId\": ", _jsonString(metadata.engagementId), ",\n",
-            "  \"adapterId\": ", _jsonString(metadata.adapterId), ",\n",
-            "  \"scopeId\": ", _jsonString(metadata.scopeId), ",\n",
-            "  \"manifestSha256\": ", _jsonString(metadata.manifestSha256), ",\n",
-            "  \"searchRunId\": ", _jsonString(metadata.searchRunId), ",\n",
-            "  \"replay\": ", _jsonString(metadata.replay), ",\n",
+            "  \"engagementId\": ",
+            _jsonString(metadata.engagementId),
+            ",\n",
+            "  \"adapterId\": ",
+            _jsonString(metadata.adapterId),
+            ",\n",
+            "  \"scopeId\": ",
+            _jsonString(metadata.scopeId),
+            ",\n",
+            "  \"manifestSha256\": ",
+            _jsonString(metadata.manifestSha256),
+            ",\n",
+            "  \"searchRunId\": ",
+            _jsonString(metadata.searchRunId),
+            ",\n",
+            "  \"replay\": ",
+            _jsonString(metadata.replay),
+            ",\n",
             "  \"checks\": [\n"
         );
 
@@ -76,18 +88,23 @@ abstract contract DirectEngagementCaptureHarness is DirectResultCaptureHarness {
 
         json = string.concat(
             "    {\n",
-            "      \"invariantId\": ", _jsonString(check.invariantId), ",\n",
-            "      \"status\": ", _jsonString(check.status), ",\n"
+            "      \"invariantId\": ",
+            _jsonString(check.invariantId),
+            ",\n",
+            "      \"status\": ",
+            _jsonString(check.status),
+            ",\n"
         );
         if (check.includeFindingId) {
-            json = string.concat(
-                json, "      \"findingId\": ", _jsonString(check.findingId), ",\n"
-            );
+            json = string.concat(json, "      \"findingId\": ", _jsonString(check.findingId), ",\n");
         }
         json = string.concat(
             json,
-            "      \"exploredCandidates\": ", _uintToString(check.exploredCandidates), ",\n",
-            "      \"notes\": ", _jsonString(check.notes)
+            "      \"exploredCandidates\": ",
+            _uintToString(check.exploredCandidates),
+            ",\n",
+            "      \"notes\": ",
+            _jsonString(check.notes)
         );
 
         if (violated) {
@@ -103,15 +120,18 @@ abstract contract DirectEngagementCaptureHarness is DirectResultCaptureHarness {
         }
     }
 
-    function _renderCaptureStep(CaptureStep memory step) internal pure returns (string memory json) {
+    function _renderCaptureStep(CaptureStep memory step)
+        internal
+        pure
+        returns (string memory json)
+    {
         require(bytes(step.actionId).length > 0, "capture action id missing");
         require(bytes(step.preState).length > 0, "capture pre-state missing");
         require(bytes(step.postState).length > 0, "capture post-state missing");
         require(bytes(step.effect).length > 0, "capture effect missing");
 
         json = string.concat(
-            "        {\n",
-            "          \"actionId\": ", _jsonString(step.actionId), ",\n"
+            "        {\n", "          \"actionId\": ", _jsonString(step.actionId), ",\n"
         );
         if (step.includeParameter) {
             json = string.concat(
@@ -120,9 +140,15 @@ abstract contract DirectEngagementCaptureHarness is DirectResultCaptureHarness {
         }
         json = string.concat(
             json,
-            "          \"preState\": ", _jsonString(step.preState), ",\n",
-            "          \"postState\": ", _jsonString(step.postState), ",\n",
-            "          \"effect\": ", _jsonString(step.effect), "\n",
+            "          \"preState\": ",
+            _jsonString(step.preState),
+            ",\n",
+            "          \"postState\": ",
+            _jsonString(step.postState),
+            ",\n",
+            "          \"effect\": ",
+            _jsonString(step.effect),
+            "\n",
             "        }"
         );
     }
