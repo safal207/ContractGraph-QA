@@ -9,7 +9,7 @@ description = "Causal-temporal state-transition QA and deterministic evidence pi
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
-authors = [{ name = "Alex Safonov" }]
+authors = [{ name = "safal207" }]
 keywords = ["smart-contracts", "qa", "foundry", "solidity", "testing", "audit-readiness"]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -26,7 +26,7 @@ dependencies = []
 cgqa = "contractgraph_qa.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["contractgraph_qa*", "tools*"]
+include = ["contractgraph_qa*", "tools"]
 
 [tool.setuptools]
 include-package-data = false
