@@ -28,6 +28,8 @@ abstract contract ForkAdapterTemplate is ForkContextHarness, StateDedupPathExplo
         require(context.blockNumber > 0, "block number missing");
         require(context.target != address(0), "target missing");
         require(context.target.code.length > 0, "target has no code");
+        require(block.chainid == context.chainId, "binding chain mismatch");
+        require(block.number == context.blockNumber, "binding block mismatch");
 
         adapterForkContext = context;
         adapterInitialized = true;
