@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,11 @@ def load_json_object(path: Path, label: str) -> dict[str, Any]:
         data = json.load(handle)
     _require(isinstance(data, dict), f"{label} must be a JSON object")
     return data
+
+
+def manifest_sha256(manifest: dict[str, Any]) -> str:
+    canonical = json.dumps(manifest, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def validate_manifest(manifest: dict[str, Any]) -> None:
@@ -91,8 +97,21 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
 
 
 def validate_result(result: dict[str, Any]) -> None:
-    for field in ("adapterId", "scopeId", "findingId", "invariantId", "replay"):
+    for field in (
+        "adapterId",
+        "scopeId",
+        "manifestSha256",
+        "findingId",
+        "invariantId",
+        "replay",
+    ):
         _require_non_empty_string(result.get(field), f"result.{field}")
+
+    fingerprint = result["manifestSha256"]
+    _require(
+        len(fingerprint) == 64 and all(char in "0123456789abcdef" for char in fingerprint),
+        "result.manifestSha256 must be a lowercase SHA-256 hex digest",
+    )
 
     if "exploredCandidates" in result:
         _require_non_negative_int(result["exploredCandidates"], "result.exploredCandidates")
@@ -136,6 +155,10 @@ def export_finding(manifest: dict[str, Any], result: dict[str, Any]) -> dict[str
     _require(result["adapterId"] == manifest["adapterId"], "result.adapterId does not match manifest")
     _require(result["scopeId"] == manifest["scope"]["scopeId"], "result.scopeId does not match manifest")
     _require(
+        result["manifestSha256"] == manifest_sha256(manifest),
+        "result.manifestSha256 does not match manifest",
+    )
+    _require(
         len(result["path"]) <= manifest["search"]["maxDepth"],
         "result.path exceeds manifest.search.maxDepth",
     )
@@ -167,6 +190,11 @@ def export_finding(manifest: dict[str, Any], result: dict[str, Any]) -> dict[str
     evidence: dict[str, Any] = {
         "authorization": scope["authorization"],
         "replay": result["replay"],
+        "adapterId": manifest["adapterId"],
+        "scopeId": scope["scopeId"],
+        "authorizationReference": scope["authorizationReference"],
+        "target": scope["target"],
+        "manifestSha256": result["manifestSha256"],
         "notes": result.get(
             "notes",
             "Finding exported deterministically from a validated adapter manifest and explorer result.",
