@@ -39,7 +39,7 @@ abstract contract DirectResultCaptureHarness {
         require(bytes(outputPath).length > 0, "capture output path missing");
         require(bytes(metadata.adapterId).length > 0, "capture adapter id missing");
         require(bytes(metadata.scopeId).length > 0, "capture scope id missing");
-        require(bytes(metadata.manifestSha256).length == 64, "capture manifest sha must be hex64");
+        _requireLowercaseSha256(metadata.manifestSha256);
         require(bytes(metadata.findingId).length > 0, "capture finding id missing");
         require(bytes(metadata.invariantId).length > 0, "capture invariant id missing");
         require(bytes(metadata.replay).length > 0, "capture replay missing");
@@ -109,6 +109,17 @@ abstract contract DirectResultCaptureHarness {
 
         json = string.concat(json, "  ]\n}\n");
         vmResultCapture.writeFile(outputPath, json);
+    }
+
+    function _requireLowercaseSha256(string memory value) internal pure {
+        bytes memory digest = bytes(value);
+        require(digest.length == 64, "capture manifest sha must be hex64");
+        for (uint256 i = 0; i < digest.length; i++) {
+            bytes1 c = digest[i];
+            bool decimal = c >= 0x30 && c <= 0x39;
+            bool lowercaseHex = c >= 0x61 && c <= 0x66;
+            require(decimal || lowercaseHex, "capture manifest sha must be lowercase hex");
+        }
     }
 
     function _jsonString(string memory value) internal pure returns (string memory) {
