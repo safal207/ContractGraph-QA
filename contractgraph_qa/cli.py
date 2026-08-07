@@ -8,6 +8,11 @@ import sys
 from pathlib import Path
 
 from contractgraph_qa import __version__
+from contractgraph_qa.engagement import (
+    EngagementError,
+    verify_engagement_bundle,
+    write_engagement_bundle,
+)
 from contractgraph_qa.product import (
     ProductError,
     doctor,
@@ -40,6 +45,15 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument("--config", type=Path, required=True, help="Product TOML config")
     run.add_argument("--clean", action="store_true", help="Remove generated outputs before running")
 
+    engagement = subparsers.add_parser(
+        "engagement",
+        help="Build a multi-invariant engagement report, findings, and evidence bundle",
+    )
+    engagement.add_argument("--manifest", type=Path, required=True)
+    engagement.add_argument("--result", type=Path, required=True, help="Multi-check engagement result JSON")
+    engagement.add_argument("--output-dir", type=Path, required=True)
+    engagement.add_argument("--bundle", type=Path, required=True)
+
     validate = subparsers.add_parser("validate", help="Validate a manifest and optional explorer result")
     validate.add_argument("--manifest", type=Path, required=True)
     validate.add_argument("--result", type=Path)
@@ -47,8 +61,14 @@ def _build_parser() -> argparse.ArgumentParser:
     fingerprint = subparsers.add_parser("fingerprint", help="Print canonical manifest SHA-256")
     fingerprint.add_argument("--manifest", type=Path, required=True)
 
-    verify = subparsers.add_parser("verify-bundle", help="Verify evidence ZIP integrity and semantic chain")
+    verify = subparsers.add_parser("verify-bundle", help="Verify single-finding evidence ZIP integrity and semantic chain")
     verify.add_argument("bundle", type=Path)
+
+    verify_engagement = subparsers.add_parser(
+        "verify-engagement-bundle",
+        help="Verify a multi-invariant engagement ZIP and its full semantic chain",
+    )
+    verify_engagement.add_argument("bundle", type=Path)
 
     doctor_parser = subparsers.add_parser("doctor", help="Check runtime dependencies")
     doctor_parser.add_argument("--require-forge", action="store_true")
@@ -64,6 +84,16 @@ def main(argv: list[str] | None = None) -> int:
             config = load_product_config(args.config)
             _emit(run_pipeline(config, clean=args.clean))
             return EXIT_OK
+        if args.command == "engagement":
+            _emit(
+                write_engagement_bundle(
+                    args.manifest.resolve(),
+                    args.result.resolve(),
+                    args.output_dir.resolve(),
+                    args.bundle.resolve(),
+                )
+            )
+            return EXIT_OK
         if args.command == "validate":
             _emit(validate_manifest_result(args.manifest.resolve(), args.result.resolve() if args.result else None))
             return EXIT_OK
@@ -73,13 +103,22 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "verify-bundle":
             _emit(verify_evidence_bundle(args.bundle))
             return EXIT_OK
+        if args.command == "verify-engagement-bundle":
+            _emit(verify_engagement_bundle(args.bundle))
+            return EXIT_OK
         if args.command == "doctor":
             _emit(doctor(require_forge=args.require_forge))
             return EXIT_OK
         parser.error("unknown command")
-    except (ValueError, ProductError, FileNotFoundError, json.JSONDecodeError) as exc:
+    except (ValueError, ProductError, EngagementError, FileNotFoundError, json.JSONDecodeError) as exc:
         print(f"cgqa: {exc}", file=sys.stderr)
-        return EXIT_VALIDATION if args.command in {"validate", "fingerprint", "verify-bundle"} else EXIT_RUNTIME
+        validation_commands = {
+            "validate",
+            "fingerprint",
+            "verify-bundle",
+            "verify-engagement-bundle",
+        }
+        return EXIT_VALIDATION if args.command in validation_commands else EXIT_RUNTIME
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
