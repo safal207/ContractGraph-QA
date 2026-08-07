@@ -57,8 +57,9 @@ abstract contract ForkContextHarness {
 
     /// @notice Minimal read-only fingerprint for fork provenance, not a full future-state hash.
     function _forkSnapshotHash(address target) internal view returns (bytes32) {
-        return keccak256(
-            abi.encode(block.chainid, block.number, target, target.codehash, target.balance)
-        );
+        return
+            keccak256(
+                abi.encode(block.chainid, block.number, target, target.codehash, target.balance)
+            );
     }
 }
