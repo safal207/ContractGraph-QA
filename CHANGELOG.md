@@ -4,6 +4,27 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.2.0 — Multi-invariant engagement engine
+
+### Added
+
+- one engagement result can classify every manifest invariant as `violated`, `not_found_within_bound`, or `inconclusive`;
+- full declared-invariant coverage is mandatory: omitted and unknown invariant checks fail closed;
+- every violated invariant is exported into its own deterministic finding JSON and Markdown report;
+- one deterministic engagement summary reports coverage counts and all invariant outcomes;
+- one deterministic v2 engagement evidence ZIP contains manifest, search result, engagement summary/report, and every finding artifact;
+- `cgqa engagement` and `cgqa verify-engagement-bundle` commands;
+- engagement-result JSON Schema and schema/runtime parity checks;
+- regression coverage for provenance mismatch, false clean statuses, unsafe artifact IDs, tampering, and semantic bundle verification.
+
+### Safety / evidence semantics
+
+- `not_found_within_bound` is explicitly bounded evidence, not a security claim;
+- `inconclusive` cannot carry a clean conclusion or a synthetic finding;
+- finding IDs used as artifact paths are restricted to a safe filename character class;
+- engagement bundles reject duplicate, reordered, unexpected, oversized, traversal, or semantically inconsistent entries;
+- bundle verification preserves the producer tool version so evidence remains independently verifiable across future runtime upgrades.
+
 ## 1.0.0 — Product runtime
 
 ### Added
