@@ -82,18 +82,11 @@ abstract contract DirectResultCaptureHarness {
             require(bytes(step.effect).length > 0, "capture effect missing");
 
             json = string.concat(
-                json,
-                "    {\n",
-                "      \"actionId\": ",
-                _jsonString(step.actionId),
-                ",\n"
+                json, "    {\n", "      \"actionId\": ", _jsonString(step.actionId), ",\n"
             );
             if (step.includeParameter) {
                 json = string.concat(
-                    json,
-                    "      \"parameter\": ",
-                    _uintToString(step.parameter),
-                    ",\n"
+                    json, "      \"parameter\": ", _uintToString(step.parameter), ",\n"
                 );
             }
             json = string.concat(
