@@ -72,6 +72,18 @@ class ManifestFindingExporterTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate action id"):
             export_finding(invalid, self.result)
 
+    def test_unexpected_manifest_field_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.manifest)
+        invalid["hiddenMetadata"] = "not reviewed"
+        with self.assertRaisesRegex(ValueError, "unexpected fields"):
+            export_finding(invalid, self.result)
+
+    def test_unexpected_step_field_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.result)
+        invalid["path"][0]["hiddenMetadata"] = "not reviewed"
+        with self.assertRaisesRegex(ValueError, "unexpected fields"):
+            export_finding(self.manifest, invalid)
+
     def test_empty_authorization_is_rejected(self) -> None:
         invalid = copy.deepcopy(self.manifest)
         invalid["scope"]["authorization"] = ""
