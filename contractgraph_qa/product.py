@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from contractgraph_qa import __version__
-from tools.export_finding import (
+from contractgraph_qa.finding import (
     canonical_json,
     export_finding,
     load_json_object,
@@ -24,7 +24,7 @@ from tools.export_finding import (
     validate_manifest,
     validate_result,
 )
-from tools.render_finding import render_markdown
+from contractgraph_qa.report import render_markdown
 
 CONFIG_KEYS = {
     "schemaVersion",
@@ -341,12 +341,18 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
     tool = bundle_manifest.get("tool")
     _require(isinstance(tool, dict), "bundle.tool must be an object")
     _reject_extra_keys(tool, BUNDLE_TOOL_KEYS, "bundle.tool")
-    _require(_non_empty_string(tool.get("name"), "bundle.tool.name") == "contractgraph-qa", "bundle.tool.name mismatch")
+    _require(
+        _non_empty_string(tool.get("name"), "bundle.tool.name") == "contractgraph-qa",
+        "bundle.tool.name mismatch",
+    )
     _non_empty_string(tool.get("version"), "bundle.tool.version")
 
     artifacts = bundle_manifest.get("artifacts")
     _require(isinstance(artifacts, dict), "bundle.json artifacts must be an object")
-    _require(set(artifacts) == {"manifest.json", "result.json", "finding.json", "report.md"}, "bundle artifact set mismatch")
+    _require(
+        set(artifacts) == {"manifest.json", "result.json", "finding.json", "report.md"},
+        "bundle artifact set mismatch",
+    )
     for name in ("manifest.json", "result.json", "finding.json", "report.md"):
         record = artifacts.get(name)
         _require(isinstance(record, dict), f"bundle artifact record missing: {name}")
