@@ -6,7 +6,8 @@ import {ParameterizedPathExplorerHarness} from "./ParameterizedPathExplorerHarne
 /// @notice Breadth-first explorer that keeps one shortest representative path per state hash.
 /// @dev Correct pruning requires `_stateHash()` to include every modeled value that can affect future behavior.
 abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarness {
-    uint256 internal constant MAX_SEARCH_STATES = 4_096;
+    uint256 internal constant MAX_UNIQUE_STATES = 4_096;
+    uint256 internal constant MAX_ATTEMPTED_TRANSITIONS = 65_536;
 
     struct DedupSearchResult {
         bool found;
@@ -35,9 +36,8 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
         require(stepCaseCount > 0, "stepCaseCount=0");
         require(maxDepth > 0, "maxDepth=0");
 
-        uint256 capacity = _boundedSearchCapacity(stepCaseCount, maxDepth);
-        bytes32[] memory seenHashes = new bytes32[](capacity + 1);
-        bytes[] memory frontier = new bytes[](capacity + 1);
+        bytes32[] memory seenHashes = new bytes32[](MAX_UNIQUE_STATES);
+        bytes[] memory frontier = new bytes[](MAX_UNIQUE_STATES);
         SearchStats memory stats;
 
         _resetTarget();
@@ -47,7 +47,7 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
         uint256 frontierCount = 1;
 
         for (uint8 depth = 1; depth <= maxDepth; depth++) {
-            bytes[] memory nextFrontier = new bytes[](capacity + 1);
+            bytes[] memory nextFrontier = new bytes[](MAX_UNIQUE_STATES);
             stats.nextCount = 0;
 
             for (uint256 parentIndex = 0; parentIndex < frontierCount; parentIndex++) {
@@ -95,6 +95,10 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
             _resetTarget();
             require(_replayAcceptedPrefix(parentPath), "replay drift");
 
+            require(
+                stats.attemptedTransitions < MAX_ATTEMPTED_TRANSITIONS,
+                "transition budget"
+            );
             StepInput memory candidateStep = _stepCase(caseIndex);
             stats.attemptedTransitions++;
             if (!_executeStep(candidateStep)) {
@@ -113,6 +117,8 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
                 continue;
             }
 
+            require(stats.seenCount < MAX_UNIQUE_STATES, "unique state cap");
+            require(stats.nextCount < MAX_UNIQUE_STATES, "frontier state cap");
             seenHashes[stats.seenCount] = stateHash;
             stats.seenCount++;
             nextFrontier[stats.nextCount] = abi.encode(childPath);
@@ -155,19 +161,6 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
             }
         }
         return false;
-    }
-
-    function _boundedSearchCapacity(uint16 stepCaseCount, uint8 maxDepth)
-        internal
-        pure
-        returns (uint256 total)
-    {
-        uint256 layerSize = 1;
-        for (uint8 depth = 1; depth <= maxDepth; depth++) {
-            layerSize *= stepCaseCount;
-            total += layerSize;
-            require(total <= MAX_SEARCH_STATES, "search state cap");
-        }
     }
 
     /// @notice Hash the complete modeled state that determines future behavior.
