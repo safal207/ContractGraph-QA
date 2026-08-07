@@ -1,0 +1,11 @@
+schemaVersion = 1
+workingDirectory = "."
+manifest = "manifests/examples/engagement-fixture.json"
+result = "results/generated/CGQA-E-001.engagement-result.json"
+outputDirectory = "dist/CGQA-E-001-run"
+bundle = "dist/CGQA-E-001-run/CGQA-E-001.engagement.zip"
+
+[capture]
+profile = "capture"
+test = "test_CaptureMultiInvariantEngagementResult"
+verbosity = 3
