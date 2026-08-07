@@ -16,7 +16,10 @@ abstract contract PathExplorerHarness {
 
     /// @notice Explore all action sequences in breadth-first order up to maxDepth.
     /// @dev The first violation found is minimal by action count.
-    function _explore(uint8 actionCount, uint8 maxDepth) internal returns (SearchResult memory result) {
+    function _explore(uint8 actionCount, uint8 maxDepth)
+        internal
+        returns (SearchResult memory result)
+    {
         require(actionCount > 0, "actionCount=0");
         require(maxDepth > 0, "maxDepth=0");
 
@@ -44,7 +47,9 @@ abstract contract PathExplorerHarness {
                     if (!invariantHolds) {
                         uint8[] memory minimalPath = _prefix(path, step + 1);
                         emit ViolatingPathFound(minimalPath.length, explored);
-                        return SearchResult({found: true, path: minimalPath, exploredCandidates: explored});
+                        return SearchResult({
+                            found: true, path: minimalPath, exploredCandidates: explored
+                        });
                     }
                 }
             }
@@ -87,7 +92,11 @@ abstract contract PathExplorerHarness {
         }
     }
 
-    function _prefix(uint8[] memory path, uint256 length) internal pure returns (uint8[] memory prefix) {
+    function _prefix(uint8[] memory path, uint256 length)
+        internal
+        pure
+        returns (uint8[] memory prefix)
+    {
         prefix = new uint8[](length);
         for (uint256 i = 0; i < length; i++) {
             prefix[i] = path[i];
