@@ -4,9 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
-from contractgraph_qa.finding import (
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from contractgraph_qa.finding import (  # noqa: E402
     canonical_json,
     export_finding,
     load_json_object,
