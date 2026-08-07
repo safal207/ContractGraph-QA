@@ -1,6 +1,7 @@
 {
   "adapterId": "adapter-fixture-v0.8",
   "scopeId": "local-v0.8-fixture",
+  "manifestSha256": "41768b63b9a3c7e5a3e11dfe2df574ce4e3211194b3ab2527622f199aaaf1fae",
   "findingId": "CGQA-005",
   "invariantId": "adapter-terminal-state",
   "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
