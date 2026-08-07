@@ -9,5 +9,8 @@ optimizer_runs = 200
 fuzz = { runs = 256 }
 invariant = { runs = 128, depth = 32, fail_on_revert = false }
 
+[profile.fork]
+test = "fork-test"
+
 [fmt]
 line_length = 100
