@@ -24,6 +24,13 @@ REQUIRED_TOP_LEVEL = {
 }
 REQUIRED_TEXT_FIELDS = ("id", "title", "contract", "network", "summary", "impact", "recommendation")
 REQUIRED_STEP_TEXT_FIELDS = ("actor", "action", "preState", "postState", "effect")
+OPTIONAL_PROVENANCE_FIELDS = (
+    "adapterId",
+    "scopeId",
+    "authorizationReference",
+    "target",
+    "manifestSha256",
+)
 
 
 def _require(condition: bool, message: str) -> None:
@@ -71,6 +78,17 @@ def validate_finding(data: dict[str, Any]) -> None:
     _require(isinstance(evidence, dict), "evidence must be an object")
     _require_non_empty_string(evidence.get("replay"), "evidence.replay")
     _require_non_empty_string(evidence.get("authorization"), "evidence.authorization")
+
+    for field in OPTIONAL_PROVENANCE_FIELDS:
+        if field in evidence:
+            _require_non_empty_string(evidence[field], f"evidence.{field}")
+
+    if "manifestSha256" in evidence:
+        fingerprint = evidence["manifestSha256"]
+        _require(
+            len(fingerprint) == 64 and all(char in "0123456789abcdef" for char in fingerprint),
+            "evidence.manifestSha256 must be a lowercase SHA-256 hex digest",
+        )
 
     if "exploredCandidates" in evidence:
         explored = evidence["exploredCandidates"]
@@ -143,6 +161,17 @@ def render_markdown(data: dict[str, Any]) -> str:
             f"- **Replay:** `{evidence['replay']}`",
         ]
     )
+
+    provenance_labels = {
+        "adapterId": "Adapter ID",
+        "scopeId": "Scope ID",
+        "authorizationReference": "Authorization reference",
+        "target": "Target",
+        "manifestSha256": "Manifest SHA-256",
+    }
+    for field in OPTIONAL_PROVENANCE_FIELDS:
+        if field in evidence:
+            lines.append(f"- **{provenance_labels[field]}:** `{evidence[field]}`")
 
     if "exploredCandidates" in evidence:
         lines.append(f"- **Explored candidates:** {evidence['exploredCandidates']}")
