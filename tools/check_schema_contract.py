@@ -4,10 +4,15 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
-from contractgraph_qa.finding import (
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from contractgraph_qa.finding import (  # noqa: E402
     ACTION_KEYS,
     INVARIANT_KEYS,
     MANIFEST_KEYS,
@@ -18,7 +23,6 @@ from contractgraph_qa.finding import (
     STEP_KEYS,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_SCHEMA = ROOT / "graph" / "schema" / "adapter-manifest.schema.json"
 RESULT_SCHEMA = ROOT / "graph" / "schema" / "explorer-result.schema.json"
 NON_WHITESPACE_PATTERN = r"\S"
@@ -119,14 +123,25 @@ def check_schema_contract() -> dict[str, Any]:
     _require(fingerprint.get("type") == "string", "result.manifestSha256 must be string")
     _require(fingerprint.get("pattern") == "^[0-9a-f]{64}$", "manifestSha256 pattern drift")
     _non_blank_string(result["properties"]["notes"], "result.notes")
-    _require(result["properties"]["exploredCandidates"] == {"type": "integer", "minimum": 0}, "exploredCandidates schema drift")
+    _require(
+        result["properties"]["exploredCandidates"] == {"type": "integer", "minimum": 0},
+        "exploredCandidates schema drift",
+    )
 
-    step = result["properties"]["path"]["items"]
+    path = result["properties"]["path"]
+    _require(path.get("type") == "array", "result.path must be an array")
+    _require(path.get("minItems") == 1, "result.path.minItems drift")
+    step = path["items"]
     _strict_object(step, "result.path[]")
     _require(_keys(step, "result.path[]") == STEP_KEYS, "result step property set drift")
     _require(_required(step, "result.path[]") == STEP_KEYS - {"parameter"}, "result step required set drift")
     for name in ("actionId", "preState", "postState", "effect"):
         _non_blank_string(step["properties"][name], f"result.path[].{name}")
+
+    parameter = step["properties"]["parameter"]
+    one_of = parameter.get("oneOf")
+    _require(isinstance(one_of, list), "result.path[].parameter.oneOf missing")
+    _require({entry.get("type") for entry in one_of if isinstance(entry, dict)} == {"integer", "string"}, "parameter type drift")
 
     return {
         "ok": True,
