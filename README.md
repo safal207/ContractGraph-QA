@@ -38,6 +38,32 @@ A finding should be reproducible as:
 Finding → Cause → Path → Evidence → Replay → Fix → Retest
 ```
 
+## v0.9: direct Foundry result capture
+
+v0.9 removes the manually authored handoff between a discovered Solidity path and the v0.8 result/export pipeline.
+
+```text
+Foundry dedup BFS
+      ↓
+minimal violating path
+      ↓
+deterministic replay
+      ↓
+observed pre/post-state evidence
+      ↓
+explorer-result JSON
+      ↓
+manifest validation
+      ↓
+finding JSON
+      ↓
+Markdown report
+```
+
+A dedicated `capture` Foundry profile can write only under `results/generated`. CI computes the canonical manifest SHA-256, injects it into the capture test, runs the real local explorer, and requires the generated result to match the checked-in result contract byte-for-byte before export/render continues.
+
+See [`docs/DIRECT_RESULT_CAPTURE.md`](docs/DIRECT_RESULT_CAPTURE.md).
+
 ## v0.8: adapter manifest and automatic finding export
 
 v0.8 separates reviewed client metadata from machine-discovered path evidence.
@@ -229,6 +255,7 @@ src/
     ForkAuthorization.sol
     ForkContextHarness.sol
     ForkAdapterTemplate.sol
+    DirectResultCaptureHarness.sol
 
 test/
   EscrowGraph.t.sol
@@ -238,6 +265,9 @@ test/
   StateDedupPathExplorer.t.sol
   ForkAuthorization.t.sol
   ForkAdapterTemplate.t.sol
+
+capture-test/
+  AdapterFixtureCapture.t.sol
 
 fork-test/
   AuthorizedForkSmoke.t.sol
@@ -257,6 +287,9 @@ manifests/examples/
 results/examples/
   CGQA-005.result.json
 
+results/generated/
+  .gitkeep
+
 scenarios/
   escrow.yaml
 
@@ -275,6 +308,7 @@ reports/examples/
 tools/
   render_finding.py
   export_finding.py
+  manifest_fingerprint.py
   validate_fork_scope.py
 
 docs/
@@ -287,6 +321,7 @@ docs/
   FORK_TESTING.md
   FORK_ADAPTER_TEMPLATE.md
   ADAPTER_MANIFEST.md
+  DIRECT_RESULT_CAPTURE.md
 
 .github/workflows/
   ci.yml
@@ -329,10 +364,18 @@ forge test -vvv
 forge build
 ```
 
-Export the v0.8 example finding:
+Capture the v0.9 local explorer result directly from Foundry:
 
 ```bash
-python tools/export_finding.py manifests/examples/adapter-fixture.json results/examples/CGQA-005.result.json --output /tmp/CGQA-005.finding.json
+export CGQA_MANIFEST_SHA256="$(python tools/manifest_fingerprint.py manifests/examples/adapter-fixture.json)"
+FOUNDRY_PROFILE=capture forge test --match-test test_CaptureExplorerResult -vvv
+cmp results/generated/CGQA-005.result.json results/examples/CGQA-005.result.json
+```
+
+Export the generated finding:
+
+```bash
+python tools/export_finding.py manifests/examples/adapter-fixture.json results/generated/CGQA-005.result.json --output /tmp/CGQA-005.finding.json
 ```
 
 Render a client finding:
@@ -353,11 +396,11 @@ Authorized fork execution is intentionally separate; see [`docs/FORK_TESTING.md`
 
 The project does **not** claim that bounded graph exploration proves an arbitrary contract secure.
 
-v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 added state hashing and equivalent-state pruning. v0.6 added an authorization-gated, fixed-block fork context. v0.7 added a reviewable contract-specific adapter template. v0.8 adds a strict adapter manifest/result contract and deterministic automatic export into the client finding/report pipeline.
+v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 added state hashing and equivalent-state pruning. v0.6 added an authorization-gated, fixed-block fork context. v0.7 added a reviewable contract-specific adapter template. v0.8 added a strict adapter manifest/result contract and deterministic automatic export. v0.9 adds direct Foundry capture of a discovered/replayed path into the explorer-result contract.
 
-Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, fork scope, snapshot block, adapter mapping, manifest correctness, and explicit invariants.
+Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, fork scope, snapshot block, adapter mapping, manifest correctness, capture mapping, and explicit invariants.
 
-Planned follow-up work includes direct Foundry path capture into explorer-result JSON, generated parameter corpora, multi-contract graphs, and richer invariant libraries.
+Planned follow-up work includes general capture hooks for authorized fork adapters, generated parameter corpora, multi-contract graphs, a single capture→export→render command, and richer invariant libraries.
 
 ## Safety
 
