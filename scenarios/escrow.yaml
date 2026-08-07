@@ -1,0 +1,37 @@
+name: escrow-causal-temporal-v0.1
+contract: Escrow
+actors:
+  - buyer
+  - seller
+  - unauthorized_actor
+states:
+  - CREATED
+  - FUNDED
+  - RELEASED
+  - REFUNDED
+transitions:
+  - from: CREATED
+    to: FUNDED
+    actor: buyer
+    action: fund
+    cause: buyer_funds_escrow
+  - from: FUNDED
+    to: RELEASED
+    actor: buyer
+    action: release
+    cause: buyer_accepts_delivery
+  - from: FUNDED
+    to: REFUNDED
+    actor: buyer
+    action: refund
+    cause: refund_deadline_reached
+    temporal_guard: block.timestamp >= refundAfter
+forbidden_paths:
+  - [CREATED, FUNDED, RELEASED, REFUNDED]
+invariants:
+  - id: payout-conservation
+    expression: releasedAmount + refundedAmount <= depositedAmount
+  - id: terminal-state-exclusivity
+    expression: state != RELEASED || refundedAmount == 0
+  - id: authorization
+    expression: only buyer may fund, release or refund
