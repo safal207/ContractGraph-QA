@@ -55,8 +55,14 @@ abstract contract MultiInvariantStateExplorerHarness is ParameterizedPathExplore
         require(stepCaseCount > 0, "stepCaseCount=0");
         require(maxDepth > 0, "maxDepth=0");
         require(invariantCount > 0, "invariantCount=0");
-        require(transitionBudget > 0 && transitionBudget <= MULTI_MAX_ATTEMPTED_TRANSITIONS, "bad transition budget");
-        require(uniqueStateBudget > 0 && uniqueStateBudget <= MULTI_MAX_UNIQUE_STATES, "bad state budget");
+        require(
+            transitionBudget > 0 && transitionBudget <= MULTI_MAX_ATTEMPTED_TRANSITIONS,
+            "bad transition budget"
+        );
+        require(
+            uniqueStateBudget > 0 && uniqueStateBudget <= MULTI_MAX_UNIQUE_STATES,
+            "bad state budget"
+        );
 
         InvariantOutcome[] memory outcomes = new InvariantOutcome[](invariantCount);
         bytes32[] memory seenHashes = new bytes32[](uniqueStateBudget);
@@ -74,7 +80,11 @@ abstract contract MultiInvariantStateExplorerHarness is ParameterizedPathExplore
             bytes[] memory nextFrontier = new bytes[](uniqueStateBudget);
             stats.nextCount = 0;
 
-            for (uint256 parentIndex = 0; parentIndex < frontierCount && stats.completedBound; parentIndex++) {
+            for (
+                uint256 parentIndex = 0;
+                parentIndex < frontierCount && stats.completedBound;
+                parentIndex++
+            ) {
                 StepInput[] memory parentPath = abi.decode(frontier[parentIndex], (StepInput[]));
 
                 for (uint16 caseIndex = 0; caseIndex < stepCaseCount; caseIndex++) {
@@ -99,7 +109,9 @@ abstract contract MultiInvariantStateExplorerHarness is ParameterizedPathExplore
                         continue;
                     }
 
-                    if (stats.seenCount >= uniqueStateBudget || stats.nextCount >= uniqueStateBudget) {
+                    if (
+                        stats.seenCount >= uniqueStateBudget || stats.nextCount >= uniqueStateBudget
+                    ) {
                         stats.completedBound = false;
                         break;
                     }
@@ -165,7 +177,9 @@ abstract contract MultiInvariantStateExplorerHarness is ParameterizedPathExplore
         returns (StepInput[] memory extended)
     {
         extended = new StepInput[](path.length + 1);
-        for (uint256 i = 0; i < path.length; i++) extended[i] = path[i];
+        for (uint256 i = 0; i < path.length; i++) {
+            extended[i] = path[i];
+        }
         extended[path.length] = step;
     }
 
