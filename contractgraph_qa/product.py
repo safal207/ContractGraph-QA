@@ -37,9 +37,13 @@ CONFIG_KEYS = {
     "capture",
 }
 CAPTURE_KEYS = {"enabled", "profile", "test", "verbosity"}
+BUNDLE_MANIFEST_KEYS = {"bundleVersion", "tool", "findingId", "manifestSha256", "artifacts"}
+BUNDLE_TOOL_KEYS = {"name", "version"}
+ARTIFACT_RECORD_KEYS = {"sha256", "bytes"}
 SAFE_PROFILE = re.compile(r"^[A-Za-z0-9_.-]+$")
 SAFE_TEST = re.compile(r"^[A-Za-z0-9_]+$")
 BUNDLE_FILES = ("manifest.json", "result.json", "finding.json", "report.md", "bundle.json")
+MAX_BUNDLE_ENTRY_BYTES = 16 * 1024 * 1024
 
 
 class ProductError(RuntimeError):
@@ -122,14 +126,23 @@ def load_product_config(path: Path) -> ProductConfig:
     _require(bool(SAFE_PROFILE.fullmatch(profile)), "config.capture.profile contains unsafe characters")
     _require(bool(SAFE_TEST.fullmatch(test)), "config.capture.test contains unsafe characters")
 
+    manifest = _resolve(config_dir, data.get("manifest"), "config.manifest")
+    result = _resolve(config_dir, data.get("result"), "config.result")
+    finding = _resolve(config_dir, data.get("finding"), "config.finding")
+    report = _resolve(config_dir, data.get("report"), "config.report")
+    bundle = _resolve(config_dir, data.get("bundle"), "config.bundle")
+    artifact_paths = (manifest, result, finding, report, bundle)
+    _require(len(set(artifact_paths)) == len(artifact_paths), "config artifact paths must be distinct")
+    _require(bundle.suffix.lower() == ".zip", "config.bundle must use a .zip extension")
+
     return ProductConfig(
         source=source,
         working_directory=working_directory,
-        manifest=_resolve(config_dir, data.get("manifest"), "config.manifest"),
-        result=_resolve(config_dir, data.get("result"), "config.result"),
-        finding=_resolve(config_dir, data.get("finding"), "config.finding"),
-        report=_resolve(config_dir, data.get("report"), "config.report"),
-        bundle=_resolve(config_dir, data.get("bundle"), "config.bundle"),
+        manifest=manifest,
+        result=result,
+        finding=finding,
+        report=report,
+        bundle=bundle,
         capture=CaptureConfig(enabled=enabled, profile=profile, test=test, verbosity=verbosity),
     )
 
@@ -267,7 +280,7 @@ def _bundle_manifest(
     }
 
 
-def _zip_entry(name: str, data: bytes) -> zipfile.ZipInfo:
+def _zip_entry(name: str) -> zipfile.ZipInfo:
     info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
     info.compress_type = zipfile.ZIP_DEFLATED
     info.external_attr = 0o100644 << 16
@@ -282,13 +295,16 @@ def create_evidence_bundle(config: ProductConfig, manifest: dict[str, Any], find
         "finding.json": config.finding.read_bytes(),
         "report.md": config.report.read_bytes(),
     }
+    for name, payload in payloads.items():
+        _require(len(payload) <= MAX_BUNDLE_ENTRY_BYTES, f"artifact too large for evidence bundle: {name}")
+
     bundle_manifest = _bundle_manifest(manifest, finding, payloads)
     payloads["bundle.json"] = canonical_json(bundle_manifest).encode("utf-8")
 
     config.bundle.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(config.bundle, "w") as archive:
         for name in BUNDLE_FILES:
-            archive.writestr(_zip_entry(name, payloads[name]), payloads[name])
+            archive.writestr(_zip_entry(name), payloads[name])
     return bundle_manifest
 
 
@@ -297,10 +313,13 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
     _require(source.is_file(), f"bundle not found: {source}")
     try:
         with zipfile.ZipFile(source, "r") as archive:
-            names = archive.namelist()
+            infos = archive.infolist()
+            names = [info.filename for info in infos]
             _require(names == list(BUNDLE_FILES), "bundle entries are missing, reordered, or unexpected")
+            for info in infos:
+                _require(info.file_size <= MAX_BUNDLE_ENTRY_BYTES, f"bundle entry exceeds size limit: {info.filename}")
             payloads = {name: archive.read(name) for name in BUNDLE_FILES}
-    except (OSError, zipfile.BadZipFile, KeyError) as exc:
+    except (OSError, zipfile.BadZipFile, KeyError, RuntimeError) as exc:
         raise ProductError(f"invalid evidence bundle: {exc}") from exc
 
     try:
@@ -313,26 +332,41 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
         raise ProductError(f"bundle contains invalid text/JSON: {exc}") from exc
 
     _require(isinstance(bundle_manifest, dict), "bundle.json must be an object")
+    _reject_extra_keys(bundle_manifest, BUNDLE_MANIFEST_KEYS, "bundle")
     _require(bundle_manifest.get("bundleVersion") == 1, "unsupported bundleVersion")
     _require(isinstance(manifest, dict), "manifest.json must be an object")
     _require(isinstance(result, dict), "result.json must be an object")
     _require(isinstance(finding, dict), "finding.json must be an object")
 
+    tool = bundle_manifest.get("tool")
+    _require(isinstance(tool, dict), "bundle.tool must be an object")
+    _reject_extra_keys(tool, BUNDLE_TOOL_KEYS, "bundle.tool")
+    _require(_non_empty_string(tool.get("name"), "bundle.tool.name") == "contractgraph-qa", "bundle.tool.name mismatch")
+    _non_empty_string(tool.get("version"), "bundle.tool.version")
+
     artifacts = bundle_manifest.get("artifacts")
     _require(isinstance(artifacts, dict), "bundle.json artifacts must be an object")
+    _require(set(artifacts) == {"manifest.json", "result.json", "finding.json", "report.md"}, "bundle artifact set mismatch")
     for name in ("manifest.json", "result.json", "finding.json", "report.md"):
         record = artifacts.get(name)
         _require(isinstance(record, dict), f"bundle artifact record missing: {name}")
+        _reject_extra_keys(record, ARTIFACT_RECORD_KEYS, f"bundle.artifacts.{name}")
         _require(record.get("sha256") == sha256_bytes(payloads[name]), f"bundle hash mismatch: {name}")
         _require(record.get("bytes") == len(payloads[name]), f"bundle size mismatch: {name}")
 
     validate_manifest(manifest)
     validate_result(result)
     expected_finding = export_finding(manifest, result)
-    _require(canonical_json(expected_finding).encode("utf-8") == payloads["finding.json"], "finding.json does not match manifest + result")
+    _require(
+        canonical_json(expected_finding).encode("utf-8") == payloads["finding.json"],
+        "finding.json does not match manifest + result",
+    )
     _require(render_markdown(expected_finding) == report, "report.md does not match finding.json")
     _require(bundle_manifest.get("findingId") == expected_finding["id"], "bundle findingId mismatch")
-    _require(bundle_manifest.get("manifestSha256") == manifest_sha256(manifest), "bundle manifestSha256 mismatch")
+    _require(
+        bundle_manifest.get("manifestSha256") == manifest_sha256(manifest),
+        "bundle manifestSha256 mismatch",
+    )
 
     return {
         "ok": True,
@@ -350,7 +384,10 @@ def run_pipeline(config: ProductConfig, clean: bool = False) -> dict[str, Any]:
     fingerprint = manifest_sha256(manifest)
 
     if clean:
-        for path in (config.result, config.finding, config.report, config.bundle):
+        generated = [config.finding, config.report, config.bundle]
+        if config.capture.enabled:
+            generated.insert(0, config.result)
+        for path in generated:
             if path.is_file():
                 path.unlink()
 
