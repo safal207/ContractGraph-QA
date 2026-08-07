@@ -35,10 +35,10 @@ jobs:
         run: python -m pip wheel . --no-deps --wheel-dir .product-wheel
       - name: Install built wheel
         run: python -m pip install .product-wheel/contractgraph_qa-*.whl
-      - name: Product version
-        run: cgqa --version
-      - name: Runtime doctor
-        run: cgqa doctor --require-forge
+      - name: Product version outside checkout
+        run: cd /tmp && cgqa --version
+      - name: Runtime doctor outside checkout
+        run: cd /tmp && cgqa doctor --require-forge
       - name: Validate reviewed manifest and result contract
         run: >-
           cgqa validate
@@ -52,5 +52,5 @@ jobs:
         run: cmp dist/CGQA-005/CGQA-005.finding.json reports/examples/CGQA-005.finding.json
       - name: Verify generated report
         run: cmp dist/CGQA-005/CGQA-005.md reports/examples/CGQA-005.md
-      - name: Verify evidence bundle
-        run: cgqa verify-bundle dist/CGQA-005/CGQA-005.evidence.zip
+      - name: Verify evidence bundle outside checkout
+        run: cd /tmp && cgqa verify-bundle "$GITHUB_WORKSPACE/dist/CGQA-005/CGQA-005.evidence.zip"
