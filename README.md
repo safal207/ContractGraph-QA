@@ -38,6 +38,28 @@ A finding should be reproducible as:
 Finding → Cause → Path → Evidence → Replay → Fix → Retest
 ```
 
+## v0.8: adapter manifest and automatic finding export
+
+v0.8 separates reviewed client metadata from machine-discovered path evidence.
+
+```text
+adapter manifest
+      +
+explorer result
+      ↓
+provenance + depth validation
+      ↓
+automatic finding JSON
+      ↓
+deterministic Markdown report
+```
+
+The exporter binds an explorer result to the exact `adapterId` and `scopeId`, rejects paths deeper than the declared search depth, resolves only action and invariant IDs present in the manifest, and fails closed on parameter-template mismatches.
+
+The checked-in `CGQA-005` example is verified byte-for-byte in CI from manifest → finding JSON → Markdown.
+
+See [`docs/ADAPTER_MANIFEST.md`](docs/ADAPTER_MANIFEST.md).
+
 ## v0.7: fork adapter template
 
 v0.7 connects the authorized fixed-block fork context to the existing parameter/time explorer, state deduplication, invariant checks, deterministic replay, and report pipeline.
@@ -226,6 +248,14 @@ fork/
 
 graph/schema/
   contract-graph.schema.json
+  adapter-manifest.schema.json
+  explorer-result.schema.json
+
+manifests/examples/
+  adapter-fixture.json
+
+results/examples/
+  CGQA-005.result.json
 
 scenarios/
   escrow.yaml
@@ -239,9 +269,12 @@ reports/examples/
   CGQA-003.md
   CGQA-004.finding.json
   CGQA-004.md
+  CGQA-005.finding.json
+  CGQA-005.md
 
 tools/
   render_finding.py
+  export_finding.py
   validate_fork_scope.py
 
 docs/
@@ -253,6 +286,7 @@ docs/
   STATE_DEDUP.md
   FORK_TESTING.md
   FORK_ADAPTER_TEMPLATE.md
+  ADAPTER_MANIFEST.md
 
 .github/workflows/
   ci.yml
@@ -295,10 +329,16 @@ forge test -vvv
 forge build
 ```
 
-Render an example client finding:
+Export the v0.8 example finding:
 
 ```bash
-python tools/render_finding.py reports/examples/CGQA-001.finding.json --output /tmp/CGQA-001.md
+python tools/export_finding.py manifests/examples/adapter-fixture.json results/examples/CGQA-005.result.json --output /tmp/CGQA-005.finding.json
+```
+
+Render a client finding:
+
+```bash
+python tools/render_finding.py /tmp/CGQA-005.finding.json --output /tmp/CGQA-005.md
 ```
 
 Optional static analysis:
@@ -313,11 +353,11 @@ Authorized fork execution is intentionally separate; see [`docs/FORK_TESTING.md`
 
 The project does **not** claim that bounded graph exploration proves an arbitrary contract secure.
 
-v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 added state hashing and equivalent-state pruning. v0.6 added an authorization-gated, fixed-block fork context. v0.7 adds a reviewable contract-specific adapter template that binds authorized fork provenance to actions, parameters, invariants, state hashing, deduplicated search, replay, and deterministic reporting.
+v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 added state hashing and equivalent-state pruning. v0.6 added an authorization-gated, fixed-block fork context. v0.7 added a reviewable contract-specific adapter template. v0.8 adds a strict adapter manifest/result contract and deterministic automatic export into the client finding/report pipeline.
 
-Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, fork scope, snapshot block, adapter mapping, and explicit invariants.
+Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, fork scope, snapshot block, adapter mapping, manifest correctness, and explicit invariants.
 
-Planned follow-up work includes adapter manifest validation, generated parameter corpora, multi-contract graphs, direct automatic failing-path export into the report schema, and richer invariant libraries.
+Planned follow-up work includes direct Foundry path capture into explorer-result JSON, generated parameter corpora, multi-contract graphs, and richer invariant libraries.
 
 ## Safety
 

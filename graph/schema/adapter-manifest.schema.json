@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/adapter-manifest.schema.json",
+  "title": "ContractGraph-QA Adapter Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "adapterId",
+    "contract",
+    "network",
+    "scope",
+    "search",
+    "stateFields",
+    "actions",
+    "invariants"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "adapterId": { "type": "string", "minLength": 1 },
+    "contract": { "type": "string", "minLength": 1 },
+    "network": { "type": "string", "minLength": 1 },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scopeId", "authorization", "authorizationReference", "target"],
+      "properties": {
+        "scopeId": { "type": "string", "minLength": 1 },
+        "authorization": { "type": "string", "minLength": 1 },
+        "authorizationReference": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 }
+      }
+    },
+    "search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxDepth"],
+      "properties": {
+        "maxDepth": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "stateFields": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "display", "actor"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "display": { "type": "string", "minLength": 1 },
+          "actor": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "summary",
+          "expression",
+          "impact",
+          "recommendation"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"]
+          },
+          "summary": { "type": "string", "minLength": 1 },
+          "expression": { "type": "string", "minLength": 1 },
+          "impact": { "type": "string", "minLength": 1 },
+          "recommendation": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
