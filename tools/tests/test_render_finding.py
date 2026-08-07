@@ -40,6 +40,30 @@ class FindingReportRendererTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "contiguous and 1-based"):
             validate_finding(invalid)
 
+    def test_boolean_step_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.finding)
+        invalid["minimalFailingPath"][0]["step"] = True
+        with self.assertRaisesRegex(ValueError, "step must be an integer"):
+            validate_finding(invalid)
+
+    def test_empty_step_evidence_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.finding)
+        invalid["minimalFailingPath"][0]["action"] = "   "
+        with self.assertRaisesRegex(ValueError, "path step 1.action must be a non-empty string"):
+            validate_finding(invalid)
+
+    def test_empty_authorization_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.finding)
+        invalid["evidence"]["authorization"] = ""
+        with self.assertRaisesRegex(ValueError, "evidence.authorization must be a non-empty string"):
+            validate_finding(invalid)
+
+    def test_invalid_explored_candidates_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.finding)
+        invalid["evidence"]["exploredCandidates"] = -1
+        with self.assertRaisesRegex(ValueError, "must be a non-negative integer"):
+            validate_finding(invalid)
+
 
 if __name__ == "__main__":
     unittest.main()
