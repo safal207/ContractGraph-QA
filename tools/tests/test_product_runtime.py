@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from contractgraph_qa.product import (
@@ -51,7 +51,12 @@ class ProductRuntimeTest(unittest.TestCase):
                 finding=temp / "finding.json",
                 report=temp / "report.md",
                 bundle=temp / "evidence.zip",
-                capture=CaptureConfig(enabled=False, profile="capture", test="test_CaptureExplorerResult", verbosity=3),
+                capture=CaptureConfig(
+                    enabled=False,
+                    profile="capture",
+                    test="test_CaptureExplorerResult",
+                    verbosity=3,
+                ),
             )
 
             first = run_pipeline(config)
@@ -76,20 +81,55 @@ class ProductRuntimeTest(unittest.TestCase):
                 finding=temp / "finding.json",
                 report=temp / "report.md",
                 bundle=temp / "evidence.zip",
-                capture=CaptureConfig(enabled=False, profile="capture", test="test_CaptureExplorerResult", verbosity=3),
+                capture=CaptureConfig(
+                    enabled=False,
+                    profile="capture",
+                    test="test_CaptureExplorerResult",
+                    verbosity=3,
+                ),
             )
             run_pipeline(config)
-            payload = bytearray(config.bundle.read_bytes())
-            payload[-1] ^= 0x01
-            config.bundle.write_bytes(payload)
-            with self.assertRaises(ProductError):
+
+            with zipfile.ZipFile(config.bundle, "r") as source:
+                entries = [(info, source.read(info.filename)) for info in source.infolist()]
+            with zipfile.ZipFile(config.bundle, "w") as target:
+                for info, data in entries:
+                    if info.filename == "report.md":
+                        data += b"\ntampered\n"
+                    target.writestr(info, data)
+
+            with self.assertRaisesRegex(ProductError, "hash mismatch: report.md"):
                 verify_evidence_bundle(config.bundle)
+
+    def test_clean_preserves_result_when_capture_is_disabled(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            result = temp / "input.result.json"
+            original = self.result.read_bytes()
+            result.write_bytes(original)
+            config = ProductConfig(
+                source=temp / "cgqa.toml",
+                working_directory=self.root,
+                manifest=self.manifest,
+                result=result,
+                finding=temp / "finding.json",
+                report=temp / "report.md",
+                bundle=temp / "evidence.zip",
+                capture=CaptureConfig(
+                    enabled=False,
+                    profile="capture",
+                    test="test_CaptureExplorerResult",
+                    verbosity=3,
+                ),
+            )
+            run_pipeline(config, clean=True)
+            self.assertEqual(result.read_bytes(), original)
 
     def test_config_rejects_unexpected_keys(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "bad.toml"
             path.write_text(
-                "schemaVersion = 1\nmanifest = 'x'\nresult = 'y'\nfinding = 'z'\nreport = 'r'\nbundle = 'b'\nunexpected = true\n",
+                "schemaVersion = 1\nmanifest = 'x'\nresult = 'y'\nfinding = 'z'\nreport = 'r'\nbundle = 'b.zip'\nunexpected = true\n",
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(ProductError, "unexpected fields"):
@@ -99,10 +139,20 @@ class ProductRuntimeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "bad.toml"
             path.write_text(
-                "schemaVersion = 1\nmanifest = 'x'\nresult = 'y'\nfinding = 'z'\nreport = 'r'\nbundle = 'b'\n[capture]\ntest = 'x;rm'\n",
+                "schemaVersion = 1\nmanifest = 'x'\nresult = 'y'\nfinding = 'z'\nreport = 'r'\nbundle = 'b.zip'\n[capture]\ntest = 'x;rm'\n",
                 encoding="utf-8",
             )
             with self.assertRaisesRegex(ProductError, "unsafe characters"):
+                load_product_config(path)
+
+    def test_config_rejects_artifact_path_collision(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "bad.toml"
+            path.write_text(
+                "schemaVersion = 1\nmanifest = 'same.json'\nresult = 'same.json'\nfinding = 'z.json'\nreport = 'r.md'\nbundle = 'b.zip'\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ProductError, "artifact paths must be distinct"):
                 load_product_config(path)
 
 
