@@ -54,11 +54,20 @@ jobs:
         run: cmp dist/CGQA-005/CGQA-005.md reports/examples/CGQA-005.md
       - name: Verify evidence bundle outside checkout
         run: cd /tmp && cgqa verify-bundle "$GITHUB_WORKSPACE/dist/CGQA-005/CGQA-005.evidence.zip"
-      - name: Build multi-invariant engagement bundle
+      - name: Compute engagement manifest fingerprint
+        run: echo "CGQA_ENGAGEMENT_MANIFEST_SHA256=$(python tools/manifest_fingerprint.py manifests/examples/engagement-fixture.json)" >> "$GITHUB_ENV"
+      - name: Capture multi-invariant engagement result directly from Foundry
+        env:
+          FOUNDRY_PROFILE: capture
+          CGQA_ENGAGEMENT_RESULT_PATH: results/generated/CGQA-E-001.engagement-result.json
+        run: forge test --match-test test_CaptureMultiInvariantEngagementResult -vvv
+      - name: Verify direct engagement capture byte-for-byte
+        run: cmp results/generated/CGQA-E-001.engagement-result.json results/examples/CGQA-E-001.engagement-result.json
+      - name: Build multi-invariant engagement bundle from direct capture
         run: >-
           cgqa engagement
           --manifest manifests/examples/engagement-fixture.json
-          --result results/examples/CGQA-E-001.engagement-result.json
+          --result results/generated/CGQA-E-001.engagement-result.json
           --output-dir dist/CGQA-E-001
           --bundle dist/CGQA-E-001/CGQA-E-001.engagement.zip
       - name: Verify engagement outcome semantics
@@ -81,7 +90,7 @@ jobs:
         run: >-
           cgqa engagement
           --manifest manifests/examples/engagement-fixture.json
-          --result results/examples/CGQA-E-001.engagement-result.json
+          --result results/generated/CGQA-E-001.engagement-result.json
           --output-dir dist/CGQA-E-001-repeat
           --bundle dist/CGQA-E-001-repeat/CGQA-E-001.engagement.zip
       - name: Verify deterministic engagement bundle bytes

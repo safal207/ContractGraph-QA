@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "adapterId": "engagement-fixture-v1.2",
+  "adapterId": "engagement-fixture-v1.3",
   "contract": "AdapterFixtureMachine",
   "network": "local-foundry-engagement",
   "scope": {
-    "scopeId": "local-v1.2-engagement-fixture",
+    "scopeId": "local-v1.3-engagement-fixture",
     "authorization": "Repository-owned local engagement fixture; no third-party production target is involved.",
     "authorizationReference": "repo-owned-local-engagement-fixture",
     "target": "local-fixture"
