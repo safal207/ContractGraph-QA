@@ -1,0 +1,46 @@
+{
+  "id": "CGQA-005",
+  "title": "Manifest export preserves the minimal terminal-state violation path",
+  "severity": "info",
+  "contract": "AdapterFixtureMachine",
+  "network": "local-foundry-adapter-manifest",
+  "summary": "A validated v0.8 adapter manifest and explorer result are deterministically transformed into a client finding for the same three-step terminal-state violation detected by the local adapter regression.",
+  "invariant": {
+    "id": "adapter-terminal-state",
+    "expression": "phase < 3"
+  },
+  "minimalFailingPath": [
+    {
+      "step": 1,
+      "actor": "authorized adapter test actor",
+      "action": "advance()",
+      "preState": "phase=0",
+      "postState": "phase=1",
+      "effect": "future-relevant protocol state changes"
+    },
+    {
+      "step": 2,
+      "actor": "authorized adapter test actor",
+      "action": "advance()",
+      "preState": "phase=1",
+      "postState": "phase=2",
+      "effect": "second unique protocol state is reached"
+    },
+    {
+      "step": 3,
+      "actor": "authorized adapter test actor",
+      "action": "advance()",
+      "preState": "phase=2",
+      "postState": "phase=3",
+      "effect": "terminal invariant becomes false"
+    }
+  ],
+  "impact": "The manifest layer preserves the evidence needed to map a machine-discovered path into a reviewable finding without manually re-entering action names, actors, invariant metadata, scope wording, or report fields.",
+  "recommendation": "For a real authorized engagement, review the adapter manifest against the written scope, keep the action and state-field mappings complete, and export only deterministic explorer results produced from the matching fixed-block adapter.",
+  "evidence": {
+    "authorization": "Local adapter fixture owned by this repository; no third-party production target is involved.",
+    "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
+    "notes": "This explorer-result fixture corresponds to the local v0.7 adapter regression and is used only to verify deterministic manifest-to-finding export.",
+    "exploredCandidates": 6
+  }
+}
