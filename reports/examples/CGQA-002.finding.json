@@ -1,0 +1,30 @@
+{
+  "id": "CGQA-002",
+  "title": "Deposit cap boundary is not enforced",
+  "severity": "medium",
+  "contract": "VulnerableTimedEscrow",
+  "network": "local-foundry",
+  "summary": "A bounded parameter corpus reaches a one-step state where the declared maximum deposit of 100 is exceeded by fund(101).",
+  "invariant": {
+    "id": "deposit-cap",
+    "expression": "depositedAmount <= MAX_DEPOSIT"
+  },
+  "minimalFailingPath": [
+    {
+      "step": 1,
+      "actor": "authorized test actor",
+      "action": "fund(101)",
+      "preState": "CREATED",
+      "postState": "FUNDED",
+      "effect": "deposit recorded above declared cap"
+    }
+  ],
+  "impact": "A contract whose implementation omits an intended deposit cap can accept states outside its declared business rules. The local fixture demonstrates how deterministic boundary-value exploration can surface that mismatch.",
+  "recommendation": "Enforce the maximum deposit atomically inside fund() and keep fund(101) as a regression case after the fix.",
+  "evidence": {
+    "authorization": "Deliberately vulnerable local fixture owned by this repository; no third-party production target is involved.",
+    "replay": "forge test --match-test test_ParameterCorpusFindsOversizedDeposit -vvv",
+    "exploredCandidates": 3,
+    "notes": "The corpus checks values below, at, and immediately above the declared boundary: 1, 100, and 101."
+  }
+}

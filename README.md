@@ -6,7 +6,7 @@ ContractGraph-QA treats a smart contract as a reachable state space rather than 
 
 The core question is:
 
-> Can an allowed sequence of actors, transactions and time changes drive the contract into a state that violates a business or security invariant?
+> Can an allowed sequence of actors, transactions, parameter values, and time changes drive the contract into a state that violates a business or security invariant?
 
 ## Mental model
 
@@ -16,6 +16,8 @@ CAUSE
 ACTOR
   ↓
 ACTION / TRANSACTION
+  ↓
+PARAMETER / TIME INPUT
   ↓
 PRE-STATE
   ↓
@@ -33,6 +35,47 @@ A finding should be reproducible as:
 ```text
 Finding → Cause → Path → Evidence → Replay → Fix → Retest
 ```
+
+## v0.4: parameter and time exploration
+
+v0.4 extends bounded breadth-first search from action order to a finite corpus of parameterized steps.
+
+A step is modeled as `(action, parameter)`, where the parameter may represent a business value or a time delta.
+
+The local demonstration corpus contains:
+
+```text
+fund(1)
+fund(100)
+fund(101)
+wait(1 day)
+wait(7 days)
+refund()
+```
+
+It demonstrates two classes of finding against a deliberately vulnerable local fixture:
+
+```text
+fund(101) → deposit-cap invariant violated
+```
+
+and:
+
+```text
+fund(1) → wait(1 day) → refund() → refund-timing invariant violated
+```
+
+Every candidate starts from a fresh target and a reset baseline timestamp, preserving deterministic replay.
+
+See [`docs/PARAMETER_TIME_EXPLORER.md`](docs/PARAMETER_TIME_EXPLORER.md).
+
+## v0.3: deterministic finding reports
+
+v0.3 turns machine-readable evidence into a deterministic client-facing Markdown finding.
+
+The reporting layer validates the evidence contract before rendering and requires a reproducible failing path, invariant, replay command, impact, recommendation, and explicit authorization/scope statement.
+
+See [`docs/REPORTING.md`](docs/REPORTING.md) and the checked-in example under [`reports/examples/`](reports/examples/).
 
 ## v0.2: automatic Path Explorer
 
@@ -64,7 +107,7 @@ See [`docs/PATH_EXPLORER.md`](docs/PATH_EXPLORER.md).
 - Temporal scenarios using block timestamp changes.
 - Business/security invariant checks.
 - A safe escrow example.
-- A deliberately vulnerable toy escrow used only to prove invariant detection.
+- Deliberately vulnerable local fixtures used only to prove invariant detection.
 - Machine-readable graph schema and scenario description.
 - GitHub Actions CI and Slither static analysis.
 
@@ -75,14 +118,17 @@ src/
   examples/
     Escrow.sol
     VulnerableEscrow.sol
+    VulnerableTimedEscrow.sol
   harness/
     CausalGraphHarness.sol
     PathExplorerHarness.sol
+    ParameterizedPathExplorerHarness.sol
 
 test/
   EscrowGraph.t.sol
   VulnerableEscrowGraph.t.sol
   PathExplorer.t.sol
+  ParameterizedTemporalExplorer.t.sol
 
 graph/schema/
   contract-graph.schema.json
@@ -90,13 +136,23 @@ graph/schema/
 scenarios/
   escrow.yaml
 
+reports/examples/
+  CGQA-001.finding.json
+  CGQA-001.md
+
+tools/
+  render_finding.py
+
 docs/
   CAUSAL_MODEL.md
   INVARIANTS.md
   PATH_EXPLORER.md
+  REPORTING.md
+  PARAMETER_TIME_EXPLORER.md
 
 .github/workflows/
   ci.yml
+  reporting.yml
 ```
 
 ## Example invariant
@@ -134,6 +190,12 @@ forge test -vvv
 forge build
 ```
 
+Render the example client finding:
+
+```bash
+python tools/render_finding.py reports/examples/CGQA-001.finding.json --output /tmp/CGQA-001.md
+```
+
 Optional static analysis:
 
 ```bash
@@ -144,13 +206,15 @@ slither .
 
 The project does **not** claim that bounded graph exploration proves an arbitrary contract secure.
 
-v0.1 established the causal-temporal evidence model. v0.2 adds automatic bounded action-sequence search and deterministic replay. Security conclusions remain limited to the modeled actors, actions, parameters, depth, time assumptions and explicit invariants.
+v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 adds finite corpus-based parameter and time exploration with clock reset between candidates.
 
-Planned follow-up work includes parameter fuzzing, temporal actions inside the explorer, state hashing and deduplication, fork testing, multi-contract graphs, failing-path export and generated audit reports.
+Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, and explicit invariants.
+
+Planned follow-up work includes generated parameter corpora, state hashing/deduplication, fork testing, multi-contract graphs, direct failing-path export into the report schema, and richer invariant libraries.
 
 ## Safety
 
-Use this project only on contracts you own, open-source test targets, or systems where you have explicit authorization to test.
+Use this project only on contracts you own, open-source local test targets, systems where you have explicit authorization, or public bug-bounty assets strictly within their published scope and rules.
 
 ## License
 

@@ -21,8 +21,18 @@ jobs:
           python-version: '3.11'
       - name: Unit tests
         run: python -m unittest discover -s tools/tests -p 'test_*.py' -v
-      - name: Verify golden report
+      - name: Verify payout golden report
         run: >-
           python tools/render_finding.py
           reports/examples/CGQA-001.finding.json
           --check reports/examples/CGQA-001.md
+      - name: Verify parameter golden report
+        run: >-
+          python tools/render_finding.py
+          reports/examples/CGQA-002.finding.json
+          --check reports/examples/CGQA-002.md
+      - name: Verify temporal golden report
+        run: >-
+          python tools/render_finding.py
+          reports/examples/CGQA-003.finding.json
+          --check reports/examples/CGQA-003.md
