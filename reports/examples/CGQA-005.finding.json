@@ -40,6 +40,11 @@
   "evidence": {
     "authorization": "Local adapter fixture owned by this repository; no third-party production target is involved.",
     "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
+    "adapterId": "adapter-fixture-v0.8",
+    "scopeId": "local-v0.8-fixture",
+    "authorizationReference": "repo-owned-local-fixture",
+    "target": "local-fixture",
+    "manifestSha256": "41768b63b9a3c7e5a3e11dfe2df574ce4e3211194b3ab2527622f199aaaf1fae",
     "notes": "This explorer-result fixture corresponds to the local v0.7 adapter regression and is used only to verify deterministic manifest-to-finding export.",
     "exploredCandidates": 6
   }
