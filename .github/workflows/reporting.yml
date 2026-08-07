@@ -27,7 +27,10 @@ jobs:
       - name: Compute adapter manifest fingerprint
         run: echo "CGQA_MANIFEST_SHA256=$(python tools/manifest_fingerprint.py manifests/examples/adapter-fixture.json)" >> "$GITHUB_ENV"
       - name: Capture explorer result directly from Foundry
-        run: FOUNDRY_PROFILE=capture forge test --match-test test_CaptureExplorerResult -vvv
+        env:
+          FOUNDRY_PROFILE: capture
+          CGQA_RESULT_PATH: results/generated/CGQA-005.result.json
+        run: forge test --match-test test_CaptureExplorerResult -vvv
       - name: Verify Foundry capture byte-for-byte
         run: cmp results/generated/CGQA-005.result.json results/examples/CGQA-005.result.json
       - name: Verify payout golden report
