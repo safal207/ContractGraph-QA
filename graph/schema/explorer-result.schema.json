@@ -4,8 +4,10 @@
   "title": "ContractGraph-QA Explorer Result",
   "type": "object",
   "additionalProperties": false,
-  "required": ["findingId", "invariantId", "replay", "path"],
+  "required": ["adapterId", "scopeId", "findingId", "invariantId", "replay", "path"],
   "properties": {
+    "adapterId": { "type": "string", "minLength": 1 },
+    "scopeId": { "type": "string", "minLength": 1 },
     "findingId": { "type": "string", "minLength": 1 },
     "invariantId": { "type": "string", "minLength": 1 },
     "replay": { "type": "string", "minLength": 1 },
