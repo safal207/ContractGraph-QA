@@ -26,7 +26,7 @@ dependencies = []
 cgqa = "contractgraph_qa.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["contractgraph_qa*", "tools"]
+include = ["contractgraph_qa*"]
 
 [tool.setuptools]
 include-package-data = false
