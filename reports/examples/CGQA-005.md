@@ -32,6 +32,11 @@ The manifest layer preserves the evidence needed to map a machine-discovered pat
 
 - **Authorization:** Local adapter fixture owned by this repository; no third-party production target is involved.
 - **Replay:** `forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv`
+- **Adapter ID:** `adapter-fixture-v0.8`
+- **Scope ID:** `local-v0.8-fixture`
+- **Authorization reference:** `repo-owned-local-fixture`
+- **Target:** `local-fixture`
+- **Manifest SHA-256:** `41768b63b9a3c7e5a3e11dfe2df574ce4e3211194b3ab2527622f199aaaf1fae`
 - **Explored candidates:** 6
 - **Notes:** This explorer-result fixture corresponds to the local v0.7 adapter regression and is used only to verify deterministic manifest-to-finding export.
 
