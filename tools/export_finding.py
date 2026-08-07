@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""Export deterministic ContractGraph-QA finding JSON from an adapter manifest and explorer result."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+SEVERITIES = {"critical", "high", "medium", "low", "info"}
+
+
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise ValueError(message)
+
+
+def _require_non_empty_string(value: Any, field: str) -> str:
+    _require(isinstance(value, str) and bool(value.strip()), f"{field} must be a non-empty string")
+    return value.strip()
+
+
+def _require_non_negative_int(value: Any, field: str) -> int:
+    _require(
+        isinstance(value, int) and not isinstance(value, bool) and value >= 0,
+        f"{field} must be a non-negative integer",
+    )
+    return value
+
+
+def load_json_object(path: Path, label: str) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    _require(isinstance(data, dict), f"{label} must be a JSON object")
+    return data
+
+
+def validate_manifest(manifest: dict[str, Any]) -> None:
+    _require(manifest.get("schemaVersion") == 1, "manifest.schemaVersion must equal 1")
+    for field in ("adapterId", "contract", "network"):
+        _require_non_empty_string(manifest.get(field), f"manifest.{field}")
+
+    scope = manifest.get("scope")
+    _require(isinstance(scope, dict), "manifest.scope must be an object")
+    for field in ("scopeId", "authorization", "authorizationReference", "target"):
+        _require_non_empty_string(scope.get(field), f"manifest.scope.{field}")
+
+    search = manifest.get("search")
+    _require(isinstance(search, dict), "manifest.search must be an object")
+    _require_non_negative_int(search.get("maxDepth"), "manifest.search.maxDepth")
+    _require(search["maxDepth"] > 0, "manifest.search.maxDepth must be greater than zero")
+
+    state_fields = manifest.get("stateFields")
+    _require(isinstance(state_fields, list) and state_fields, "manifest.stateFields must be non-empty")
+    seen_state_fields: set[str] = set()
+    for index, field in enumerate(state_fields):
+        name = _require_non_empty_string(field, f"manifest.stateFields[{index}]")
+        _require(name not in seen_state_fields, f"duplicate state field: {name}")
+        seen_state_fields.add(name)
+
+    actions = manifest.get("actions")
+    _require(isinstance(actions, list) and actions, "manifest.actions must be non-empty")
+    action_ids: set[str] = set()
+    for index, action in enumerate(actions):
+        _require(isinstance(action, dict), f"manifest.actions[{index}] must be an object")
+        action_id = _require_non_empty_string(action.get("id"), f"manifest.actions[{index}].id")
+        _require(action_id not in action_ids, f"duplicate action id: {action_id}")
+        action_ids.add(action_id)
+        _require_non_empty_string(action.get("display"), f"manifest.actions[{index}].display")
+        _require_non_empty_string(action.get("actor"), f"manifest.actions[{index}].actor")
+
+    invariants = manifest.get("invariants")
+    _require(isinstance(invariants, list) and invariants, "manifest.invariants must be non-empty")
+    invariant_ids: set[str] = set()
+    for index, invariant in enumerate(invariants):
+        _require(isinstance(invariant, dict), f"manifest.invariants[{index}] must be an object")
+        invariant_id = _require_non_empty_string(
+            invariant.get("id"), f"manifest.invariants[{index}].id"
+        )
+        _require(invariant_id not in invariant_ids, f"duplicate invariant id: {invariant_id}")
+        invariant_ids.add(invariant_id)
+        for field in ("title", "summary", "expression", "impact", "recommendation"):
+            _require_non_empty_string(
+                invariant.get(field), f"manifest.invariants[{index}].{field}"
+            )
+        severity = _require_non_empty_string(
+            invariant.get("severity"), f"manifest.invariants[{index}].severity"
+        ).lower()
+        _require(severity in SEVERITIES, f"invalid severity for invariant {invariant_id}")
+
+
+def validate_result(result: dict[str, Any]) -> None:
+    for field in ("findingId", "invariantId", "replay"):
+        _require_non_empty_string(result.get(field), f"result.{field}")
+
+    if "exploredCandidates" in result:
+        _require_non_negative_int(result["exploredCandidates"], "result.exploredCandidates")
+    if "notes" in result:
+        _require_non_empty_string(result["notes"], "result.notes")
+
+    path = result.get("path")
+    _require(isinstance(path, list) and path, "result.path must be non-empty")
+    for index, step in enumerate(path):
+        _require(isinstance(step, dict), f"result.path[{index}] must be an object")
+        _require_non_empty_string(step.get("actionId"), f"result.path[{index}].actionId")
+        for field in ("preState", "postState", "effect"):
+            _require_non_empty_string(step.get(field), f"result.path[{index}].{field}")
+        if "parameter" in step:
+            parameter = step["parameter"]
+            _require(
+                (isinstance(parameter, (str, int)) and not isinstance(parameter, bool)),
+                f"result.path[{index}].parameter must be a string or integer",
+            )
+
+
+def _index_by_id(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {item["id"]: item for item in items}
+
+
+def _render_action(action: dict[str, Any], step: dict[str, Any], index: int) -> str:
+    display = action["display"]
+    has_placeholder = "{parameter}" in display
+    has_parameter = "parameter" in step
+    if has_placeholder:
+        _require(has_parameter, f"result.path[{index}].parameter required by action display")
+        return display.replace("{parameter}", str(step["parameter"]))
+    _require(not has_parameter, f"result.path[{index}].parameter supplied but action has no placeholder")
+    return display
+
+
+def export_finding(manifest: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+    validate_manifest(manifest)
+    validate_result(result)
+
+    actions = _index_by_id(manifest["actions"])
+    invariants = _index_by_id(manifest["invariants"])
+
+    invariant_id = result["invariantId"]
+    _require(invariant_id in invariants, f"unknown invariant id: {invariant_id}")
+    invariant = invariants[invariant_id]
+
+    exported_path: list[dict[str, Any]] = []
+    for index, step in enumerate(result["path"], start=1):
+        action_id = step["actionId"]
+        _require(action_id in actions, f"unknown action id: {action_id}")
+        action = actions[action_id]
+        exported_path.append(
+            {
+                "step": index,
+                "actor": action["actor"],
+                "action": _render_action(action, step, index - 1),
+                "preState": step["preState"],
+                "postState": step["postState"],
+                "effect": step["effect"],
+            }
+        )
+
+    scope = manifest["scope"]
+    evidence: dict[str, Any] = {
+        "authorization": scope["authorization"],
+        "replay": result["replay"],
+        "notes": result.get(
+            "notes",
+            "Finding exported deterministically from a validated adapter manifest and explorer result.",
+        ),
+    }
+    if "exploredCandidates" in result:
+        evidence["exploredCandidates"] = result["exploredCandidates"]
+
+    return {
+        "id": result["findingId"],
+        "title": invariant["title"],
+        "severity": invariant["severity"].lower(),
+        "contract": manifest["contract"],
+        "network": manifest["network"],
+        "summary": invariant["summary"],
+        "invariant": {"id": invariant["id"], "expression": invariant["expression"]},
+        "minimalFailingPath": exported_path,
+        "impact": invariant["impact"],
+        "recommendation": invariant["recommendation"],
+        "evidence": evidence,
+    }
+
+
+def canonical_json(data: dict[str, Any]) -> str:
+    return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("manifest", type=Path, help="Adapter manifest JSON")
+    parser.add_argument("result", type=Path, help="Explorer result JSON")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--output", type=Path, help="Write exported finding JSON")
+    group.add_argument("--check", type=Path, help="Compare with an existing finding JSON")
+    args = parser.parse_args()
+
+    manifest = load_json_object(args.manifest, "manifest")
+    result = load_json_object(args.result, "result")
+    exported = canonical_json(export_finding(manifest, result))
+
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(exported, encoding="utf-8")
+        return 0
+
+    expected = args.check.read_text(encoding="utf-8")
+    if expected != exported:
+        raise SystemExit(f"exported finding differs from {args.check}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
