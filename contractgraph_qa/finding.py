@@ -127,7 +127,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
             )
         severity = _require_non_empty_string(
             invariant.get("severity"), f"manifest.invariants[{index}].severity"
-        ).lower()
+        )
         _require(severity in SEVERITIES, f"invalid severity for invariant {invariant_id}")
 
 
