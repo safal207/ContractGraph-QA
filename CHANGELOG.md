@@ -4,6 +4,25 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.3.0 — Direct multi-invariant Foundry capture
+
+### Added
+
+- one bounded breadth-first state-space walk evaluates every declared invariant in the same search session;
+- per-invariant outcomes are recorded as `violated`, `not_found_within_bound`, or `inconclusive`;
+- shortest discovered path evidence is retained independently for each violated invariant;
+- unresolved invariants become `inconclusive` when the search cannot complete its declared transition/state budget;
+- a test-only deterministic engagement-result writer emits the v1.2 runtime contract directly from Foundry;
+- repository-owned capture fixture proves one search can produce one violation, one bounded no-finding outcome, and one inconclusive outcome;
+- Product CI compares direct Foundry engagement capture byte-for-byte with the checked-in golden result before packaging the engagement bundle.
+
+### Safety / evidence semantics
+
+- direct capture is still bounded evidence and does not imply complete protocol security;
+- equivalent-state pruning remains conditional on a complete future-relevant state hash;
+- `inconclusive` is fail-closed and cannot be silently converted to a clean result;
+- the default capture fixture is repository-local and performs no third-party network interaction.
+
 ## 1.2.0 — Multi-invariant engagement engine
 
 ### Added
