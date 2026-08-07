@@ -4,9 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
-from contractgraph_qa.report import load_finding, render_markdown, validate_finding
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from contractgraph_qa.report import load_finding, render_markdown, validate_finding  # noqa: E402
 
 __all__ = ["load_finding", "render_markdown", "validate_finding"]
 
