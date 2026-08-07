@@ -12,5 +12,8 @@ invariant = { runs = 128, depth = 32, fail_on_revert = false }
 [profile.fork]
 test = "fork-test"
 
+[rpc_endpoints]
+authorized = "${CGQA_FORK_RPC_URL}"
+
 [fmt]
 line_length = 100
