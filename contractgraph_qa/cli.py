@@ -13,6 +13,11 @@ from contractgraph_qa.engagement import (
     verify_engagement_bundle,
     write_engagement_bundle,
 )
+from contractgraph_qa.engagement_run import (
+    EngagementRunError,
+    load_engagement_run_config,
+    run_engagement_pipeline,
+)
 from contractgraph_qa.product import (
     ProductError,
     doctor,
@@ -44,6 +49,17 @@ def _build_parser() -> argparse.ArgumentParser:
     run = subparsers.add_parser("run", help="Run capture → export → report → evidence-bundle pipeline")
     run.add_argument("--config", type=Path, required=True, help="Product TOML config")
     run.add_argument("--clean", action="store_true", help="Remove generated outputs before running")
+
+    engagement_run = subparsers.add_parser(
+        "engagement-run",
+        help="Run direct multi-invariant Foundry capture → engagement evidence pipeline",
+    )
+    engagement_run.add_argument(
+        "--config",
+        type=Path,
+        required=True,
+        help="Engagement-run TOML config",
+    )
 
     engagement = subparsers.add_parser(
         "engagement",
@@ -84,6 +100,10 @@ def main(argv: list[str] | None = None) -> int:
             config = load_product_config(args.config)
             _emit(run_pipeline(config, clean=args.clean))
             return EXIT_OK
+        if args.command == "engagement-run":
+            config = load_engagement_run_config(args.config)
+            _emit(run_engagement_pipeline(config))
+            return EXIT_OK
         if args.command == "engagement":
             _emit(
                 write_engagement_bundle(
@@ -110,7 +130,14 @@ def main(argv: list[str] | None = None) -> int:
             _emit(doctor(require_forge=args.require_forge))
             return EXIT_OK
         parser.error("unknown command")
-    except (ValueError, ProductError, EngagementError, FileNotFoundError, json.JSONDecodeError) as exc:
+    except (
+        ValueError,
+        ProductError,
+        EngagementError,
+        EngagementRunError,
+        FileNotFoundError,
+        json.JSONDecodeError,
+    ) as exc:
         print(f"cgqa: {exc}", file=sys.stderr)
         validation_commands = {
             "validate",
