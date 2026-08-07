@@ -6,10 +6,10 @@ v0.5 adds a breadth-first search mode that keeps one shortest representative pat
 
 Action-sequence search grows exponentially when many paths converge to the same state.
 
-For example, if two accepted no-op actions and one advance action are available, exhaustive enumeration at depth 5 considers:
+For example, if two accepted no-op actions and one advance action are available, exhaustive enumeration at depth 8 considers:
 
 ```text
-3 + 9 + 27 + 81 + 243 = 363 candidate paths
+3 + 9 + 27 + 81 + 243 + 729 + 2187 + 6561 = 9840 candidate paths
 ```
 
 But if those paths reach only four distinct states, re-expanding every equivalent path adds cost without adding reachable-state coverage.
@@ -70,7 +70,7 @@ advance
 
 Both no-op actions converge to the current phase. `advance` moves through phases 0 → 1 → 2 → 3.
 
-With no terminal violation enforced, a depth-5 exhaustive candidate count is 363. The deduplicating search executes only 12 child transitions and discovers four unique states before the frontier becomes empty.
+With no terminal violation enforced, a depth-8 exhaustive candidate count is 9,840. The deduplicating search executes only 12 child transitions and discovers four unique states before the frontier becomes empty.
 
 With the terminal invariant enabled, the search still discovers the minimal violating path:
 
@@ -80,13 +80,19 @@ advance → advance → advance
 
 while pruning the equivalent no-op branches.
 
-## Fail-closed assumptions
+## Fail-closed budgets and assumptions
 
-- Search is bounded to 4,096 candidate-state capacity.
-- Every retained representative path must replay successfully after reset; otherwise the harness reverts with `replay drift`.
-- The target reset must be deterministic.
-- State hashing must include all future-relevant modeled context.
-- Deduplication does not make the search exhaustive outside the explicit actions, parameters, actors, time model, depth and invariants.
+The engine caps actual work rather than the theoretical exhaustive tree:
+
+- at most 4,096 unique modeled states are retained;
+- at most 65,536 child transitions are attempted;
+- every retained representative path must replay successfully after reset, otherwise the harness reverts with `replay drift`;
+- the target reset must be deterministic;
+- state hashing must include all future-relevant modeled context.
+
+This lets deduplication unlock deeper bounded searches when the reachable state graph is much smaller than the raw path tree, while still preventing runaway execution.
+
+Deduplication does not make the search exhaustive outside the explicit actions, parameters, actors, time model, depth and invariants.
 
 ## Next step
 
