@@ -131,6 +131,8 @@ def _run_direct_capture(config: EngagementRunConfig, fingerprint: str) -> None:
     forge = shutil.which("forge")
     _require(forge is not None, "forge is required for engagement-run but was not found on PATH")
     config.result.parent.mkdir(parents=True, exist_ok=True)
+    if config.result.is_file():
+        config.result.unlink()
 
     env = os.environ.copy()
     env["FOUNDRY_PROFILE"] = config.capture.profile
@@ -158,7 +160,7 @@ def _run_direct_capture(config: EngagementRunConfig, fingerprint: str) -> None:
     )
     _require(
         config.result.is_file(),
-        f"Foundry engagement capture did not produce result: {config.result}",
+        f"Foundry engagement capture did not produce a fresh result: {config.result}",
     )
 
 
