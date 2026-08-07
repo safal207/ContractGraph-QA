@@ -92,6 +92,26 @@ Capture-enabled execution:
 
 On success, stdout is a JSON summary containing the finding ID, manifest fingerprint, path length, output paths, and bundle SHA-256.
 
+## `cgqa engagement`
+
+```bash
+cgqa engagement \
+  --manifest manifests/examples/engagement-fixture.json \
+  --result results/examples/CGQA-E-001.engagement-result.json \
+  --output-dir dist/CGQA-E-001 \
+  --bundle dist/CGQA-E-001/CGQA-E-001.engagement.zip
+```
+
+This command consumes one reviewed manifest and one multi-check engagement result representing a bounded search session. Every invariant declared by the manifest must appear exactly once with one of three statuses:
+
+- `violated` — a replayable minimal failing path exists and produces its own finding;
+- `not_found_within_bound` — no violation was found inside the declared bounded model;
+- `inconclusive` — the evidence is insufficient for a clean conclusion.
+
+The command writes `engagement.json`, `engagement.md`, per-finding JSON/Markdown under `findings/`, and one deterministic v2 engagement ZIP. It immediately re-opens and semantically verifies that ZIP before returning success.
+
+A `not_found_within_bound` status is not a claim that a contract is secure. An `inconclusive` status must remain visibly inconclusive.
+
 ## `cgqa verify-bundle`
 
 ```bash
@@ -100,6 +120,14 @@ cgqa verify-bundle dist/CGQA-005/CGQA-005.evidence.zip
 
 Verification is independent of the working tree artifacts. The bundle contains the complete manifest/result/finding/report chain needed for validation.
 
+## `cgqa verify-engagement-bundle`
+
+```bash
+cgqa verify-engagement-bundle dist/CGQA-E-001/CGQA-E-001.engagement.zip
+```
+
+The verifier reconstructs the manifest → engagement result → coverage summary → findings → reports chain from the ZIP itself. It rejects missing, reordered, duplicate, oversized, traversal, unexpected, hash-inconsistent, or semantically inconsistent entries.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -107,7 +135,7 @@ Verification is independent of the working tree artifacts. The bundle contains t
 | `0` | success |
 | `2` | argparse usage error |
 | `10` | validation/integrity error for validation-oriented commands |
-| `20` | product runtime/capture/config failure |
+| `20` | product runtime/capture/config/engagement-generation failure |
 | `70` | unexpected internal failure |
 | `130` | interrupted by operator |
 
