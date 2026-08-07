@@ -54,8 +54,8 @@ jobs:
         run: cmp dist/CGQA-005/CGQA-005.md reports/examples/CGQA-005.md
       - name: Verify evidence bundle outside checkout
         run: cd /tmp && cgqa verify-bundle "$GITHUB_WORKSPACE/dist/CGQA-005/CGQA-005.evidence.zip"
-      - name: Run one-command multi-invariant engagement
-        run: cgqa engagement-run --config cgqa.engagement.example.toml
+      - name: Run one-command multi-invariant engagement outside checkout
+        run: cd /tmp && cgqa engagement-run --config "$GITHUB_WORKSPACE/cgqa.engagement.example.toml"
       - name: Verify direct engagement capture byte-for-byte
         run: cmp results/generated/CGQA-E-001.engagement-result.json results/examples/CGQA-E-001.engagement-result.json
       - name: Preserve first one-command bundle
@@ -76,8 +76,8 @@ jobs:
           }
           assert Path('dist/CGQA-E-001-run/findings/CGQA-E-001-F01.finding.json').is_file()
           PY
-      - name: Re-run one-command engagement for deterministic byte check
-        run: cgqa engagement-run --config cgqa.engagement.example.toml
+      - name: Re-run one-command engagement outside checkout for deterministic byte check
+        run: cd /tmp && cgqa engagement-run --config "$GITHUB_WORKSPACE/cgqa.engagement.example.toml"
       - name: Verify deterministic one-command engagement bundle bytes
         run: cmp /tmp/CGQA-E-001.first.zip dist/CGQA-E-001-run/CGQA-E-001.engagement.zip
       - name: Verify engagement bundle outside checkout
