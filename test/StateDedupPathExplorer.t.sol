@@ -17,7 +17,7 @@ contract StateDedupPathExplorerTest is StateDedupPathExplorerHarness {
     function test_DedupFindsMinimalViolation() public {
         enforceTerminalInvariant = true;
 
-        DedupSearchResult memory result = _exploreUniqueStates(CASE_COUNT, 5);
+        DedupSearchResult memory result = _exploreUniqueStates(CASE_COUNT, 8);
 
         assert(result.found);
         assert(result.path.length == 3);
@@ -36,14 +36,15 @@ contract StateDedupPathExplorerTest is StateDedupPathExplorerHarness {
     function test_DedupCollapsesEquivalentStateSpace() public {
         enforceTerminalInvariant = false;
 
-        DedupSearchResult memory result = _exploreUniqueStates(CASE_COUNT, 5);
+        DedupSearchResult memory result = _exploreUniqueStates(CASE_COUNT, 8);
 
         assert(!result.found);
         assert(result.path.length == 0);
         assert(result.attemptedTransitions == 12);
         assert(result.uniqueStates == 4);
         assert(result.prunedStates == 9);
-        assert(result.attemptedTransitions < _exhaustiveCandidateCount(CASE_COUNT, 5));
+        assert(_exhaustiveCandidateCount(CASE_COUNT, 8) == 9_840);
+        assert(result.attemptedTransitions < _exhaustiveCandidateCount(CASE_COUNT, 8));
     }
 
     function _resetTarget() internal override {
