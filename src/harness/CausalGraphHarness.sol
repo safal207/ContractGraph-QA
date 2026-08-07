@@ -28,14 +28,7 @@ abstract contract CausalGraphHarness {
         }
 
         emit TransitionObserved(
-            graphStep,
-            cause,
-            actor,
-            action,
-            preState,
-            postState,
-            block.timestamp,
-            effect
+            graphStep, cause, actor, action, preState, postState, block.timestamp, effect
         );
     }
 
