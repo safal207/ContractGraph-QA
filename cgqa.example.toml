@@ -1,0 +1,13 @@
+schemaVersion = 1
+workingDirectory = "."
+manifest = "manifests/examples/adapter-fixture.json"
+result = "results/generated/CGQA-005.result.json"
+finding = "dist/CGQA-005/CGQA-005.finding.json"
+report = "dist/CGQA-005/CGQA-005.md"
+bundle = "dist/CGQA-005/CGQA-005.evidence.zip"
+
+[capture]
+enabled = true
+profile = "capture"
+test = "test_CaptureExplorerResult"
+verbosity = 3

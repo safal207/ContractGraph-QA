@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "contractgraph-qa"
+version = "1.0.0"
+description = "Causal-temporal state-transition QA and deterministic evidence pipelines for smart contracts"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "safal207" }]
+keywords = ["smart-contracts", "qa", "foundry", "solidity", "testing", "audit-readiness"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development :: Testing",
+]
+dependencies = []
+
+[project.scripts]
+cgqa = "contractgraph_qa.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["contractgraph_qa*"]
+
+[tool.setuptools]
+include-package-data = false

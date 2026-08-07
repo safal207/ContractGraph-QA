@@ -21,6 +21,16 @@ The v0.6 smoke test is read-only: it does not call target functions or broadcast
 
 Never commit RPC credentials, private keys, seed phrases, signing material, or client secrets. Authorization references supplied as workflow inputs should be non-sensitive because workflow metadata and logs may be visible to repository collaborators or the public.
 
+## Product runtime and evidence bundles
+
+The v1 product runtime invokes Foundry with an argument array rather than a shell command string. Product config capture identifiers are restricted to safe identifier characters, and manifest/result/finding/report/bundle paths must be distinct.
+
+The evidence ZIP is an integrity/provenance container, not encryption. It can contain target identifiers, authorization references, state descriptions, findings, and client-facing impact text. Treat the bundle and Markdown report according to the engagement's confidentiality requirements.
+
+`cgqa verify-bundle` validates hashes and the semantic manifest → result → finding → report chain. It does not establish who originally authored or transmitted the bundle. Use an authenticated client-delivery channel when authenticity matters.
+
+Do not place secrets in adapter manifests, explorer results, finding text, report notes, or product config files that may be committed or shared.
+
 ## Reporting a vulnerability in this repository
 
 Please open a GitHub issue for non-sensitive defects.

@@ -63,7 +63,7 @@ contract AdapterFixtureCaptureTest is ForkAdapterTemplate, DirectResultCaptureHa
             notes: "This explorer-result fixture corresponds to the local v0.7 adapter regression and is used only to verify deterministic manifest-to-finding export."
         });
 
-        _writeExplorerResult("results/generated/CGQA-005.result.json", metadata, captured);
+        _writeExplorerResult(vmFork.envString("CGQA_RESULT_PATH"), metadata, captured);
     }
 
     function _actionIdFor(StepInput memory step) internal pure returns (string memory) {

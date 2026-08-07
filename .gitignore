@@ -4,3 +4,15 @@ broadcast/
 lib/
 *.log
 .env
+
+# Python / product runtime
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.product-wheel/
+
+# Direct capture output is generated evidence; keep only the directory marker.
+results/generated/*
+!results/generated/.gitkeep
