@@ -1,0 +1,46 @@
+{
+  "id": "CGQA-001",
+  "title": "Double payout accounting invariant is reachable",
+  "severity": "high",
+  "contract": "VulnerableEscrow",
+  "network": "local-foundry",
+  "summary": "A bounded breadth-first search finds an accepted three-action path that records both a release and a refund against the same deposit. The path is deterministic and replayable against the deliberately vulnerable local fixture.",
+  "invariant": {
+    "id": "payout-conservation",
+    "expression": "releasedAmount + refundedAmount <= depositedAmount"
+  },
+  "minimalFailingPath": [
+    {
+      "step": 1,
+      "actor": "authorized test actor",
+      "action": "fund(100)",
+      "preState": "CREATED",
+      "postState": "FUNDED",
+      "effect": "deposit recorded"
+    },
+    {
+      "step": 2,
+      "actor": "authorized test actor",
+      "action": "release()",
+      "preState": "FUNDED",
+      "postState": "FUNDED",
+      "effect": "release recorded without closing terminal state"
+    },
+    {
+      "step": 3,
+      "actor": "authorized test actor",
+      "action": "refund()",
+      "preState": "FUNDED",
+      "postState": "REFUNDED",
+      "effect": "refund recorded after release"
+    }
+  ],
+  "impact": "The accounting model can represent two mutually exclusive payout outcomes for one deposit. In a real escrow design, an equivalent state-machine defect could break conservation assumptions and must be prevented before deployment.",
+  "recommendation": "Make release a terminal state transition atomically with its accounting update, and ensure refund is unreachable after release. Preserve this exact path as a regression test after the fix.",
+  "evidence": {
+    "authorization": "Deliberately vulnerable local fixture owned by this repository; no third-party production target is involved.",
+    "replay": "forge test --match-test test_AutomaticallyFindsMinimalDoublePayoutPath -vvv",
+    "exploredCandidates": 18,
+    "notes": "The explorer searches shortest action sequences first, so the first discovered violation is minimal by action count within the modeled action alphabet and depth."
+  }
+}
