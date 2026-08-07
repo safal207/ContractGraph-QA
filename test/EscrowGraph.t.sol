@@ -102,6 +102,45 @@ contract EscrowGraphTest is CausalGraphHarness {
         assert(uint256(escrow.state()) == uint256(Escrow.State.Created));
     }
 
+    function test_UnauthorizedActorCannotRelease() public {
+        vm.prank(buyer);
+        escrow.fund{value: 1 ether}();
+
+        bool sellerReleased;
+        vm.prank(seller);
+        try escrow.release() {
+            sellerReleased = true;
+        } catch {
+            sellerReleased = false;
+        }
+
+        assert(!sellerReleased);
+        assert(uint256(escrow.state()) == uint256(Escrow.State.Funded));
+        assert(escrow.releasedAmount() == 0);
+        assert(escrow.refundedAmount() == 0);
+        assert(escrow.payoutInvariantHolds());
+    }
+
+    function test_UnauthorizedActorCannotRefundAfterDeadline() public {
+        vm.prank(buyer);
+        escrow.fund{value: 1 ether}();
+        vm.warp(escrow.refundAfter());
+
+        bool sellerRefunded;
+        vm.prank(seller);
+        try escrow.refund() {
+            sellerRefunded = true;
+        } catch {
+            sellerRefunded = false;
+        }
+
+        assert(!sellerRefunded);
+        assert(uint256(escrow.state()) == uint256(Escrow.State.Funded));
+        assert(escrow.releasedAmount() == 0);
+        assert(escrow.refundedAmount() == 0);
+        assert(escrow.payoutInvariantHolds());
+    }
+
     function testFuzz_FundingPreservesPayoutInvariant(uint96 amount) public {
         if (amount == 0) return;
 
