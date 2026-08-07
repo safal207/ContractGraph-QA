@@ -2,7 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {VulnerableTimedEscrow} from "../src/examples/VulnerableTimedEscrow.sol";
-import {ParameterizedPathExplorerHarness} from "../src/harness/ParameterizedPathExplorerHarness.sol";
+import {
+    ParameterizedPathExplorerHarness
+} from "../src/harness/ParameterizedPathExplorerHarness.sol";
 
 interface VmTemporal {
     function warp(uint256 newTimestamp) external;
@@ -90,12 +92,7 @@ contract ParameterizedTemporalExplorerTest is ParameterizedPathExplorerHarness {
         escrow = new VulnerableTimedEscrow();
     }
 
-    function _stepCase(uint16 caseIndex)
-        internal
-        pure
-        override
-        returns (StepInput memory step)
-    {
+    function _stepCase(uint16 caseIndex) internal pure override returns (StepInput memory step) {
         if (caseIndex == CASE_FUND_1) return StepInput({action: ACTION_FUND, parameter: 1});
         if (caseIndex == CASE_FUND_100) return StepInput({action: ACTION_FUND, parameter: 100});
         if (caseIndex == CASE_FUND_101) return StepInput({action: ACTION_FUND, parameter: 101});
