@@ -24,6 +24,8 @@ jobs:
           version: v1.7.1
       - name: Unit tests
         run: python -m unittest discover -s tools/tests -p 'test_*.py' -v
+      - name: Verify runtime-schema contract parity
+        run: python tools/check_schema_contract.py
       - name: Compute adapter manifest fingerprint
         run: echo "CGQA_MANIFEST_SHA256=$(python tools/manifest_fingerprint.py manifests/examples/adapter-fixture.json)" >> "$GITHUB_ENV"
       - name: Capture explorer result directly from Foundry
