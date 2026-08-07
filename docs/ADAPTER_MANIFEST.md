@@ -63,6 +63,7 @@ The explorer result must then contain a string or integer `parameter` for that s
 The exporter accepts a deterministic result containing:
 
 - the exact adapter ID and scope ID used for the run;
+- the SHA-256 fingerprint of the canonical manifest JSON;
 - finding ID;
 - invariant ID;
 - exact replay command;
@@ -77,7 +78,16 @@ Example:
 
 `results/examples/CGQA-005.result.json`
 
-The exporter requires `result.adapterId == manifest.adapterId` and `result.scopeId == manifest.scope.scopeId`. It also rejects a path whose length exceeds the manifest's declared `search.maxDepth`.
+The canonical manifest fingerprint is computed from compact, key-sorted JSON and makes whitespace/key-order changes irrelevant while still detecting any semantic metadata change.
+
+The exporter requires:
+
+```text
+result.adapterId == manifest.adapterId
+result.scopeId == manifest.scope.scopeId
+result.manifestSha256 == SHA256(canonical(manifest))
+len(result.path) <= manifest.search.maxDepth
+```
 
 The result does not duplicate actor names, action labels, severity, summary, impact, recommendation, contract, network, or authorization text. Those come from the reviewed manifest.
 
@@ -117,6 +127,7 @@ The exporter rejects, among other cases:
 
 - missing/empty authorization metadata;
 - adapter or scope provenance mismatch;
+- manifest fingerprint mismatch;
 - a discovered path deeper than the manifest search depth;
 - duplicate action or invariant IDs;
 - unknown action IDs in the result;
@@ -127,6 +138,20 @@ The exporter rejects, among other cases:
 - unexpected parameters for non-parameterized actions.
 
 The manifest's `stateFields` are documentation/review evidence in v0.8. The Solidity adapter's `_stateHash()` remains the executable source of truth, so reviewers must verify that the manifest list and actual hash implementation match.
+
+## Report provenance
+
+When the exporter creates a finding, the evidence section carries:
+
+- adapter ID;
+- scope ID;
+- authorization reference;
+- target identifier;
+- manifest SHA-256;
+- replay command;
+- optional explored-candidate count and notes.
+
+`tools/render_finding.py` renders these optional provenance fields into the client-facing report while remaining backward-compatible with v0.1–v0.7 findings.
 
 ## Safety boundary
 
