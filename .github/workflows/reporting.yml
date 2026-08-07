@@ -31,3 +31,8 @@ jobs:
           python tools/render_finding.py
           reports/examples/CGQA-002.finding.json
           --check reports/examples/CGQA-002.md
+      - name: Verify temporal golden report
+        run: >-
+          python tools/render_finding.py
+          reports/examples/CGQA-003.finding.json
+          --check reports/examples/CGQA-003.md
