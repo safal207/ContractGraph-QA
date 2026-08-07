@@ -15,7 +15,11 @@ Do not use this repository to target third-party production systems without perm
 
 ## Reporting a vulnerability in this repository
 
-Please open a GitHub issue for non-sensitive defects. For a vulnerability that could create risk for users, avoid publishing exploit details until a maintainer has had a reasonable opportunity to assess and fix it.
+Please open a GitHub issue for non-sensitive defects.
+
+For a sensitive vulnerability, use GitHub private vulnerability reporting from this repository's **Security** tab (`Report a vulnerability`) when that option is available. Do not open a public issue containing exploit details, private keys, secrets, or reproduction steps that could put users at risk.
+
+If private vulnerability reporting is unavailable, open a non-sensitive issue asking the maintainer to provide a private contact channel, without including vulnerability details. Give the maintainer a reasonable opportunity to assess and fix the issue before public disclosure.
 
 ## Demo vulnerabilities
 
