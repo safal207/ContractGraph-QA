@@ -1,0 +1,27 @@
+{
+  "findingId": "CGQA-005",
+  "invariantId": "adapter-terminal-state",
+  "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
+  "exploredCandidates": 6,
+  "notes": "This explorer-result fixture corresponds to the local v0.7 adapter regression and is used only to verify deterministic manifest-to-finding export.",
+  "path": [
+    {
+      "actionId": "advance",
+      "preState": "phase=0",
+      "postState": "phase=1",
+      "effect": "future-relevant protocol state changes"
+    },
+    {
+      "actionId": "advance",
+      "preState": "phase=1",
+      "postState": "phase=2",
+      "effect": "second unique protocol state is reached"
+    },
+    {
+      "actionId": "advance",
+      "preState": "phase=2",
+      "postState": "phase=3",
+      "effect": "terminal invariant becomes false"
+    }
+  ]
+}
