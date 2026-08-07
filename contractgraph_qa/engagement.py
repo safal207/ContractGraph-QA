@@ -38,6 +38,17 @@ CHECK_KEYS = {
     "notes",
     "path",
 }
+BUNDLE_KEYS = {
+    "bundleVersion",
+    "tool",
+    "engagementId",
+    "manifestSha256",
+    "searchRunId",
+    "findingIds",
+    "artifacts",
+}
+TOOL_KEYS = {"name", "version"}
+ARTIFACT_KEYS = {"sha256", "bytes"}
 SAFE_ARTIFACT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
 MAX_BUNDLE_ENTRY_BYTES = 16 * 1024 * 1024
@@ -102,7 +113,10 @@ def validate_engagement_result(result: dict[str, Any]) -> None:
     for field in ("adapterId", "scopeId", "searchRunId", "replay"):
         _non_blank(result.get(field), f"engagementResult.{field}")
     fingerprint = _non_blank(result.get("manifestSha256"), "engagementResult.manifestSha256")
-    _require(bool(SHA256_HEX.fullmatch(fingerprint)), "engagementResult.manifestSha256 must be lowercase SHA-256 hex")
+    _require(
+        bool(SHA256_HEX.fullmatch(fingerprint)),
+        "engagementResult.manifestSha256 must be lowercase SHA-256 hex",
+    )
 
     checks = result.get("checks")
     _require(isinstance(checks, list) and checks, "engagementResult.checks must be non-empty")
@@ -111,8 +125,13 @@ def validate_engagement_result(result: dict[str, Any]) -> None:
     for index, check in enumerate(checks):
         _require(isinstance(check, dict), f"engagementResult.checks[{index}] must be an object")
         _reject_extra_keys(check, CHECK_KEYS, f"engagementResult.checks[{index}]")
-        invariant_id = _non_blank(check.get("invariantId"), f"engagementResult.checks[{index}].invariantId")
-        _require(invariant_id not in seen_invariants, f"duplicate engagement invariant check: {invariant_id}")
+        invariant_id = _non_blank(
+            check.get("invariantId"), f"engagementResult.checks[{index}].invariantId"
+        )
+        _require(
+            invariant_id not in seen_invariants,
+            f"duplicate engagement invariant check: {invariant_id}",
+        )
         seen_invariants.add(invariant_id)
 
         status = _non_blank(check.get("status"), f"engagementResult.checks[{index}].status")
@@ -130,12 +149,21 @@ def validate_engagement_result(result: dict[str, Any]) -> None:
             _require(finding_id not in seen_findings, f"duplicate finding id: {finding_id}")
             seen_findings.add(finding_id)
             path = check.get("path")
-            _require(isinstance(path, list) and path, f"violated invariant {invariant_id} requires a non-empty path")
+            _require(
+                isinstance(path, list) and path,
+                f"violated invariant {invariant_id} requires a non-empty path",
+            )
             for step_index, step in enumerate(path):
                 _validate_step(step, step_index, f"engagementResult.checks[{index}].path")
         else:
-            _require("findingId" not in check, f"{status} invariant {invariant_id} must not declare findingId")
-            _require("path" not in check, f"{status} invariant {invariant_id} must not declare a failing path")
+            _require(
+                "findingId" not in check,
+                f"{status} invariant {invariant_id} must not declare findingId",
+            )
+            _require(
+                "path" not in check,
+                f"{status} invariant {invariant_id} must not declare a failing path",
+            )
 
 
 def _manifest_invariants(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -162,10 +190,19 @@ def build_engagement(
     validate_manifest(manifest)
     validate_engagement_result(result)
 
-    _require(result["adapterId"] == manifest["adapterId"], "engagement adapterId does not match manifest")
-    _require(result["scopeId"] == manifest["scope"]["scopeId"], "engagement scopeId does not match manifest")
+    _require(
+        result["adapterId"] == manifest["adapterId"],
+        "engagement adapterId does not match manifest",
+    )
+    _require(
+        result["scopeId"] == manifest["scope"]["scopeId"],
+        "engagement scopeId does not match manifest",
+    )
     expected_fingerprint = manifest_sha256(manifest)
-    _require(result["manifestSha256"] == expected_fingerprint, "engagement manifestSha256 does not match manifest")
+    _require(
+        result["manifestSha256"] == expected_fingerprint,
+        "engagement manifestSha256 does not match manifest",
+    )
 
     invariants = _manifest_invariants(manifest)
     checked_ids = {check["invariantId"] for check in result["checks"]}
@@ -313,11 +350,14 @@ def _finding_payloads(findings: list[dict[str, Any]]) -> dict[str, bytes]:
 
 
 def _bundle_manifest(
-    engagement: dict[str, Any], payloads: dict[str, bytes], finding_ids: list[str]
+    engagement: dict[str, Any],
+    payloads: dict[str, bytes],
+    finding_ids: list[str],
+    tool_version: str,
 ) -> dict[str, Any]:
     return {
         "bundleVersion": 2,
-        "tool": {"name": "contractgraph-qa", "version": __version__},
+        "tool": {"name": "contractgraph-qa", "version": tool_version},
         "engagementId": engagement["engagementId"],
         "manifestSha256": engagement["manifestSha256"],
         "searchRunId": engagement["searchRunId"],
@@ -359,9 +399,11 @@ def write_engagement_bundle(
             (output_dir / name).write_bytes(payload)
 
     finding_ids = [finding["id"] for finding in findings]
-    bundle_manifest = _bundle_manifest(engagement, payloads, finding_ids)
+    bundle_manifest = _bundle_manifest(engagement, payloads, finding_ids, __version__)
     bundle_payload = canonical_json(bundle_manifest).encode("utf-8")
-    ordered_names = list(BASE_BUNDLE_FILES) + sorted(name for name in payloads if name.startswith("findings/"))
+    ordered_names = list(BASE_BUNDLE_FILES) + sorted(
+        name for name in payloads if name.startswith("findings/")
+    )
     ordered_names.append("bundle.json")
 
     bundle_path.parent.mkdir(parents=True, exist_ok=True)
@@ -389,6 +431,16 @@ def _validate_archive_name(name: str) -> None:
     _require("\\" not in name, f"backslash bundle entry is not allowed: {name}")
 
 
+def _bundle_tool_version(bundle_manifest: dict[str, Any]) -> str:
+    _reject_extra_keys(bundle_manifest, BUNDLE_KEYS, "bundle")
+    _require(bundle_manifest.get("bundleVersion") == 2, "unsupported engagement bundleVersion")
+    tool = bundle_manifest.get("tool")
+    _require(isinstance(tool, dict), "bundle.tool must be an object")
+    _reject_extra_keys(tool, TOOL_KEYS, "bundle.tool")
+    _require(_non_blank(tool.get("name"), "bundle.tool.name") == "contractgraph-qa", "bundle.tool.name mismatch")
+    return _non_blank(tool.get("version"), "bundle.tool.version")
+
+
 def verify_engagement_bundle(path: Path) -> dict[str, Any]:
     source = path.expanduser().resolve()
     _require(source.is_file(), f"engagement bundle not found: {source}")
@@ -399,7 +451,10 @@ def verify_engagement_bundle(path: Path) -> dict[str, Any]:
             _require(len(names) == len(set(names)), "engagement bundle contains duplicate entries")
             for info in infos:
                 _validate_archive_name(info.filename)
-                _require(info.file_size <= MAX_BUNDLE_ENTRY_BYTES, f"bundle entry exceeds size limit: {info.filename}")
+                _require(
+                    info.file_size <= MAX_BUNDLE_ENTRY_BYTES,
+                    f"bundle entry exceeds size limit: {info.filename}",
+                )
             _require("bundle.json" in names, "engagement bundle is missing bundle.json")
             payloads = {name: archive.read(name) for name in names}
     except (OSError, zipfile.BadZipFile, KeyError, RuntimeError) as exc:
@@ -418,6 +473,7 @@ def verify_engagement_bundle(path: Path) -> dict[str, Any]:
     _require(isinstance(result, dict), "engagement-result.json must be an object")
     _require(isinstance(engagement_payload, dict), "engagement.json must be an object")
     _require(isinstance(bundle_manifest, dict), "bundle.json must be an object")
+    tool_version = _bundle_tool_version(bundle_manifest)
 
     expected_engagement, expected_findings = build_engagement(manifest, result)
     expected_payloads: dict[str, bytes] = {
@@ -428,7 +484,12 @@ def verify_engagement_bundle(path: Path) -> dict[str, Any]:
     }
     expected_payloads.update(_finding_payloads(expected_findings))
     expected_finding_ids = sorted(finding["id"] for finding in expected_findings)
-    expected_bundle_manifest = _bundle_manifest(expected_engagement, expected_payloads, expected_finding_ids)
+    expected_bundle_manifest = _bundle_manifest(
+        expected_engagement,
+        expected_payloads,
+        expected_finding_ids,
+        tool_version,
+    )
     expected_bundle_payload = canonical_json(expected_bundle_manifest).encode("utf-8")
 
     expected_names = list(BASE_BUNDLE_FILES) + sorted(
@@ -436,10 +497,19 @@ def verify_engagement_bundle(path: Path) -> dict[str, Any]:
     ) + ["bundle.json"]
     _require(names == expected_names, "engagement bundle entries are missing, reordered, or unexpected")
     for name, expected in expected_payloads.items():
-        _require(payloads.get(name) == expected, f"engagement artifact does not match semantic chain: {name}")
-    _require(payloads["bundle.json"] == expected_bundle_payload, "bundle.json does not match engagement artifacts")
+        _require(
+            payloads.get(name) == expected,
+            f"engagement artifact does not match semantic chain: {name}",
+        )
+    _require(
+        payloads["bundle.json"] == expected_bundle_payload,
+        "bundle.json does not match engagement artifacts",
+    )
     _require(engagement_payload == expected_engagement, "engagement.json semantic mismatch")
-    _require(engagement_markdown == render_engagement_markdown(expected_engagement), "engagement.md semantic mismatch")
+    _require(
+        engagement_markdown == render_engagement_markdown(expected_engagement),
+        "engagement.md semantic mismatch",
+    )
 
     return {
         "ok": True,
@@ -448,5 +518,6 @@ def verify_engagement_bundle(path: Path) -> dict[str, Any]:
         "findingIds": expected_finding_ids,
         "coverage": expected_engagement["coverage"],
         "manifestSha256": expected_engagement["manifestSha256"],
+        "toolVersion": tool_version,
         "bundleSha256": _sha256_file(source),
     }
