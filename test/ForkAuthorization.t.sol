@@ -21,32 +21,34 @@ contract ForkAuthorizationTest {
     }
 
     function test_MissingConfirmationFailsClosed() public {
-        (bool ok,) = address(this).call(
-            abi.encodeWithSelector(
-                this.validateExternal.selector,
-                "scope",
-                "authorization-ref",
-                uint256(1),
-                address(0x1234),
-                uint256(1),
-                false
-            )
-        );
+        (bool ok,) = address(this)
+            .call(
+                abi.encodeWithSelector(
+                    this.validateExternal.selector,
+                    "scope",
+                    "authorization-ref",
+                    uint256(1),
+                    address(0x1234),
+                    uint256(1),
+                    false
+                )
+            );
         assert(!ok);
     }
 
     function test_MissingAuthorizationReferenceFailsClosed() public {
-        (bool ok,) = address(this).call(
-            abi.encodeWithSelector(
-                this.validateExternal.selector,
-                "scope",
-                "",
-                uint256(1),
-                address(0x1234),
-                uint256(1),
-                true
-            )
-        );
+        (bool ok,) = address(this)
+            .call(
+                abi.encodeWithSelector(
+                    this.validateExternal.selector,
+                    "scope",
+                    "",
+                    uint256(1),
+                    address(0x1234),
+                    uint256(1),
+                    true
+                )
+            );
         assert(!ok);
     }
 
