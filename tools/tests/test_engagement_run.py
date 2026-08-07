@@ -125,6 +125,29 @@ class EngagementRunRuntimeTest(unittest.TestCase):
             with self.assertRaisesRegex(EngagementRunError, "must not equal workingDirectory"):
                 load_engagement_run_config(path)
 
+    def test_config_rejects_result_overwriting_config_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "bad.toml"
+            path.write_text(
+                "schemaVersion = 1\nworkingDirectory = '.'\nmanifest = 'm.json'\nresult = 'bad.toml'\noutputDirectory = 'out'\nbundle = 'out/e.zip'\n[capture]\ntest = 'test_X'\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(EngagementRunError, "paths must be distinct"):
+                load_engagement_run_config(path)
+
+    def test_config_rejects_result_outside_working_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            work = root / "work"
+            work.mkdir()
+            path = root / "bad.toml"
+            path.write_text(
+                "schemaVersion = 1\nworkingDirectory = 'work'\nmanifest = 'm.json'\nresult = 'outside.json'\noutputDirectory = 'out'\nbundle = 'out/e.zip'\n[capture]\ntest = 'test_X'\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(EngagementRunError, "inside workingDirectory"):
+                load_engagement_run_config(path)
+
 
 if __name__ == "__main__":
     unittest.main()
