@@ -19,7 +19,7 @@ contract ForkAdapterTemplateTest is ForkAdapterTemplate {
             scopeHash: keccak256("local-adapter-fixture-scope"),
             target: address(machine),
             chainId: block.chainid,
-            blockNumber: 1
+            blockNumber: block.number
         });
         _bindAdapterContext(localContext);
     }
