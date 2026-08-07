@@ -7,6 +7,7 @@ pragma solidity ^0.8.24;
 import {ForkAdapterTemplate} from "../src/harness/ForkAdapterTemplate.sol";
 
 contract AuthorizedAdapterTemplate is ForkAdapterTemplate {
+    bool internal constant TEMPLATE_CONFIGURED = false;
     uint8 internal constant ACTION_EXAMPLE = 0;
     uint16 internal constant CASE_COUNT = 1;
 
@@ -15,6 +16,8 @@ contract AuthorizedAdapterTemplate is ForkAdapterTemplate {
     }
 
     function test_AuthorizedBoundedSearch() public {
+        require(TEMPLATE_CONFIGURED, "adapter template not configured");
+
         // TODO: choose a bounded depth justified by the engagement scope.
         DedupSearchResult memory result = _exploreUniqueStates(CASE_COUNT, 3);
 
