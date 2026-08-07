@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "adapterId": "engagement-fixture-v1.2",
+  "contract": "AdapterFixtureMachine",
+  "network": "local-foundry-engagement",
+  "scope": {
+    "scopeId": "local-v1.2-engagement-fixture",
+    "authorization": "Repository-owned local engagement fixture; no third-party production target is involved.",
+    "authorizationReference": "repo-owned-local-engagement-fixture",
+    "target": "local-fixture"
+  },
+  "search": {
+    "maxDepth": 4
+  },
+  "stateFields": [
+    "phase"
+  ],
+  "actions": [
+    {
+      "id": "noop",
+      "display": "noop()",
+      "actor": "authorized engagement test actor"
+    },
+    {
+      "id": "advance",
+      "display": "advance()",
+      "actor": "authorized engagement test actor"
+    }
+  ],
+  "invariants": [
+    {
+      "id": "terminal-state-bound",
+      "title": "Terminal phase remains below the modeled violation threshold",
+      "severity": "medium",
+      "summary": "The bounded search reaches phase 3 and violates the modeled terminal-state invariant.",
+      "expression": "phase < 3",
+      "impact": "A modeled terminal state that should remain unreachable becomes reachable within the authorized local fixture.",
+      "recommendation": "Make the terminal violating transition unreachable and preserve the minimal path as a regression test."
+    },
+    {
+      "id": "phase-nonnegative",
+      "title": "Phase never becomes negative",
+      "severity": "low",
+      "summary": "The bounded search checks whether the phase can become negative.",
+      "expression": "phase >= 0",
+      "impact": "A negative phase would indicate invalid state-machine accounting.",
+      "recommendation": "Preserve guards that prevent negative phase transitions and keep this invariant in the engagement regression set."
+    },
+    {
+      "id": "budget-sensitive-branch",
+      "title": "Budget-sensitive branch remains unresolved",
+      "severity": "info",
+      "summary": "The example marks this invariant inconclusive to demonstrate that budget exhaustion is not reported as a clean result.",
+      "expression": "modeled_budget_sensitive_property == true",
+      "impact": "Treating an incomplete search as clean could hide an untested reachable violation.",
+      "recommendation": "Increase the bounded search budget or narrow the model until the invariant can be classified as violated or not found within bound."
+    }
+  ]
+}
