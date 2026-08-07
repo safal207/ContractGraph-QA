@@ -1,4 +1,6 @@
 {
+  "adapterId": "adapter-fixture-v0.8",
+  "scopeId": "local-v0.8-fixture",
   "findingId": "CGQA-005",
   "invariantId": "adapter-terminal-state",
   "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
