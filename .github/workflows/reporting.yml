@@ -36,3 +36,8 @@ jobs:
           python tools/render_finding.py
           reports/examples/CGQA-003.finding.json
           --check reports/examples/CGQA-003.md
+      - name: Verify fork adapter golden report
+        run: >-
+          python tools/render_finding.py
+          reports/examples/CGQA-004.finding.json
+          --check reports/examples/CGQA-004.md
