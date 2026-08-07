@@ -43,6 +43,7 @@ abstract contract DirectResultCaptureHarness {
         require(bytes(metadata.findingId).length > 0, "capture finding id missing");
         require(bytes(metadata.invariantId).length > 0, "capture invariant id missing");
         require(bytes(metadata.replay).length > 0, "capture replay missing");
+        require(bytes(metadata.notes).length > 0, "capture notes missing");
         require(steps.length > 0, "capture path empty");
 
         string memory json = string.concat(
