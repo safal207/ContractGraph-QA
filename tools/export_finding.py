@@ -10,6 +10,33 @@ from pathlib import Path
 from typing import Any
 
 SEVERITIES = {"critical", "high", "medium", "low", "info"}
+MANIFEST_KEYS = {
+    "schemaVersion",
+    "adapterId",
+    "contract",
+    "network",
+    "scope",
+    "search",
+    "stateFields",
+    "actions",
+    "invariants",
+}
+SCOPE_KEYS = {"scopeId", "authorization", "authorizationReference", "target"}
+SEARCH_KEYS = {"maxDepth"}
+ACTION_KEYS = {"id", "display", "actor"}
+INVARIANT_KEYS = {"id", "title", "severity", "summary", "expression", "impact", "recommendation"}
+RESULT_KEYS = {
+    "adapterId",
+    "scopeId",
+    "manifestSha256",
+    "findingId",
+    "invariantId",
+    "replay",
+    "exploredCandidates",
+    "notes",
+    "path",
+}
+STEP_KEYS = {"actionId", "parameter", "preState", "postState", "effect"}
 
 
 def _require(condition: bool, message: str) -> None:
@@ -30,6 +57,11 @@ def _require_non_negative_int(value: Any, field: str) -> int:
     return value
 
 
+def _reject_extra_keys(data: dict[str, Any], allowed: set[str], field: str) -> None:
+    extras = sorted(set(data) - allowed)
+    _require(not extras, f"{field} contains unexpected fields: {', '.join(extras)}")
+
+
 def load_json_object(path: Path, label: str) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
@@ -43,17 +75,20 @@ def manifest_sha256(manifest: dict[str, Any]) -> str:
 
 
 def validate_manifest(manifest: dict[str, Any]) -> None:
+    _reject_extra_keys(manifest, MANIFEST_KEYS, "manifest")
     _require(manifest.get("schemaVersion") == 1, "manifest.schemaVersion must equal 1")
     for field in ("adapterId", "contract", "network"):
         _require_non_empty_string(manifest.get(field), f"manifest.{field}")
 
     scope = manifest.get("scope")
     _require(isinstance(scope, dict), "manifest.scope must be an object")
+    _reject_extra_keys(scope, SCOPE_KEYS, "manifest.scope")
     for field in ("scopeId", "authorization", "authorizationReference", "target"):
         _require_non_empty_string(scope.get(field), f"manifest.scope.{field}")
 
     search = manifest.get("search")
     _require(isinstance(search, dict), "manifest.search must be an object")
+    _reject_extra_keys(search, SEARCH_KEYS, "manifest.search")
     _require_non_negative_int(search.get("maxDepth"), "manifest.search.maxDepth")
     _require(search["maxDepth"] > 0, "manifest.search.maxDepth must be greater than zero")
 
@@ -70,6 +105,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
     action_ids: set[str] = set()
     for index, action in enumerate(actions):
         _require(isinstance(action, dict), f"manifest.actions[{index}] must be an object")
+        _reject_extra_keys(action, ACTION_KEYS, f"manifest.actions[{index}]")
         action_id = _require_non_empty_string(action.get("id"), f"manifest.actions[{index}].id")
         _require(action_id not in action_ids, f"duplicate action id: {action_id}")
         action_ids.add(action_id)
@@ -81,6 +117,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
     invariant_ids: set[str] = set()
     for index, invariant in enumerate(invariants):
         _require(isinstance(invariant, dict), f"manifest.invariants[{index}] must be an object")
+        _reject_extra_keys(invariant, INVARIANT_KEYS, f"manifest.invariants[{index}]")
         invariant_id = _require_non_empty_string(
             invariant.get("id"), f"manifest.invariants[{index}].id"
         )
@@ -97,6 +134,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
 
 
 def validate_result(result: dict[str, Any]) -> None:
+    _reject_extra_keys(result, RESULT_KEYS, "result")
     for field in (
         "adapterId",
         "scopeId",
@@ -122,6 +160,7 @@ def validate_result(result: dict[str, Any]) -> None:
     _require(isinstance(path, list) and path, "result.path must be non-empty")
     for index, step in enumerate(path):
         _require(isinstance(step, dict), f"result.path[{index}] must be an object")
+        _reject_extra_keys(step, STEP_KEYS, f"result.path[{index}]")
         _require_non_empty_string(step.get("actionId"), f"result.path[{index}].actionId")
         for field in ("preState", "postState", "effect"):
             _require_non_empty_string(step.get(field), f"result.path[{index}].{field}")
