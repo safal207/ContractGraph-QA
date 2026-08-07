@@ -14,9 +14,24 @@
       "exploredCandidates": 6,
       "notes": "The repository-local fixture reaches the modeled terminal state through the shortest three-step advance path.",
       "path": [
-        {"actionId": "advance", "preState": "phase=0", "postState": "phase=1", "effect": "first future-relevant protocol state is reached"},
-        {"actionId": "advance", "preState": "phase=1", "postState": "phase=2", "effect": "second future-relevant protocol state is reached"},
-        {"actionId": "advance", "preState": "phase=2", "postState": "phase=3", "effect": "terminal-state invariant becomes false"}
+        {
+          "actionId": "advance",
+          "preState": "phase=0",
+          "postState": "phase=1",
+          "effect": "first future-relevant protocol state is reached"
+        },
+        {
+          "actionId": "advance",
+          "preState": "phase=1",
+          "postState": "phase=2",
+          "effect": "second future-relevant protocol state is reached"
+        },
+        {
+          "actionId": "advance",
+          "preState": "phase=2",
+          "postState": "phase=3",
+          "effect": "terminal-state invariant becomes false"
+        }
       ]
     },
     {
