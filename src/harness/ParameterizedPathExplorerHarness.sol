@@ -50,11 +50,7 @@ abstract contract ParameterizedPathExplorerHarness {
                     bool accepted = _executeStep(path[step]);
                     bool invariantHolds = _invariantHolds();
                     emit ParameterizedPathStep(
-                        step,
-                        path[step].action,
-                        path[step].parameter,
-                        accepted,
-                        invariantHolds
+                        step, path[step].action, path[step].parameter, accepted, invariantHolds
                     );
 
                     if (!accepted) {
@@ -72,11 +68,7 @@ abstract contract ParameterizedPathExplorerHarness {
             }
         }
 
-        return SearchResult({
-            found: false,
-            path: new StepInput[](0),
-            exploredCandidates: explored
-        });
+        return SearchResult({found: false, path: new StepInput[](0), exploredCandidates: explored});
     }
 
     /// @notice Deterministically replay a discovered parameterized path against a fresh target.
@@ -87,11 +79,7 @@ abstract contract ParameterizedPathExplorerHarness {
             bool accepted = _executeStep(path[step]);
             bool holds = _invariantHolds();
             emit ParameterizedPathStep(
-                step,
-                path[step].action,
-                path[step].parameter,
-                accepted,
-                holds
+                step, path[step].action, path[step].parameter, accepted, holds
             );
 
             if (!accepted) {
