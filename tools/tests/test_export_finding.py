@@ -30,6 +30,24 @@ class ManifestFindingExporterTest(unittest.TestCase):
         second = export_finding(copy.deepcopy(self.manifest), copy.deepcopy(self.result))
         self.assertEqual(first, second)
 
+    def test_adapter_id_mismatch_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.result)
+        invalid["adapterId"] = "other-adapter"
+        with self.assertRaisesRegex(ValueError, "adapterId does not match"):
+            export_finding(self.manifest, invalid)
+
+    def test_scope_id_mismatch_is_rejected(self) -> None:
+        invalid = copy.deepcopy(self.result)
+        invalid["scopeId"] = "other-scope"
+        with self.assertRaisesRegex(ValueError, "scopeId does not match"):
+            export_finding(self.manifest, invalid)
+
+    def test_path_exceeding_manifest_depth_is_rejected(self) -> None:
+        manifest = copy.deepcopy(self.manifest)
+        manifest["search"]["maxDepth"] = 2
+        with self.assertRaisesRegex(ValueError, "exceeds manifest.search.maxDepth"):
+            export_finding(manifest, self.result)
+
     def test_unknown_action_is_rejected(self) -> None:
         invalid = copy.deepcopy(self.result)
         invalid["path"][0]["actionId"] = "missing-action"
