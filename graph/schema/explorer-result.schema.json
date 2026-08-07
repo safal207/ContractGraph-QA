@@ -14,17 +14,17 @@
     "path"
   ],
   "properties": {
-    "adapterId": { "type": "string", "minLength": 1 },
-    "scopeId": { "type": "string", "minLength": 1 },
+    "adapterId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "scopeId": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "manifestSha256": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
     },
-    "findingId": { "type": "string", "minLength": 1 },
-    "invariantId": { "type": "string", "minLength": 1 },
-    "replay": { "type": "string", "minLength": 1 },
+    "findingId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "invariantId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "replay": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "exploredCandidates": { "type": "integer", "minimum": 0 },
-    "notes": { "type": "string", "minLength": 1 },
+    "notes": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "path": {
       "type": "array",
       "minItems": 1,
@@ -33,16 +33,16 @@
         "additionalProperties": false,
         "required": ["actionId", "preState", "postState", "effect"],
         "properties": {
-          "actionId": { "type": "string", "minLength": 1 },
+          "actionId": { "type": "string", "minLength": 1, "pattern": "\\S" },
           "parameter": {
             "oneOf": [
               { "type": "integer" },
               { "type": "string" }
             ]
           },
-          "preState": { "type": "string", "minLength": 1 },
-          "postState": { "type": "string", "minLength": 1 },
-          "effect": { "type": "string", "minLength": 1 }
+          "preState": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "postState": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "effect": { "type": "string", "minLength": 1, "pattern": "\\S" }
         }
       }
     }
