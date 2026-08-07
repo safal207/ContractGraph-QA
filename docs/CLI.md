@@ -92,6 +92,45 @@ Capture-enabled execution:
 
 On success, stdout is a JSON summary containing the finding ID, manifest fingerprint, path length, output paths, and bundle SHA-256.
 
+## `cgqa engagement-run`
+
+```bash
+cgqa engagement-run --config cgqa.engagement.example.toml
+```
+
+This is the one-command direct multi-invariant product path. The strict TOML config contains the reviewed manifest, generated result path, dedicated output directory, final engagement ZIP, and Foundry capture profile/test.
+
+Example:
+
+```toml
+schemaVersion = 1
+workingDirectory = "."
+manifest = "manifests/examples/engagement-fixture.json"
+result = "results/generated/CGQA-E-001.engagement-result.json"
+outputDirectory = "dist/CGQA-E-001-run"
+bundle = "dist/CGQA-E-001-run/CGQA-E-001.engagement.zip"
+
+[capture]
+profile = "capture"
+test = "test_CaptureMultiInvariantEngagementResult"
+verbosity = 3
+```
+
+Execution is fail-closed:
+
+1. validates the reviewed manifest;
+2. computes its canonical SHA-256;
+3. removes only the configured generated result so stale capture output cannot be reused;
+4. invokes Foundry using a process argument array, not a shell string;
+5. passes `FOUNDRY_PROFILE`, `CGQA_ENGAGEMENT_MANIFEST_SHA256`, and `CGQA_ENGAGEMENT_RESULT_PATH` to capture;
+6. requires Foundry to produce a fresh multi-invariant result;
+7. validates full manifest/result provenance and invariant coverage;
+8. emits engagement JSON/Markdown and 0..N deterministic findings;
+9. creates the deterministic v2 engagement evidence ZIP;
+10. independently re-opens and verifies the ZIP before returning success.
+
+`outputDirectory` must be a dedicated artifact directory and cannot equal the working directory or manifest directory. `engagement-run` always performs a fresh capture; to package an already-produced result without execution, use `cgqa engagement` instead.
+
 ## `cgqa engagement`
 
 ```bash
