@@ -57,7 +57,7 @@ contract EngagementFixtureCaptureTest is
             includeFindingId: true,
             findingId: "CGQA-E-001-F01",
             exploredCandidates: result.outcomes[0].exploredCandidates,
-            notes: "The local fixture reaches the terminal violating state through the minimal three-step advance path.",
+            notes: "The repository-local fixture reaches the modeled terminal state through the shortest three-step advance path.",
             path: _captureObservedPath(result.outcomes[0].path)
         });
         checks[1] = EngagementCheckCapture({
@@ -66,7 +66,7 @@ contract EngagementFixtureCaptureTest is
             includeFindingId: false,
             findingId: "",
             exploredCandidates: result.outcomes[1].exploredCandidates,
-            notes: "No negative phase was found within the declared action corpus and maxDepth=4 bounded model.",
+            notes: "No negative phase was found within the declared local action corpus and maxDepth=4 bounded model.",
             path: new CaptureStep[](0)
         });
         checks[2] = EngagementCheckCapture({
@@ -75,7 +75,7 @@ contract EngagementFixtureCaptureTest is
             includeFindingId: false,
             findingId: "",
             exploredCandidates: result.outcomes[2].exploredCandidates,
-            notes: "The local evaluator intentionally returns inconclusive to prove unresolved evidence is never presented as a clean check.",
+            notes: "The local evaluator intentionally returns inconclusive so unresolved evidence is not presented as a clean check.",
             path: new CaptureStep[](0)
         });
 
@@ -142,14 +142,14 @@ contract EngagementFixtureCaptureTest is
         revert("unknown capture step");
     }
 
-    function _resetTarget() internal override(ForkAdapterTemplate, MultiInvariantStateExplorerHarness) {
+    function _resetTarget() internal override {
         machine.reset();
     }
 
     function _stepCase(uint16 caseIndex)
         internal
         pure
-        override(ForkAdapterTemplate, MultiInvariantStateExplorerHarness)
+        override
         returns (StepInput memory step)
     {
         if (caseIndex == 0) return StepInput({action: ACTION_NOOP, parameter: 0});
@@ -159,7 +159,7 @@ contract EngagementFixtureCaptureTest is
 
     function _executeStep(StepInput memory step)
         internal
-        override(ForkAdapterTemplate, MultiInvariantStateExplorerHarness)
+        override
         returns (bool accepted)
     {
         bytes memory callData;
