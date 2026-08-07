@@ -1,6 +1,6 @@
 # Direct Foundry result capture
 
-v0.9 removes the last manually authored evidence handoff between the Solidity explorer and the v0.8 manifest/report pipeline.
+v0.9 removes the last manually authored evidence handoff between the Solidity explorer and the v0.8 manifest/report pipeline. v1.0 makes the capture output path operator-configurable through the product runtime.
 
 ## Pipeline
 
@@ -34,21 +34,19 @@ test = "capture-test"
 fs_permissions = [{ access = "read-write", path = "./results/generated" }]
 ```
 
-The normal profile does not receive filesystem write permission from v0.9.
+The normal profile does not receive filesystem write permission.
 
-The capture output path is fixed inside the regression to:
-
-`results/generated/CGQA-005.result.json`
+The capture test reads its destination from `CGQA_RESULT_PATH`. The v1.0 `cgqa run` command derives that environment variable from the configured `result` path. Foundry filesystem permissions still define the final write boundary; a configured path outside the authorized permission set causes capture to fail.
 
 ## Manifest provenance
 
-The capture test does not hard-code the v0.8 manifest fingerprint. CI computes the canonical SHA-256 using the same Python implementation used by the exporter:
+The capture test does not hard-code the manifest fingerprint. The product runtime or CI computes the canonical SHA-256 using the same implementation used by the exporter:
 
 ```bash
 python tools/manifest_fingerprint.py manifests/examples/adapter-fixture.json
 ```
 
-The digest is passed to Foundry as `CGQA_MANIFEST_SHA256`. The Solidity writer accepts only a 64-character lowercase hexadecimal SHA-256 value. The downstream v0.8 exporter then recomputes the canonical manifest fingerprint and requires exact equality.
+The digest is passed to Foundry as `CGQA_MANIFEST_SHA256`. The Solidity writer accepts only a 64-character lowercase hexadecimal SHA-256 value. The downstream exporter then recomputes the canonical manifest fingerprint and requires exact equality.
 
 This creates two provenance gates:
 
@@ -67,12 +65,22 @@ phase=2 --advance--> phase=3
 
 The generated file must match `results/examples/CGQA-005.result.json` byte-for-byte before the reporting pipeline continues.
 
-CI then feeds the generated file, not the hand-authored fixture, into `tools/export_finding.py`.
+CI then feeds the generated file, not the hand-authored fixture, into the finding exporter.
 
 ## Run locally
 
+Preferred v1.0 product command:
+
+```bash
+python -m pip install -e .
+cgqa run --config cgqa.example.toml --clean
+```
+
+Low-level capture regression:
+
 ```bash
 export CGQA_MANIFEST_SHA256="$(python tools/manifest_fingerprint.py manifests/examples/adapter-fixture.json)"
+export CGQA_RESULT_PATH="results/generated/CGQA-005.result.json"
 FOUNDRY_PROFILE=capture forge test --match-test test_CaptureExplorerResult -vvv
 cmp results/generated/CGQA-005.result.json results/examples/CGQA-005.result.json
 ```
@@ -88,12 +96,12 @@ python tools/export_finding.py \
 
 ## Safety boundary
 
-v0.9 does not expand testing authorization. The regression is local-only and does not open an external fork.
+Direct capture does not expand testing authorization. The regression is local-only and does not open an external fork.
 
-For a future client fork adapter, the existing v0.6 authorization gate and v0.7 fixed-block adapter boundary still apply. The capture layer records evidence after an authorized test; it is not permission to execute one.
+For a client fork adapter, the existing authorization gate and fixed-block adapter boundary still apply. The capture layer records evidence after an authorized test; it is not permission to execute one.
 
-## v0.9 boundary
+## Boundary
 
-v0.9 proves direct Foundry-to-result capture for a deterministic local adapter regression. Contract-specific action labels, state descriptions, and effect descriptions are still explicit adapter code.
+Direct Foundry-to-result capture is proven for a deterministic local adapter regression. Contract-specific action labels, state descriptions, and effect descriptions remain explicit adapter code.
 
-Planned follow-up work can generalize those description hooks across fork adapters and package a single command that runs capture → export → render for an authorized engagement.
+v1.0 packages the capture → export → render → evidence-bundle chain behind `cgqa run`; arbitrary adapter generation and automatic invariant synthesis remain out of scope.
