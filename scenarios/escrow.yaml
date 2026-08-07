@@ -32,6 +32,6 @@ invariants:
   - id: payout-conservation
     expression: releasedAmount + refundedAmount <= depositedAmount
   - id: terminal-state-exclusivity
-    expression: state != RELEASED || refundedAmount == 0
+    expression: (state != RELEASED || refundedAmount == 0) && (state != REFUNDED || releasedAmount == 0)
   - id: authorization
     expression: only buyer may fund, release or refund
