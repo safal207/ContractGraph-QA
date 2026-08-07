@@ -34,7 +34,30 @@ A finding should be reproducible as:
 Finding → Cause → Path → Evidence → Replay → Fix → Retest
 ```
 
-## v0.1 scope
+## v0.2: automatic Path Explorer
+
+v0.2 adds bounded breadth-first exploration of action sequences.
+
+A concrete smart-contract test model defines:
+
+- the available action alphabet;
+- how to reset the target to a deterministic initial state;
+- how each action is executed;
+- which invariant must hold after every accepted transition.
+
+The explorer enumerates shortest paths first and stops on the first invariant violation. Within the modeled action space, that gives a minimal failing path by action count.
+
+For the deliberately vulnerable escrow fixture, the explorer automatically discovers:
+
+```text
+fund → release → refund → payout invariant violated
+```
+
+and then deterministically replays the same path against a fresh contract instance.
+
+See [`docs/PATH_EXPLORER.md`](docs/PATH_EXPLORER.md).
+
+## v0.1 foundation
 
 - Foundry-compatible Solidity tests with no external test dependency.
 - Causal transition recorder for actor/action/pre-state/post-state/time evidence.
@@ -54,10 +77,12 @@ src/
     VulnerableEscrow.sol
   harness/
     CausalGraphHarness.sol
+    PathExplorerHarness.sol
 
 test/
   EscrowGraph.t.sol
   VulnerableEscrowGraph.t.sol
+  PathExplorer.t.sol
 
 graph/schema/
   contract-graph.schema.json
@@ -68,6 +93,7 @@ scenarios/
 docs/
   CAUSAL_MODEL.md
   INVARIANTS.md
+  PATH_EXPLORER.md
 
 .github/workflows/
   ci.yml
@@ -114,11 +140,13 @@ Optional static analysis:
 slither .
 ```
 
-## What v0.1 proves
+## What the project proves today
 
-The project does **not** claim that graph exploration alone proves a contract secure. v0.1 establishes the testing model and evidence format: transitions are observed, paths are replayable, and explicit invariants decide whether the resulting state is acceptable.
+The project does **not** claim that bounded graph exploration proves an arbitrary contract secure.
 
-Future versions can add state-space exploration, fuzzed action sequences, automatic invariant synthesis, fork testing, multi-contract graphs and report generation.
+v0.1 established the causal-temporal evidence model. v0.2 adds automatic bounded action-sequence search and deterministic replay. Security conclusions remain limited to the modeled actors, actions, parameters, depth, time assumptions and explicit invariants.
+
+Planned follow-up work includes parameter fuzzing, temporal actions inside the explorer, state hashing and deduplication, fork testing, multi-contract graphs, failing-path export and generated audit reports.
 
 ## Safety
 
