@@ -1,0 +1,81 @@
+name: Authorized fork smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope_id:
+        description: Auditable scope identifier
+        required: true
+        type: string
+      authorization_reference:
+        description: SOW, bounty scope, issue, or other authorization reference
+        required: true
+        type: string
+      chain_id:
+        description: Expected EVM chain id
+        required: true
+        type: string
+      block_number:
+        description: Fixed historical block number
+        required: true
+        type: string
+      target:
+        description: Explicitly authorized target contract address
+        required: true
+        type: string
+      confirm_authorized:
+        description: Confirm the target is explicitly authorized for this test
+        required: true
+        type: choice
+        options:
+          - 'NO'
+          - 'YES'
+
+permissions:
+  contents: read
+
+jobs:
+  fork-smoke:
+    name: Authorized fork smoke
+    runs-on: ubuntu-latest
+    environment: authorized-fork
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - name: Validate authorization scope
+        env:
+          SCOPE_ID: ${{ inputs.scope_id }}
+          AUTHORIZATION_REFERENCE: ${{ inputs.authorization_reference }}
+          CHAIN_ID: ${{ inputs.chain_id }}
+          BLOCK_NUMBER: ${{ inputs.block_number }}
+          TARGET: ${{ inputs.target }}
+          CONFIRMED: ${{ inputs.confirm_authorized }}
+        run: >-
+          python tools/validate_fork_scope.py
+          --scope-id "$SCOPE_ID"
+          --authorization-reference "$AUTHORIZATION_REFERENCE"
+          --chain-id "$CHAIN_ID"
+          --block-number "$BLOCK_NUMBER"
+          --target "$TARGET"
+          --confirmed "$CONFIRMED"
+      - name: Require RPC secret
+        env:
+          CGQA_FORK_RPC_URL: ${{ secrets.CGQA_FORK_RPC_URL }}
+        run: test -n "$CGQA_FORK_RPC_URL"
+      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
+        with:
+          version: v1.7.1
+      - name: Run read-only fork smoke
+        env:
+          CGQA_FORK_RPC_URL: ${{ secrets.CGQA_FORK_RPC_URL }}
+          CGQA_SCOPE_ID: ${{ inputs.scope_id }}
+          CGQA_AUTHORIZATION_REFERENCE: ${{ inputs.authorization_reference }}
+          CGQA_CHAIN_ID: ${{ inputs.chain_id }}
+          CGQA_BLOCK_NUMBER: ${{ inputs.block_number }}
+          CGQA_TARGET: ${{ inputs.target }}
+          CGQA_AUTHORIZED: ${{ inputs.confirm_authorized }}
+        run: FOUNDRY_PROFILE=fork forge test -vvv

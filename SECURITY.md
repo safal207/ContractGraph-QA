@@ -11,7 +11,15 @@ Use the project only on:
 - systems for which you have explicit authorization;
 - public bug-bounty programs strictly within their published scope and rules.
 
-Do not use this repository to target third-party production systems without permission.
+Do not use this repository to target third-party production systems without permission. A public contract address or publicly readable chain state is not, by itself, authorization to perform active security testing.
+
+## Fork testing
+
+Fork-based testing must use a fixed snapshot and explicit scope evidence. The `Authorized fork smoke` workflow requires a scope identifier, authorization reference, exact chain/block/target, an affirmative authorization confirmation, and a secret RPC endpoint before opening the fork.
+
+The v0.6 smoke test is read-only: it does not call target functions or broadcast transactions. Client-specific active fork scenarios must remain within the written authorization or published bounty scope.
+
+Never commit RPC credentials, private keys, seed phrases, signing material, or client secrets. Authorization references supplied as workflow inputs should be non-sensitive because workflow metadata and logs may be visible to repository collaborators or the public.
 
 ## Reporting a vulnerability in this repository
 

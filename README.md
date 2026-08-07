@@ -38,6 +38,30 @@ A finding should be reproducible as:
 Finding → Cause → Path → Evidence → Replay → Fix → Retest
 ```
 
+## v0.6: authorized fork context
+
+v0.6 adds a separate, fail-closed path for fixed-block EVM fork testing.
+
+The default CI never opens an external fork. A fork run requires explicit scope metadata, an authorization reference, an exact chain/block/target, confirmation equal to `YES`, and a secret RPC endpoint. GitHub execution is manual through the `Authorized fork smoke` workflow and the `authorized-fork` environment.
+
+The first fork smoke is intentionally read-only:
+
+```text
+authorization preflight
+  ↓
+fixed block fork
+  ↓
+chain + block verification
+  ↓
+target code existence
+  ↓
+read-only snapshot fingerprint
+```
+
+It does not broadcast a transaction or call a target function. A public address alone is not treated as authorization.
+
+See [`docs/FORK_TESTING.md`](docs/FORK_TESTING.md).
+
 ## v0.5: state hashing and deduplication
 
 v0.5 adds a breadth-first search mode that keeps one shortest representative path per unique modeled state hash.
@@ -155,6 +179,8 @@ src/
     PathExplorerHarness.sol
     ParameterizedPathExplorerHarness.sol
     StateDedupPathExplorerHarness.sol
+    ForkAuthorization.sol
+    ForkContextHarness.sol
 
 test/
   EscrowGraph.t.sol
@@ -162,6 +188,13 @@ test/
   PathExplorer.t.sol
   ParameterizedTemporalExplorer.t.sol
   StateDedupPathExplorer.t.sol
+  ForkAuthorization.t.sol
+
+fork-test/
+  AuthorizedForkSmoke.t.sol
+
+fork/
+  scope.example.json
 
 graph/schema/
   contract-graph.schema.json
@@ -179,6 +212,7 @@ reports/examples/
 
 tools/
   render_finding.py
+  validate_fork_scope.py
 
 docs/
   CAUSAL_MODEL.md
@@ -187,10 +221,12 @@ docs/
   REPORTING.md
   PARAMETER_TIME_EXPLORER.md
   STATE_DEDUP.md
+  FORK_TESTING.md
 
 .github/workflows/
   ci.yml
   reporting.yml
+  authorized-fork.yml
 ```
 
 ## Example invariant
@@ -240,15 +276,17 @@ Optional static analysis:
 slither .
 ```
 
+Authorized fork execution is intentionally separate; see [`docs/FORK_TESTING.md`](docs/FORK_TESTING.md).
+
 ## What the project proves today
 
 The project does **not** claim that bounded graph exploration proves an arbitrary contract secure.
 
-v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 adds state hashing and equivalent-state pruning while preserving shortest representative paths under the explicit state-hash model.
+v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 added state hashing and equivalent-state pruning. v0.6 adds an authorization-gated, fixed-block fork context for explicitly permitted EVM targets.
 
-Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, and explicit invariants.
+Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, fork scope, snapshot block, and explicit invariants.
 
-Planned follow-up work includes fork testing, generated parameter corpora, multi-contract graphs, direct failing-path export into the report schema, and richer invariant libraries.
+Planned follow-up work includes client-specific fork adapters, generated parameter corpora, multi-contract graphs, direct failing-path export into the report schema, and richer invariant libraries.
 
 ## Safety
 

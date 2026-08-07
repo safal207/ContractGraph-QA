@@ -1,0 +1,8 @@
+{
+  "scope_id": "client-or-bounty-scope-id",
+  "authorization_reference": "signed-SOW-or-published-safe-harbor-reference",
+  "chain_id": 1,
+  "block_number": 20000000,
+  "target": "0x1111111111111111111111111111111111111111",
+  "confirmed": "YES"
+}
