@@ -9,7 +9,7 @@ TOOLS_DIR = Path(__file__).resolve().parents[1]
 ROOT = TOOLS_DIR.parent
 sys.path.insert(0, str(TOOLS_DIR))
 
-from export_finding import export_finding, load_json_object  # noqa: E402
+from export_finding import export_finding, load_json_object, manifest_sha256  # noqa: E402
 
 
 class ManifestFindingExporterTest(unittest.TestCase):
@@ -19,6 +19,11 @@ class ManifestFindingExporterTest(unittest.TestCase):
         self.expected_path = ROOT / "reports" / "examples" / "CGQA-005.finding.json"
         self.manifest = load_json_object(self.manifest_path, "manifest")
         self.result = load_json_object(self.result_path, "result")
+
+    def _result_for_manifest(self, manifest: dict) -> dict:
+        result = copy.deepcopy(self.result)
+        result["manifestSha256"] = manifest_sha256(manifest)
+        return result
 
     def test_sample_matches_checked_in_finding(self) -> None:
         exported = export_finding(self.manifest, self.result)
@@ -51,8 +56,9 @@ class ManifestFindingExporterTest(unittest.TestCase):
     def test_path_exceeding_manifest_depth_is_rejected(self) -> None:
         manifest = copy.deepcopy(self.manifest)
         manifest["search"]["maxDepth"] = 2
+        result = self._result_for_manifest(manifest)
         with self.assertRaisesRegex(ValueError, "exceeds manifest.search.maxDepth"):
-            export_finding(manifest, self.result)
+            export_finding(manifest, result)
 
     def test_unknown_action_is_rejected(self) -> None:
         invalid = copy.deepcopy(self.result)
@@ -93,8 +99,9 @@ class ManifestFindingExporterTest(unittest.TestCase):
     def test_missing_parameter_for_template_is_rejected(self) -> None:
         manifest = copy.deepcopy(self.manifest)
         manifest["actions"][1]["display"] = "advance({parameter})"
+        result = self._result_for_manifest(manifest)
         with self.assertRaisesRegex(ValueError, "parameter required"):
-            export_finding(manifest, self.result)
+            export_finding(manifest, result)
 
     def test_unexpected_parameter_is_rejected(self) -> None:
         invalid = copy.deepcopy(self.result)
