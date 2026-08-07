@@ -3,6 +3,7 @@ name: Product
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 permissions:
@@ -22,6 +23,14 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
         with:
           version: v1.7.1
+      - name: Check product version contract
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            python tools/check_version.py --tag "${GITHUB_REF_NAME}"
+          else
+            python tools/check_version.py
+          fi
       - name: Build wheel
         run: python -m pip wheel . --no-deps --wheel-dir .product-wheel
       - name: Install built wheel
