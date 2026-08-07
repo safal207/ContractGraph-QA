@@ -14,6 +14,8 @@ interface VmFork {
 
 /// @notice Opens a deterministic fork only after explicit authorization metadata is present.
 abstract contract ForkContextHarness {
+    string internal constant AUTHORIZED_RPC_ALIAS = "authorized";
+
     VmFork internal constant vmFork =
         VmFork(address(uint160(uint256(keccak256("hevm cheat code")))));
 
@@ -26,7 +28,6 @@ abstract contract ForkContextHarness {
     }
 
     function _openAuthorizedForkFromEnv() internal returns (ForkContext memory context) {
-        string memory rpcUrl = vmFork.envString("CGQA_FORK_RPC_URL");
         string memory confirmation = vmFork.envString("CGQA_AUTHORIZED");
 
         ForkAuthorization.Scope memory scope = ForkAuthorization.Scope({
@@ -38,9 +39,8 @@ abstract contract ForkContextHarness {
             confirmed: keccak256(bytes(confirmation)) == keccak256(bytes("YES"))
         });
 
-        require(bytes(rpcUrl).length > 0, "rpc missing");
         bytes32 scopeHash = ForkAuthorization.validate(scope);
-        uint256 forkId = vmFork.createSelectFork(rpcUrl, scope.blockNumber);
+        uint256 forkId = vmFork.createSelectFork(AUTHORIZED_RPC_ALIAS, scope.blockNumber);
 
         require(block.chainid == scope.chainId, "chain mismatch");
         require(block.number == scope.blockNumber, "block mismatch");
