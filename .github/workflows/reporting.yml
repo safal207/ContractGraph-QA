@@ -41,3 +41,14 @@ jobs:
           python tools/render_finding.py
           reports/examples/CGQA-004.finding.json
           --check reports/examples/CGQA-004.md
+      - name: Verify manifest-to-finding export
+        run: >-
+          python tools/export_finding.py
+          manifests/examples/adapter-fixture.json
+          results/examples/CGQA-005.result.json
+          --check reports/examples/CGQA-005.finding.json
+      - name: Verify manifest-export golden report
+        run: >-
+          python tools/render_finding.py
+          reports/examples/CGQA-005.finding.json
+          --check reports/examples/CGQA-005.md
