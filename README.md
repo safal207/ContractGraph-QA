@@ -52,7 +52,7 @@ noopB
 advance
 ```
 
-At depth 5, exhaustive candidate enumeration would contain 363 paths. The deduplicating explorer executes only 12 child transitions when no violation is enforced and discovers four unique states before the frontier is exhausted.
+At depth 8, exhaustive candidate enumeration would contain 9,840 paths. The deduplicating explorer executes only 12 child transitions when no violation is enforced and discovers four unique states before the frontier is exhausted.
 
 With the terminal invariant enabled, it still finds the minimal violating path:
 
@@ -61,6 +61,8 @@ advance → advance → advance
 ```
 
 The state hash is part of the QA model: it must include every modeled value that can change future reachability. An incomplete hash can make pruning unsound.
+
+The engine caps actual work at 4,096 retained unique states and 65,536 attempted child transitions rather than rejecting a search from its theoretical `branching^depth` size.
 
 See [`docs/STATE_DEDUP.md`](docs/STATE_DEDUP.md).
 
