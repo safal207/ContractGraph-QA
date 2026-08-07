@@ -1,0 +1,45 @@
+{
+  "id": "CGQA-003",
+  "title": "Refund becomes reachable before the intended delay",
+  "severity": "high",
+  "contract": "VulnerableTimedEscrow",
+  "network": "local-foundry",
+  "summary": "A bounded parameter-and-time search finds a three-step path where refund succeeds after one day even though the modeled business invariant requires a seven-day delay.",
+  "invariant": {
+    "id": "refund-timing",
+    "expression": "state != REFUNDED || block.timestamp >= expectedRefundAfter"
+  },
+  "minimalFailingPath": [
+    {
+      "step": 1,
+      "actor": "authorized test actor",
+      "action": "fund(1)",
+      "preState": "CREATED",
+      "postState": "FUNDED",
+      "effect": "deposit recorded"
+    },
+    {
+      "step": 2,
+      "actor": "test clock",
+      "action": "wait(1 day)",
+      "preState": "FUNDED @ T0",
+      "postState": "FUNDED @ T0+1d",
+      "effect": "clock advanced by one day"
+    },
+    {
+      "step": 3,
+      "actor": "authorized test actor",
+      "action": "refund()",
+      "preState": "FUNDED @ T0+1d",
+      "postState": "REFUNDED @ T0+1d",
+      "effect": "refund recorded before expected seven-day delay"
+    }
+  ],
+  "impact": "A mismatch between intended and implemented time guards can make a state transition reachable earlier than the business rules allow. The local fixture demonstrates how explicit time actions expose that discrepancy.",
+  "recommendation": "Use the intended seven-day delay when calculating the refund threshold and retain the one-day path as a regression test that must remain rejected.",
+  "evidence": {
+    "authorization": "Deliberately vulnerable local fixture owned by this repository; no third-party production target is involved.",
+    "replay": "forge test --match-test test_TemporalCorpusFindsEarlyRefundPath -vvv",
+    "notes": "Each candidate resets both contract state and the baseline timestamp so time from one candidate cannot leak into another."
+  }
+}
