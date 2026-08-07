@@ -2,7 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {AdapterFixtureMachine} from "../src/examples/AdapterFixtureMachine.sol";
-import {MultiInvariantStateExplorerHarness} from "../src/harness/MultiInvariantStateExplorerHarness.sol";
+import {
+    MultiInvariantStateExplorerHarness
+} from "../src/harness/MultiInvariantStateExplorerHarness.sol";
 
 contract MultiInvariantStateExplorerTest is MultiInvariantStateExplorerHarness {
     uint8 internal constant ACTION_NOOP = 0;
