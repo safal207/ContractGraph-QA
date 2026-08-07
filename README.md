@@ -38,6 +38,30 @@ A finding should be reproducible as:
 Finding → Cause → Path → Evidence → Replay → Fix → Retest
 ```
 
+## v0.7: fork adapter template
+
+v0.7 connects the authorized fixed-block fork context to the existing parameter/time explorer, state deduplication, invariant checks, deterministic replay, and report pipeline.
+
+A contract-specific adapter supplies five explicit pieces:
+
+```text
+deterministic fork reset
+        ↓
+action / parameter corpus
+        ↓
+step execution
+        ↓
+protocol invariant
+        ↓
+complete protocol state hash
+```
+
+The protocol state digest is bound to the authorization `scopeHash`, chain ID, fixed block, target address, and target code hash before deduplication. The local default-CI regression proves that equivalent states are pruned while the shortest violating path remains replayable.
+
+A copyable skeleton lives at `fork-test/AuthorizedAdapterTemplate.t.sol.example`; it is not executable until every `TODO` is replaced for a real explicitly authorized engagement.
+
+See [`docs/FORK_ADAPTER_TEMPLATE.md`](docs/FORK_ADAPTER_TEMPLATE.md) and the deterministic example finding [`CGQA-004`](reports/examples/CGQA-004.md).
+
 ## v0.6: authorized fork context
 
 v0.6 adds a separate, fail-closed path for fixed-block EVM fork testing.
@@ -174,6 +198,7 @@ src/
     VulnerableEscrow.sol
     VulnerableTimedEscrow.sol
     ConvergentStateMachine.sol
+    AdapterFixtureMachine.sol
   harness/
     CausalGraphHarness.sol
     PathExplorerHarness.sol
@@ -181,6 +206,7 @@ src/
     StateDedupPathExplorerHarness.sol
     ForkAuthorization.sol
     ForkContextHarness.sol
+    ForkAdapterTemplate.sol
 
 test/
   EscrowGraph.t.sol
@@ -189,9 +215,11 @@ test/
   ParameterizedTemporalExplorer.t.sol
   StateDedupPathExplorer.t.sol
   ForkAuthorization.t.sol
+  ForkAdapterTemplate.t.sol
 
 fork-test/
   AuthorizedForkSmoke.t.sol
+  AuthorizedAdapterTemplate.t.sol.example
 
 fork/
   scope.example.json
@@ -209,6 +237,8 @@ reports/examples/
   CGQA-002.md
   CGQA-003.finding.json
   CGQA-003.md
+  CGQA-004.finding.json
+  CGQA-004.md
 
 tools/
   render_finding.py
@@ -222,6 +252,7 @@ docs/
   PARAMETER_TIME_EXPLORER.md
   STATE_DEDUP.md
   FORK_TESTING.md
+  FORK_ADAPTER_TEMPLATE.md
 
 .github/workflows/
   ci.yml
@@ -282,11 +313,11 @@ Authorized fork execution is intentionally separate; see [`docs/FORK_TESTING.md`
 
 The project does **not** claim that bounded graph exploration proves an arbitrary contract secure.
 
-v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 added state hashing and equivalent-state pruning. v0.6 adds an authorization-gated, fixed-block fork context for explicitly permitted EVM targets.
+v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 added state hashing and equivalent-state pruning. v0.6 added an authorization-gated, fixed-block fork context. v0.7 adds a reviewable contract-specific adapter template that binds authorized fork provenance to actions, parameters, invariants, state hashing, deduplicated search, replay, and deterministic reporting.
 
-Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, fork scope, snapshot block, and explicit invariants.
+Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, fork scope, snapshot block, adapter mapping, and explicit invariants.
 
-Planned follow-up work includes client-specific fork adapters, generated parameter corpora, multi-contract graphs, direct failing-path export into the report schema, and richer invariant libraries.
+Planned follow-up work includes adapter manifest validation, generated parameter corpora, multi-contract graphs, direct automatic failing-path export into the report schema, and richer invariant libraries.
 
 ## Safety
 
