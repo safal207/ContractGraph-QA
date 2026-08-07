@@ -282,7 +282,7 @@ def _bundle_manifest(
 
 def _zip_entry(name: str) -> zipfile.ZipInfo:
     info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
-    info.compress_type = zipfile.ZIP_DEFLATED
+    info.compress_type = zipfile.ZIP_STORED
     info.external_attr = 0o100644 << 16
     info.create_system = 3
     return info
