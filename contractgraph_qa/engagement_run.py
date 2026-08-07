@@ -94,11 +94,15 @@ def load_engagement_run_config(path: Path) -> EngagementRunConfig:
     bundle = _resolve(base, data.get("bundle"), "config.bundle")
 
     _require(working_directory.is_dir(), f"working directory not found: {working_directory}")
-    _require(manifest != result, "config.manifest and config.result must be distinct")
+    _require(
+        len({source, manifest, result, bundle}) == 4,
+        "config source/manifest/result/bundle paths must be distinct",
+    )
+    _require(result.is_relative_to(working_directory), "config.result must be inside workingDirectory")
     _require(bundle.suffix.lower() == ".zip", "config.bundle must use a .zip extension")
-    _require(bundle != result and bundle != manifest, "config bundle path collides with an input artifact")
     _require(output_directory != working_directory, "config.outputDirectory must not equal workingDirectory")
     _require(output_directory != manifest.parent, "config.outputDirectory must not equal manifest directory")
+    _require(output_directory != source.parent, "config.outputDirectory must not equal config directory")
 
     capture_data = data.get("capture")
     _require(isinstance(capture_data, dict), "config.capture must be a table")
