@@ -2,7 +2,7 @@
 
 v0.8 separates contract-specific QA metadata from the report renderer.
 
-A reviewed adapter manifest describes the authorized engagement surface and the human-readable meaning of actions and invariants. A deterministic explorer result contains only the discovered path and replay evidence. `tools/export_finding.py` joins both inputs into the existing finding JSON contract, which can then be rendered by `tools/render_finding.py`.
+A reviewed adapter manifest describes the authorized engagement surface and the human-readable meaning of actions and invariants. A deterministic explorer result contains the discovered path and replay evidence. `tools/export_finding.py` joins both inputs into the existing finding JSON contract, which can then be rendered by `tools/render_finding.py`.
 
 ## Pipeline
 
@@ -13,7 +13,7 @@ explorer result JSON
       +
 adapter manifest JSON
       ↓
-strict validation
+strict provenance + evidence validation
       ↓
 tools/export_finding.py
       ↓
@@ -62,6 +62,7 @@ The explorer result must then contain a string or integer `parameter` for that s
 
 The exporter accepts a deterministic result containing:
 
+- the exact adapter ID and scope ID used for the run;
 - finding ID;
 - invariant ID;
 - exact replay command;
@@ -75,6 +76,8 @@ Machine-readable schema:
 Example:
 
 `results/examples/CGQA-005.result.json`
+
+The exporter requires `result.adapterId == manifest.adapterId` and `result.scopeId == manifest.scope.scopeId`. It also rejects a path whose length exceeds the manifest's declared `search.maxDepth`.
 
 The result does not duplicate actor names, action labels, severity, summary, impact, recommendation, contract, network, or authorization text. Those come from the reviewed manifest.
 
@@ -113,6 +116,8 @@ python tools/render_finding.py \
 The exporter rejects, among other cases:
 
 - missing/empty authorization metadata;
+- adapter or scope provenance mismatch;
+- a discovered path deeper than the manifest search depth;
 - duplicate action or invariant IDs;
 - unknown action IDs in the result;
 - unknown invariant IDs;
