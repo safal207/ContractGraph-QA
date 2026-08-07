@@ -11,10 +11,7 @@ abstract contract ForkAdapterTemplate is ForkContextHarness, StateDedupPathExplo
     bool internal adapterInitialized;
 
     event ForkAdapterBound(
-        bytes32 indexed scopeHash,
-        address indexed target,
-        uint256 chainId,
-        uint256 blockNumber
+        bytes32 indexed scopeHash, address indexed target, uint256 chainId, uint256 blockNumber
     );
 
     /// @notice Open and bind the explicitly authorized fork declared by the v0.6 environment contract.
@@ -45,7 +42,8 @@ abstract contract ForkAdapterTemplate is ForkContextHarness, StateDedupPathExplo
     function _reopenAuthorizedForkBaseline() internal returns (ForkContext memory context) {
         _requireAdapterInitialized();
 
-        uint256 forkId = vmFork.createSelectFork(AUTHORIZED_RPC_ALIAS, adapterForkContext.blockNumber);
+        uint256 forkId =
+            vmFork.createSelectFork(AUTHORIZED_RPC_ALIAS, adapterForkContext.blockNumber);
 
         require(block.chainid == adapterForkContext.chainId, "chain mismatch");
         require(block.number == adapterForkContext.blockNumber, "block mismatch");
