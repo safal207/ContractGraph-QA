@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.24;
+
+// Copy this file to fork-test/<ClientProtocol>Adapter.t.sol and replace every TODO.
+// Run it only for an explicitly authorized target through the authorized-fork workflow.
+
+import {ForkAdapterTemplate} from "../src/harness/ForkAdapterTemplate.sol";
+
+contract AuthorizedAdapterTemplate is ForkAdapterTemplate {
+    uint8 internal constant ACTION_EXAMPLE = 0;
+    uint16 internal constant CASE_COUNT = 1;
+
+    function setUp() public {
+        _initializeAuthorizedAdapterFromEnv();
+    }
+
+    function test_AuthorizedBoundedSearch() public {
+        // TODO: choose a bounded depth justified by the engagement scope.
+        DedupSearchResult memory result = _exploreUniqueStates(CASE_COUNT, 3);
+
+        if (result.found) {
+            // TODO: export the discovered path into the CGQA finding/report pipeline.
+            assert(result.path.length > 0);
+        }
+    }
+
+    function _resetTarget() internal override {
+        _reopenAuthorizedForkBaseline();
+        // TODO: establish only explicitly authorized actor balances/roles/pranks.
+    }
+
+    function _stepCase(uint16 caseIndex) internal pure override returns (StepInput memory step) {
+        if (caseIndex == 0) {
+            // TODO: map one in-scope action/parameter case.
+            return StepInput({action: ACTION_EXAMPLE, parameter: 0});
+        }
+        revert("unknown case");
+    }
+
+    function _executeStep(StepInput memory step) internal override returns (bool accepted) {
+        address target = _adapterTarget();
+
+        if (step.action == ACTION_EXAMPLE) {
+            // TODO: encode an explicitly authorized contract call.
+            bytes memory callData = abi.encodeWithSignature("example()");
+            (accepted,) = target.call(callData);
+            return accepted;
+        }
+
+        return false;
+    }
+
+    function _invariantHolds() internal view override returns (bool) {
+        // TODO: replace with a business/security invariant that is valid across all modeled states.
+        return true;
+    }
+
+    function _stateHash() internal view override returns (bytes32) {
+        // TODO: include every future-relevant value: storage/accounting, actor/role state,
+        // time/epoch/oracle context, and external dependencies relevant to later actions.
+        bytes32 protocolStateHash = keccak256(abi.encode(bytes32("TODO-PROTOCOL-STATE")));
+        return _forkAdapterStateHash(protocolStateHash);
+    }
+}
