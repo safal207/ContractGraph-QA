@@ -16,6 +16,13 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
         uint256 prunedStates;
     }
 
+    struct SearchStats {
+        uint256 attemptedTransitions;
+        uint256 seenCount;
+        uint256 prunedStates;
+        uint256 nextCount;
+    }
+
     event UniqueStateDiscovered(bytes32 indexed stateHash, uint256 depth, uint256 uniqueStates);
     event EquivalentStatePruned(bytes32 indexed stateHash, uint256 depth, uint256 prunedStates);
 
@@ -31,63 +38,37 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
         uint256 capacity = _boundedSearchCapacity(stepCaseCount, maxDepth);
         bytes32[] memory seenHashes = new bytes32[](capacity + 1);
         bytes[] memory frontier = new bytes[](capacity + 1);
+        SearchStats memory stats;
 
         _resetTarget();
-        bytes32 initialHash = _stateHash();
-        seenHashes[0] = initialHash;
-        uint256 seenCount = 1;
+        seenHashes[0] = _stateHash();
+        stats.seenCount = 1;
         frontier[0] = abi.encode(new StepInput[](0));
         uint256 frontierCount = 1;
 
-        uint256 attemptedTransitions;
-        uint256 prunedStates;
-
         for (uint8 depth = 1; depth <= maxDepth; depth++) {
             bytes[] memory nextFrontier = new bytes[](capacity + 1);
-            uint256 nextCount;
+            stats.nextCount = 0;
 
             for (uint256 parentIndex = 0; parentIndex < frontierCount; parentIndex++) {
                 StepInput[] memory parentPath = abi.decode(frontier[parentIndex], (StepInput[]));
+                StepInput[] memory violatingPath = _expandParent(
+                    parentPath, stepCaseCount, depth, seenHashes, nextFrontier, stats
+                );
 
-                for (uint16 caseIndex = 0; caseIndex < stepCaseCount; caseIndex++) {
-                    _resetTarget();
-                    require(_replayAcceptedPrefix(parentPath), "replay drift");
-
-                    StepInput memory candidateStep = _stepCase(caseIndex);
-                    attemptedTransitions++;
-                    bool accepted = _executeStep(candidateStep);
-                    if (!accepted) {
-                        continue;
-                    }
-
-                    StepInput[] memory childPath = _appendStep(parentPath, candidateStep);
-                    if (!_invariantHolds()) {
-                        return DedupSearchResult({
-                            found: true,
-                            path: childPath,
-                            attemptedTransitions: attemptedTransitions,
-                            uniqueStates: seenCount,
-                            prunedStates: prunedStates
-                        });
-                    }
-
-                    bytes32 stateHash = _stateHash();
-                    if (_containsHash(seenHashes, seenCount, stateHash)) {
-                        prunedStates++;
-                        emit EquivalentStatePruned(stateHash, depth, prunedStates);
-                        continue;
-                    }
-
-                    seenHashes[seenCount] = stateHash;
-                    seenCount++;
-                    nextFrontier[nextCount] = abi.encode(childPath);
-                    nextCount++;
-                    emit UniqueStateDiscovered(stateHash, depth, seenCount);
+                if (violatingPath.length > 0) {
+                    return DedupSearchResult({
+                        found: true,
+                        path: violatingPath,
+                        attemptedTransitions: stats.attemptedTransitions,
+                        uniqueStates: stats.seenCount,
+                        prunedStates: stats.prunedStates
+                    });
                 }
             }
 
             frontier = nextFrontier;
-            frontierCount = nextCount;
+            frontierCount = stats.nextCount;
             if (frontierCount == 0) {
                 break;
             }
@@ -96,10 +77,50 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
         return DedupSearchResult({
             found: false,
             path: new StepInput[](0),
-            attemptedTransitions: attemptedTransitions,
-            uniqueStates: seenCount,
-            prunedStates: prunedStates
+            attemptedTransitions: stats.attemptedTransitions,
+            uniqueStates: stats.seenCount,
+            prunedStates: stats.prunedStates
         });
+    }
+
+    function _expandParent(
+        StepInput[] memory parentPath,
+        uint16 stepCaseCount,
+        uint8 depth,
+        bytes32[] memory seenHashes,
+        bytes[] memory nextFrontier,
+        SearchStats memory stats
+    ) internal returns (StepInput[] memory violatingPath) {
+        for (uint16 caseIndex = 0; caseIndex < stepCaseCount; caseIndex++) {
+            _resetTarget();
+            require(_replayAcceptedPrefix(parentPath), "replay drift");
+
+            StepInput memory candidateStep = _stepCase(caseIndex);
+            stats.attemptedTransitions++;
+            if (!_executeStep(candidateStep)) {
+                continue;
+            }
+
+            StepInput[] memory childPath = _appendStep(parentPath, candidateStep);
+            if (!_invariantHolds()) {
+                return childPath;
+            }
+
+            bytes32 stateHash = _stateHash();
+            if (_containsHash(seenHashes, stats.seenCount, stateHash)) {
+                stats.prunedStates++;
+                emit EquivalentStatePruned(stateHash, depth, stats.prunedStates);
+                continue;
+            }
+
+            seenHashes[stats.seenCount] = stateHash;
+            stats.seenCount++;
+            nextFrontier[stats.nextCount] = abi.encode(childPath);
+            stats.nextCount++;
+            emit UniqueStateDiscovered(stateHash, depth, stats.seenCount);
+        }
+
+        return new StepInput[](0);
     }
 
     function _replayAcceptedPrefix(StepInput[] memory path) internal returns (bool accepted) {
