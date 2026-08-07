@@ -91,7 +91,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
 
 
 def validate_result(result: dict[str, Any]) -> None:
-    for field in ("findingId", "invariantId", "replay"):
+    for field in ("adapterId", "scopeId", "findingId", "invariantId", "replay"):
         _require_non_empty_string(result.get(field), f"result.{field}")
 
     if "exploredCandidates" in result:
@@ -109,7 +109,7 @@ def validate_result(result: dict[str, Any]) -> None:
         if "parameter" in step:
             parameter = step["parameter"]
             _require(
-                (isinstance(parameter, (str, int)) and not isinstance(parameter, bool)),
+                isinstance(parameter, (str, int)) and not isinstance(parameter, bool),
                 f"result.path[{index}].parameter must be a string or integer",
             )
 
@@ -132,6 +132,13 @@ def _render_action(action: dict[str, Any], step: dict[str, Any], index: int) -> 
 def export_finding(manifest: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     validate_manifest(manifest)
     validate_result(result)
+
+    _require(result["adapterId"] == manifest["adapterId"], "result.adapterId does not match manifest")
+    _require(result["scopeId"] == manifest["scope"]["scopeId"], "result.scopeId does not match manifest")
+    _require(
+        len(result["path"]) <= manifest["search"]["maxDepth"],
+        "result.path exceeds manifest.search.maxDepth",
+    )
 
     actions = _index_by_id(manifest["actions"])
     invariants = _index_by_id(manifest["invariants"])
