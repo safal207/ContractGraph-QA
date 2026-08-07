@@ -28,6 +28,8 @@ Every fork run requires:
 
 Both the Python preflight and Solidity harness fail closed when required authorization metadata is missing.
 
+The RPC secret is resolved by Foundry through the `authorized` alias in `foundry.toml`. Solidity passes only the alias to `createSelectFork`, reducing the chance that the raw RPC URL appears in verbose Solidity traces.
+
 ## GitHub setup
 
 Before the first real fork run:
@@ -51,11 +53,11 @@ Python authorization preflight
       ↓
 RPC secret presence check
       ↓
-Foundry fork profile
+Foundry RPC alias + fork profile
       ↓
 Solidity authorization validation
       ↓
-createSelectFork(fixed block)
+createSelectFork("authorized", fixed block)
       ↓
 chain/block/target-code checks
       ↓
