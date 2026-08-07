@@ -95,10 +95,7 @@ abstract contract StateDedupPathExplorerHarness is ParameterizedPathExplorerHarn
             _resetTarget();
             require(_replayAcceptedPrefix(parentPath), "replay drift");
 
-            require(
-                stats.attemptedTransitions < MAX_ATTEMPTED_TRANSITIONS,
-                "transition budget"
-            );
+            require(stats.attemptedTransitions < MAX_ATTEMPTED_TRANSITIONS, "transition budget");
             StepInput memory candidateStep = _stepCase(caseIndex);
             stats.attemptedTransitions++;
             if (!_executeStep(candidateStep)) {
