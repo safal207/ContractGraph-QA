@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/contract-graph.schema.json",
+  "title": "ContractGraph QA Trace",
+  "type": "object",
+  "required": ["contract", "initialState", "transitions", "invariants"],
+  "properties": {
+    "contract": { "type": "string" },
+    "network": { "type": "string" },
+    "initialState": { "$ref": "#/$defs/state" },
+    "transitions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/transition" }
+    },
+    "invariants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/invariant" }
+    },
+    "finding": {
+      "type": ["object", "null"],
+      "properties": {
+        "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
+        "minimalFailingPath": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "replaySeed": { "type": ["integer", "string"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "state": {
+      "type": "object",
+      "required": ["id", "label"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "blockNumber": { "type": "integer", "minimum": 0 },
+        "timestamp": { "type": "integer", "minimum": 0 },
+        "storageHash": { "type": "string" },
+        "balanceHash": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "transition": {
+      "type": "object",
+      "required": ["step", "actor", "action", "preState", "postState", "timestamp"],
+      "properties": {
+        "step": { "type": "integer", "minimum": 1 },
+        "cause": { "type": "string" },
+        "actor": { "type": "string" },
+        "action": { "type": "string" },
+        "parameters": { "type": "object" },
+        "preState": { "type": "string" },
+        "postState": { "type": "string" },
+        "timestamp": { "type": "integer", "minimum": 0 },
+        "blockNumber": { "type": "integer", "minimum": 0 },
+        "events": { "type": "array", "items": { "type": "string" } },
+        "storageDelta": { "type": "object" },
+        "balanceDelta": { "type": "object" },
+        "effect": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "invariant": {
+      "type": "object",
+      "required": ["id", "expression", "holds"],
+      "properties": {
+        "id": { "type": "string" },
+        "description": { "type": "string" },
+        "expression": { "type": "string" },
+        "holds": { "type": "boolean" },
+        "violatedAtStep": { "type": ["integer", "null"], "minimum": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "holds": { "const": false } },
+            "required": ["holds"]
+          },
+          "then": {
+            "required": ["violatedAtStep"],
+            "properties": {
+              "violatedAtStep": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}
