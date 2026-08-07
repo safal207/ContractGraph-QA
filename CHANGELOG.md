@@ -4,6 +4,25 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.4.0 — One-command engagement-run
+
+### Added
+
+- `cgqa engagement-run --config <file>` executes direct multi-invariant Foundry capture and engagement packaging in one product command;
+- strict engagement-run TOML configuration for working directory, manifest, generated result, output directory, bundle, and capture test/profile;
+- manifest fingerprint is computed before execution and injected into Foundry capture automatically;
+- generated engagement result is immediately validated through the existing engagement semantic chain;
+- the final bundle is independently re-opened and verified before the command returns success;
+- repository-owned Product E2E executes the complete flow twice and requires byte-for-byte identical evidence bundles.
+
+### Safety / execution semantics
+
+- engagement-run always performs fresh Foundry capture; pre-existing result-only packaging remains the separate `cgqa engagement` command;
+- capture profile and test names are allow-listed and invoked as a subprocess argument array, never as a shell command string;
+- output directory collisions with the working directory or manifest directory are rejected;
+- existing authorization/safe-harbor requirements remain unchanged for any real fork target;
+- `not_found_within_bound` and `inconclusive` retain the v1.2/v1.3 bounded-evidence semantics.
+
 ## 1.3.0 — Direct multi-invariant Foundry capture
 
 ### Added
