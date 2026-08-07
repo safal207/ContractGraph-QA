@@ -25,6 +25,8 @@ STATE TRANSITION
   ↓
 POST-STATE
   ↓
+STATE HASH
+  ↓
 EFFECT
   ↓
 FUTURE REACHABLE STATES
@@ -35,6 +37,34 @@ A finding should be reproducible as:
 ```text
 Finding → Cause → Path → Evidence → Replay → Fix → Retest
 ```
+
+## v0.5: state hashing and deduplication
+
+v0.5 adds a breadth-first search mode that keeps one shortest representative path per unique modeled state hash.
+
+Equivalent states reached by cycles, no-op actions, or convergent paths are pruned instead of being expanded repeatedly.
+
+The local regression fixture has three actions:
+
+```text
+noopA
+noopB
+advance
+```
+
+At depth 8, exhaustive candidate enumeration would contain 9,840 paths. The deduplicating explorer executes only 12 child transitions when no violation is enforced and discovers four unique states before the frontier is exhausted.
+
+With the terminal invariant enabled, it still finds the minimal violating path:
+
+```text
+advance → advance → advance
+```
+
+The state hash is part of the QA model: it must include every modeled value that can change future reachability. An incomplete hash can make pruning unsound.
+
+The engine caps actual work at 4,096 retained unique states and 65,536 attempted child transitions rather than rejecting a search from its theoretical `branching^depth` size.
+
+See [`docs/STATE_DEDUP.md`](docs/STATE_DEDUP.md).
 
 ## v0.4: parameter and time exploration
 
@@ -75,7 +105,7 @@ v0.3 turns machine-readable evidence into a deterministic client-facing Markdown
 
 The reporting layer validates the evidence contract before rendering and requires a reproducible failing path, invariant, replay command, impact, recommendation, and explicit authorization/scope statement.
 
-See [`docs/REPORTING.md`](docs/REPORTING.md) and the checked-in example under [`reports/examples/`](reports/examples/).
+See [`docs/REPORTING.md`](docs/REPORTING.md) and the checked-in examples under [`reports/examples/`](reports/examples/).
 
 ## v0.2: automatic Path Explorer
 
@@ -119,16 +149,19 @@ src/
     Escrow.sol
     VulnerableEscrow.sol
     VulnerableTimedEscrow.sol
+    ConvergentStateMachine.sol
   harness/
     CausalGraphHarness.sol
     PathExplorerHarness.sol
     ParameterizedPathExplorerHarness.sol
+    StateDedupPathExplorerHarness.sol
 
 test/
   EscrowGraph.t.sol
   VulnerableEscrowGraph.t.sol
   PathExplorer.t.sol
   ParameterizedTemporalExplorer.t.sol
+  StateDedupPathExplorer.t.sol
 
 graph/schema/
   contract-graph.schema.json
@@ -139,6 +172,10 @@ scenarios/
 reports/examples/
   CGQA-001.finding.json
   CGQA-001.md
+  CGQA-002.finding.json
+  CGQA-002.md
+  CGQA-003.finding.json
+  CGQA-003.md
 
 tools/
   render_finding.py
@@ -149,6 +186,7 @@ docs/
   PATH_EXPLORER.md
   REPORTING.md
   PARAMETER_TIME_EXPLORER.md
+  STATE_DEDUP.md
 
 .github/workflows/
   ci.yml
@@ -190,7 +228,7 @@ forge test -vvv
 forge build
 ```
 
-Render the example client finding:
+Render an example client finding:
 
 ```bash
 python tools/render_finding.py reports/examples/CGQA-001.finding.json --output /tmp/CGQA-001.md
@@ -206,11 +244,11 @@ slither .
 
 The project does **not** claim that bounded graph exploration proves an arbitrary contract secure.
 
-v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 adds finite corpus-based parameter and time exploration with clock reset between candidates.
+v0.1 established the causal-temporal evidence model. v0.2 added automatic bounded action-sequence search and deterministic replay. v0.3 added deterministic evidence-to-report rendering. v0.4 added finite corpus-based parameter and time exploration. v0.5 adds state hashing and equivalent-state pruning while preserving shortest representative paths under the explicit state-hash model.
 
-Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, and explicit invariants.
+Security conclusions remain limited to the modeled actors, actions, parameter corpus, search depth, time assumptions, state-hash completeness, and explicit invariants.
 
-Planned follow-up work includes generated parameter corpora, state hashing/deduplication, fork testing, multi-contract graphs, direct failing-path export into the report schema, and richer invariant libraries.
+Planned follow-up work includes fork testing, generated parameter corpora, multi-contract graphs, direct failing-path export into the report schema, and richer invariant libraries.
 
 ## Safety
 
