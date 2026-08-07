@@ -12,6 +12,10 @@ invariant = { runs = 128, depth = 32, fail_on_revert = false }
 [profile.fork]
 test = "fork-test"
 
+[profile.capture]
+test = "capture-test"
+fs_permissions = [{ access = "read-write", path = "./results/generated" }]
+
 [rpc_endpoints]
 authorized = "${CGQA_FORK_RPC_URL}"
 
