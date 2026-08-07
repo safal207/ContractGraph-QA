@@ -4,10 +4,22 @@
   "title": "ContractGraph-QA Explorer Result",
   "type": "object",
   "additionalProperties": false,
-  "required": ["adapterId", "scopeId", "findingId", "invariantId", "replay", "path"],
+  "required": [
+    "adapterId",
+    "scopeId",
+    "manifestSha256",
+    "findingId",
+    "invariantId",
+    "replay",
+    "path"
+  ],
   "properties": {
     "adapterId": { "type": "string", "minLength": 1 },
     "scopeId": { "type": "string", "minLength": 1 },
+    "manifestSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "findingId": { "type": "string", "minLength": 1 },
     "invariantId": { "type": "string", "minLength": 1 },
     "replay": { "type": "string", "minLength": 1 },
