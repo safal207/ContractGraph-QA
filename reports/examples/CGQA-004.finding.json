@@ -1,0 +1,45 @@
+{
+  "id": "CGQA-004",
+  "title": "Fork adapter preserves the minimal terminal-state violation path",
+  "severity": "info",
+  "contract": "AdapterFixtureMachine",
+  "network": "local-foundry-adapter-regression",
+  "summary": "The v0.7 adapter regression binds protocol state to authorization/fork provenance, deduplicates equivalent states, and preserves the shortest three-step path to the modeled terminal invariant violation.",
+  "invariant": {
+    "id": "adapter-terminal-state",
+    "expression": "phase < 3"
+  },
+  "minimalFailingPath": [
+    {
+      "step": 1,
+      "actor": "authorized adapter test actor",
+      "action": "advance()",
+      "preState": "phase=0",
+      "postState": "phase=1",
+      "effect": "future-relevant protocol state changes"
+    },
+    {
+      "step": 2,
+      "actor": "authorized adapter test actor",
+      "action": "advance()",
+      "preState": "phase=1",
+      "postState": "phase=2",
+      "effect": "second unique state is reached"
+    },
+    {
+      "step": 3,
+      "actor": "authorized adapter test actor",
+      "action": "advance()",
+      "preState": "phase=2",
+      "postState": "phase=3",
+      "effect": "terminal invariant becomes false"
+    }
+  ],
+  "impact": "This local regression demonstrates the client-adapter evidence path: protocol-specific state is bound to fork/scope provenance, equivalent states are pruned, and the shortest invariant-violating sequence remains replayable.",
+  "recommendation": "For a real authorized engagement, replace the fixture actions, protocol state hash, and invariant with contract-specific definitions reviewed against the written scope, then export any discovered path through the same deterministic report pipeline.",
+  "evidence": {
+    "authorization": "Local adapter fixture owned by this repository; no third-party production target is involved.",
+    "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
+    "notes": "The regression uses a local fixture so default CI never opens an external fork. Real fork adapters remain gated by v0.6 authorization preflight."
+  }
+}
