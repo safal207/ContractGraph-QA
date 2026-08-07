@@ -22,6 +22,8 @@ REQUIRED_TOP_LEVEL = {
     "recommendation",
     "evidence",
 }
+REQUIRED_TEXT_FIELDS = ("id", "title", "contract", "network", "summary", "impact", "recommendation")
+REQUIRED_STEP_TEXT_FIELDS = ("actor", "action", "preState", "postState", "effect")
 
 
 def _require(condition: bool, message: str) -> None:
@@ -29,31 +31,55 @@ def _require(condition: bool, message: str) -> None:
         raise ValueError(message)
 
 
+def _require_non_empty_string(value: Any, field: str) -> None:
+    _require(isinstance(value, str) and bool(value.strip()), f"{field} must be a non-empty string")
+
+
 def validate_finding(data: dict[str, Any]) -> None:
     missing = sorted(REQUIRED_TOP_LEVEL - data.keys())
     _require(not missing, f"missing required fields: {', '.join(missing)}")
 
+    for field in REQUIRED_TEXT_FIELDS:
+        _require_non_empty_string(data[field], field)
+
     severity = data["severity"]
-    _require(isinstance(severity, str) and severity.lower() in SEVERITIES, "invalid severity")
+    _require_non_empty_string(severity, "severity")
+    _require(severity.lower() in SEVERITIES, "invalid severity")
 
     invariant = data["invariant"]
     _require(isinstance(invariant, dict), "invariant must be an object")
-    _require(bool(invariant.get("id")), "invariant.id is required")
-    _require(bool(invariant.get("expression")), "invariant.expression is required")
+    _require_non_empty_string(invariant.get("id"), "invariant.id")
+    _require_non_empty_string(invariant.get("expression"), "invariant.expression")
 
     path = data["minimalFailingPath"]
     _require(isinstance(path, list) and len(path) > 0, "minimalFailingPath must be non-empty")
 
     for index, step in enumerate(path, start=1):
         _require(isinstance(step, dict), f"path step {index} must be an object")
-        for key in ("step", "actor", "action", "preState", "postState", "effect"):
-            _require(key in step, f"path step {index} missing {key}")
+        _require("step" in step, f"path step {index} missing step")
+        _require(
+            isinstance(step["step"], int) and not isinstance(step["step"], bool),
+            f"path step {index} step must be an integer",
+        )
         _require(step["step"] == index, "path steps must be contiguous and 1-based")
+
+        for key in REQUIRED_STEP_TEXT_FIELDS:
+            _require(key in step, f"path step {index} missing {key}")
+            _require_non_empty_string(step[key], f"path step {index}.{key}")
 
     evidence = data["evidence"]
     _require(isinstance(evidence, dict), "evidence must be an object")
-    _require(bool(evidence.get("replay")), "evidence.replay is required")
-    _require(bool(evidence.get("authorization")), "evidence.authorization is required")
+    _require_non_empty_string(evidence.get("replay"), "evidence.replay")
+    _require_non_empty_string(evidence.get("authorization"), "evidence.authorization")
+
+    if "exploredCandidates" in evidence:
+        explored = evidence["exploredCandidates"]
+        _require(
+            isinstance(explored, int) and not isinstance(explored, bool) and explored >= 0,
+            "evidence.exploredCandidates must be a non-negative integer",
+        )
+    if "notes" in evidence:
+        _require_non_empty_string(evidence["notes"], "evidence.notes")
 
 
 def _escape_table(value: Any) -> str:
