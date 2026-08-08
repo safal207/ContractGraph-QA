@@ -1,0 +1,39 @@
+name: External validation
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/**'
+      - 'docs/external-validation/**'
+      - '.github/workflows/external-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'external-validation/**'
+      - 'docs/external-validation/**'
+      - '.github/workflows/external-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  gitlawb:
+    name: Gitlawb bounty temporal reproduction
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
+        with:
+          version: v1.7.1
+      - name: Verify pinned upstream source hash
+        shell: bash
+        run: |
+          test "$(sha256sum external-validation/gitlawb/src/GitlawbBounty.sol | cut -d' ' -f1)" = "$(sha256sum <(curl -fsSL https://raw.githubusercontent.com/Gitlawb/contracts/b60de4973c568b34975c20f18cde1afd71a59f1b/src/GitlawbBounty.sol) | cut -d' ' -f1)"
+      - name: Build with upstream compiler settings
+        working-directory: external-validation/gitlawb
+        run: forge build --sizes
+      - name: Reproduce temporal path
+        working-directory: external-validation/gitlawb
+        run: forge test -vvv --match-test test_timelySubmissionCanBeReopenedByThirdPartyAfterClaimDeadline
