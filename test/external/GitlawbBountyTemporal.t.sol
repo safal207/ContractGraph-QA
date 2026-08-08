@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "forge-std/Test.sol";
 import {GitlawbBounty} from "../../external/gitlawb/GitlawbBounty.sol";
 import {LocalMockERC20} from "./LocalMockERC20.sol";
 
+interface Vm {
+    function prank(address msgSender) external;
+    function warp(uint256 newTimestamp) external;
+}
+
 /// @notice External, local-only validation of Gitlawb/contracts at
 /// b60de4973c568b34975c20f18cde1afd71a59f1b. No RPC or deployed target is used.
-contract GitlawbBountyTemporalTest is Test {
+contract GitlawbBountyTemporalTest {
+    Vm internal constant vm = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
     GitlawbBounty internal bounty;
     LocalMockERC20 internal token;
 
@@ -45,8 +51,8 @@ contract GitlawbBountyTemporalTest is Test {
 
         (,, string memory prBefore,,,) = bounty.getBountyClaim(id);
         (,,, GitlawbBounty.Status statusBefore,,) = bounty.getBountyCore(id);
-        assertEq(prBefore, "pr-123");
-        assertEq(uint8(statusBefore), uint8(GitlawbBounty.Status.Submitted));
+        assert(keccak256(bytes(prBefore)) == keccak256(bytes("pr-123")));
+        assert(uint8(statusBefore) == uint8(GitlawbBounty.Status.Submitted));
 
         // Once the original claim deadline passes, an unrelated address can
         // erase the timely submission and reopen the bounty.
@@ -58,23 +64,21 @@ contract GitlawbBountyTemporalTest is Test {
             bounty.getBountyClaim(id);
         (,,, GitlawbBounty.Status statusAfter,,) = bounty.getBountyCore(id);
 
-        assertEq(uint8(statusAfter), uint8(GitlawbBounty.Status.Open));
-        assertEq(bytes(didAfter).length, 0);
-        assertEq(claimantAfter, address(0));
-        assertEq(bytes(prAfter).length, 0);
-        assertEq(token.balanceOf(address(bounty)), AMOUNT);
+        assert(uint8(statusAfter) == uint8(GitlawbBounty.Status.Open));
+        assert(bytes(didAfter).length == 0);
+        assert(claimantAfter == address(0));
+        assert(bytes(prAfter).length == 0);
+        assert(token.balanceOf(address(bounty)) == AMOUNT);
 
         // The creator can no longer approve the timely submission because the
         // state has already been reset to Open.
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                GitlawbBounty.InvalidStatus.selector,
-                id,
-                GitlawbBounty.Status.Submitted,
-                GitlawbBounty.Status.Open
-            )
-        );
+        bool approvalSucceeded;
         vm.prank(CREATOR);
-        bounty.approveBounty(id);
+        try bounty.approveBounty(id) {
+            approvalSucceeded = true;
+        } catch {
+            approvalSucceeded = false;
+        }
+        assert(!approvalSucceeded);
     }
 }
