@@ -65,12 +65,12 @@ jobs:
           (cd distribution && sha256sum contractgraph_qa-*.whl DEMO_REPORT.md DEMO_EVIDENCE.zip CLIENT_PROOF.md SBOM.cdx.json VERIFY.md > SHA256SUMS)
           (cd distribution && sha256sum -c SHA256SUMS)
       - name: Attest signed checksum manifest
-        id: checksum-attestation
+        id: checksum_attestation
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: distribution/SHA256SUMS
       - name: Attest wheel SBOM
-        id: sbom-attestation
+        id: sbom_attestation
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: distribution/contractgraph_qa-*.whl
@@ -78,8 +78,8 @@ jobs:
       - name: Preserve Sigstore attestation bundles
         shell: bash
         run: |
-          cp "${{ steps.checksum-attestation.outputs.bundle-path }}" distribution/SHA256SUMS.attestation.json
-          cp "${{ steps.sbom-attestation.outputs.bundle-path }}" distribution/SBOM.attestation.json
+          cp "${{ steps.checksum_attestation.outputs.bundle-path }}" distribution/SHA256SUMS.attestation.json
+          cp "${{ steps.sbom_attestation.outputs.bundle-path }}" distribution/SBOM.attestation.json
       - name: Upload verified distribution artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
