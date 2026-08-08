@@ -8,9 +8,34 @@ The core question is:
 
 > Can an allowed sequence of actors, transactions, parameter values, and time changes drive the contract into a state that violates an explicit business or security invariant?
 
-## v1.0 product runtime
+## Try the product first
 
-The engine is exposed through an installable `cgqa` CLI that turns a reviewed adapter model and deterministic Foundry search into a client-verifiable evidence bundle.
+The fastest proof path needs only Python 3.11+ and the installed wheel:
+
+```bash
+python -m pip install contractgraph-qa
+cgqa demo --output-dir cgqa-demo
+cgqa verify-bundle cgqa-demo/CGQA-005.evidence.zip
+```
+
+`cgqa demo` uses only repository-owned packaged evidence. It makes no external RPC call and is **not** presented as a third-party audit.
+
+It produces:
+
+```text
+cgqa-demo/
+  inputs/manifest.json
+  inputs/result.json
+  CGQA-005.finding.json
+  CGQA-005.md
+  CGQA-005.evidence.zip
+```
+
+See [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+
+## Product runtime
+
+The full engine is exposed through the installable `cgqa` CLI and turns a reviewed adapter model plus deterministic Foundry search into a client-verifiable evidence bundle.
 
 ```text
 AUTHORIZED SCOPE
@@ -19,45 +44,34 @@ REVIEWED ADAPTER MANIFEST
       ↓
 FOUNDRY SEARCH
       ↓
-MINIMAL VIOLATING PATH
+MULTI-INVARIANT OUTCOMES
+      ↓
+MINIMAL VIOLATING PATHS
       ↓
 DETERMINISTIC REPLAY
       ↓
 OBSERVED PRE/POST STATE
       ↓
-EXPLORER RESULT JSON
-      ↓
 PROVENANCE VALIDATION
       ↓
-FINDING JSON
-      ↓
-CLIENT MARKDOWN REPORT
+CLIENT FINDINGS / ENGAGEMENT REPORT
       ↓
 DETERMINISTIC EVIDENCE ZIP
       ↓
 INDEPENDENT VERIFICATION
 ```
 
-### Quick start
-
-Requirements: Python 3.11+ and Foundry.
+For engine execution, install Foundry and run:
 
 ```bash
-python -m pip install -e .
 cgqa doctor --require-forge
-cgqa run --config cgqa.example.toml --clean
-cgqa verify-bundle dist/CGQA-005/CGQA-005.evidence.zip
+cgqa init-engagement acme-escrow
+# Replace every generated TODO only after explicit scope/authorization review.
+cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
+cgqa verify-engagement-bundle engagements/acme-escrow/evidence/engagement.evidence.zip
 ```
 
-The repository-owned demo produces:
-
-```text
-dist/CGQA-005/CGQA-005.finding.json
-dist/CGQA-005/CGQA-005.md
-dist/CGQA-005/CGQA-005.evidence.zip
-```
-
-`cgqa run` does not return success until the generated evidence bundle has been independently re-opened and verified against the manifest → result → finding → report semantic chain.
+The generated scaffold deliberately starts fail-closed and is not execution-ready until the operator replaces the authorization, target, state-hash, action, invariant, and capture-adapter TODOs.
 
 See [`docs/PRODUCT.md`](docs/PRODUCT.md), [`docs/CLI.md`](docs/CLI.md), and [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md).
 
@@ -100,13 +114,26 @@ Finding → Cause → Path → Evidence → Replay → Fix → Retest
 - state transitions and terminal states;
 - custom errors/reverts and events;
 - asset/accounting invariants;
-- temporal/deadline conditions.
+- temporal/deadline conditions;
+- multiple invariants in one bounded exploration session.
+
+### Explicit outcome semantics
+
+Every declared invariant is classified as exactly one of:
+
+```text
+violated
+not_found_within_bound
+inconclusive
+```
+
+`not_found_within_bound` is bounded evidence only. `inconclusive` stays unresolved and fails closed; neither is converted into a security certification.
 
 ### Automatic path exploration
 
 The bounded breadth-first explorer searches shortest paths first. Parameterized steps can model contract calls, business values, actor choices, or time deltas.
 
-The repository fixtures demonstrate findings such as:
+Repository fixtures demonstrate findings such as:
 
 ```text
 fund → release → refund → payout conservation violated
@@ -136,135 +163,86 @@ A public address, public ABI, source repository, or RPC endpoint is not treated 
 
 The default CI does not open an external fork. Real target execution remains behind the dedicated authorization and adapter gates documented in [`docs/FORK_TESTING.md`](docs/FORK_TESTING.md) and [`docs/FORK_ADAPTER_TEMPLATE.md`](docs/FORK_ADAPTER_TEMPLATE.md).
 
-### Deterministic result capture and reporting
+### Deterministic capture, reporting, and evidence
 
-Foundry can capture the actual discovered/replayed path into machine-readable result JSON. The result is cryptographically bound to the canonical reviewed-manifest fingerprint.
+Foundry can capture actual discovered/replayed paths into strict machine-readable result JSON. Results are cryptographically bound to the reviewed manifest fingerprint.
 
-The reporting layer then produces:
-
-- strict finding JSON;
-- deterministic client Markdown;
-- deterministic evidence ZIP;
-- bundle SHA-256 for delivery verification.
+The runtime then produces deterministic findings, Markdown, engagement summaries, and evidence ZIPs with independent semantic verification.
 
 ## `cgqa` commands
 
 ```bash
+cgqa demo --output-dir cgqa-demo
 cgqa doctor --require-forge
+cgqa init-engagement acme-escrow
 cgqa fingerprint --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json --result results/client.result.json
 cgqa run --config cgqa.toml --clean
+cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
 cgqa verify-bundle dist/client.evidence.zip
+cgqa verify-engagement-bundle dist/client.engagement.zip
 ```
 
 Automation-facing exit codes are documented in [`docs/CLI.md`](docs/CLI.md).
 
-## Product configuration
-
-`cgqa run` uses a strict TOML project file. The checked-in local example is:
-
-```toml
-schemaVersion = 1
-workingDirectory = "."
-manifest = "manifests/examples/adapter-fixture.json"
-result = "results/generated/CGQA-005.result.json"
-finding = "dist/CGQA-005/CGQA-005.finding.json"
-report = "dist/CGQA-005/CGQA-005.md"
-bundle = "dist/CGQA-005/CGQA-005.evidence.zip"
-
-[capture]
-enabled = true
-profile = "capture"
-test = "test_CaptureExplorerResult"
-verbosity = 3
-```
-
-Capture is invoked as a process argument array rather than a shell command string. Profile/test identifiers are restricted to safe identifier characters.
-
-## Evidence bundle
-
-A v1 evidence ZIP contains exactly:
+## Recommended commercial workflow
 
 ```text
-manifest.json
-result.json
-finding.json
-report.md
-bundle.json
+self-serve demo
+  ↓
+client proof pack
+  ↓
+fixed-scope pilot
+  ↓
+written authorization / safe-harbor scope
+  ↓
+init-engagement
+  ↓
+review adapter + state hash + invariants
+  ↓
+one-command engagement-run
+  ↓
+human severity/impact review
+  ↓
+client report + independently verifiable evidence ZIP
+  ↓
+fix → exact replay → retest bundle
 ```
 
-`bundle.json` records the tool version, finding ID, canonical manifest SHA-256, and exact SHA-256/byte count of every artifact.
-
-The verifier checks:
-
-1. exact bundle entry set/order;
-2. per-entry size limits;
-3. byte counts and hashes;
-4. manifest/result validation;
-5. adapter/scope/manifest provenance;
-6. deterministic finding re-export;
-7. deterministic Markdown re-render.
-
-Identical evidence inputs produce identical bundle bytes.
-
-## Recommended engagement workflow
-
-For a real authorized client engagement:
-
-1. obtain and record written scope;
-2. pin chain, target, and fixed snapshot block;
-3. review the adapter manifest and executable adapter;
-4. define finite action/parameter/time corpora and invariants;
-5. run `cgqa validate` before execution;
-6. run the authorized adapter through `cgqa run`;
-7. review severity/impact/recommendation as a human;
-8. deliver Markdown + evidence ZIP + bundle SHA-256;
-9. replay the exact path after the fix and generate a new bundle.
-
-See [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md).
+The repository includes a client proof pack under [`docs/client-proof/`](docs/client-proof/) that is regression-bound to repository-owned evidence and explicitly separated from a completed external audit claim.
 
 ## Repository layout
 
 ```text
 contractgraph_qa/
-  __init__.py
   cli.py
+  demo.py
   product.py
+  engagement.py
+  engagement_run.py
+  scaffold.py
+  finding.py
+  report.py
+  demo_assets/
 
 src/harness/
   CausalGraphHarness.sol
   PathExplorerHarness.sol
   ParameterizedPathExplorerHarness.sol
   StateDedupPathExplorerHarness.sol
+  MultiInvariantStateExplorerHarness.sol
   ForkAuthorization.sol
   ForkContextHarness.sol
   ForkAdapterTemplate.sol
   DirectResultCaptureHarness.sol
+  DirectEngagementCaptureHarness.sol
 
 src/examples/
-  Escrow.sol
-  VulnerableEscrow.sol
-  VulnerableTimedEscrow.sol
-  ConvergentStateMachine.sol
-  AdapterFixtureMachine.sol
-
 test/
-  EscrowGraph.t.sol
-  VulnerableEscrowGraph.t.sol
-  PathExplorer.t.sol
-  ParameterizedTemporalExplorer.t.sol
-  StateDedupPathExplorer.t.sol
-  ForkAuthorization.t.sol
-  ForkAdapterTemplate.t.sol
-
 capture-test/
-  AdapterFixtureCapture.t.sol
-
 fork-test/
-  AuthorizedForkSmoke.t.sol
-  AuthorizedAdapterTemplate.t.sol.example
-
+engagements/
 manifests/examples/
 results/examples/
 results/generated/
@@ -272,31 +250,19 @@ reports/examples/
 graph/schema/
 
 tools/
-  export_finding.py
-  render_finding.py
-  manifest_fingerprint.py
-  validate_fork_scope.py
-
 docs/
   PRODUCT.md
   CLI.md
   ENGAGEMENT.md
+  DISTRIBUTION.md
   RELEASE.md
-  CAUSAL_MODEL.md
-  INVARIANTS.md
-  PATH_EXPLORER.md
-  PARAMETER_TIME_EXPLORER.md
-  STATE_DEDUP.md
-  FORK_TESTING.md
-  FORK_ADAPTER_TEMPLATE.md
-  ADAPTER_MANIFEST.md
-  DIRECT_RESULT_CAPTURE.md
-  REPORTING.md
+  client-proof/
 
 .github/workflows/
   ci.yml
   reporting.yml
   product.yml
+  distribution.yml
   authorized-fork.yml
 ```
 
@@ -308,12 +274,12 @@ forge build --sizes
 forge test -vvv
 python -m unittest discover -s tools/tests -p 'test_*.py' -v
 python -m pip wheel . --no-deps --wheel-dir .product-wheel
-cgqa run --config cgqa.example.toml --clean
-cgqa verify-bundle dist/CGQA-005/CGQA-005.evidence.zip
+cgqa demo --output-dir /tmp/cgqa-demo
+cgqa verify-bundle /tmp/cgqa-demo/CGQA-005.evidence.zip
 ```
 
 Release/version policy: [`CHANGELOG.md`](CHANGELOG.md) and [`docs/RELEASE.md`](docs/RELEASE.md).
-
+Distribution instructions: [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
 Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## What ContractGraph-QA proves — and what it does not
@@ -326,22 +292,22 @@ It does not claim that:
 - the chosen invariants are complete;
 - the state hash is automatically complete;
 - a finite parameter corpus covers every possible value;
+- `not_found_within_bound` means no vulnerability exists;
 - a QA engagement is equivalent to formal verification or an independent full security audit.
 
 Security conclusions remain limited to the modeled actors, actions, parameters, time assumptions, search depth, state-hash completeness, authorization scope, fork snapshot, adapter mapping, manifest correctness, capture mapping, and explicit invariants.
 
-## Evolution
+## Product evolution
 
-- **v0.1** — causal-temporal graph model, fixtures, invariants, CI, Slither.
-- **v0.2** — bounded BFS path explorer and deterministic replay.
-- **v0.3** — deterministic client finding reports.
-- **v0.4** — parameter and time exploration.
-- **v0.5** — state hashing and equivalent-state pruning.
-- **v0.6** — authorization-gated fixed-block fork context.
-- **v0.7** — contract-specific fork adapter template.
-- **v0.8** — strict adapter manifest/result contract and automatic finding export.
-- **v0.9** — direct Foundry result capture.
-- **v1.0** — installable product runtime, one-command pipeline, evidence bundles, independent verification, and product E2E CI.
+- **v1.0** — installable runtime, deterministic evidence bundles, independent verification.
+- **v1.1** — schema/runtime contract parity gate.
+- **v1.2** — multi-invariant engagement engine.
+- **v1.3** — direct multi-invariant Foundry capture.
+- **v1.4** — one-command `engagement-run`.
+- **v1.5** — fail-closed client engagement scaffold.
+- **v1.6** — packaged self-serve demo and verified distribution artifact workflow.
+
+Earlier v0.x engine milestones remain documented in Git history and the changelog.
 
 ## Safety
 
