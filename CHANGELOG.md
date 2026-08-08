@@ -4,6 +4,26 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.7.0 — Release trust and portability
+
+### Added
+
+- dedicated Linux + Windows installed-wheel portability gate;
+- cross-platform regression that runs the self-serve demo twice outside the checkout and requires byte-identical evidence artifacts;
+- explicit canonical-LF assertions for packaged inputs, finding JSON, and Markdown output;
+- deterministic CycloneDX 1.5 artifact-level SBOM generation bound to the built wheel, source commit, and release timestamp;
+- independent SBOM verification against wheel metadata and SHA-256;
+- GitHub/Sigstore artifact attestations for the release checksum manifest and wheel SBOM;
+- client-facing GitHub Release quick-start and verification guide;
+- tag-triggered GitHub Release publication after all distribution verification and attestations succeed.
+
+### Release trust semantics
+
+- release assets are checksum-verified before attestation or publication;
+- an existing GitHub Release for the same tag is never silently overwritten;
+- the signed checksum manifest and SBOM attestation are additional supply-chain evidence and do not weaken CGQA evidence-bundle semantic verification;
+- portability CI uses only repository-owned demo evidence and performs no external RPC or third-party contract execution.
+
 ## 1.6.0 — Self-serve demo and distribution
 
 ### Added

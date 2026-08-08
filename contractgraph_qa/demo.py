@@ -10,8 +10,15 @@ from contractgraph_qa.product import CaptureConfig, ProductConfig, ProductError,
 DEMO_FINDING_ID = "CGQA-005"
 
 
+def _canonical_text_bytes(data: bytes) -> bytes:
+    """Normalize packaged text assets so checkout line endings cannot affect evidence bytes."""
+    return data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+
+
 def _asset_bytes(name: str) -> bytes:
-    return files("contractgraph_qa").joinpath("demo_assets", name).read_bytes()
+    return _canonical_text_bytes(
+        files("contractgraph_qa").joinpath("demo_assets", name).read_bytes()
+    )
 
 
 def run_demo(output_dir: Path) -> dict[str, object]:

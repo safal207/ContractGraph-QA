@@ -6,7 +6,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 
 jobs:
   distribution:
@@ -30,7 +33,7 @@ jobs:
       - name: Build wheel
         run: python -m pip wheel . --no-deps --wheel-dir .distribution-wheel
       - name: Install built wheel
-        run: python -m pip install .distribution-wheel/contractgraph_qa-*.whl
+        run: python -m pip install --no-deps .distribution-wheel/contractgraph_qa-*.whl
       - name: Run installed-wheel self-serve demo outside checkout
         shell: bash
         run: |
@@ -38,7 +41,7 @@ jobs:
           cd /tmp
           cgqa demo --output-dir /tmp/cgqa-distribution-demo
           cgqa verify-bundle /tmp/cgqa-distribution-demo/CGQA-005.evidence.zip
-      - name: Assemble distribution directory
+      - name: Assemble and verify distribution directory
         shell: bash
         run: |
           rm -rf distribution
@@ -47,7 +50,36 @@ jobs:
           cp /tmp/cgqa-distribution-demo/CGQA-005.md distribution/DEMO_REPORT.md
           cp /tmp/cgqa-distribution-demo/CGQA-005.evidence.zip distribution/DEMO_EVIDENCE.zip
           cp docs/client-proof/README.md distribution/CLIENT_PROOF.md
-          (cd distribution && sha256sum contractgraph_qa-*.whl DEMO_REPORT.md DEMO_EVIDENCE.zip CLIENT_PROOF.md > SHA256SUMS)
+          cp docs/GITHUB_RELEASE.md distribution/VERIFY.md
+          WHEEL_PATH="$(find distribution -maxdepth 1 -type f -name 'contractgraph_qa-*.whl' -print -quit)"
+          SOURCE_DATE_EPOCH="$(git show -s --format=%ct "${GITHUB_SHA}")"
+          python tools/build_release_sbom.py \
+            --wheel "${WHEEL_PATH}" \
+            --output distribution/SBOM.cdx.json \
+            --source-commit "${GITHUB_SHA}" \
+            --source-date-epoch "${SOURCE_DATE_EPOCH}"
+          python tools/verify_release_sbom.py \
+            --wheel "${WHEEL_PATH}" \
+            --sbom distribution/SBOM.cdx.json \
+            --source-commit "${GITHUB_SHA}"
+          (cd distribution && sha256sum contractgraph_qa-*.whl DEMO_REPORT.md DEMO_EVIDENCE.zip CLIENT_PROOF.md SBOM.cdx.json VERIFY.md > SHA256SUMS)
+          (cd distribution && sha256sum -c SHA256SUMS)
+      - name: Attest signed checksum manifest
+        id: checksum_attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: distribution/SHA256SUMS
+      - name: Attest wheel SBOM
+        id: sbom_attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: distribution/contractgraph_qa-*.whl
+          sbom-path: distribution/SBOM.cdx.json
+      - name: Preserve Sigstore attestation bundles
+        shell: bash
+        run: |
+          cp "${{ steps.checksum_attestation.outputs.bundle-path }}" distribution/SHA256SUMS.attestation.json
+          cp "${{ steps.sbom_attestation.outputs.bundle-path }}" distribution/SBOM.attestation.json
       - name: Upload verified distribution artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -55,3 +87,18 @@ jobs:
           path: distribution/
           if-no-files-found: error
           retention-days: 30
+      - name: Publish immutable tag release assets
+        if: github.ref_type == 'tag'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "GitHub Release already exists for ${GITHUB_REF_NAME}; refusing to replace published assets." >&2
+            exit 1
+          fi
+          gh release create "${GITHUB_REF_NAME}" distribution/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --verify-tag \
+            --title "ContractGraph-QA ${GITHUB_REF_NAME}" \
+            --notes-file docs/GITHUB_RELEASE.md

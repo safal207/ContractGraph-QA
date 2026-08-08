@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from contractgraph_qa.demo import run_demo
+from contractgraph_qa.demo import _canonical_text_bytes, run_demo
 from contractgraph_qa.finding import canonical_json, export_finding, load_json_object
 from contractgraph_qa.product import ProductError, verify_evidence_bundle
 from contractgraph_qa.report import render_markdown
@@ -41,6 +41,15 @@ class SelfServeDemoTest(unittest.TestCase):
                 expected_finding,
             )
             self.assertEqual((destination / "CGQA-005.md").read_bytes(), expected_report)
+            self.assertNotIn(b"\r\n", (destination / "inputs" / "manifest.json").read_bytes())
+            self.assertNotIn(b"\r\n", (destination / "inputs" / "result.json").read_bytes())
+
+    def test_demo_asset_normalization_is_platform_independent(self) -> None:
+        self.assertEqual(
+            _canonical_text_bytes(b'{\r\n  "ok": true\r\n}\r\n'),
+            b'{\n  "ok": true\n}\n',
+        )
+        self.assertEqual(_canonical_text_bytes(b"a\rb\r"), b"a\nb\n")
 
     def test_demo_refuses_non_empty_destination(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
