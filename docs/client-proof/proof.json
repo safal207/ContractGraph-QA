@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "sourceType": "repository-owned-local-demo",
+  "engagementId": "CGQA-E-001",
+  "adapterId": "engagement-fixture-v1.3",
+  "scopeId": "local-v1.3-engagement-fixture",
+  "expectedCoverage": {
+    "violated": 1,
+    "not_found_within_bound": 1,
+    "inconclusive": 1
+  },
+  "violatedInvariantId": "terminal-state-bound",
+  "minimalPathActionIds": [
+    "advance",
+    "advance",
+    "advance"
+  ],
+  "pilot": {
+    "priceUsd": 200,
+    "maxPrioritizedInvariants": 5,
+    "retestPasses": 1
+  }
+}
