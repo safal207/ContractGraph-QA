@@ -108,3 +108,14 @@ jobs:
         run: cmp /tmp/CGQA-E-001.first.zip dist/CGQA-E-001-run/CGQA-E-001.engagement.zip
       - name: Verify engagement bundle outside checkout
         run: cd /tmp && cgqa verify-engagement-bundle "$GITHUB_WORKSPACE/dist/CGQA-E-001-run/CGQA-E-001.engagement.zip"
+      - name: Assemble and verify release-candidate distribution
+        shell: bash
+        run: |
+          rm -rf .distribution-smoke
+          mkdir .distribution-smoke
+          cp .product-wheel/contractgraph_qa-*.whl .distribution-smoke/
+          cp /tmp/cgqa-self-demo/CGQA-005.md .distribution-smoke/DEMO_REPORT.md
+          cp /tmp/cgqa-self-demo/CGQA-005.evidence.zip .distribution-smoke/DEMO_EVIDENCE.zip
+          cp docs/client-proof/README.md .distribution-smoke/CLIENT_PROOF.md
+          (cd .distribution-smoke && sha256sum contractgraph_qa-*.whl DEMO_REPORT.md DEMO_EVIDENCE.zip CLIENT_PROOF.md > SHA256SUMS)
+          (cd .distribution-smoke && sha256sum -c SHA256SUMS)
