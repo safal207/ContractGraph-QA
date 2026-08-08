@@ -1,6 +1,6 @@
 # Distribution and self-serve demo
 
-ContractGraph-QA v1.6 adds a distribution path that can demonstrate the evidence product without a repository checkout or a Foundry installation.
+ContractGraph-QA v1.7 keeps the self-serve proof path from v1.6 and adds cross-platform release gates, an artifact-level SBOM, signed attestations, and tag-triggered GitHub Release assets.
 
 ## Fastest product proof
 
@@ -42,19 +42,39 @@ The demo proves that the installed product can:
 
 The demo does **not** claim that a third-party smart contract was audited. It uses a repository-owned local fixture and makes no external RPC call.
 
+## Portability gate
+
+The `Portability` workflow builds the wheel and runs the installed product on both `ubuntu-latest` and `windows-latest`.
+
+Each platform:
+
+- installs the built wheel rather than importing the checkout;
+- executes `cgqa demo` from a temporary directory outside the repository;
+- verifies the evidence bundle;
+- requires canonical LF bytes for packaged inputs, finding JSON, and Markdown;
+- runs the demo twice and requires byte-identical finding/report/evidence artifacts.
+
+This permanently covers the Windows CRLF class of regression discovered during the v1.6.0 release.
+
 ## Distribution artifact
 
 The `Distribution` GitHub Actions workflow runs on `v*` tags and can also be started manually after merge.
 
-It produces one Actions artifact containing:
+It produces a verified Actions artifact and, for a new tag, a GitHub Release containing:
 
 - `contractgraph_qa-<version>-py3-none-any.whl`;
 - `DEMO_REPORT.md`;
 - `DEMO_EVIDENCE.zip`;
 - `CLIENT_PROOF.md`;
-- `SHA256SUMS`.
+- `SBOM.cdx.json`;
+- `VERIFY.md`;
+- `SHA256SUMS`;
+- `SHA256SUMS.attestation.json`;
+- `SBOM.attestation.json`.
 
-The workflow installs the wheel it just built, runs `cgqa demo` outside the checkout, verifies the evidence bundle, and only then assembles the distribution artifact.
+The workflow installs the wheel it just built, runs `cgqa demo` outside the checkout, verifies the evidence bundle, generates and independently verifies the SBOM, checks every checksum-listed payload, creates GitHub/Sigstore attestations, and only then publishes release assets.
+
+An existing GitHub Release for the same tag is not overwritten automatically.
 
 ## Verify downloaded files
 
@@ -64,11 +84,15 @@ On Linux/macOS:
 sha256sum -c SHA256SUMS
 ```
 
-On PowerShell, compare each entry in `SHA256SUMS` with:
+On PowerShell, compare entries in `SHA256SUMS` with `Get-FileHash -Algorithm SHA256`.
 
-```powershell
-Get-FileHash .\contractgraph_qa-1.6.0-py3-none-any.whl -Algorithm SHA256
+With GitHub CLI authentication available, verify the signed checksum manifest:
+
+```bash
+gh attestation verify SHA256SUMS --repo safal207/ContractGraph-QA
 ```
+
+`SBOM.cdx.json` is CycloneDX 1.5 and is bound to the built wheel SHA-256, package version, and source commit. The Distribution workflow independently verifies those fields before signing/publishing.
 
 ## From demo to a real engagement
 
@@ -96,4 +120,4 @@ A public contract address, ABI, or readable chain state is not authorization.
 
 ## Release boundary
 
-Git tags are release identifiers and must match the package version exactly (`v1.6.0` for package `1.6.0`). The repository currently requires an operator to create the tag after the exact release head has passed all gates.
+Git tags are release identifiers and must match the package version exactly (`v1.7.0` for package `1.7.0`). Tag creation remains an explicit operator action after the exact release head has passed all gates. The tag-triggered workflow then creates the signed distribution and GitHub Release.
