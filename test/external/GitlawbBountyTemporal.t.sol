@@ -2,52 +2,8 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {GitlawbBounty} from "../../external/gitlawb/GitlawbBounty.sol";
-
-contract LocalMockERC20 is IERC20 {
-    string public name = "LocalMock";
-    string public symbol = "LMOCK";
-    uint8 public decimals = 18;
-    uint256 public override totalSupply;
-
-    mapping(address => uint256) public override balanceOf;
-    mapping(address => mapping(address => uint256)) public override allowance;
-
-    function mint(address to, uint256 amount) external {
-        totalSupply += amount;
-        balanceOf[to] += amount;
-        emit Transfer(address(0), to, amount);
-    }
-
-    function transfer(address to, uint256 amount) external override returns (bool) {
-        _transfer(msg.sender, to, amount);
-        return true;
-    }
-
-    function approve(address spender, uint256 amount) external override returns (bool) {
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
-        uint256 allowed = allowance[from][msg.sender];
-        require(allowed >= amount, "allowance");
-        if (allowed != type(uint256).max) {
-            allowance[from][msg.sender] = allowed - amount;
-        }
-        _transfer(from, to, amount);
-        return true;
-    }
-
-    function _transfer(address from, address to, uint256 amount) internal {
-        require(balanceOf[from] >= amount, "balance");
-        balanceOf[from] -= amount;
-        balanceOf[to] += amount;
-        emit Transfer(from, to, amount);
-    }
-}
+import {LocalMockERC20} from "./LocalMockERC20.sol";
 
 /// @notice External, local-only validation of Gitlawb/contracts at
 /// b60de4973c568b34975c20f18cde1afd71a59f1b. No RPC or deployed target is used.
