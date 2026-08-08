@@ -81,7 +81,9 @@ contract AeraRefundWindowModelTest is MultiInvariantStateExplorerHarness {
         if (step.action == ACTION_SYNC_DEPOSIT) {
             callData = abi.encodeWithSelector(AeraRefundWindowModel.syncDeposit.selector);
         } else if (step.action == ACTION_SHORTEN_TIMEOUT) {
-            callData = abi.encodeWithSelector(AeraRefundWindowModel.configureShorterRefundTimeout.selector);
+            callData = abi.encodeWithSelector(
+                AeraRefundWindowModel.configureShorterRefundTimeout.selector
+            );
         } else if (step.action == ACTION_ADVANCE_TIME) {
             callData = abi.encodeWithSelector(AeraRefundWindowModel.advanceTime.selector);
         } else {
