@@ -39,6 +39,15 @@ jobs:
         run: cd /tmp && cgqa --version
       - name: Runtime doctor outside checkout
         run: cd /tmp && cgqa doctor --require-forge
+      - name: Run self-serve demo outside checkout without Forge usage
+        shell: bash
+        run: |
+          rm -rf /tmp/cgqa-self-demo
+          cd /tmp
+          cgqa demo --output-dir /tmp/cgqa-self-demo
+          cgqa verify-bundle /tmp/cgqa-self-demo/CGQA-005.evidence.zip
+          test -f /tmp/cgqa-self-demo/CGQA-005.finding.json
+          test -f /tmp/cgqa-self-demo/CGQA-005.md
       - name: Create fail-closed client scaffold outside checkout
         shell: bash
         run: |
