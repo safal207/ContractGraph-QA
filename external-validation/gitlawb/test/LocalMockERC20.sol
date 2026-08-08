@@ -25,11 +25,7 @@ contract LocalMockERC20 is IERC20 {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount)
-        external
-        override
-        returns (bool)
-    {
+    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
         uint256 allowed = allowance[from][msg.sender];
         require(allowed >= amount, "allowance");
         if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - amount;
