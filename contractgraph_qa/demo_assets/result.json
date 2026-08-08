@@ -1,0 +1,30 @@
+{
+  "adapterId": "adapter-fixture-v0.8",
+  "scopeId": "local-v0.8-fixture",
+  "manifestSha256": "41768b63b9a3c7e5a3e11dfe2df574ce4e3211194b3ab2527622f199aaaf1fae",
+  "findingId": "CGQA-005",
+  "invariantId": "adapter-terminal-state",
+  "replay": "forge test --match-test test_AdapterPreservesMinimalViolatingPathWithDedup -vvv",
+  "exploredCandidates": 6,
+  "notes": "This explorer-result fixture corresponds to the local v0.7 adapter regression and is used only to verify deterministic manifest-to-finding export.",
+  "path": [
+    {
+      "actionId": "advance",
+      "preState": "phase=0",
+      "postState": "phase=1",
+      "effect": "future-relevant protocol state changes"
+    },
+    {
+      "actionId": "advance",
+      "preState": "phase=1",
+      "postState": "phase=2",
+      "effect": "second unique protocol state is reached"
+    },
+    {
+      "actionId": "advance",
+      "preState": "phase=2",
+      "postState": "phase=3",
+      "effect": "terminal invariant becomes false"
+    }
+  ]
+}
