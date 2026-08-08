@@ -1,0 +1,30 @@
+name: Portability
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  installed-wheel-demo:
+    name: installed wheel demo (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - name: Build wheel
+        run: python -m pip wheel . --no-deps --wheel-dir .portability-wheel
+      - name: Run cross-platform installed-wheel gate
+        run: python tools/portability_gate.py --wheel-dir .portability-wheel
