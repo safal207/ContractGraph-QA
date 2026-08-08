@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {IERC20} from "../../lib/forge-std/src/interfaces/IERC20.sol";
 
 contract LocalMockERC20 is IERC20 {
     string public name = "LocalMock";
