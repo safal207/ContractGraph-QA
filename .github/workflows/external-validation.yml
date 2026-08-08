@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'external-validation/**'
+      - 'docs/external-validation/**'
       - '.github/workflows/external-validation.yml'
   push:
     branches: [main]
     paths:
       - 'external-validation/**'
+      - 'docs/external-validation/**'
       - '.github/workflows/external-validation.yml'
 
 permissions:
