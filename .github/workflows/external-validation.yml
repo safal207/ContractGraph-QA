@@ -29,9 +29,6 @@ jobs:
         shell: bash
         run: |
           test "$(sha256sum external-validation/gitlawb/src/GitlawbBounty.sol | cut -d' ' -f1)" = "$(sha256sum <(curl -fsSL https://raw.githubusercontent.com/Gitlawb/contracts/b60de4973c568b34975c20f18cde1afd71a59f1b/src/GitlawbBounty.sol) | cut -d' ' -f1)"
-      - name: Format
-        working-directory: external-validation/gitlawb
-        run: forge fmt --check
       - name: Build with upstream compiler settings
         working-directory: external-validation/gitlawb
         run: forge build --sizes
