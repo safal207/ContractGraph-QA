@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "adapterId": "adapter-fixture-v0.8",
+  "contract": "AdapterFixtureMachine",
+  "network": "local-foundry-adapter-manifest",
+  "scope": {
+    "scopeId": "local-v0.8-fixture",
+    "authorization": "Local adapter fixture owned by this repository; no third-party production target is involved.",
+    "authorizationReference": "repo-owned-local-fixture",
+    "target": "local-fixture"
+  },
+  "search": {
+    "maxDepth": 4
+  },
+  "stateFields": [
+    "phase"
+  ],
+  "actions": [
+    {
+      "id": "noop",
+      "display": "noop()",
+      "actor": "authorized adapter test actor"
+    },
+    {
+      "id": "advance",
+      "display": "advance()",
+      "actor": "authorized adapter test actor"
+    }
+  ],
+  "invariants": [
+    {
+      "id": "adapter-terminal-state",
+      "title": "Manifest export preserves the minimal terminal-state violation path",
+      "severity": "info",
+      "summary": "A validated v0.8 adapter manifest and explorer result are deterministically transformed into a client finding for the same three-step terminal-state violation detected by the local adapter regression.",
+      "expression": "phase < 3",
+      "impact": "The manifest layer preserves the evidence needed to map a machine-discovered path into a reviewable finding without manually re-entering action names, actors, invariant metadata, scope wording, or report fields.",
+      "recommendation": "For a real authorized engagement, review the adapter manifest against the written scope, keep the action and state-field mappings complete, and export only deterministic explorer results produced from the matching fixed-block adapter."
+    }
+  ]
+}
