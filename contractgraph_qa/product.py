@@ -260,8 +260,8 @@ def write_finding_and_report(config: ProductConfig) -> tuple[dict[str, Any], dic
 
     config.finding.parent.mkdir(parents=True, exist_ok=True)
     config.report.parent.mkdir(parents=True, exist_ok=True)
-    config.finding.write_text(canonical_json(finding), encoding="utf-8")
-    config.report.write_text(rendered, encoding="utf-8")
+    config.finding.write_text(canonical_json(finding), encoding="utf-8", newline="\n")
+    config.report.write_text(rendered, encoding="utf-8", newline="\n")
     return manifest, finding
 
 
