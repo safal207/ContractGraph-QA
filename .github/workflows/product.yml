@@ -39,6 +39,23 @@ jobs:
         run: cd /tmp && cgqa --version
       - name: Runtime doctor outside checkout
         run: cd /tmp && cgqa doctor --require-forge
+      - name: Create fail-closed client scaffold outside checkout
+        shell: bash
+        run: |
+          rm -rf /tmp/cgqa-scaffold-project
+          mkdir -p /tmp/cgqa-scaffold-project
+          cd /tmp/cgqa-scaffold-project
+          cgqa init-engagement acme-escrow
+          test -f engagements/acme-escrow/manifest.json
+          test -f engagements/acme-escrow/cgqa.toml
+          test -f engagements/acme-escrow/capture/ClientEngagementCapture.t.sol.example
+          test ! -f engagements/acme-escrow/capture/ClientEngagementCapture.t.sol
+          grep -q "CGQA scaffold not configured" engagements/acme-escrow/capture/ClientEngagementCapture.t.sol.example
+          cgqa validate --manifest engagements/acme-escrow/manifest.json
+          if cgqa init-engagement acme-escrow; then
+            echo "second init unexpectedly overwrote an existing scaffold" >&2
+            exit 1
+          fi
       - name: Validate reviewed manifest and result contract
         run: >-
           cgqa validate

@@ -4,6 +4,24 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.5.0 — Client engagement scaffold
+
+### Added
+
+- `cgqa init-engagement <name>` creates a client engagement directory from an installed wheel;
+- generated scaffold includes a structurally valid manifest, engagement-run TOML, README checklist, ignored evidence directories, and a Solidity capture `.example`;
+- working-directory paths are derived from the current ContractGraph-QA project root;
+- scaffold output explicitly reports `executionReady: false` until the TODOs and capture adapter are implemented;
+- Product E2E exercises scaffold creation from outside the checkout using the installed wheel.
+
+### Safety / onboarding semantics
+
+- engagement names are restricted to a safe artifact character class;
+- scaffold destinations must be new directories inside the current project root and are never overwritten;
+- the generated Solidity capture is not compiled by default and contains a fail-closed `CGQA scaffold not configured` sentinel;
+- generated manifests use explicit TODO markers for authorization, target, state, actions, and invariants so placeholder facts are visible during review;
+- creating a scaffold does not authorize a target and does not produce validated security evidence.
+
 ## 1.4.0 — One-command engagement-run
 
 ### Added

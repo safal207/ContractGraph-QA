@@ -9,6 +9,28 @@ cgqa --version
 
 Python 3.11+ is required. Foundry is required for capture-enabled runs.
 
+## `cgqa init-engagement`
+
+```bash
+cgqa init-engagement acme-escrow
+```
+
+From the current ContractGraph-QA project root, this creates `engagements/acme-escrow/` with:
+
+- `manifest.json` — structurally valid but visibly TODO-marked authorization, target, state, action, and invariant placeholders;
+- `cgqa.toml` — an `engagement-run` config whose working directory points back to the current project root;
+- `capture/ClientEngagementCapture.t.sol.example` — a non-compiled, fail-closed capture skeleton;
+- `README.md` — engagement completion checklist;
+- `.gitignore` — ignores generated search/evidence outputs.
+
+A custom destination is allowed only when it is a new directory inside the current project root:
+
+```bash
+cgqa init-engagement acme-escrow --directory engagements/clients/acme-escrow
+```
+
+The command never overwrites an existing destination. Its JSON summary reports `executionReady: false`. The generated capture remains `.example` and contains `CGQA scaffold not configured`; creating a scaffold is not authorization and does not create validated evidence.
+
 ## Product config
 
 `cgqa run` reads a strict TOML config.
@@ -174,7 +196,7 @@ The verifier reconstructs the manifest → engagement result → coverage summar
 | `0` | success |
 | `2` | argparse usage error |
 | `10` | validation/integrity error for validation-oriented commands |
-| `20` | product runtime/capture/config/engagement-generation failure |
+| `20` | product runtime/capture/config/engagement-generation/scaffold failure |
 | `70` | unexpected internal failure |
 | `130` | interrupted by operator |
 
