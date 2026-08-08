@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 from pathlib import Path
@@ -22,6 +23,14 @@ def _require(condition: bool, message: str) -> None:
 
 def _json(data: dict[str, Any]) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+
+
+def _is_within(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
+        return False
 
 
 def _manifest(name: str) -> str:
@@ -60,9 +69,10 @@ def _manifest(name: str) -> str:
     return _json(data)
 
 
-def _config() -> str:
-    return """schemaVersion = 1
-workingDirectory = "../.."
+def _config(working_directory: str) -> str:
+    normalized = working_directory.replace("\\", "/")
+    return f"""schemaVersion = 1
+workingDirectory = "{normalized}"
 manifest = "manifest.json"
 result = "generated/engagement-result.json"
 outputDirectory = "dist"
@@ -130,13 +140,11 @@ Reduce the time from an authorized client scope to the first reproducible QA eng
 
 ## Run
 
-From the ContractGraph-QA repository root:
+From the ContractGraph-QA project root, point `engagement-run` at this directory's config:
 
 ```bash
-cgqa engagement-run --config {Path('engagements') / name / 'cgqa.toml'}
+cgqa engagement-run --config <scaffold-directory>/cgqa.toml
 ```
-
-Adjust the config path if this scaffold was created elsewhere.
 
 ## Generated evidence
 
@@ -153,19 +161,27 @@ def _gitignore() -> str:
 
 
 def init_engagement(name: str, directory: Path | None = None) -> dict[str, Any]:
-    _require(isinstance(name, str) and bool(SAFE_ENGAGEMENT_NAME.fullmatch(name)),
-             "engagement name must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+    _require(
+        isinstance(name, str) and bool(SAFE_ENGAGEMENT_NAME.fullmatch(name)),
+        "engagement name must match [A-Za-z0-9][A-Za-z0-9._-]{0,63}",
+    )
 
+    project_root = Path.cwd().resolve()
     destination = (
         directory.expanduser().resolve()
         if directory is not None
-        else (Path.cwd() / "engagements" / name).resolve()
+        else (project_root / "engagements" / name).resolve()
+    )
+    _require(
+        _is_within(destination, project_root) and destination != project_root,
+        "scaffold destination must be a new directory inside the current project root",
     )
     _require(not destination.exists(), f"scaffold destination already exists: {destination}")
 
+    working_directory = os.path.relpath(project_root, destination)
     files = {
         "manifest.json": _manifest(name),
-        "cgqa.toml": _config(),
+        "cgqa.toml": _config(working_directory),
         "capture/ClientEngagementCapture.t.sol.example": _capture_template(name),
         "README.md": _readme(name),
         ".gitignore": _gitignore(),
