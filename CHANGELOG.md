@@ -4,6 +4,23 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.6.0 — Self-serve demo and distribution
+
+### Added
+
+- `cgqa demo` runs entirely from the installed wheel and requires no repository checkout or Foundry installation;
+- packaged repository-owned demo manifest/result assets;
+- the demo produces a deterministic finding JSON, Markdown report, and independently verifiable evidence ZIP in one command;
+- wheel package-data configuration explicitly includes only the safe demo JSON assets;
+- release/distribution workflow builds the wheel, runs the installed-wheel demo outside checkout, writes SHA-256 checksums, and uploads release artifacts.
+
+### Safety / positioning semantics
+
+- the demo is explicitly repository-owned evidence and is not presented as a third-party audit;
+- demo output requires a fresh directory and never overwrites an existing non-empty destination;
+- the self-serve demo does not create testing authorization or contact an external RPC;
+- real client execution remains behind the existing explicit authorization, fixed-block fork, reviewed manifest, and fail-closed engagement gates.
+
 ## 1.5.0 — Client engagement scaffold
 
 ### Added

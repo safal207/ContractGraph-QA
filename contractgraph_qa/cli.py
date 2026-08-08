@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from contractgraph_qa import __version__
+from contractgraph_qa.demo import run_demo
 from contractgraph_qa.engagement import (
     EngagementError,
     verify_engagement_bundle,
@@ -46,6 +47,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"cgqa {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    demo = subparsers.add_parser(
+        "demo",
+        help="Generate and verify a repository-owned demo evidence bundle without Forge",
+    )
+    demo.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("cgqa-demo"),
+        help="Fresh destination directory; defaults to ./cgqa-demo",
+    )
 
     init = subparsers.add_parser(
         "init-engagement",
@@ -108,6 +120,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "demo":
+            _emit(run_demo(args.output_dir))
+            return EXIT_OK
         if args.command == "init-engagement":
             _emit(init_engagement(args.name, args.directory))
             return EXIT_OK
