@@ -23,7 +23,7 @@ cgqa run --config cgqa.example.toml --clean
 cgqa verify-bundle dist/CGQA-005/CGQA-005.evidence.zip
 ```
 
-The normal CI, reporting CI, product E2E job, and Slither advisory scan must all be green.
+The normal CI, reporting CI, Product E2E, Slither advisory scan, and both Linux/Windows Portability jobs must all be green.
 
 ## Version synchronization
 
@@ -46,22 +46,35 @@ python -m pip wheel . --no-deps --wheel-dir .product-wheel
 
 Install that wheel into a clean Python environment and run the product smoke commands above.
 
+## Portability gate
+
+`.github/workflows/portability.yml` builds and installs the wheel independently on Linux and Windows. It runs the demo outside the checkout twice, verifies both evidence bundles, rejects CRLF text artifacts, and requires byte-identical deterministic outputs.
+
+This gate is part of the release contract, not an advisory check.
+
 ## Distribution workflow
 
-v1.6 adds `.github/workflows/distribution.yml`.
+`.github/workflows/distribution.yml` runs on a `v*` tag or manual dispatch.
 
-On a `v*` tag (or manual workflow dispatch) it:
+It:
 
 1. checks version/tag consistency;
-2. builds the wheel;
-3. installs the built wheel;
-4. runs the self-serve demo outside the repository checkout;
-5. verifies the demo evidence bundle;
-6. assembles wheel + demo report + demo evidence + client proof;
-7. creates `SHA256SUMS`;
-8. uploads the verified distribution directory as a GitHub Actions artifact.
+2. builds and installs the wheel;
+3. runs the self-serve demo outside the repository checkout;
+4. verifies the demo evidence bundle;
+5. assembles wheel + demo report + demo evidence + client proof + verification guide;
+6. creates deterministic CycloneDX 1.5 `SBOM.cdx.json` bound to the wheel and source commit;
+7. independently verifies the SBOM against wheel metadata and SHA-256;
+8. creates and verifies `SHA256SUMS`;
+9. creates GitHub/Sigstore attestation for the checksum manifest;
+10. creates an SBOM attestation bound to the wheel;
+11. preserves both attestation bundles in the distribution payload;
+12. uploads the verified Actions artifact;
+13. for a new tag, publishes the same payload as a GitHub Release.
 
-See `docs/DISTRIBUTION.md` for consumer instructions.
+The release step refuses to overwrite an existing GitHub Release for the same tag.
+
+See `docs/DISTRIBUTION.md` for consumer verification instructions.
 
 ## Tagging
 
@@ -74,12 +87,12 @@ vMAJOR.MINOR.PATCH
 Example:
 
 ```text
-v1.6.0
+v1.7.0
 ```
 
-Do not tag a commit that differs from the exact head used for the final green product gate.
+Do not tag a commit that differs from the exact head used for the final green product and portability gates.
 
-The repository does not currently create tags automatically; tag creation remains an explicit operator action.
+Tag creation remains an explicit operator action. The tag-triggered Distribution workflow owns artifact signing and GitHub Release publication.
 
 ## Release notes
 
@@ -91,7 +104,9 @@ Release notes should state:
 - safety/authorization boundary changes;
 - compatibility notes;
 - known limitations;
-- distribution artifact checksum instructions.
+- checksum and attestation verification instructions.
+
+`docs/GITHUB_RELEASE.md` is the client-facing quick-start/verification body used for tag releases.
 
 ## Evidence compatibility
 
@@ -100,3 +115,5 @@ Release notes should state:
 A product patch/minor release may keep the existing bundle version as long as it can still verify the same semantic contract without ambiguity.
 
 A breaking bundle layout or meaning change requires a new bundle version and explicit compatibility handling in the relevant `cgqa verify-*` command.
+
+Supply-chain attestations do not replace evidence-bundle semantic verification; they add release provenance around the distributed product artifacts.
