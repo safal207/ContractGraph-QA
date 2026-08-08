@@ -27,6 +27,7 @@ from contractgraph_qa.product import (
     validate_manifest_result,
     verify_evidence_bundle,
 )
+from contractgraph_qa.scaffold import ScaffoldError, init_engagement
 
 EXIT_OK = 0
 EXIT_VALIDATION = 10
@@ -45,6 +46,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"cgqa {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    init = subparsers.add_parser(
+        "init-engagement",
+        help="Create a fail-closed client engagement scaffold",
+    )
+    init.add_argument("name", help="Safe engagement identifier")
+    init.add_argument(
+        "--directory",
+        type=Path,
+        help="Destination directory; defaults to ./engagements/<name>",
+    )
 
     run = subparsers.add_parser("run", help="Run capture → export → report → evidence-bundle pipeline")
     run.add_argument("--config", type=Path, required=True, help="Product TOML config")
@@ -96,6 +108,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "init-engagement":
+            _emit(init_engagement(args.name, args.directory))
+            return EXIT_OK
         if args.command == "run":
             config = load_product_config(args.config)
             _emit(run_pipeline(config, clean=args.clean))
@@ -135,6 +150,7 @@ def main(argv: list[str] | None = None) -> int:
         ProductError,
         EngagementError,
         EngagementRunError,
+        ScaffoldError,
         FileNotFoundError,
         json.JSONDecodeError,
     ) as exc:
