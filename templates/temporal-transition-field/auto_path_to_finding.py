@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Automatic bounded path-to-finding search for Temporal Transition Field v0.4.
+"""Guarded automatic path-to-finding search for Temporal Transition Field v0.5.
 
-The engine explores model paths in breadth-first order. Each path is replayed
-from an isolated adapter instance, every transition is captured as an evidence
-record, and the v0.3 forbidden-state detector evaluates the observed post-state.
-The first violated path is therefore a shortest path within the configured bound.
+The engine explores declared transitions in breadth-first order. Every candidate
+path is replayed from a fresh adapter instance. Before each event executes, the
+v0.5 guard engine evaluates whether that edge is enabled by the observed X(t).
+Blocked edges are pruned; inconclusive guards fail closed and are not expanded.
+Every executed transition becomes a v0.2 evidence record and is evaluated by the
+v0.3 forbidden-state detector. The first violation is therefore a shortest
+violating path within the guarded model and configured search bounds.
 
 This module performs no network activity by itself. Real target interaction must
 live behind an explicitly authorized adapter. The bundled CLI uses only the
@@ -13,13 +16,15 @@ in-memory synthetic adapters.
 from __future__ import annotations
 
 import argparse
+from collections import defaultdict, deque
 import json
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
 from build_evidence_graph import build_dot, build_markdown, record_digest
 from detect_forbidden_state import detect
-from generate_paths import generate_paths
+from generate_paths import SPEC, parse_transitions
+from guard_engine import evaluate_transition_guards
 from synthetic_adapter import SyntheticBuggyAdapter, SyntheticSafeAdapter
 
 
@@ -39,6 +44,7 @@ def _make_record(
     pre_state: dict[str, Any],
     observation: dict[str, Any],
     post_state: dict[str, Any],
+    guard_result: dict[str, Any],
 ) -> dict[str, Any]:
     expected_from, event, expected_to = transition
     return {
@@ -49,13 +55,14 @@ def _make_record(
             "environment": "local",
             "authorized": True,
             "target": "temporal-transition-field-adapter",
-            "notes": "Bounded path exploration; adapter controls target interaction.",
+            "notes": "Guarded bounded path exploration; adapter controls target interaction.",
         },
         "model_transition": {
             "expected_from": expected_from,
             "event": event,
             "expected_to": expected_to,
         },
+        "guard": guard_result,
         "pre_state": pre_state,
         "request": observation["request"],
         "decision": observation["decision"],
@@ -117,7 +124,7 @@ def _apply_detection(record: dict[str, Any], detector_result: dict[str, Any]) ->
 
 
 def _model_state_check(
-    transition: tuple[str, str, str], pre_state: dict[str, Any], post_state: dict[str, Any]
+    transition: tuple[str, str, str], pre_state: dict[str, Any], post_state: dict[str, Any] | None = None
 ) -> dict[str, Any] | None:
     expected_from, event, expected_to = transition
     if pre_state.get("state_id") != expected_from:
@@ -127,7 +134,7 @@ def _model_state_check(
             "expected": expected_from,
             "observed": pre_state.get("state_id"),
         }
-    if post_state.get("state_id") != expected_to:
+    if post_state is not None and post_state.get("state_id") != expected_to:
         return {
             "kind": "model_post_state_mismatch",
             "event": event,
@@ -137,10 +144,124 @@ def _model_state_check(
     return None
 
 
+def _load_graph() -> dict[str, list[tuple[str, str, str]]]:
+    transitions = parse_transitions(SPEC.read_text(encoding="utf-8"))
+    graph: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+    for src, event, dst in transitions:
+        graph[src].append((src, event, dst))
+    return graph
+
+
+def _replay_candidate(
+    adapter_factory: AdapterFactory,
+    path: list[tuple[str, str, str]],
+    rules_document: dict[str, Any],
+    guards_document: dict[str, Any] | None,
+    *,
+    path_index: int,
+) -> dict[str, Any]:
+    adapter = adapter_factory()
+    records: list[dict[str, Any]] = []
+    guard_counts = {"checks": 0, "allowed": 0, "blocked": 0, "inconclusive": 0}
+
+    for step_index, transition in enumerate(path, 1):
+        pre_state = adapter.snapshot()
+        pre_mismatch = _model_state_check(transition, pre_state)
+        if pre_mismatch is not None:
+            return {
+                "status": "inconclusive",
+                "records": records,
+                "reason": pre_mismatch,
+                "guard_counts": guard_counts,
+            }
+
+        guard_result = evaluate_transition_guards(pre_state, transition, guards_document)
+        guard_counts["checks"] += 1
+        guard_counts[guard_result["status"]] += 1
+
+        if guard_result["status"] == "blocked":
+            return {
+                "status": "guard_blocked",
+                "records": records,
+                "guard": guard_result,
+                "transition": transition,
+                "step_index": step_index,
+                "guard_counts": guard_counts,
+            }
+        if guard_result["status"] == "inconclusive":
+            return {
+                "status": "inconclusive",
+                "records": records,
+                "reason": {
+                    "kind": "guard_inconclusive",
+                    "transition": transition,
+                    "guard": guard_result,
+                },
+                "guard_counts": guard_counts,
+            }
+
+        observation = adapter.apply(transition[1])
+        post_state = adapter.snapshot()
+        post_mismatch = _model_state_check(transition, pre_state, post_state)
+        record = _make_record(
+            path_index=path_index,
+            step_index=step_index,
+            transition=transition,
+            pre_state=pre_state,
+            observation=observation,
+            post_state=post_state,
+            guard_result=guard_result,
+        )
+
+        if post_mismatch is not None:
+            record["verdict"] = {
+                "state": "inconclusive",
+                "forbidden_state_reached": False,
+                "finding_id": None,
+                "summary": "Observed adapter state diverged from the declared transition model.",
+            }
+            record["model_mismatch"] = post_mismatch
+            records.append(record)
+            return {
+                "status": "inconclusive",
+                "records": records,
+                "reason": post_mismatch,
+                "guard_counts": guard_counts,
+            }
+
+        detector_result = detect(record, rules_document)
+        record = _apply_detection(record, detector_result)
+        records.append(record)
+
+        if detector_result["overall"] == "violated":
+            return {
+                "status": "violated",
+                "records": records,
+                "violating_step": step_index,
+                "finding": detector_result["finding"],
+                "guard_counts": guard_counts,
+            }
+        if detector_result["overall"] == "inconclusive":
+            return {
+                "status": "inconclusive",
+                "records": records,
+                "reason": {"kind": "detector_inconclusive", "step_index": step_index},
+                "guard_counts": guard_counts,
+            }
+
+    return {"status": "complete", "records": records, "guard_counts": guard_counts}
+
+
+def _add_counts(total: dict[str, int], current: dict[str, int]) -> None:
+    for key, value in current.items():
+        total[key] += value
+
+
 def search_paths(
     adapter_factory: AdapterFactory,
     rules_document: dict[str, Any],
     *,
+    guards_document: dict[str, Any] | None = None,
     max_depth: int = 6,
     max_paths: int = 250,
 ) -> dict[str, Any]:
@@ -149,72 +270,68 @@ def search_paths(
     if max_paths < 1:
         raise ValueError("max_paths must be >= 1")
 
-    candidate_paths = generate_paths(max_depth=max_depth)[:max_paths]
+    graph = _load_graph()
+    queue: deque[list[tuple[str, str, str]]] = deque(
+        [[transition] for transition in graph.get("Q0_RESET", [])]
+    )
     saw_inconclusive = False
     explored = 0
+    pruned = 0
+    guard_counts = {"checks": 0, "allowed": 0, "blocked": 0, "inconclusive": 0}
 
-    for path_index, path in enumerate(candidate_paths, 1):
+    while queue and explored < max_paths:
+        path = queue.popleft()
         explored += 1
-        adapter = adapter_factory()
-        path_records: list[dict[str, Any]] = []
+        replay = _replay_candidate(
+            adapter_factory,
+            path,
+            rules_document,
+            guards_document,
+            path_index=explored,
+        )
+        _add_counts(guard_counts, replay["guard_counts"])
 
-        for step_index, transition in enumerate(path, 1):
-            pre_state = adapter.snapshot()
-            observation = adapter.apply(transition[1])
-            post_state = adapter.snapshot()
+        if replay["status"] == "violated":
+            return {
+                "schema_version": "0.5",
+                "overall": "violated",
+                "search_semantics": "guarded_breadth_first_shortest_path_within_bound",
+                "guards_enabled": guards_document is not None,
+                "max_depth": max_depth,
+                "max_paths": max_paths,
+                "paths_explored": explored,
+                "paths_pruned_by_guard": pruned,
+                "guard_stats": guard_counts,
+                "minimal_path": [
+                    {"from": src, "event": event, "to": dst} for src, event, dst in path
+                ],
+                "violating_step": replay["violating_step"],
+                "records": replay["records"],
+                "finding": replay["finding"],
+            }
 
-            model_mismatch = _model_state_check(transition, pre_state, post_state)
-            record = _make_record(
-                path_index=path_index,
-                step_index=step_index,
-                transition=transition,
-                pre_state=pre_state,
-                observation=observation,
-                post_state=post_state,
-            )
+        if replay["status"] == "guard_blocked":
+            pruned += 1
+            continue
+        if replay["status"] == "inconclusive":
+            saw_inconclusive = True
+            continue
 
-            if model_mismatch is not None:
-                record["verdict"] = {
-                    "state": "inconclusive",
-                    "forbidden_state_reached": False,
-                    "finding_id": None,
-                    "summary": "Observed adapter state diverged from the declared transition model.",
-                }
-                record["model_mismatch"] = model_mismatch
-                path_records.append(record)
-                saw_inconclusive = True
-                break
-
-            detector_result = detect(record, rules_document)
-            record = _apply_detection(record, detector_result)
-            path_records.append(record)
-
-            if detector_result["overall"] == "inconclusive":
-                saw_inconclusive = True
-
-            if detector_result["overall"] == "violated":
-                return {
-                    "schema_version": "0.4",
-                    "overall": "violated",
-                    "search_semantics": "breadth_first_shortest_path_within_bound",
-                    "max_depth": max_depth,
-                    "max_paths": max_paths,
-                    "paths_explored": explored,
-                    "minimal_path": [
-                        {"from": src, "event": event, "to": dst} for src, event, dst in path
-                    ],
-                    "violating_step": step_index,
-                    "records": path_records,
-                    "finding": detector_result["finding"],
-                }
+        if len(path) < max_depth:
+            current_state = path[-1][2]
+            for transition in graph.get(current_state, []):
+                queue.append(path + [transition])
 
     return {
-        "schema_version": "0.4",
+        "schema_version": "0.5",
         "overall": "inconclusive" if saw_inconclusive else "not_found_within_bound",
-        "search_semantics": "breadth_first_shortest_path_within_bound",
+        "search_semantics": "guarded_breadth_first_shortest_path_within_bound",
+        "guards_enabled": guards_document is not None,
         "max_depth": max_depth,
         "max_paths": max_paths,
         "paths_explored": explored,
+        "paths_pruned_by_guard": pruned,
+        "guard_stats": guard_counts,
         "minimal_path": None,
         "violating_step": None,
         "records": [],
@@ -259,7 +376,17 @@ def write_result(result: dict[str, Any], out_dir: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rules", type=Path, default=Path(__file__).with_name("forbidden_state_rules.example.json"))
+    parser.add_argument(
+        "--rules",
+        type=Path,
+        default=Path(__file__).with_name("forbidden_state_rules.example.json"),
+    )
+    parser.add_argument(
+        "--guards",
+        type=Path,
+        default=Path(__file__).with_name("transition_guards.example.json"),
+    )
+    parser.add_argument("--no-guards", action="store_true")
     parser.add_argument("--out-dir", type=Path, default=Path("path-to-finding"))
     parser.add_argument("--max-depth", type=int, default=6)
     parser.add_argument("--max-paths", type=int, default=250)
@@ -272,15 +399,29 @@ def main() -> int:
     args = parser.parse_args()
 
     rules = json.loads(args.rules.read_text(encoding="utf-8"))
+    guards = None if args.no_guards else json.loads(args.guards.read_text(encoding="utf-8"))
     factory: AdapterFactory = SyntheticBuggyAdapter if args.adapter == "synthetic-buggy" else SyntheticSafeAdapter
-    result = search_paths(factory, rules, max_depth=args.max_depth, max_paths=args.max_paths)
+    result = search_paths(
+        factory,
+        rules,
+        guards_document=guards,
+        max_depth=args.max_depth,
+        max_paths=args.max_paths,
+    )
     write_result(result, args.out_dir)
-    print(json.dumps({
-        "overall": result["overall"],
-        "paths_explored": result["paths_explored"],
-        "violating_step": result["violating_step"],
-        "finding_id": result["finding"]["finding_id"] if result["finding"] else None,
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "overall": result["overall"],
+                "paths_explored": result["paths_explored"],
+                "paths_pruned_by_guard": result["paths_pruned_by_guard"],
+                "guard_stats": result["guard_stats"],
+                "violating_step": result["violating_step"],
+                "finding_id": result["finding"]["finding_id"] if result["finding"] else None,
+            },
+            indent=2,
+        )
+    )
     return 1 if result["overall"] == "violated" else 2 if result["overall"] == "inconclusive" else 0
 
 
