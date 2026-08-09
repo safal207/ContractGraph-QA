@@ -45,10 +45,6 @@ A rule has three parts:
 
 `WHEN condition(s) -> ASSERT invariant -> otherwise FORBIDDEN_STATE`
 
-Example:
-
-`post_state.consumed_budget <= post_state.budget_limit`
-
 If the assertion fails, the detector emits a deterministic finding bound to the exact evidence fingerprint. If a required operand is missing, the result is `inconclusive`, never PASS.
 
 ## Modeling pattern
@@ -99,8 +95,6 @@ for all valid action sequences within the bounded model.
 
 ## Evidence graph usage
 
-From this directory:
-
 ```bash
 python build_evidence_graph.py evidence_record.example.json --out-dir evidence-graph
 ```
@@ -113,14 +107,6 @@ evidence-graph/
   evidence.md
   record.sha256
 ```
-
-If Graphviz is installed, the DOT can be rendered separately, for example:
-
-```bash
-dot -Tsvg evidence-graph/evidence.dot -o evidence-graph/evidence.svg
-```
-
-The digest is over canonical JSON, so the same evidence record yields the same SHA-256 value. This allows a finding or report to bind to the exact observed transition record.
 
 ## Forbidden-state detector usage
 
