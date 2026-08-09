@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -109,7 +108,7 @@ def evaluate_rule(document: dict[str, Any], rule: dict[str, Any]) -> dict[str, A
         }
 
     assertion = evaluate_clause(document, rule["assert"])
-    result = {
+    return {
         "id": rule["id"],
         "description": rule.get("description"),
         "status": assertion["status"],
@@ -117,7 +116,6 @@ def evaluate_rule(document: dict[str, Any], rule: dict[str, Any]) -> dict[str, A
         "forbidden_state": rule.get("forbidden_state"),
         "severity_hint": rule.get("severity_hint"),
     }
-    return result
 
 
 def detect(document: dict[str, Any], rules_document: dict[str, Any]) -> dict[str, Any]:
