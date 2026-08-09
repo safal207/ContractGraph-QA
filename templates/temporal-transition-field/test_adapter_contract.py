@@ -73,7 +73,8 @@ class AdapterContractTests(unittest.TestCase):
                 return observation
 
         wrapped = ContractBoundAdapter(WrongActionAdapter(), self.manifest)
-        wrapped.apply("fund")
+        with self.assertRaises(AdapterContractError):
+            wrapped.apply("fund")
 
     def test_contract_bound_search_preserves_minimal_finding_and_scope(self):
         result = search_paths(
