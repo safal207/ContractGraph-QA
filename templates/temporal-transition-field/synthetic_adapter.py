@@ -44,6 +44,9 @@ class SyntheticBudgetAdapter:
         self.values["transaction_count"] += 1
         return f"tx-{self._tx_seq:03d}"
 
+    def _remaining(self) -> int:
+        return max(0, self.values["budget_limit"] - self.values["consumed_budget"])
+
     def _result(
         self,
         *,
@@ -80,6 +83,14 @@ class SyntheticBudgetAdapter:
             },
         }
 
+    def _commit_amount(self, amount: int) -> tuple[list[str], list[str]]:
+        if amount <= 0:
+            return [], []
+        self.values["resource_balance"] -= amount
+        self.values["consumed_budget"] += amount
+        self.values["accepted_count"] += 1
+        return [self._tx_ref()], [self._audit_ref()]
+
     def apply(self, event: str) -> dict[str, Any]:
         if event == "fund":
             self.values["resource_balance"] = 100
@@ -111,38 +122,34 @@ class SyntheticBudgetAdapter:
             )
 
         if event == "action_valid":
-            amount = 20
-            self.values["resource_balance"] -= amount
-            self.values["consumed_budget"] += amount
-            self.values["accepted_count"] += 1
-            tx, audit = self._tx_ref(), self._audit_ref()
+            requested = 20
+            amount = min(requested, self._remaining())
+            txs, audits = self._commit_amount(amount)
             self.state_id = "Q3_COMMITTED"
             return self._result(
                 event=event,
                 outcome="accepted",
-                committed=True,
-                financial_mutation_count=1,
-                durable_mutation_count=1,
-                transaction_refs=[tx],
-                audit_refs=[audit],
-                parameters={"amount": amount},
+                committed=amount > 0,
+                financial_mutation_count=1 if amount > 0 else 0,
+                durable_mutation_count=1 if amount > 0 else 0,
+                transaction_refs=txs,
+                audit_refs=audits,
+                parameters={"requested_amount": requested, "committed_amount": amount},
+                reason="Synthetic bounded action; zero commitment means the budget was already full.",
             )
 
         if event == "action_reaches_limit":
-            amount = self.values["budget_limit"] - self.values["consumed_budget"]
-            self.values["resource_balance"] -= amount
-            self.values["consumed_budget"] += amount
-            self.values["accepted_count"] += 1
-            tx, audit = self._tx_ref(), self._audit_ref()
+            amount = self._remaining()
+            txs, audits = self._commit_amount(amount)
             self.state_id = "Q4_LIMIT_FULL"
             return self._result(
                 event=event,
                 outcome="accepted",
-                committed=True,
-                financial_mutation_count=1,
-                durable_mutation_count=1,
-                transaction_refs=[tx],
-                audit_refs=[audit],
+                committed=amount > 0,
+                financial_mutation_count=1 if amount > 0 else 0,
+                durable_mutation_count=1 if amount > 0 else 0,
+                transaction_refs=txs,
+                audit_refs=audits,
                 parameters={"amount": amount},
             )
 
@@ -160,22 +167,20 @@ class SyntheticBudgetAdapter:
             )
 
         if event == "duplicate_retry":
-            amount = 10
-            self.values["resource_balance"] -= amount
-            self.values["consumed_budget"] += amount
-            self.values["accepted_count"] += 1
-            tx, audit = self._tx_ref(), self._audit_ref()
+            requested = 10
+            amount = min(requested, self._remaining())
+            txs, audits = self._commit_amount(amount)
             self.state_id = "Q6_REPLAY_CHECK"
             return self._result(
                 event=event,
                 outcome="accepted",
-                committed=True,
-                financial_mutation_count=1,
-                durable_mutation_count=1,
-                transaction_refs=[tx],
-                audit_refs=[audit],
-                parameters={"amount": amount, "attempts": 2},
-                reason="Retry suppressed; one financial mutation committed.",
+                committed=amount > 0,
+                financial_mutation_count=1 if amount > 0 else 0,
+                durable_mutation_count=1 if amount > 0 else 0,
+                transaction_refs=txs,
+                audit_refs=audits,
+                parameters={"requested_amount": requested, "committed_amount": amount, "attempts": 2},
+                reason="Retry suppressed; at most one financial mutation committed.",
             )
 
         if event == "concurrent_action":
@@ -188,29 +193,36 @@ class SyntheticBudgetAdapter:
                 txs = [self._tx_ref(), self._tx_ref()]
                 audits = [self._audit_ref(), self._audit_ref()]
                 mutation_count = 2
+                committed = True
                 outcome = "accepted"
                 reason = "Synthetic bug: both concurrent actions committed."
             else:
-                committed_total = each
-                self.values["resource_balance"] -= committed_total
-                self.values["consumed_budget"] += committed_total
-                self.values["accepted_count"] += 1
-                self.values["rejected_count"] += 1
-                txs = [self._tx_ref()]
-                audits = [self._audit_ref()]
-                mutation_count = 1
-                outcome = "partial"
-                reason = "Synthetic safe resolution: one commit, one rejection."
+                remaining = self._remaining()
+                committed_total = each if each <= remaining else 0
+                if committed_total:
+                    txs, audits = self._commit_amount(committed_total)
+                    self.values["rejected_count"] += 1
+                    mutation_count = 1
+                    committed = True
+                    outcome = "partial"
+                    reason = "Synthetic safe resolution: one commit, one rejection."
+                else:
+                    self.values["rejected_count"] += 2
+                    txs, audits = [], []
+                    mutation_count = 0
+                    committed = False
+                    outcome = "rejected"
+                    reason = "Synthetic safe resolution: both actions rejected by remaining budget."
             self.state_id = "Q7_RACE"
             return self._result(
                 event=event,
                 outcome=outcome,
-                committed=True,
+                committed=committed,
                 financial_mutation_count=mutation_count,
                 durable_mutation_count=mutation_count,
                 transaction_refs=txs,
                 audit_refs=audits,
-                parameters={"amounts": [each, each]},
+                parameters={"amounts": [each, each], "committed_total": committed_total},
                 reason=reason,
                 concurrency_group="synthetic-race-001",
             )
