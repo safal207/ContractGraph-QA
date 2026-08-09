@@ -56,6 +56,27 @@ class ForbiddenStateDetectorTest(unittest.TestCase):
         self.assertEqual(result["overall"], "violated")
         self.assertIn("FS-04", result["finding"]["failed_rules"])
 
+    def test_duplicate_rule_is_not_applied_to_concurrent_aggregate(self):
+        concurrent = copy.deepcopy(self.evidence)
+        concurrent["request"]["action"] = "concurrent_action"
+        concurrent["mutation"]["financial_mutation_count"] = 2
+        result = detector.detect(concurrent, self.rules)
+        fs03 = next(item for item in result["evaluations"] if item["id"] == "FS-03")
+        self.assertEqual(fs03["status"], "not_applicable")
+
+    def test_generated_verdict_does_not_change_observation_fingerprint(self):
+        first_record = copy.deepcopy(self.evidence)
+        second_record = copy.deepcopy(self.evidence)
+        second_record["verdict"] = {
+            "state": "fail",
+            "forbidden_state_reached": True,
+            "finding_id": "generated-later",
+            "summary": "Generated annotation must not alter the observed-transition fingerprint.",
+        }
+        first = detector.detect(first_record, self.rules)
+        second = detector.detect(second_record, self.rules)
+        self.assertEqual(first["evidence_fingerprint"], second["evidence_fingerprint"])
+
 
 if __name__ == "__main__":
     unittest.main()
