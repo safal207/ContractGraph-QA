@@ -1,0 +1,77 @@
+{
+  "schema_version": "0.2",
+  "run_id": "run-example-001",
+  "scenario_id": "T11-CONCURRENT-BOUNDARY",
+  "timestamp_utc": "2030-01-01T00:00:00Z",
+  "scope": {
+    "environment": "sandbox",
+    "authorized": true,
+    "target": "example-payment-control",
+    "notes": "Synthetic client-neutral example."
+  },
+  "pre_state": {
+    "state_id": "READY",
+    "values": {
+      "resource_balance": 100,
+      "consumed_budget": 20,
+      "budget_limit": 60,
+      "per_action_limit": 40,
+      "transaction_count": 1,
+      "audit_count": 1
+    }
+  },
+  "request": {
+    "action": "concurrent_spend",
+    "logical_operation_id": "race-example-001",
+    "parameters": {"amounts": [30, 30]},
+    "concurrency_group": "cg-001"
+  },
+  "decision": {
+    "outcome": "accepted",
+    "status_code": "mixed",
+    "reason": "One action accepted, one rejected."
+  },
+  "mutation": {
+    "committed": true,
+    "financial_mutation_count": 1,
+    "durable_mutation_count": 1,
+    "details": {"committed_amount": 30}
+  },
+  "post_state": {
+    "state_id": "SPENT",
+    "values": {
+      "resource_balance": 70,
+      "consumed_budget": 50,
+      "budget_limit": 60,
+      "per_action_limit": 40,
+      "transaction_count": 2,
+      "audit_count": 2
+    }
+  },
+  "evidence": {
+    "transaction_refs": ["tx-example-002"],
+    "audit_refs": ["audit-example-002"],
+    "response_hash": null,
+    "artifacts": ["responses/race-example-001.json"]
+  },
+  "invariants": [
+    {
+      "id": "INV-01",
+      "rule": "consumed_budget <= budget_limit",
+      "verdict": "pass",
+      "observed": "50 <= 60"
+    },
+    {
+      "id": "INV-06",
+      "rule": "concurrent_committed_total + consumed_budget_before <= budget_limit",
+      "verdict": "pass",
+      "observed": "30 + 20 <= 60"
+    }
+  ],
+  "verdict": {
+    "state": "pass",
+    "forbidden_state_reached": false,
+    "finding_id": null,
+    "summary": "Concurrency resolved without crossing the cumulative limit."
+  }
+}
