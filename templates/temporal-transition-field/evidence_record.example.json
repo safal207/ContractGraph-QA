@@ -27,7 +27,7 @@
     "concurrency_group": "cg-001"
   },
   "decision": {
-    "outcome": "accepted",
+    "outcome": "partial",
     "status_code": "mixed",
     "reason": "One action accepted, one rejected."
   },
