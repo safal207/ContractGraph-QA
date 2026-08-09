@@ -1,0 +1,40 @@
+{
+  "schema_version": "0.6",
+  "adapter_id": "TODO-adapter-id",
+  "target_kind": "rest_api",
+  "scope": {
+    "environment": "sandbox",
+    "authorized": false,
+    "production": false,
+    "target": "TODO-explicit-authorized-test-target",
+    "notes": "FAIL-CLOSED TEMPLATE: set authorized=true only after explicit scope review."
+  },
+  "execution": {
+    "dry_run_default": true,
+    "max_concurrency": 1,
+    "max_depth": 3,
+    "max_paths": 25
+  },
+  "credentials": {
+    "source": "environment",
+    "required_env_vars": ["TODO_TEST_CREDENTIAL_ENV_VAR"]
+  },
+  "capabilities": {
+    "snapshot": true,
+    "apply": true,
+    "coverage_mode": "full_model",
+    "supported_events": []
+  },
+  "state_contract": {
+    "required_values": []
+  },
+  "evidence_contract": {
+    "required_fields": [
+      "request.action",
+      "request.logical_operation_id",
+      "decision.outcome",
+      "mutation.committed",
+      "evidence.audit_refs"
+    ]
+  }
+}
