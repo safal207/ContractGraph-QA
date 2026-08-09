@@ -10,160 +10,66 @@ Instead of asking only `did the request return the expected status?`, model the 
 
 This makes concurrency, retry/idempotency, boundary behavior, stale state, accounting divergence, impossible transitions, and shortest violating paths explicit and testable.
 
-## Files
+## Version ladder
 
-### v0.1 — transition field
+- **v0.1 — Transition Field:** state vector, transitions, invariants, test matrix, bounded path generation.
+- **v0.2 — Evidence Graph:** deterministic `PRE -> REQUEST -> DECISION -> MUTATION -> POST -> EVIDENCE -> VERDICT` trace and SHA-256 record digest.
+- **v0.3 — Forbidden-State Detector:** fail-closed constrained rule DSL, deterministic findings, no arbitrary expression execution.
+- **v0.4 — Automatic Path-to-Finding:** bounded BFS, isolated replay, per-transition evidence capture, shortest violating path within configured bounds.
+- **v0.5 — Guarded Transitions:** pre-state predicates decide whether a static edge is executable before the adapter is called.
 
-- `transition_field.example.yaml` — generic state vector, states, events, transitions, and invariants.
-- `test_matrix_template.csv` — reusable test matrix for boundaries, retries, concurrency, evidence, and reset/isolation.
-- `transition_adjacency_matrix.csv` — example adjacency matrix for allowed and forbidden transitions.
-- `generate_paths.py` — bounded breadth-first path generator for graph exploration.
-- `bounded_runner_template.py` — sandbox-only execution skeleton with dry-run default and explicit scope guards.
+## v0.5 guarded transitions
 
-### v0.2 — evidence graph
+- `transition_guards.example.json` binds guards to exact `(from, event, to)` edges.
+- `guard_engine.py` evaluates guards with the same allow-listed comparison vocabulary as the forbidden-state detector.
+- `test_guard_engine.py` covers allowed, blocked, undeclared, and fail-closed inconclusive outcomes.
+- `auto_path_to_finding.py` performs guarded BFS and never expands a blocked or inconclusive branch.
 
-- `evidence_record.schema.json` — machine-readable contract for one observed transition.
-- `evidence_record.example.json` — synthetic client-neutral concurrency example.
-- `build_evidence_graph.py` — converts one record into Graphviz DOT, Markdown trace, and deterministic SHA-256 digest.
-- `test_build_evidence_graph.py` — regression checks for graph topology, report output, and digest determinism.
-
-The evidence chain is modeled as:
-
-`PRE-STATE -> REQUEST -> DECISION -> MUTATION -> POST-STATE -> EVIDENCE -> VERDICT`
-
-Invariant nodes branch from the observed post-state and feed the final verdict. This keeps the final conclusion traceable to both state mutation and independent evidence surfaces.
-
-### v0.3 — forbidden-state detector
-
-- `forbidden_state_rules.example.json` — constrained, client-neutral rule DSL.
-- `detect_forbidden_state.py` — evaluates one evidence record against explicit forbidden-state rules.
-- `test_detect_forbidden_state.py` — regression tests for limit crossing, rejected-state mutation, missing evidence, deterministic finding IDs, scoped replay rules, and fail-closed missing operands.
-
-The detector deliberately does **not** use `eval()` or arbitrary expression execution. Rules use a small allow-listed comparison vocabulary (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `nonempty`) over JSON paths or literal values.
-
-A rule has three parts:
-
-`WHEN condition(s) -> ASSERT invariant -> otherwise FORBIDDEN_STATE`
-
-If the assertion fails, the detector emits a deterministic finding bound to the observed-transition fingerprint. Generated verdict/invariant annotations are excluded from that fingerprint so annotating the same observation does not change its identity. If a required operand is missing, the result is `inconclusive`, never PASS.
-
-### v0.4 — automatic path-to-finding
-
-- `synthetic_adapter.py` — offline in-memory safe and deliberately buggy adapters for demonstration/regression.
-- `auto_path_to_finding.py` — explores bounded paths in breadth-first order, replays every candidate from an isolated adapter instance, captures every transition, invokes the detector, and stops on the first violation.
-- `test_auto_path_to_finding.py` — verifies shortest-path discovery, safe bounded search, deterministic finding IDs, and hard search bounds.
-
-The v0.4 loop was:
-
-`MODEL -> BFS PATH -> ISOLATED REPLAY -> EVIDENCE RECORD -> DETECTOR -> QX? -> MINIMAL FINDING`
-
-Because candidate paths are breadth-first and each candidate is replayed from a fresh adapter state, the first detected violation is a **shortest violating path within the configured depth/path bounds**. That statement is intentionally bounded; it is not a claim that no shorter path exists outside the modeled transition graph or input corpus.
-
-### v0.5 — guarded transitions
-
-- `transition_guards.example.json` — binds explicit pre-state predicates to exact `(from, event, to)` edges.
-- `guard_engine.py` — evaluates transition guards using the same constrained comparison vocabulary as the forbidden-state detector.
-- `test_guard_engine.py` — checks allowed, blocked, undeclared, and fail-closed inconclusive guard outcomes.
-- `auto_path_to_finding.py` — now performs **guarded BFS** instead of expanding every syntactically reachable edge.
-
-The v0.5 loop is:
-
-`MODEL -> CURRENT X(t) -> EDGE GUARD -> ALLOW / BLOCK / INCONCLUSIVE`
-
-Allowed edges may execute. Blocked edges are pruned and never expanded. If a guard cannot be evaluated because required state is missing or incomparable, that branch becomes `inconclusive` and is not expanded.
-
-This means a transition may exist in the static graph while still being unreachable from the current observed state. Example:
+A static edge may exist without being executable for the current state:
 
 `Q2_READY --duplicate_retry--> Q6_REPLAY_CHECK`
 
-is statically declared, but the bundled guard requires `transaction_count > 0`. Immediately after policy setup, `transaction_count == 0`, so that edge is pruned rather than executed.
+The bundled guard requires `transaction_count > 0`. Immediately after policy setup the count is zero, so the edge is pruned before `apply(event)`.
 
-The guarded search loop is therefore:
+The guarded search loop is:
 
-`MODEL -> BFS PREFIX -> X(t) -> GUARD -> EXECUTE -> EVIDENCE -> DETECTOR -> QX?`
+`MODEL -> BFS PREFIX -> X(t) -> GUARD -> EXECUTE -> EVIDENCE -> DETECTOR -> QX? -> MINIMAL FINDING`
 
-Only prefixes that remain model-consistent and guard-enabled are expanded. This reduces impossible-path exploration before any real adapter is called and makes the transition model closer to a guarded state machine than a plain adjacency graph.
+Allowed edges execute. Blocked edges are pruned. Missing/incomparable guard operands produce `inconclusive`, never PASS, and the branch is not expanded.
 
 ## Modeling pattern
 
-Represent state at time `t` as a vector:
+Represent state at time `t` as:
 
-`X(t) = [resource_balance, consumed_budget, budget_limit, per_action_limit, tx_count, evidence_count, accepted_count, rejected_count]`
+`X(t) = [resource_balance, consumed_budget, budget_limit, per_action_limit, transaction_count, evidence_count, accepted_count, rejected_count]`
 
 A guarded transition is:
 
 `X(t) --[guard(event, X(t))]--> X(t+1)`
 
-A useful test does not only inspect the HTTP/RPC result. It checks whether the edge was enabled, whether the observed transition preserves invariants, and whether all evidence surfaces agree with the committed state.
-
-## Forbidden states
-
-Examples:
-
-- cumulative consumption exceeds policy limit;
-- rejected action mutates financial or durable state;
-- duplicate/retry produces a second mutation;
-- committed state is missing audit evidence;
-- transaction history and state diverge;
-- concurrent requests create an impossible aggregate state;
-- equivalent endpoints enforce different policy semantics.
-
-The preferred property is:
+The preferred bounded property is:
 
 `P(reachable(QX_FORBIDDEN)) = 0`
 
-for all guard-enabled action sequences within the bounded model.
+for all guard-enabled action sequences inside the declared model/search bounds.
 
-## Recommended workflow
+## Core files
 
-1. Define the state vector.
-2. Enumerate stable states.
-3. Define events and static transitions.
-4. Bind pre-state guards to transitions that are only conditionally enabled.
-5. Define global invariants and forbidden states.
-6. Explore guarded transition paths breadth-first under explicit bounds.
-7. Execute only within an authorized sandbox/local-fork/test environment.
-8. Capture `before -> guard -> request -> decision -> mutation -> after -> evidence`.
-9. Serialize one `evidence_record` per executed transition.
-10. Build a deterministic evidence graph and record digest.
-11. Run the forbidden-state detector against explicit machine-readable rules.
-12. Classify observations as `violated`, `inconclusive`, or bounded non-findings.
-13. Stop at the first forbidden state and retain the minimal guard-enabled replay path plus evidence records.
-14. Convert that violation into a reproducible finding tied to the observed-transition fingerprint.
+- `transition_field.example.yaml` — state model and static edges; references the guard/rule documents.
+- `transition_guards.example.json` — v0.5 edge guards.
+- `forbidden_state_rules.example.json` — forbidden-state assertions.
+- `test_matrix_template.csv` — reusable boundary/retry/concurrency/evidence test matrix.
+- `transition_adjacency_matrix.csv` — static adjacency example.
+- `generate_paths.py` — plain bounded graph path generator.
+- `bounded_runner_template.py` — conservative dry-run execution skeleton.
+- `evidence_record.schema.json` / `evidence_record.example.json` — transition evidence contract/example.
+- `build_evidence_graph.py` — Graphviz/Markdown/digest evidence outputs.
+- `detect_forbidden_state.py` — v0.3 detector.
+- `guard_engine.py` — v0.5 guard evaluator.
+- `synthetic_adapter.py` — offline safe and deliberately buggy adapters.
+- `auto_path_to_finding.py` — guarded BFS path-to-finding engine.
 
-## Evidence graph usage
-
-```bash
-python build_evidence_graph.py evidence_record.example.json --out-dir evidence-graph
-```
-
-It produces:
-
-```text
-evidence-graph/
-  evidence.dot
-  evidence.md
-  record.sha256
-```
-
-## Forbidden-state detector usage
-
-```bash
-python detect_forbidden_state.py \
-  evidence_record.example.json \
-  forbidden_state_rules.example.json \
-  --output detector-result.json
-```
-
-Exit codes:
-
-- `0` — no forbidden state found in this observed transition;
-- `1` — one or more explicit rules were violated;
-- `2` — evaluation is inconclusive because required evidence is missing or not comparable.
-
-## Guarded automatic path-to-finding demo
-
-Deliberately buggy, fully in-memory concurrency model:
+## Guarded path-to-finding demo
 
 ```bash
 python auto_path_to_finding.py \
@@ -173,66 +79,44 @@ python auto_path_to_finding.py \
   --out-dir path-to-finding
 ```
 
-Guards are enabled by default from `transition_guards.example.json`. Use `--no-guards` only for v0.4 compatibility/regression.
+Guards are enabled by default from `transition_guards.example.json`. `--no-guards` is available only for v0.4 compatibility/regression.
 
-Expected minimal path in the bundled synthetic model:
+Expected minimal path in the bundled buggy model:
 
 `fund -> set_policy -> concurrent_action -> CUMULATIVE_LIMIT_EXCEEDED`
 
-The output includes guard statistics and the number of candidate paths pruned before execution/expansion.
+The result includes `paths_pruned_by_guard` and aggregate guard statistics. A violating run exports `finding.json`, `minimal_path.json`, per-step evidence records, and the violating evidence graph/digest.
 
-The output directory contains:
-
-```text
-path-to-finding/
-  search_result.json
-  finding.json
-  minimal_path.json
-  evidence_records/
-    step-01.json
-    step-02.json
-    step-03.json
-  violating_evidence_graph/
-    evidence.dot
-    evidence.md
-    record.sha256
-```
-
-The safe in-memory adapter can be used as a negative control:
+The safe in-memory adapter is a negative control:
 
 ```bash
 python auto_path_to_finding.py --adapter synthetic-safe
 ```
 
-`not_found_within_bound` and `not_found_within_observed_transition` are bounded evidence only. They are not security certifications and do not imply that all paths, parameters, actors, time shifts, guards, or invariants have been covered.
-
 ## Adapter boundary
 
-`auto_path_to_finding.py` depends only on two adapter operations:
+The path engine depends on:
 
-- `snapshot()` — return a state snapshot with `state_id` and `values`;
-- `apply(event)` — execute one modeled event and return request, decision, mutation, and evidence fields.
+- `snapshot()` — observed state with `state_id` and `values`;
+- `apply(event)` — request, decision, mutation, and evidence for one modeled event.
 
-The guard engine runs against `snapshot()` **before** `apply(event)`. Therefore a real adapter can be protected from impossible or out-of-scope calls before target interaction happens.
+The guard engine runs against `snapshot()` **before** `apply(event)`. A real adapter can therefore avoid impossible or out-of-scope target calls rather than detecting them only after execution.
 
-The bundled CLI exposes only offline synthetic adapters. Real integrations should instantiate `search_paths(...)` programmatically with a separately reviewed adapter that enforces authorization, endpoint/contract scope, environment restrictions, bounded concurrency, credential handling, and reset/replay isolation.
+Real integrations must use separately reviewed, explicitly authorized adapters with environment/target allow-lists, bounded concurrency, credential isolation, and reset/replay isolation.
 
-## Safety defaults
-
-The runner/search templates are intentionally conservative:
+## Safety and evidence semantics
 
 - bounded `max_depth` and `max_paths`;
 - guard evaluation before adapter action execution;
-- blocked and inconclusive branches are not expanded;
-- isolated adapter instance for each candidate path;
-- dry-run by default where a network-capable runner exists;
-- credentials only through environment variables;
-- explicit endpoint/target allow-list in real adapters;
-- bounded concurrency;
-- no production assumptions;
-- no hidden load testing;
-- reset/isolation between independent runs where supported.
+- blocked/inconclusive branches are not expanded;
+- fresh adapter instance per candidate path;
+- dry-run default where network-capable runners exist;
+- credentials via environment variables only;
+- no production assumptions or hidden load testing;
+- detector and guards use a constrained DSL, not `eval()`;
+- missing evidence fails closed as `inconclusive`;
+- `not_found_within_bound` is bounded evidence only, never a security certification.
 
-The evidence-graph builder, forbidden-state detector, guard engine, and bundled synthetic adapters are offline-only and perform no target-system network request.
+The bundled evidence builder, detector, guard engine, and synthetic adapters are offline-only.
 
-This template is intentionally client-neutral and can be adapted to Solidity state machines, payment APIs, agent-control systems, workflow engines, and other stateful software.
+This template is client-neutral and can be adapted to Solidity state machines, payment APIs, agent-control systems, workflow engines, and other stateful software.
