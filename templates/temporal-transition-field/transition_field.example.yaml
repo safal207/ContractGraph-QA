@@ -1,6 +1,9 @@
-version: "0.1"
+version: "0.5"
 name: "Temporal Transition Field"
 mode: "authorized-test-only"
+
+guard_document: "transition_guards.example.json"
+forbidden_state_rules: "forbidden_state_rules.example.json"
 
 state_vector:
   - resource_balance
@@ -52,6 +55,8 @@ events:
   concurrent_action: {}
   inspect_evidence: {}
 
+# Static edges define structural reachability. v0.5 guards in
+# transition_guards.example.json decide whether an edge is executable for X(t).
 transitions:
   - {from: Q0_RESET, event: fund, to: Q1_FUNDED}
   - {from: Q1_FUNDED, event: set_policy, to: Q2_READY}
