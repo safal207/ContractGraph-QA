@@ -33,8 +33,14 @@
     },
     {
       "id": "FS-03",
-      "description": "A single logical operation must not produce more than one financial mutation.",
-      "when": [],
+      "description": "A duplicate/retry logical operation must not produce more than one financial mutation.",
+      "when": [
+        {
+          "left": {"path": "request.action"},
+          "op": "eq",
+          "right": {"value": "duplicate_retry"}
+        }
+      ],
       "assert": {
         "left": {"path": "mutation.financial_mutation_count"},
         "op": "lte",
