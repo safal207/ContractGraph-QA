@@ -6,7 +6,7 @@ Consumes:
 - a rule file using the constrained v0.3 comparison DSL
 
 No eval(), code execution, or arbitrary expression parsing is used.
-Missing data produces `inconclusive`, never a synthetic pass.
+Missing or malformed data produces `inconclusive`, never a synthetic pass.
 """
 from __future__ import annotations
 
@@ -60,12 +60,23 @@ def resolve_operand(document: dict[str, Any], operand: dict[str, Any]) -> Any:
     return MISSING
 
 
+def _nonempty(value: Any) -> bool:
+    if value is MISSING or value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set)):
+        return any(_nonempty(item) for item in value)
+    if isinstance(value, dict):
+        return bool(value) and any(_nonempty(item) for item in value.values())
+    return bool(value)
+
+
 def compare(left: Any, op: str, right: Any) -> bool:
     if op not in SUPPORTED_OPS:
         raise ValueError(f"Unsupported operator: {op}")
     if op == "nonempty":
-        observed = bool(left) if left is not MISSING else False
-        return observed is bool(right)
+        return _nonempty(left) is bool(right)
     if op == "eq":
         return left == right
     if op == "neq":
@@ -79,6 +90,64 @@ def compare(left: Any, op: str, right: Any) -> bool:
     if op == "gte":
         return left >= right
     raise AssertionError(op)
+
+
+def _valid_operand(operand: Any) -> bool:
+    if not isinstance(operand, dict):
+        return False
+    has_value = "value" in operand
+    has_path = "path" in operand
+    if has_value == has_path:
+        return False
+    if has_path:
+        return isinstance(operand["path"], str) and bool(operand["path"].strip())
+    return True
+
+
+def _validate_clause(clause: Any, where: str) -> list[str]:
+    if not isinstance(clause, dict):
+        return [f"{where} must be an object"]
+    errors: list[str] = []
+    op = clause.get("op")
+    if op not in SUPPORTED_OPS:
+        errors.append(f"{where}.op must be one of {sorted(SUPPORTED_OPS)}")
+    if not _valid_operand(clause.get("left")):
+        errors.append(f"{where}.left must contain exactly one valid path or value operand")
+    if not _valid_operand(clause.get("right")):
+        errors.append(f"{where}.right must contain exactly one valid path or value operand")
+    return errors
+
+
+def validate_rules_document(rules_document: Any) -> list[str]:
+    if not isinstance(rules_document, dict):
+        return ["rules document must be an object"]
+    rules = rules_document.get("rules")
+    if not isinstance(rules, list) or not rules:
+        return ["rules document must contain a non-empty rules list"]
+
+    errors: list[str] = []
+    seen_ids: set[str] = set()
+    for index, rule in enumerate(rules):
+        prefix = f"rules[{index}]"
+        if not isinstance(rule, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        rule_id = rule.get("id")
+        if not isinstance(rule_id, str) or not rule_id.strip():
+            errors.append(f"{prefix}.id must be a non-empty string")
+        elif rule_id in seen_ids:
+            errors.append(f"{prefix}.id duplicates {rule_id!r}")
+        else:
+            seen_ids.add(rule_id)
+
+        when = rule.get("when", [])
+        if not isinstance(when, list):
+            errors.append(f"{prefix}.when must be a list when present")
+        else:
+            for clause_index, clause in enumerate(when):
+                errors.extend(_validate_clause(clause, f"{prefix}.when[{clause_index}]"))
+        errors.extend(_validate_clause(rule.get("assert"), f"{prefix}.assert"))
+    return errors
 
 
 def evaluate_clause(document: dict[str, Any], clause: dict[str, Any]) -> dict[str, Any]:
@@ -133,8 +202,40 @@ def evaluate_rule(document: dict[str, Any], rule: dict[str, Any]) -> dict[str, A
     }
 
 
+def _inconclusive_result(document: dict[str, Any], errors: list[str]) -> dict[str, Any]:
+    evidence_fingerprint = digest(observation_projection(document))
+    return {
+        "schema_version": "0.3",
+        "run_id": document.get("run_id"),
+        "scenario_id": document.get("scenario_id"),
+        "overall": "inconclusive",
+        "forbidden_state_reached": False,
+        "evidence_fingerprint": evidence_fingerprint,
+        "evaluations": [
+            {
+                "id": None,
+                "status": "inconclusive",
+                "reason": "invalid_rule_document",
+                "errors": errors,
+            }
+        ],
+        "finding": None,
+    }
+
+
 def detect(document: dict[str, Any], rules_document: dict[str, Any]) -> dict[str, Any]:
-    evaluations = [evaluate_rule(document, rule) for rule in rules_document.get("rules", [])]
+    validation_errors = validate_rules_document(rules_document)
+    if validation_errors:
+        return _inconclusive_result(document, validation_errors)
+
+    try:
+        evaluations = [evaluate_rule(document, rule) for rule in rules_document["rules"]]
+    except (KeyError, TypeError, ValueError) as exc:
+        return _inconclusive_result(
+            document,
+            [f"rule evaluation failed closed: {type(exc).__name__}: {exc}"],
+        )
+
     failed = [item for item in evaluations if item["status"] == "fail"]
     inconclusive = [item for item in evaluations if item["status"] == "inconclusive"]
 
