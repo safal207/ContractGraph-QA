@@ -56,6 +56,35 @@ class ForbiddenStateDetectorTest(unittest.TestCase):
         self.assertEqual(result["overall"], "violated")
         self.assertIn("FS-04", result["finding"]["failed_rules"])
 
+    def test_blank_audit_reference_is_treated_as_empty(self):
+        broken = copy.deepcopy(self.evidence)
+        broken["evidence"]["audit_refs"] = ["   "]
+        result = detector.detect(broken, self.rules)
+        self.assertEqual(result["overall"], "violated")
+        self.assertIn("FS-04", result["finding"]["failed_rules"])
+
+    def test_empty_rules_document_fails_closed(self):
+        result = detector.detect(copy.deepcopy(self.evidence), {"rules": []})
+        self.assertEqual(result["overall"], "inconclusive")
+        self.assertFalse(result["forbidden_state_reached"])
+        self.assertIsNone(result["finding"])
+        self.assertEqual(result["evaluations"][0]["reason"], "invalid_rule_document")
+
+    def test_malformed_rule_fails_closed(self):
+        malformed = {
+            "rules": [
+                {
+                    "id": "BROKEN",
+                    "when": [],
+                    "assert": {"op": "eq", "left": {"path": "post_state.values.x"}},
+                }
+            ]
+        }
+        result = detector.detect(copy.deepcopy(self.evidence), malformed)
+        self.assertEqual(result["overall"], "inconclusive")
+        self.assertFalse(result["forbidden_state_reached"])
+        self.assertIsNone(result["finding"])
+
     def test_duplicate_rule_is_not_applied_to_concurrent_aggregate(self):
         concurrent = copy.deepcopy(self.evidence)
         concurrent["request"]["action"] = "concurrent_action"
