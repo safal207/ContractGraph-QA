@@ -1,0 +1,75 @@
+{
+  "schema_version": "0.5",
+  "guards": [
+    {
+      "id": "G-01",
+      "transition": {"from": "Q0_RESET", "event": "fund", "to": "Q1_FUNDED"},
+      "all": [
+        {"left": {"path": "pre_state.values.resource_balance"}, "op": "eq", "right": {"value": 0}}
+      ]
+    },
+    {
+      "id": "G-02",
+      "transition": {"from": "Q1_FUNDED", "event": "set_policy", "to": "Q2_READY"},
+      "all": [
+        {"left": {"path": "pre_state.values.resource_balance"}, "op": "gt", "right": {"value": 0}}
+      ]
+    },
+    {
+      "id": "G-03",
+      "transition": {"from": "Q2_READY", "event": "action_valid", "to": "Q3_COMMITTED"},
+      "all": [
+        {"left": {"path": "pre_state.values.consumed_budget"}, "op": "lt", "right": {"path": "pre_state.values.budget_limit"}}
+      ]
+    },
+    {
+      "id": "G-04",
+      "transition": {"from": "Q3_COMMITTED", "event": "action_valid", "to": "Q3_COMMITTED"},
+      "all": [
+        {"left": {"path": "pre_state.values.consumed_budget"}, "op": "lt", "right": {"path": "pre_state.values.budget_limit"}}
+      ]
+    },
+    {
+      "id": "G-05",
+      "transition": {"from": "Q2_READY", "event": "action_reaches_limit", "to": "Q4_LIMIT_FULL"},
+      "all": [
+        {"left": {"path": "pre_state.values.consumed_budget"}, "op": "lt", "right": {"path": "pre_state.values.budget_limit"}}
+      ]
+    },
+    {
+      "id": "G-06",
+      "transition": {"from": "Q3_COMMITTED", "event": "action_reaches_limit", "to": "Q4_LIMIT_FULL"},
+      "all": [
+        {"left": {"path": "pre_state.values.consumed_budget"}, "op": "lt", "right": {"path": "pre_state.values.budget_limit"}}
+      ]
+    },
+    {
+      "id": "G-07",
+      "transition": {"from": "Q2_READY", "event": "duplicate_retry", "to": "Q6_REPLAY_CHECK"},
+      "all": [
+        {"left": {"path": "pre_state.values.transaction_count"}, "op": "gt", "right": {"value": 0}}
+      ]
+    },
+    {
+      "id": "G-08",
+      "transition": {"from": "Q3_COMMITTED", "event": "duplicate_retry", "to": "Q6_REPLAY_CHECK"},
+      "all": [
+        {"left": {"path": "pre_state.values.transaction_count"}, "op": "gt", "right": {"value": 0}}
+      ]
+    },
+    {
+      "id": "G-09",
+      "transition": {"from": "Q2_READY", "event": "concurrent_action", "to": "Q7_RACE"},
+      "all": [
+        {"left": {"path": "pre_state.values.consumed_budget"}, "op": "lt", "right": {"path": "pre_state.values.budget_limit"}}
+      ]
+    },
+    {
+      "id": "G-10",
+      "transition": {"from": "Q3_COMMITTED", "event": "concurrent_action", "to": "Q7_RACE"},
+      "all": [
+        {"left": {"path": "pre_state.values.consumed_budget"}, "op": "lt", "right": {"path": "pre_state.values.budget_limit"}}
+      ]
+    }
+  ]
+}
