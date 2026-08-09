@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Guarded automatic path-to-finding search for Temporal Transition Field v0.5.
+"""Guarded automatic path-to-finding search for Temporal Transition Field v0.6.
 
-The engine explores declared transitions in breadth-first order. Every candidate
-path is replayed from a fresh adapter instance. Before each event executes, the
-v0.5 guard engine evaluates whether that edge is enabled by the observed X(t).
-Blocked edges are pruned; inconclusive guards fail closed and are not expanded.
-Every executed transition becomes a v0.2 evidence record and is evaluated by the
-v0.3 forbidden-state detector. The first violation is therefore a shortest
-violating path within the guarded model and configured search bounds.
+v0.6 adds a fail-closed adapter contract in front of the v0.5 guarded BFS.
+When an adapter manifest is supplied, authorization, non-production scope,
+model-event coverage, search bounds, snapshot shape, and evidence shape are
+validated before/while adapter actions execute.
 
-This module performs no network activity by itself. Real target interaction must
-live behind an explicitly authorized adapter. The bundled CLI uses only the
-in-memory synthetic adapters.
+The engine itself performs no network activity. Real target interaction must
+live behind a separately reviewed adapter and a validated manifest.
 """
 from __future__ import annotations
 
@@ -21,6 +17,13 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
+from adapter_contract import (
+    ContractBoundAdapter,
+    evidence_scope,
+    enforce_search_bounds,
+    validate_manifest,
+    validate_model_coverage,
+)
 from build_evidence_graph import build_dot, build_markdown, record_digest
 from detect_forbidden_state import detect
 from generate_paths import SPEC, parse_transitions
@@ -45,18 +48,14 @@ def _make_record(
     observation: dict[str, Any],
     post_state: dict[str, Any],
     guard_result: dict[str, Any],
+    scope: dict[str, Any],
 ) -> dict[str, Any]:
     expected_from, event, expected_to = transition
     return {
         "schema_version": "0.2",
         "run_id": f"path-{path_index:04d}",
         "scenario_id": f"PATH-{path_index:04d}-STEP-{step_index:02d}",
-        "scope": {
-            "environment": "local",
-            "authorized": True,
-            "target": "temporal-transition-field-adapter",
-            "notes": "Guarded bounded path exploration; adapter controls target interaction.",
-        },
+        "scope": scope,
         "model_transition": {
             "expected_from": expected_from,
             "event": event,
@@ -124,7 +123,9 @@ def _apply_detection(record: dict[str, Any], detector_result: dict[str, Any]) ->
 
 
 def _model_state_check(
-    transition: tuple[str, str, str], pre_state: dict[str, Any], post_state: dict[str, Any] | None = None
+    transition: tuple[str, str, str],
+    pre_state: dict[str, Any],
+    post_state: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     expected_from, event, expected_to = transition
     if pre_state.get("state_id") != expected_from:
@@ -144,12 +145,12 @@ def _model_state_check(
     return None
 
 
-def _load_graph() -> dict[str, list[tuple[str, str, str]]]:
+def _load_transitions_and_graph() -> tuple[list[tuple[str, str, str]], dict[str, list[tuple[str, str, str]]]]:
     transitions = parse_transitions(SPEC.read_text(encoding="utf-8"))
     graph: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
     for src, event, dst in transitions:
         graph[src].append((src, event, dst))
-    return graph
+    return transitions, graph
 
 
 def _replay_candidate(
@@ -157,10 +158,27 @@ def _replay_candidate(
     path: list[tuple[str, str, str]],
     rules_document: dict[str, Any],
     guards_document: dict[str, Any] | None,
+    adapter_manifest: dict[str, Any] | None,
     *,
     path_index: int,
 ) -> dict[str, Any]:
-    adapter = adapter_factory()
+    raw_adapter = adapter_factory()
+    adapter: TransitionAdapter = (
+        ContractBoundAdapter(raw_adapter, adapter_manifest)
+        if adapter_manifest is not None
+        else raw_adapter
+    )
+    scope = (
+        evidence_scope(adapter_manifest)
+        if adapter_manifest is not None
+        else {
+            "environment": "local",
+            "authorized": True,
+            "target": "temporal-transition-field-adapter",
+            "notes": "Guarded bounded path exploration; adapter controls target interaction.",
+        }
+    )
+
     records: list[dict[str, Any]] = []
     guard_counts = {"checks": 0, "allowed": 0, "blocked": 0, "inconclusive": 0}
 
@@ -211,6 +229,7 @@ def _replay_candidate(
             observation=observation,
             post_state=post_state,
             guard_result=guard_result,
+            scope=scope,
         )
 
         if post_mismatch is not None:
@@ -262,6 +281,7 @@ def search_paths(
     rules_document: dict[str, Any],
     *,
     guards_document: dict[str, Any] | None = None,
+    adapter_manifest: dict[str, Any] | None = None,
     max_depth: int = 6,
     max_paths: int = 250,
 ) -> dict[str, Any]:
@@ -270,7 +290,12 @@ def search_paths(
     if max_paths < 1:
         raise ValueError("max_paths must be >= 1")
 
-    graph = _load_graph()
+    transitions, graph = _load_transitions_and_graph()
+    if adapter_manifest is not None:
+        validate_manifest(adapter_manifest)
+        enforce_search_bounds(adapter_manifest, max_depth=max_depth, max_paths=max_paths)
+        validate_model_coverage(adapter_manifest, transitions)
+
     queue: deque[list[tuple[str, str, str]]] = deque(
         [[transition] for transition in graph.get("Q0_RESET", [])]
     )
@@ -287,16 +312,19 @@ def search_paths(
             path,
             rules_document,
             guards_document,
+            adapter_manifest,
             path_index=explored,
         )
         _add_counts(guard_counts, replay["guard_counts"])
 
         if replay["status"] == "violated":
             return {
-                "schema_version": "0.5",
+                "schema_version": "0.6",
                 "overall": "violated",
-                "search_semantics": "guarded_breadth_first_shortest_path_within_bound",
+                "search_semantics": "contract_bound_guarded_breadth_first_shortest_path_within_bound",
                 "guards_enabled": guards_document is not None,
+                "adapter_contract_enabled": adapter_manifest is not None,
+                "adapter_id": adapter_manifest.get("adapter_id") if adapter_manifest else None,
                 "max_depth": max_depth,
                 "max_paths": max_paths,
                 "paths_explored": explored,
@@ -323,10 +351,12 @@ def search_paths(
                 queue.append(path + [transition])
 
     return {
-        "schema_version": "0.5",
+        "schema_version": "0.6",
         "overall": "inconclusive" if saw_inconclusive else "not_found_within_bound",
-        "search_semantics": "guarded_breadth_first_shortest_path_within_bound",
+        "search_semantics": "contract_bound_guarded_breadth_first_shortest_path_within_bound",
         "guards_enabled": guards_document is not None,
+        "adapter_contract_enabled": adapter_manifest is not None,
+        "adapter_id": adapter_manifest.get("adapter_id") if adapter_manifest else None,
         "max_depth": max_depth,
         "max_paths": max_paths,
         "paths_explored": explored,
@@ -375,18 +405,13 @@ def write_result(result: dict[str, Any], out_dir: Path) -> None:
 
 
 def main() -> int:
+    here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--rules",
-        type=Path,
-        default=Path(__file__).with_name("forbidden_state_rules.example.json"),
-    )
-    parser.add_argument(
-        "--guards",
-        type=Path,
-        default=Path(__file__).with_name("transition_guards.example.json"),
-    )
+    parser.add_argument("--rules", type=Path, default=here / "forbidden_state_rules.example.json")
+    parser.add_argument("--guards", type=Path, default=here / "transition_guards.example.json")
     parser.add_argument("--no-guards", action="store_true")
+    parser.add_argument("--adapter-manifest", type=Path, default=here / "adapter_manifest.synthetic.json")
+    parser.add_argument("--no-adapter-contract", action="store_true")
     parser.add_argument("--out-dir", type=Path, default=Path("path-to-finding"))
     parser.add_argument("--max-depth", type=int, default=6)
     parser.add_argument("--max-paths", type=int, default=250)
@@ -394,17 +419,19 @@ def main() -> int:
         "--adapter",
         choices=["synthetic-buggy", "synthetic-safe"],
         default="synthetic-buggy",
-        help="Bundled offline adapter. Real integrations should provide an authorized adapter programmatically.",
+        help="Bundled offline adapter. Real integrations must be supplied programmatically behind a reviewed manifest.",
     )
     args = parser.parse_args()
 
     rules = json.loads(args.rules.read_text(encoding="utf-8"))
     guards = None if args.no_guards else json.loads(args.guards.read_text(encoding="utf-8"))
+    manifest = None if args.no_adapter_contract else json.loads(args.adapter_manifest.read_text(encoding="utf-8"))
     factory: AdapterFactory = SyntheticBuggyAdapter if args.adapter == "synthetic-buggy" else SyntheticSafeAdapter
     result = search_paths(
         factory,
         rules,
         guards_document=guards,
+        adapter_manifest=manifest,
         max_depth=args.max_depth,
         max_paths=args.max_paths,
     )
@@ -413,6 +440,8 @@ def main() -> int:
         json.dumps(
             {
                 "overall": result["overall"],
+                "adapter_contract_enabled": result["adapter_contract_enabled"],
+                "adapter_id": result["adapter_id"],
                 "paths_explored": result["paths_explored"],
                 "paths_pruned_by_guard": result["paths_pruned_by_guard"],
                 "guard_stats": result["guard_stats"],
