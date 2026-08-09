@@ -18,6 +18,16 @@ from typing import Any
 
 MISSING = object()
 SUPPORTED_OPS = {"eq", "neq", "lt", "lte", "gt", "gte", "nonempty"}
+OBSERVED_FIELDS = (
+    "scope",
+    "model_transition",
+    "pre_state",
+    "request",
+    "decision",
+    "mutation",
+    "post_state",
+    "evidence",
+)
 
 
 def canonical_json(value: Any) -> str:
@@ -26,6 +36,11 @@ def canonical_json(value: Any) -> str:
 
 def digest(value: Any) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def observation_projection(document: dict[str, Any]) -> dict[str, Any]:
+    """Return only observed/model inputs, excluding generated verdict annotations."""
+    return {field: document.get(field) for field in OBSERVED_FIELDS if field in document}
 
 
 def get_path(document: Any, dotted_path: str) -> Any:
@@ -123,7 +138,7 @@ def detect(document: dict[str, Any], rules_document: dict[str, Any]) -> dict[str
     failed = [item for item in evaluations if item["status"] == "fail"]
     inconclusive = [item for item in evaluations if item["status"] == "inconclusive"]
 
-    evidence_fingerprint = digest(document)
+    evidence_fingerprint = digest(observation_projection(document))
     if failed:
         finding_seed = {
             "evidence_fingerprint": evidence_fingerprint,
