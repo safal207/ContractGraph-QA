@@ -36,7 +36,7 @@
       "type": "object",
       "required": ["dry_run_default", "max_concurrency", "max_depth", "max_paths"],
       "properties": {
-        "dry_run_default": {"type": "boolean"},
+        "dry_run_default": {"const": true},
         "max_concurrency": {"type": "integer", "minimum": 1, "maximum": 8},
         "max_depth": {"type": "integer", "minimum": 1, "maximum": 32},
         "max_paths": {"type": "integer", "minimum": 1, "maximum": 10000}
@@ -54,6 +54,16 @@
           "uniqueItems": true
         }
       },
+      "allOf": [
+        {
+          "if": {"properties": {"source": {"const": "none"}}},
+          "then": {"properties": {"required_env_vars": {"maxItems": 0}}}
+        },
+        {
+          "if": {"properties": {"source": {"const": "environment"}}},
+          "then": {"properties": {"required_env_vars": {"minItems": 1}}}
+        }
+      ],
       "additionalProperties": false
     },
     "capabilities": {
@@ -62,7 +72,7 @@
       "properties": {
         "snapshot": {"const": true},
         "apply": {"const": true},
-        "coverage_mode": {"enum": ["full_model"]},
+        "coverage_mode": {"const": "full_model"},
         "supported_events": {
           "type": "array",
           "minItems": 1,
