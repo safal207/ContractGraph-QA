@@ -1,0 +1,84 @@
+version: "0.1"
+name: "Temporal Transition Field"
+mode: "authorized-test-only"
+
+state_vector:
+  - resource_balance
+  - consumed_budget
+  - budget_limit
+  - per_action_limit
+  - transaction_count
+  - evidence_count
+  - accepted_count
+  - rejected_count
+
+states:
+  Q0_RESET:
+    invariant:
+      - "consumed_budget == 0"
+  Q1_FUNDED:
+    invariant:
+      - "resource_balance > 0"
+  Q2_READY:
+    invariant:
+      - "consumed_budget <= budget_limit"
+  Q3_COMMITTED:
+    invariant:
+      - "consumed_budget <= budget_limit"
+      - "resource_balance >= 0"
+  Q4_LIMIT_FULL:
+    invariant:
+      - "consumed_budget == budget_limit"
+  Q5_REJECTED:
+    invariant:
+      - "durable_state_unchanged == true"
+  Q6_REPLAY_CHECK:
+    invariant:
+      - "durable_mutation_count <= 1"
+  Q7_RACE:
+    invariant:
+      - "committed_total + consumed_before <= budget_limit"
+  QX_FORBIDDEN:
+    forbidden: true
+
+events:
+  reset: {}
+  fund: {}
+  set_policy: {}
+  action_valid: {}
+  action_reaches_limit: {}
+  action_invalid: {}
+  duplicate_retry: {}
+  concurrent_action: {}
+  inspect_evidence: {}
+
+transitions:
+  - {from: Q0_RESET, event: fund, to: Q1_FUNDED}
+  - {from: Q1_FUNDED, event: set_policy, to: Q2_READY}
+  - {from: Q2_READY, event: action_valid, to: Q3_COMMITTED}
+  - {from: Q3_COMMITTED, event: action_valid, to: Q3_COMMITTED}
+  - {from: Q2_READY, event: action_reaches_limit, to: Q4_LIMIT_FULL}
+  - {from: Q3_COMMITTED, event: action_reaches_limit, to: Q4_LIMIT_FULL}
+  - {from: Q2_READY, event: action_invalid, to: Q5_REJECTED}
+  - {from: Q3_COMMITTED, event: action_invalid, to: Q5_REJECTED}
+  - {from: Q4_LIMIT_FULL, event: action_invalid, to: Q5_REJECTED}
+  - {from: Q2_READY, event: duplicate_retry, to: Q6_REPLAY_CHECK}
+  - {from: Q3_COMMITTED, event: duplicate_retry, to: Q6_REPLAY_CHECK}
+  - {from: Q2_READY, event: concurrent_action, to: Q7_RACE}
+  - {from: Q3_COMMITTED, event: concurrent_action, to: Q7_RACE}
+
+global_invariants:
+  - id: INV-01
+    rule: "consumed_budget <= budget_limit"
+  - id: INV-02
+    rule: "accepted(amount) => amount <= per_action_limit"
+  - id: INV-03
+    rule: "rejected(request) => durable_state_after == durable_state_before"
+  - id: INV-04
+    rule: "same_logical_operation => durable_mutation_count <= 1"
+  - id: INV-05
+    rule: "committed_transition => evidence_exists"
+  - id: INV-06
+    rule: "concurrent_committed_total + consumed_before <= budget_limit"
+  - id: INV-07
+    rule: "resource_after == resource_before - sum(committed_actions)"
