@@ -12,11 +12,26 @@ This makes concurrency, retry/idempotency, boundary behavior, stale state, and a
 
 ## Files
 
+### v0.1 — transition field
+
 - `transition_field.example.yaml` — generic state vector, states, events, transitions, and invariants.
 - `test_matrix_template.csv` — reusable test matrix for boundaries, retries, concurrency, evidence, and reset/isolation.
 - `transition_adjacency_matrix.csv` — example adjacency matrix for allowed and forbidden transitions.
 - `generate_paths.py` — bounded path generator for graph exploration.
 - `bounded_runner_template.py` — sandbox-only execution skeleton with dry-run default and explicit scope guards.
+
+### v0.2 — evidence graph
+
+- `evidence_record.schema.json` — machine-readable contract for one observed transition.
+- `evidence_record.example.json` — synthetic client-neutral concurrency example.
+- `build_evidence_graph.py` — converts one record into Graphviz DOT, Markdown trace, and deterministic SHA-256 digest.
+- `test_build_evidence_graph.py` — regression checks for graph topology, report output, and digest determinism.
+
+The evidence chain is modeled as:
+
+`PRE-STATE -> REQUEST -> DECISION -> MUTATION -> POST-STATE -> EVIDENCE -> VERDICT`
+
+Invariant nodes branch from the observed post-state and feed the final verdict. This keeps the final conclusion traceable to both state mutation and independent evidence surfaces.
 
 ## Modeling pattern
 
@@ -57,9 +72,36 @@ for all valid action sequences within the bounded model.
 5. Mark forbidden states explicitly.
 6. Generate bounded transition paths.
 7. Execute only within an authorized sandbox/local-fork/test environment.
-8. Capture before -> request -> response -> after -> evidence.
+8. Capture `before -> request -> decision -> mutation -> after -> evidence`.
 9. Evaluate invariant verdicts.
-10. Convert any forbidden transition into a reproducible finding.
+10. Serialize one `evidence_record` per observed transition.
+11. Build a deterministic evidence graph and record digest.
+12. Convert any forbidden transition into a reproducible finding.
+
+## Evidence graph usage
+
+From this directory:
+
+```bash
+python build_evidence_graph.py evidence_record.example.json --out-dir evidence-graph
+```
+
+It produces:
+
+```text
+evidence-graph/
+  evidence.dot
+  evidence.md
+  record.sha256
+```
+
+If Graphviz is installed, the DOT can be rendered separately, for example:
+
+```bash
+dot -Tsvg evidence-graph/evidence.dot -o evidence-graph/evidence.svg
+```
+
+The digest is over canonical JSON, so the same evidence record yields the same SHA-256 value. This allows a finding or report to bind to the exact observed transition record.
 
 ## Safety defaults
 
@@ -72,5 +114,7 @@ The runner template is intentionally conservative:
 - no production assumptions;
 - no hidden load testing;
 - reset/isolation between independent runs where supported.
+
+The evidence-graph builder is offline-only: it performs no target-system action and makes no network request.
 
 This template is intentionally client-neutral and can be adapted to Solidity state machines, payment APIs, agent-control systems, workflow engines, and other stateful software.
