@@ -1,8 +1,38 @@
 # Intuition `TrustSwapAndBridgeRouter` — bounded target plan v1
 
-Status: **HOLD — CURRENT BOUNTY RULES MUST BE VERIFIED BEFORE EXECUTION OR SUBMISSION**
+Status: **RULES VERIFIED — LOCAL-ONLY RESEARCH MAY PROCEED**
 
-This document is a research plan only. It does not assert that the target is currently eligible for a bounty, that any behavior is a vulnerability, or that external execution is authorized.
+Rule snapshot date: **2026-08-09**
+
+Official bounty program: `https://immunefi.com/bug-bounty/intuition/`
+
+This document is a bounded research plan. It does not assert that any behavior is a vulnerability or that a bounty is owed.
+
+## Current authorization / program gate
+
+Verified from the current official Immunefi program on 2026-08-09:
+
+- program is active;
+- live since 2026-07-08, last updated 2026-07-17;
+- `TrustSwapAndBridgeRouter - Base Mainnet` is explicitly listed as an asset in scope;
+- smart-contract PoC is required;
+- KYC is required;
+- reward range currently shown for smart contracts is Low $1,000 flat, Medium $1,000–$2,500, High $2,500–$5,000, Critical $5,000–$100,000;
+- testing against public mainnet or public testnet is explicitly out of scope — use a local fork;
+- external systems integrated by the router (Aerodrome / Uniswap v3 routers and MetaLayer / Hyperlane) are out of scope except where Intuition's own integration logic is at fault;
+- automated scanner output without a working PoC is out of scope;
+- MEV/front-running/sandwich findings are out of scope under the current sequencing assumptions unless the issue defeats the user's configured slippage bound;
+- previous unresolved audit findings are not reward-eligible.
+
+Execution boundary remains stricter than the program minimum:
+
+- exact source pin;
+- local Foundry tests/mocks first;
+- local fork only when needed;
+- no public-network transactions;
+- no real wallets/private keys;
+- no real funds;
+- no testing of third-party infrastructure.
 
 ## Pinned source
 
@@ -14,43 +44,40 @@ Target:
 
 `contracts/TrustSwapAndBridgeRouter.sol`
 
-The pinned commit is the latest commit observed in the official repository during preparation of this plan.
+Current pinned blob SHA observed during review:
 
-## Authorization gate
+`27cdb7286d2768f984b32896e9ab21e32f343c27`
 
-Before any target-specific execution intended for bounty submission, verify from the **current official bounty page**:
+## Differential from the March 2026 Code4rena scope
 
-- program is active;
-- this exact contract/repository/version is in scope;
-- accepted testing environments;
-- local fork / local reproduction rules;
-- PoC requirements;
-- exclusions and known-issue policy;
-- duplicate / previously disclosed issue rules;
-- severity/payment rules.
+Code4rena reviewed the periphery repository at:
 
-Until that check is complete, status remains `HOLD`.
+`b026521fe26db8249cd0795b62ec480fd8c848e8`
 
-Even after authorization, default execution boundary is:
+Current pinned source is five commits ahead. For `TrustSwapAndBridgeRouter.sol`, the observed code delta is only **3 added lines**, while tests gained additional coverage. The current source includes:
 
-- source copy pinned to an exact commit;
-- local Foundry tests and mocks first;
-- local fork only if the current program explicitly permits it;
-- no mainnet or public-testnet transactions;
-- no wallet/private-key use;
-- no real funds;
-- no interaction with unrelated third-party systems.
+```solidity
+receive() external payable { }
+```
+
+with documentation that it accepts downstream swap-router ETH refunds.
+
+Therefore the current router is overwhelmingly the same audited surface; novelty work should focus on behaviors not already captured by the March/April audit and on the narrow post-audit delta/regression interactions.
 
 ## Historical prior-art gate
 
-This contract appeared in the March 2026 Code4rena Intuition contest scope. Prior findings must therefore be treated as duplicate/known until proven otherwise.
+This contract was in the March 2026 Code4rena scope. The final report contains multiple router findings that must be excluded as novelty targets.
 
-At minimum, exclude as novelty targets:
+Known / prior-art examples include:
 
-1. **Bridge fee quoted from slippage minimum** — prior report already describes quoting `quoteTransferRemote` with `minTrustOut` and bridging `amountOut`.
-2. **SwapRouter refundETH dust DoS / refund handling** — the official repository history contains a dedicated fix for S-324 and later accepts ETH via `receive()`.
+1. **Bridge fee quoted using `minTrustOut` while the actual bridge uses `amountOut`.** Keep only as regression coverage.
+2. **`quoteExactInput` catches quoter reverts and returns zero.** Already reported as low/informational; do not submit as new.
+3. **`deadline: block.timestamp` makes deadline expiry ineffective.** Already reported; additionally MEV/front-running-based impact is excluded by the current Immunefi rules unless slippage protection itself is defeated.
+4. **`_refundExcess()` can revert for callers that cannot receive ETH.** Already reported; do not submit as new.
+5. **Downstream `refundETH` / ETH-receive behavior.** Repository history now includes the `receive()` path; treat as regression/post-fix behavior, not a fresh claim by default.
+6. **Constant-configured router and Base-only deployment assumptions.** Explicitly documented as intentional.
 
-These may be retained only as local regression checks, not presented as new findings.
+A candidate must pass the prior-art gate before PoC effort is expanded.
 
 ## Contract flow model
 
@@ -58,12 +85,12 @@ These may be retained only as local regression checks, not presented as new find
 
 `caller ETH`
 → validate recipient/path/pools
-→ quote bridge fee
+→ quote bridge fee using `minTrustOut`
 → `swapEth = msg.value - bridgeFee`
 → wrap ETH to WETH
 → approve Slipstream router
 → exact-input swap to TRUST
-→ bridge actual TRUST amount
+→ bridge actual `amountOut`
 → emit result
 
 ### ERC-20 path
@@ -88,48 +115,113 @@ These may be retained only as local regression checks, not presented as new find
 → refund excess ETH
 → emit result
 
-## Invariant families for bounded local validation
+## Bounded source-review results — 2026-08-09
 
-The following are **research questions**, not vulnerability claims.
+The following are **research conclusions/questions**, not vulnerability claims.
 
-### I1 — successful-call value conservation
+### R1 — path parsing currently appears fail-closed
 
-For an authorized local model, after a successful call:
+The router checks:
 
-- user input is accounted for exactly once;
-- bridged TRUST equals the router-reported bridged amount;
-- no unintended residual input token remains in the router;
-- no unintended residual ETH remains because of the successful path under the modeled downstream behavior.
+- minimum packed path length;
+- exact hop alignment `(path.length - 20) % 23 == 0`;
+- expected first token;
+- expected TRUST final token;
+- every referenced pool through the configured Slipstream factory.
 
-### I2 — failure atomicity
+The signed `int24 tickSpacing` extraction is followed by a factory lookup, so malformed spacing must still map to an existing pool to proceed.
 
-If swap or bridge execution reverts in the modeled environment, caller-visible token/ETH state should revert consistently with EVM transaction semantics. Any non-standard token behavior must be isolated and explicitly declared rather than generalized.
+**Current classification:** `expected_behavior`; retain fuzz/regression tests rather than report.
 
-### I3 — recipient consistency
+### R2 — swap/bridge failure atomicity appears protected by EVM reversion + `nonReentrant`
 
-The same intended recipient must remain consistent through formatting, fee quotation, bridge execution, and emitted evidence.
+Token transfer/approval, swap and bridge are performed inside one transaction. If modeled downstream calls revert, EVM state should roll back. All three value-moving entry points are `nonReentrant`.
 
-### I4 — path structural consistency
+**Current classification:** `expected_behavior`; verify locally with mocks.
 
-Malformed packed paths, wrong first token, wrong final TRUST token, invalid hop alignment, or missing pools should fail closed before a successful value-moving path completes.
+### R3 — cross-call stale state has no obvious dedicated accounting variable
 
-### I5 — slippage contract
+The router keeps no per-user/per-call accounting storage. It relies on token balances/allowances and external return values. This reduces stale-state surface, but means local tests should explicitly seed the router with stray ETH/TRUST/input-token balances and verify that a later caller cannot accidentally consume another caller's residue under standard-token assumptions.
 
-`amountOutMinimum = minTrustOut` must remain the effective minimum for swap completion. This is a regression/property check only; it does not re-open the known fee/minimum issue.
+**Current classification:** `candidate_test_family`, no defect established.
 
-### I6 — allowance lifecycle
+### R4 — allowance lifecycle deserves bounded regression testing, but no direct exploit is established from source inspection
 
-Under modeled standard-token and approved-router semantics, successful and reverted calls should not create an unexpected residual approval state that contradicts the intended integration contract. If residual allowance is by design, document it rather than classify it as a defect.
+The router uses `safeIncreaseAllowance` for WETH/input tokens and TRUST. Under standard exact-input and bridge semantics, intended downstream contracts should consume the approved amount. If an approved downstream contract consumes less, allowance can remain; however impact relying solely on third-party or privileged downstream behavior is not a valid Intuition finding.
 
-### I7 — repeated-call state independence
+**Current classification:** `candidate_test_family`, likely expected/integration-dependent.
 
-A previous successful or reverted call should not cause the next authorized local call to consume another user's residual token/ETH state or observe stale per-call accounting assumptions.
+### R5 — arbitrary ETH can now be received and has no generic recovery path
 
-### I8 — zero / malformed boundary behavior
+The post-audit `receive()` function allows ETH to be sent to the router. Normal ETH flow spends only `msg.value - bridgeFee`, not the contract's prior ETH balance, and ERC20/direct bridge refund calculations are also based on the current call's `msg.value`. Therefore stray ETH appears not to contaminate normal per-call accounting, but may remain stuck because there is no rescue function.
 
-Zero amount, zero recipient, invalid token, short path, and malformed multi-hop path should preserve the documented fail-closed behavior.
+A generic "stuck donation" is not by itself an in-scope fund-loss claim, especially when caused by unsolicited transfers. Keep this only as a state-independence regression check.
 
-## First local-only test matrix after rules verification
+**Current classification:** `expected_behavior / non-reportable unless a user-flow PoC shows direct in-scope impact`.
+
+### R6 — fee-on-transfer / hostile token behavior is not currently a strong target
+
+`swapAndBridgeWithERC20` accepts arbitrary `tokenIn`, but a token that transfers less than `amountIn` will generally make downstream exact-input execution fail/revert unless the integration explicitly supports such semantics. No direct Intuition-fund impact is established, and external token behavior is a weak basis under the current rules.
+
+**Current classification:** `deprioritized`.
+
+## Highest-value remaining local test families
+
+Given the prior-art exclusions, prioritize these bounded families:
+
+### T1 — seeded-balance state independence
+
+Seed router with stray:
+
+- ETH;
+- TRUST;
+- an input ERC20.
+
+Then run a fresh caller flow and prove whether only the fresh caller's intended amounts can be swapped/bridged/refunded.
+
+Goal: rule out cross-user residual-balance contamination.
+
+### T2 — repeated call after downstream revert
+
+Model:
+
+1. input transfer succeeds;
+2. swap or bridge mock reverts;
+3. transaction rolls back;
+4. second caller executes a clean flow.
+
+Assert balances, allowances and bridged amount are independent of the failed call.
+
+### T3 — multi-hop parser fuzzing
+
+Generate structurally valid and invalid packed paths around:
+
+- 43-byte minimum;
+- every `+23` hop boundary;
+- negative/positive `int24` spacing extremes;
+- repeated token addresses;
+- zero token addresses;
+- paths whose every pool lookup returns nonzero only under explicitly configured mocks.
+
+Goal: find parser/factory disagreement, not mere malformed-input reverts.
+
+### T4 — post-`receive()` refund interaction regression
+
+Model ETH refunds arriving from the swap router during an ETH-path exact-input call and verify:
+
+- no unexpected bridge-value shift;
+- no contamination of the next caller;
+- no ability for a later caller to extract seeded ETH through `_refundExcess()`.
+
+This is the most relevant post-Code4rena delta family.
+
+### T5 — exact bridge allowance post-state
+
+With a standard TRUST mock and bridge-hub mock, test whether successful/reverted bridge calls leave allowances exactly as expected and whether a later call can spend anything beyond its own intended amount.
+
+Only escalate if the PoC demonstrates Intuition integration logic causing direct in-scope fund/accounting impact without relying on malicious behavior by the trusted bridge hub.
+
+## First local-only test matrix
 
 1. happy-path direct TRUST bridge with mocks;
 2. ERC-20 single-hop happy path;
@@ -137,14 +229,17 @@ Zero amount, zero recipient, invalid token, short path, and malformed multi-hop 
 4. malformed path length / hop alignment;
 5. wrong token start / wrong TRUST end;
 6. missing pool;
-7. swap revert → state rollback;
-8. bridge revert → state rollback;
+7. swap revert → full state rollback;
+8. bridge revert → full state rollback;
 9. repeated call after revert;
-10. excess ETH refund on ERC-20/direct bridge;
-11. recipient evidence consistency;
-12. standard-token allowance post-state;
-13. multi-hop path structural regression;
-14. prior-known fee/minimum issue as **regression only**, never novelty.
+10. seeded ETH before a fresh ERC20/direct bridge call;
+11. seeded TRUST before a fresh swap/bridge call;
+12. seeded input token before a fresh ERC20 swap;
+13. downstream ETH refund into `receive()` during ETH flow;
+14. multi-hop parser fuzzing;
+15. standard-token allowance post-state;
+16. prior-known fee/minimum issue as **regression only**, never novelty;
+17. prior-known refund failure as **regression only**, never novelty.
 
 ## Evidence format
 
@@ -160,7 +255,7 @@ For any candidate behavior:
 → `program-rule check`
 → `classification`
 
-Allowed classifications before maintainer/program intent is confirmed:
+Allowed classifications before a valid PoC and prior-art check are complete:
 
 - `expected_behavior`
 - `known_or_duplicate`
@@ -171,14 +266,12 @@ Do not label a vulnerability from source inspection alone.
 
 ## Next gate
 
-No target execution should start from this plan until the current official bounty rules are re-checked. Once verified, fill:
+Rules are now verified. The next authorized step is to build a **local mock/Foundry harness** for T1–T5 on the pinned source.
 
-- official bounty URL;
-- rule snapshot date;
-- exact in-scope asset reference;
-- approved environment;
-- PoC requirement;
-- exclusions/known issues;
-- reporting channel.
+Do not submit anything unless:
 
-Then freeze the scope and create the local reproduction harness.
+1. the local PoC runs successfully;
+2. it demonstrates a current in-scope impact;
+3. it does not rely on prohibited public-network testing or third-party-system testing;
+4. it survives Code4rena / audit prior-art review;
+5. the current Immunefi rules are re-checked again immediately before submission.
