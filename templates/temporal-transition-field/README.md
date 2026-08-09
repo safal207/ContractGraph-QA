@@ -33,6 +33,24 @@ The evidence chain is modeled as:
 
 Invariant nodes branch from the observed post-state and feed the final verdict. This keeps the final conclusion traceable to both state mutation and independent evidence surfaces.
 
+### v0.3 — forbidden-state detector
+
+- `forbidden_state_rules.example.json` — constrained, client-neutral rule DSL.
+- `detect_forbidden_state.py` — evaluates one evidence record against explicit forbidden-state rules.
+- `test_detect_forbidden_state.py` — regression tests for limit crossing, rejected-state mutation, missing evidence, deterministic finding IDs, and fail-closed missing operands.
+
+The detector deliberately does **not** use `eval()` or arbitrary expression execution. Rules use a small allow-listed comparison vocabulary (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `nonempty`) over JSON paths or literal values.
+
+A rule has three parts:
+
+`WHEN condition(s) -> ASSERT invariant -> otherwise FORBIDDEN_STATE`
+
+Example:
+
+`post_state.consumed_budget <= post_state.budget_limit`
+
+If the assertion fails, the detector emits a deterministic finding bound to the exact evidence fingerprint. If a required operand is missing, the result is `inconclusive`, never PASS.
+
 ## Modeling pattern
 
 Represent state at time `t` as a vector:
@@ -73,10 +91,11 @@ for all valid action sequences within the bounded model.
 6. Generate bounded transition paths.
 7. Execute only within an authorized sandbox/local-fork/test environment.
 8. Capture `before -> request -> decision -> mutation -> after -> evidence`.
-9. Evaluate invariant verdicts.
-10. Serialize one `evidence_record` per observed transition.
-11. Build a deterministic evidence graph and record digest.
-12. Convert any forbidden transition into a reproducible finding.
+9. Serialize one `evidence_record` per observed transition.
+10. Build a deterministic evidence graph and record digest.
+11. Run the forbidden-state detector against explicit machine-readable rules.
+12. Classify the observation as `violated`, `inconclusive`, or `not_found_within_observed_transition`.
+13. Convert a violation into a reproducible finding tied to its evidence fingerprint.
 
 ## Evidence graph usage
 
@@ -103,6 +122,23 @@ dot -Tsvg evidence-graph/evidence.dot -o evidence-graph/evidence.svg
 
 The digest is over canonical JSON, so the same evidence record yields the same SHA-256 value. This allows a finding or report to bind to the exact observed transition record.
 
+## Forbidden-state detector usage
+
+```bash
+python detect_forbidden_state.py \
+  evidence_record.example.json \
+  forbidden_state_rules.example.json \
+  --output detector-result.json
+```
+
+Exit codes:
+
+- `0` — no forbidden state found in this observed transition;
+- `1` — one or more explicit rules were violated;
+- `2` — evaluation is inconclusive because required evidence is missing or not comparable.
+
+`not_found_within_observed_transition` is bounded evidence only. It is not a security certification and does not imply that all paths or invariants have been covered.
+
 ## Safety defaults
 
 The runner template is intentionally conservative:
@@ -115,6 +151,6 @@ The runner template is intentionally conservative:
 - no hidden load testing;
 - reset/isolation between independent runs where supported.
 
-The evidence-graph builder is offline-only: it performs no target-system action and makes no network request.
+The evidence-graph builder and forbidden-state detector are offline-only: they perform no target-system action and make no network request.
 
 This template is intentionally client-neutral and can be adapted to Solidity state machines, payment APIs, agent-control systems, workflow engines, and other stateful software.
