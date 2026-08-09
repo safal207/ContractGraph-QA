@@ -1,0 +1,19 @@
+ID,Scenario,Precondition,Action,Expected,Invariant
+T01,Below per-action limit,x<P and S+x<D,action(x),ACCEPT,"R'=R-x; S'=S+x"
+T02,Exact per-action limit,x=P and S+x<=D,action(x),ACCEPT,boundary allowed
+T03,Above per-action limit,x>P,action(x),REJECT,no durable mutation
+T04,Below cumulative boundary,S+x<D,action(x),ACCEPT,counter increments once
+T05,Exact cumulative limit,S+x=D,action(x),ACCEPT -> LIMIT_FULL,S'=D
+T06,Above cumulative limit,S+x>D,action(x),REJECT,"S'=S; R'=R"
+T07,Action after full,S=D,action(x),REJECT,limit cannot be crossed
+T08,Duplicate/retry,first logical action committed,same logical action,NO DOUBLE MUTATION,mutation <= 1
+T09,Retry after reject,prior reject,retry,same deterministic outcome,reject leaves durable state intact
+T10,Concurrent safe,S+a+b<D,a || b,both ACCEPT,S'=S+a+b
+T11,Concurrent boundary race,"S+a<=D; S+b<=D; S+a+b>D",a || b,max allowed subset commits,S'<=D
+T12,Concurrent exact boundary,S+a+b=D,a || b,consistent final state,S'=D
+T13,Evidence consistency,after commit,inspect evidence,CONSISTENT,state = transaction = audit
+T14,Reject evidence,after policy reject,inspect evidence,rejection observable,no hidden mutation
+T15,Reset isolation,after run,reset,RESET,prior run has no effect
+T16,Policy change,test state ready,set new D/P,UPDATED,next action uses new policy
+T17,Equivalent endpoint parity,policy set,alternate action endpoint,same semantics,endpoints do not diverge
+T18,Forbidden-state reachability,bounded generated paths,explore paths,UNREACHABLE,QX_FORBIDDEN is never reached
