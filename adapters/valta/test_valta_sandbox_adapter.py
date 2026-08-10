@@ -33,6 +33,18 @@ class ValtaSandboxAdapterTests(unittest.TestCase):
         self.assertEqual(policy["json"]["dailyLimit"], 60)
         self.assertEqual(policy["json"]["maxPerTransaction"], 40)
 
+    def test_platform_agent_uses_main_wallet_transaction_history(self):
+        adapter = ValtaSandboxAdapter()
+        plan = adapter.plan_transactions()
+        self.assertTrue(plan["url"].endswith("/transactions"))
+        self.assertNotIn("/agents/wallet-guardian/wallet/transactions", plan["url"])
+
+        config = json.loads((HERE / "endpoint_map.valta.sandbox.json").read_text(encoding="utf-8"))
+        constraint = config["environment_constraints"]["platform_agent_transaction_history"]
+        self.assertEqual(constraint["expected_behavior_after_fix"], 422)
+        self.assertEqual(constraint["correct_verification_path"], "/transactions")
+        self.assertFalse(constraint["finding_eligible"])
+
     def test_request_plan_never_contains_real_api_key(self):
         os.environ["VALTA_TEST_API_KEY"] = "sentinel-do-not-render"
         try:
