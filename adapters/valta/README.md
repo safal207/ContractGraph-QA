@@ -16,7 +16,9 @@ The engagement-confirmed sandbox surface includes:
 - `POST /spend`
 - `POST /agents/wallet-guardian/wallet/spend`
 - `GET /audit`
-- `GET /agents/wallet-guardian/wallet/transactions`
+- `GET /transactions`
+
+`wallet-guardian` is a platform agent. It does not have its own wallet transaction log; its activity is recorded in the main wallet transaction history. After Valta's fix, `GET /agents/wallet-guardian/wallet/transactions` should return a clear `422` directing the caller to `GET /transactions`. That agent-wallet path is therefore an environment/contract behavior check, not a defect target.
 
 The older `POST /wallet/transfer` is explicitly excluded as a defect target because the test key is expected to receive `403` there. Monthly enforcement is also out of scope.
 
@@ -51,7 +53,7 @@ python -m unittest -v test_valta_sandbox_adapter.py
 python valta_sandbox_adapter.py
 ```
 
-The second command prints a sanitized request plan for the confirmed reset/deposit/policy/audit/transaction-history surface. It performs no network request.
+The second command prints a sanitized request plan for the confirmed reset/deposit/policy/audit/main-wallet transaction-history surface. It performs no network request.
 
 ## Next gate
 
