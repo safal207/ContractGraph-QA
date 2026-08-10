@@ -1,0 +1,60 @@
+{
+  "schema_version": "0.6",
+  "adapter_id": "valta-sandbox-v0.7",
+  "target_kind": "agent_wallet",
+  "scope": {
+    "environment": "sandbox",
+    "authorized": true,
+    "production": false,
+    "target": "valta-wallet-guardian-test-sandbox",
+    "notes": "Bounded Sprint 1 QA scope. Monthly enforcement is out of scope. The older /wallet/transfer endpoint is an environment constraint and is not a defect target."
+  },
+  "execution": {
+    "dry_run_default": true,
+    "max_concurrency": 2,
+    "max_depth": 6,
+    "max_paths": 250
+  },
+  "credentials": {
+    "source": "environment",
+    "required_env_vars": ["VALTA_TEST_API_KEY"]
+  },
+  "capabilities": {
+    "snapshot": true,
+    "apply": true,
+    "coverage_mode": "full_model",
+    "supported_events": [
+      "fund",
+      "set_policy",
+      "action_valid",
+      "action_reaches_limit",
+      "action_invalid",
+      "duplicate_retry",
+      "concurrent_action"
+    ]
+  },
+  "state_contract": {
+    "required_values": [
+      "resource_balance",
+      "consumed_budget",
+      "budget_limit",
+      "per_action_limit",
+      "transaction_count",
+      "evidence_count",
+      "accepted_count",
+      "rejected_count"
+    ]
+  },
+  "evidence_contract": {
+    "required_fields": [
+      "request.action",
+      "request.logical_operation_id",
+      "decision.outcome",
+      "mutation.committed",
+      "mutation.financial_mutation_count",
+      "mutation.durable_mutation_count",
+      "evidence.transaction_refs",
+      "evidence.audit_refs"
+    ]
+  }
+}

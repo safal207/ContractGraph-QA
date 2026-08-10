@@ -1,0 +1,53 @@
+{
+  "version": "0.7",
+  "base_url": "https://www.valta.co/api/v1",
+  "agent": "wallet-guardian",
+  "agent_kind": "platform_agent",
+  "wallet_scope": "main_wallet",
+  "auth": {
+    "header": "x-api-key",
+    "value_source": "environment:VALTA_TEST_API_KEY"
+  },
+  "confirmed_endpoints": {
+    "reset": {"method": "POST", "path": "/sandbox/reset"},
+    "fund": {
+      "method": "POST",
+      "path": "/sandbox/deposit",
+      "body_shape": {"agent": "wallet-guardian", "amount": "<number>", "idempotencyKey": "<unique>"}
+    },
+    "set_policy": {
+      "method": "POST",
+      "path": "/policies",
+      "body_shape": {"agentId": "wallet-guardian", "dailyLimit": "<number>", "maxPerTransaction": "<number>"}
+    },
+    "spend_primary": {"method": "POST", "path": "/spend", "body_shape_confirmed": false},
+    "spend_agent_wallet": {
+      "method": "POST",
+      "path": "/agents/wallet-guardian/wallet/spend",
+      "body_shape_confirmed": false
+    },
+    "audit": {"method": "GET", "path": "/audit"},
+    "transactions": {"method": "GET", "path": "/transactions"}
+  },
+  "environment_constraints": {
+    "platform_agent_transaction_history": {
+      "agent_wallet_path": "/agents/wallet-guardian/wallet/transactions",
+      "expected_behavior_after_fix": 422,
+      "correct_verification_path": "/transactions",
+      "finding_eligible": false,
+      "reason": "wallet-guardian is a platform agent and its activity is recorded on the main wallet transaction history."
+    },
+    "unsupported_transfer_endpoint": {
+      "method": "POST",
+      "path": "/wallet/transfer",
+      "expected_test_key_behavior": 403,
+      "finding_eligible": false
+    },
+    "monthly_limit": {"in_scope": false}
+  },
+  "execution_gate": {
+    "live_execution_enabled": false,
+    "spend_payload_confirmed": false,
+    "reason": "The provided Sprint 1 messages name the spend endpoints but do not specify the request body. Do not guess it."
+  }
+}
