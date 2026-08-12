@@ -1,211 +1,174 @@
-# `cgqa` CLI
+# ContractGraph-QA CLI
 
-## Install from a checkout
+The installable command is `cgqa`.
 
-```bash
-python -m pip install -e .
-cgqa --version
-```
+## Exit codes
 
-Python 3.11+ is required. Foundry is required for capture-enabled runs.
+- `0` — success;
+- `10` — validation / verification failure;
+- `20` — expected runtime failure;
+- `70` — unexpected internal failure;
+- `130` — interrupted.
 
-## `cgqa init-engagement`
+## `cgqa demo`
 
-```bash
-cgqa init-engagement acme-escrow
-```
-
-From the current ContractGraph-QA project root, this creates `engagements/acme-escrow/` with:
-
-- `manifest.json` — structurally valid but visibly TODO-marked authorization, target, state, action, and invariant placeholders;
-- `cgqa.toml` — an `engagement-run` config whose working directory points back to the current project root;
-- `capture/ClientEngagementCapture.t.sol.example` — a non-compiled, fail-closed capture skeleton;
-- `README.md` — engagement completion checklist;
-- `.gitignore` — ignores generated search/evidence outputs.
-
-A custom destination is allowed only when it is a new directory inside the current project root:
+Generate a repository-owned demonstration finding and deterministic evidence bundle without Forge or external RPC access.
 
 ```bash
-cgqa init-engagement acme-escrow --directory engagements/clients/acme-escrow
+cgqa demo --output-dir cgqa-demo
 ```
 
-The command never overwrites an existing destination. Its JSON summary reports `executionReady: false`. The generated capture remains `.example` and contains `CGQA scaffold not configured`; creating a scaffold is not authorization and does not create validated evidence.
-
-## Product config
-
-`cgqa run` reads a strict TOML config.
-
-Example:
-
-```toml
-schemaVersion = 1
-workingDirectory = "."
-manifest = "manifests/examples/adapter-fixture.json"
-result = "results/generated/CGQA-005.result.json"
-finding = "dist/CGQA-005/CGQA-005.finding.json"
-report = "dist/CGQA-005/CGQA-005.md"
-bundle = "dist/CGQA-005/CGQA-005.evidence.zip"
-
-[capture]
-enabled = true
-profile = "capture"
-test = "test_CaptureExplorerResult"
-verbosity = 3
-```
-
-All artifact paths must be distinct. The evidence bundle must have a `.zip` suffix. Relative paths are resolved from the config file directory.
-
-When capture is disabled, the result file must already exist and is treated as an input rather than a generated output.
+The destination must be fresh. The command writes repository-owned packaged inputs, exports the finding/report, creates the evidence ZIP, and verifies it before returning success.
 
 ## `cgqa doctor`
+
+Inspect local runtime dependencies.
 
 ```bash
 cgqa doctor
 cgqa doctor --require-forge
 ```
 
-Returns JSON describing the product version, Python version, Foundry availability/version, and Slither availability.
+`--require-forge` fails when Foundry is unavailable.
+
+## `cgqa init-engagement`
+
+Create a fail-closed client engagement scaffold.
+
+```bash
+cgqa init-engagement acme-escrow
+cgqa init-engagement acme-escrow --directory ./work/acme-escrow
+```
+
+The scaffold intentionally contains blocking TODO values for authorization, target, state model, actions, invariants, and capture adapters. It is not execution-ready until a human reviews and replaces them.
+
+## `cgqa validate`
+
+Validate a reviewed adapter manifest and optionally an explorer result.
+
+```bash
+cgqa validate --manifest manifests/client.json
+cgqa validate --manifest manifests/client.json --result results/client.result.json
+```
+
+Validation includes strict field sets, manifest/result binding, path-depth bounds, action references, invariant references, and manifest fingerprint verification.
 
 ## `cgqa fingerprint`
+
+Print the canonical SHA-256 fingerprint of a validated adapter manifest.
 
 ```bash
 cgqa fingerprint --manifest manifests/client.json
 ```
 
-Prints the canonical manifest SHA-256 used to bind Foundry result evidence to the reviewed manifest.
+## `cgqa reachability`
 
-## `cgqa validate`
-
-Manifest only:
+Run the bounded adversarial capability-reachability engine against a strict JSON model.
 
 ```bash
-cgqa validate --manifest manifests/client.json
+cgqa reachability --model scenarios/adversarial-wallet-replay.json
 ```
 
-Manifest + result:
+The command requires no Forge and performs no network access. It:
 
-```bash
-cgqa validate \
-  --manifest manifests/client.json \
-  --result results/generated/client.result.json
+1. loads the model with the stdlib-only runtime validator;
+2. rejects schema drift, unknown references, duplicate identifiers, and whitespace-only semantic fields;
+3. computes a canonical `modelSha256` fingerprint;
+4. runs deterministic bounded breadth-first search;
+5. emits `reachable` or `not_found_within_bound` plus the shortest reachable impact path when present.
+
+A successful command can still return `not_found_within_bound`; this means no target capability was found within the declared model and search bound. It is not a safety certification.
+
+Representative output:
+
+```json
+{
+  "maxDepth": 4,
+  "modelSha256": "...",
+  "path": {
+    "crossedBoundaries": ["settlement-idempotency"],
+    "impact": "duplicate financial settlement",
+    "initialCapability": "request-spend",
+    "invariantIds": ["settlement-at-most-once"],
+    "targetCapability": "duplicate-settlement",
+    "transitions": [],
+    "violatedAssumptions": ["fresh-policy-state", "unique-settlement"]
+  },
+  "status": "reachable",
+  "targetCapabilities": ["duplicate-settlement", "overspend"],
+  "violatedAssumptions": ["fresh-policy-state", "unique-settlement"]
+}
 ```
 
-The second form also validates adapter/scope/fingerprint/depth/action/invariant bindings by attempting the deterministic finding export.
+Model semantics and schema are documented in [`ADVERSARIAL_REACHABILITY.md`](ADVERSARIAL_REACHABILITY.md).
 
 ## `cgqa run`
 
+Run the single-finding capture and evidence pipeline.
+
 ```bash
+cgqa run --config cgqa.toml
 cgqa run --config cgqa.toml --clean
 ```
 
-Capture-enabled execution:
+The pipeline is:
 
-1. validates the reviewed manifest;
-2. computes canonical manifest SHA-256;
-3. invokes `forge test --match-test <test>` without a shell;
-4. passes `FOUNDRY_PROFILE`, `CGQA_MANIFEST_SHA256`, and `CGQA_RESULT_PATH` to the capture process;
-5. validates the generated result against the manifest;
-6. writes canonical finding JSON;
-7. renders deterministic Markdown;
-8. creates a deterministic evidence ZIP;
-9. verifies that bundle before returning success.
+```text
+manifest validation
+→ optional Foundry capture
+→ result validation / manifest binding
+→ deterministic finding JSON
+→ Markdown report
+→ deterministic evidence ZIP
+→ independent verification
+```
 
-`--clean` removes only generated artifacts. If capture is disabled, the existing result input is retained.
-
-On success, stdout is a JSON summary containing the finding ID, manifest fingerprint, path length, output paths, and bundle SHA-256.
+`--clean` removes generated finding/report/bundle/result files before capture. It never removes the reviewed manifest.
 
 ## `cgqa engagement-run`
 
+Run the direct multi-invariant capture workflow from an engagement-run TOML config.
+
 ```bash
-cgqa engagement-run --config cgqa.engagement.example.toml
+cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
 ```
 
-This is the one-command direct multi-invariant product path. The strict TOML config contains the reviewed manifest, generated result path, dedicated output directory, final engagement ZIP, and Foundry capture profile/test.
-
-Example:
-
-```toml
-schemaVersion = 1
-workingDirectory = "."
-manifest = "manifests/examples/engagement-fixture.json"
-result = "results/generated/CGQA-E-001.engagement-result.json"
-outputDirectory = "dist/CGQA-E-001-run"
-bundle = "dist/CGQA-E-001-run/CGQA-E-001.engagement.zip"
-
-[capture]
-profile = "capture"
-test = "test_CaptureMultiInvariantEngagementResult"
-verbosity = 3
-```
-
-Execution is fail-closed:
-
-1. validates the reviewed manifest;
-2. computes its canonical SHA-256;
-3. removes only the configured generated result so stale capture output cannot be reused;
-4. invokes Foundry using a process argument array, not a shell string;
-5. passes `FOUNDRY_PROFILE`, `CGQA_ENGAGEMENT_MANIFEST_SHA256`, and `CGQA_ENGAGEMENT_RESULT_PATH` to capture;
-6. requires Foundry to produce a fresh multi-invariant result;
-7. validates full manifest/result provenance and invariant coverage;
-8. emits engagement JSON/Markdown and 0..N deterministic findings;
-9. creates the deterministic v2 engagement evidence ZIP;
-10. independently re-opens and verifies the ZIP before returning success.
-
-`outputDirectory` must be a dedicated artifact directory and cannot equal the working directory or manifest directory. `engagement-run` always performs a fresh capture; to package an already-produced result without execution, use `cgqa engagement` instead.
+This path is intended for fixed-scope client engagements where one Foundry capture produces multiple invariant outcomes.
 
 ## `cgqa engagement`
 
+Build a multi-invariant engagement report and deterministic evidence bundle from an already captured engagement result.
+
 ```bash
 cgqa engagement \
-  --manifest manifests/examples/engagement-fixture.json \
-  --result results/examples/CGQA-E-001.engagement-result.json \
-  --output-dir dist/CGQA-E-001 \
-  --bundle dist/CGQA-E-001/CGQA-E-001.engagement.zip
+  --manifest manifests/client.json \
+  --result results/client.engagement-result.json \
+  --output-dir reports/client \
+  --bundle dist/client.engagement.zip
 ```
-
-This command consumes one reviewed manifest and one multi-check engagement result representing a bounded search session. Every invariant declared by the manifest must appear exactly once with one of three statuses:
-
-- `violated` — a replayable minimal failing path exists and produces its own finding;
-- `not_found_within_bound` — no violation was found inside the declared bounded model;
-- `inconclusive` — the evidence is insufficient for a clean conclusion.
-
-The command writes `engagement.json`, `engagement.md`, per-finding JSON/Markdown under `findings/`, and one deterministic v2 engagement ZIP. It immediately re-opens and semantically verifies that ZIP before returning success.
-
-A `not_found_within_bound` status is not a claim that a contract is secure. An `inconclusive` status must remain visibly inconclusive.
 
 ## `cgqa verify-bundle`
 
+Independently verify a single-finding evidence ZIP.
+
 ```bash
-cgqa verify-bundle dist/CGQA-005/CGQA-005.evidence.zip
+cgqa verify-bundle dist/client.evidence.zip
 ```
 
-Verification is independent of the working tree artifacts. The bundle contains the complete manifest/result/finding/report chain needed for validation.
+Verification fails closed on duplicate/unsafe ZIP entries, missing files, unexpected files, digest mismatches, semantic manifest/result/finding mismatches, or non-canonical generated finding/report bytes.
 
 ## `cgqa verify-engagement-bundle`
 
+Independently verify a multi-invariant engagement evidence ZIP.
+
 ```bash
-cgqa verify-engagement-bundle dist/CGQA-E-001/CGQA-E-001.engagement.zip
+cgqa verify-engagement-bundle dist/client.engagement.zip
 ```
 
-The verifier reconstructs the manifest → engagement result → coverage summary → findings → reports chain from the ZIP itself. It rejects missing, reordered, duplicate, oversized, traversal, unexpected, hash-inconsistent, or semantically inconsistent entries.
+Verification reconstructs the semantic chain from the included manifest and engagement result and compares canonical generated artifacts with the bundle contents.
 
-## Exit codes
+## Automation
 
-| Code | Meaning |
-|---:|---|
-| `0` | success |
-| `2` | argparse usage error |
-| `10` | validation/integrity error for validation-oriented commands |
-| `20` | product runtime/capture/config/engagement-generation/scaffold failure |
-| `70` | unexpected internal failure |
-| `130` | interrupted by operator |
+All successful commands emit JSON except argparse help/version text and Markdown files written to disk. Error details are emitted on stderr.
 
-Automation should treat every non-zero code as a failed engagement step and should not publish the generated report/bundle as validated evidence.
-
-## Capture safety
-
-`capture.profile` accepts only letters, digits, `_`, `.`, and `-`.
-
-`capture.test` accepts only letters, digits, and `_`.
-
-The CLI does not execute a user-supplied shell command. It constructs the Foundry process argument list directly.
+For CI, prefer checking both the process exit code and the explicit semantic status in generated JSON. In particular, bounded search outcomes such as `not_found_within_bound` are evidence about the declared bound, not a security guarantee.
