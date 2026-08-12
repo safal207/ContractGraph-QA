@@ -1,0 +1,12 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "crossmint-public-example-001",
+  "executionId": "exec-crossmint-public-001",
+  "observations": [
+    {
+      "source": "get-transaction",
+      "providerState": "success",
+      "evidenceRef": "fixture://crossmint/get-transaction/success"
+    }
+  ]
+}
