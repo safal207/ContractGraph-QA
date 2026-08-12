@@ -103,6 +103,8 @@ IMPACT
 
 The command emits deterministic JSON containing a canonical model SHA-256, the declared violated assumptions, and the shortest reachable impact path within the configured bound. `not_found_within_bound` is bounded evidence only, not a safety certification.
 
+The reachability result is currently a standalone deterministic artifact; binding it into the existing finding/evidence ZIP semantic chain is the next integration step.
+
 See [`docs/ADVERSARIAL_REACHABILITY.md`](docs/ADVERSARIAL_REACHABILITY.md).
 
 ## Mental model
