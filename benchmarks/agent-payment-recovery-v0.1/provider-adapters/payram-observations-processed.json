@@ -1,0 +1,12 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "payram-payout-001",
+  "executionId": "exec-payram-payout-001",
+  "observations": [
+    {
+      "source": "get-payout-status",
+      "providerState": "processed",
+      "evidenceRef": "fixture://payram/payout/processed"
+    }
+  ]
+}
