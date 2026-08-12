@@ -1,0 +1,39 @@
+{
+  "schema": "cgqa.payment-provider-adapter.v0.2",
+  "providerId": "crossmint-wallet-transactions-public",
+  "profileVersion": "0.1",
+  "create": {
+    "supportsIdempotencyKey": true,
+    "sameKeyReplayDocumented": false
+  },
+  "stateMap": {
+    "awaiting-approval": "pending",
+    "pending": "pending",
+    "success": "committed",
+    "succeeded": "committed",
+    "failed": "failed"
+  },
+  "evidenceSources": [
+    {
+      "kind": "get-transaction",
+      "authoritativeForFinality": true
+    },
+    {
+      "kind": "wallet-transfer-webhook",
+      "authoritativeForFinality": false
+    }
+  ],
+  "evidencePrecedenceStatus": "unresolved",
+  "evidencePrecedence": [],
+  "publicContractRefs": [
+    "https://docs.crossmint.com/api-reference/wallets/create-transaction",
+    "https://docs.crossmint.com/api-reference/wallets/get-transaction",
+    "https://docs.crossmint.com/wallets/quickstarts/restapi",
+    "https://docs.crossmint.com/wallets/guides/webhooks"
+  ],
+  "openQuestions": [
+    "After a Create Transaction request times out before the transaction ID is received, what public reconciliation path should an integrator use before any new monetary action?",
+    "Does retrying Create Transaction with the same x-idempotency-key return or expose the already-created transaction in a documented way?",
+    "If GET transaction state and transfer webhook evidence ever disagree, is there a documented canonical precedence?"
+  ]
+}
