@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schemas/payment-provider-adapter.v0.3.schema.json",
+  "title": "ContractGraph-QA Payment Provider Adapter v0.3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "providerId",
+    "profileVersion",
+    "create",
+    "stateMap",
+    "evidenceSources",
+    "evidencePrecedenceStatus",
+    "evidencePrecedence",
+    "retrySemanticsStatus",
+    "retryAllowedAfterProviderStates",
+    "publicContractRefs"
+  ],
+  "properties": {
+    "schema": {"const": "cgqa.payment-provider-adapter.v0.3"},
+    "providerId": {"type": "string", "minLength": 1},
+    "profileVersion": {"type": "string", "minLength": 1},
+    "create": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supportsIdempotencyKey", "sameKeyReplayDocumented"],
+      "properties": {
+        "supportsIdempotencyKey": {"type": "boolean"},
+        "sameKeyReplayDocumented": {"type": "boolean"}
+      }
+    },
+    "stateMap": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "enum": ["committed", "failed", "pending", "unknown"]
+      }
+    },
+    "evidenceSources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "authoritativeForFinality"],
+        "properties": {
+          "kind": {"type": "string", "minLength": 1},
+          "authoritativeForFinality": {"type": "boolean"}
+        }
+      }
+    },
+    "evidencePrecedenceStatus": {"enum": ["documented", "unresolved"]},
+    "evidencePrecedence": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "retrySemanticsStatus": {"enum": ["documented", "unresolved"]},
+    "retryAllowedAfterProviderStates": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "publicContractRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"evidencePrecedenceStatus": {"const": "unresolved"}}},
+      "then": {"properties": {"evidencePrecedence": {"maxItems": 0}}}
+    },
+    {
+      "if": {"properties": {"evidencePrecedenceStatus": {"const": "documented"}}},
+      "then": {"properties": {"evidencePrecedence": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"retrySemanticsStatus": {"const": "unresolved"}}},
+      "then": {"properties": {"retryAllowedAfterProviderStates": {"maxItems": 0}}}
+    }
+  ]
+}
