@@ -142,7 +142,7 @@ class ProductRuntimeTest(unittest.TestCase):
             self.assertEqual(bound["artifact"], "reachability.json")
             self.assertEqual(bound["modelArtifact"], "reachability-model.json")
             self.assertEqual(bound["modelSha256"], reachability["modelSha256"])
-            self.assertEqual(bound["path"]["targetCapability"], "overspend")
+            self.assertEqual(bound["path"]["targetCapability"], "duplicate-settlement")
 
             verified = verify_evidence_bundle(config.bundle)
             self.assertTrue(verified["ok"])
