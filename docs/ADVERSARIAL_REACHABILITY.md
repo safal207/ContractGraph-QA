@@ -249,12 +249,19 @@ Verification rejects artifact hash/size drift, non-canonical model bytes, a reac
 
 This keeps the existing contract/result evidence chain intact while adding a second independently recomputable causal path.
 
+## Human-readable causal security path
+
+When `finding.json -> evidence.reachability` is present, `report.md` now renders a deterministic **Causal security path** section. It exposes the exact bound invariant, reachability-model SHA-256, broken assumptions, ordered capability chain, crossed boundaries, impact, and a transition table.
+
+The report renderer fails closed if the reachability block is not tied to the same finding provenance or if the capability transitions do not form a contiguous path. Because bundle v2 verification regenerates `report.md` from the recomputed finding, the human-readable causal path is covered by the existing independent verifier rather than being an unverified presentation layer.
+
+Detailed rendering semantics are documented in [`CAUSAL_SECURITY_REPORT.md`](CAUSAL_SECURITY_REPORT.md).
+
 ## Next integration steps
 
-1. Record recovery/containment and verification nodes explicitly.
-2. Render a dedicated human-readable capability/reachability section in the client report.
-3. Add dedicated examples for approval bypass, stale/revoked authority, idempotency/replay, and duplicate settlement.
-4. Include the graph path in the client proof pack.
-5. Compare old/new reachability graphs to detect newly reachable forbidden capabilities after a patch or PR.
+1. Render post-impact containment/recovery/verification from control bundle v3 into a dedicated client control report.
+2. Include the capability/control graph path in the client proof pack.
+3. Compare old/new reachability graphs to detect newly reachable forbidden capabilities or removed containment boundaries after a patch or PR.
+4. Add dedicated examples for approval bypass, stale/revoked authority, idempotency/replay, and duplicate settlement.
 
 Tracking issue: #26.
