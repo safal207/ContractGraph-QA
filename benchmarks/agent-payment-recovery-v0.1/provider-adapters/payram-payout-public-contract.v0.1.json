@@ -1,0 +1,47 @@
+{
+  "schema": "cgqa.payment-provider-adapter.v0.3",
+  "providerId": "payram-payout-public",
+  "profileVersion": "0.1",
+  "create": {
+    "supportsIdempotencyKey": false,
+    "sameKeyReplayDocumented": false
+  },
+  "stateMap": {
+    "pending-otp-verification": "pending",
+    "pending-approval": "pending",
+    "pending": "pending",
+    "initiated": "pending",
+    "sent": "pending",
+    "processed": "committed",
+    "failed": "failed",
+    "rejected": "failed",
+    "cancelled": "failed"
+  },
+  "evidenceSources": [
+    {
+      "kind": "get-payout-status",
+      "authoritativeForFinality": true
+    },
+    {
+      "kind": "get-all-payouts",
+      "authoritativeForFinality": false
+    }
+  ],
+  "evidencePrecedenceStatus": "unresolved",
+  "evidencePrecedence": [],
+  "retrySemanticsStatus": "unresolved",
+  "retryAllowedAfterProviderStates": [],
+  "publicContractRefs": [
+    "https://docs.payram.com/api-integration/payouts-apis/create-payouts",
+    "https://docs.payram.com/api-integration/payouts-apis/payouts-status",
+    "https://docs.payram.com/api-integration/payouts-apis/get-all-payouts",
+    "https://docs.payram.com/payram-sdk/typescript-javascript-sdk"
+  ],
+  "openQuestions": [
+    "After Create Payout times out before the withdrawal ID is received, what public recovery path identifies whether a payout was already created?",
+    "Is there a documented idempotency or replay key for Create Payout?",
+    "Does a failed, rejected, or cancelled payout state normatively prove that no monetary effect occurred and that creating a new payout is safe?",
+    "Is there a payout-specific webhook contract, and if so, what is its precedence relative to GET payout status?",
+    "Should sent be treated as financially final, or is processed the canonical state because it is documented as confirmed on-chain and recorded in accounting?"
+  ]
+}
