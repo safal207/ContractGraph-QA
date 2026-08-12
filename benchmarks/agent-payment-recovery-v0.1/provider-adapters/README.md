@@ -13,6 +13,8 @@ evidence authority + documented precedence
   ↓
 final / non-final reconciliation
   ↓
+retry authority
+  ↓
 Agent Payment Recovery Benchmark
 ```
 
@@ -45,6 +47,22 @@ The runtime records a `reconciliationBlockReason` such as:
 - `no_authoritative_finality_surface_observed`;
 - `evidence_precedence_unresolved`.
 
+### v0.3 — final failure is not automatically retry authority
+
+A provider may expose a terminal-looking failure state without documenting that creating another monetary action is safe. v0.3 separates those claims:
+
+```text
+reconciliation = FINAL / failed
+retrySemanticsStatus = unresolved
+
+⇒ retryAllowed = false
+⇒ retryBlockReason = retry_semantics_unresolved
+```
+
+A v0.3 profile may list `retryAllowedAfterProviderStates` only when retry semantics are documented. When `retrySemanticsStatus = unresolved`, the list must remain empty.
+
+This prevents a status labelled `failed` from being silently interpreted as proof that no financial effect occurred.
+
 ## Adapter fields
 
 A profile declares only what can be grounded:
@@ -54,7 +72,8 @@ A profile declares only what can be grounded:
 - provider-state → normalized-outcome mapping;
 - observable evidence sources;
 - which sources are sufficiently documented to be treated as authoritative for finality;
-- documented precedence, or explicit `unresolved` precedence in v0.2;
+- documented precedence, or explicit `unresolved` precedence in v0.2/v0.3;
+- documented retry-authorized provider states, or explicit `unresolved` retry semantics in v0.3;
 - public contract references;
 - unresolved public questions when useful.
 
@@ -94,9 +113,9 @@ cgqa provider-adapter-reconcile \
 
 A final reconciliation exits `0`.
 
-A structurally valid but **non-final** reconciliation exits `10`. This makes the command usable as a fail-closed gate before a retry or other monetary action.
+A structurally valid but **non-final** reconciliation exits `10`. Retry authority is a separate output and must not be inferred merely from process exit status.
 
-## First public provider profile: Crossmint
+## Public provider profile: Crossmint
 
 `crossmint-public-contract.v0.1.json` is intentionally conservative and is grounded only in Crossmint's public wallet transaction documentation.
 
@@ -111,6 +130,31 @@ The public contract documents:
 The reviewed public pages did **not** establish a canonical precedence among GET status, webhook and onchain evidence, nor did they document same-key replay as the canonical recovery procedure after an ambiguous Create Transaction timeout. Those facts remain explicit open questions instead of being filled by assumption.
 
 The Crossmint profile performs no Crossmint API calls and makes no vulnerability claim.
+
+## Public provider profile: PayRam payouts
+
+`payram-payout-public-contract.v0.1.json` is grounded only in PayRam's public payout/API/SDK documentation.
+
+The reviewed public contract documents:
+
+- Create Payout returns a unique withdrawal `id` used for follow-up status checks;
+- dedicated GET payout status by withdrawal ID;
+- payout states from approval and broadcast through `sent`, `failed`, `rejected`, `processed`, and `cancelled`;
+- `processed` as confirmed on-chain and recorded in accounting;
+- GET All Payouts as a second observable status surface.
+
+The profile deliberately maps `sent → pending` and `processed → committed` because `processed` is the state whose public description explicitly includes both on-chain confirmation and accounting recording.
+
+The reviewed public pages did **not** establish Create Payout idempotency, recovery after losing the create response before the withdrawal ID is received, payout-specific webhook precedence, or which failure states authorize a safe new payout. Therefore:
+
+```text
+retrySemanticsStatus = unresolved
+retryAllowedAfterProviderStates = []
+```
+
+A `failed` payout can be reconciled as a final provider state while still leaving **retry authority blocked**.
+
+The PayRam profile performs no PayRam API calls and makes no vulnerability claim.
 
 ## Example profile is not a provider claim
 
