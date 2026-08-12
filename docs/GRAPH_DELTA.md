@@ -42,8 +42,10 @@ A generic before/after delta is not enough to prove that the **specific previous
 ```bash
 cgqa reachability-replay \
   --prior-model scenarios/adversarial-adapter-fixture.json \
-  --fixed-model scenarios/adversarial-adapter-fixture-before.json
+  --fixed-model scenarios/adversarial-adapter-fixture-fixed.json
 ```
+
+The fixed fixture intentionally preserves capability and transition identity while restoring the assumption guard, so the replay demonstrates a real causal block rather than merely disappearing because identifiers changed.
 
 The command deterministically selects the prior model's shortest target path, then replays that exact ordered transition sequence against the fixed model.
 
