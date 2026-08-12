@@ -23,6 +23,7 @@ from contractgraph_qa.engagement_run import (
     load_engagement_run_config,
     run_engagement_pipeline,
 )
+from contractgraph_qa.graph_delta import compare_reachability_models
 from contractgraph_qa.payment_recovery import (
     PaymentRecoveryError,
     evaluate_payment_recovery_file,
@@ -122,6 +123,13 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Adversarial reachability model JSON",
     )
 
+    reachability_delta = subparsers.add_parser(
+        "reachability-delta",
+        help="Compare before/after reachability models for newly reachable forbidden capabilities",
+    )
+    reachability_delta.add_argument("--base-model", type=Path, required=True)
+    reachability_delta.add_argument("--head-model", type=Path, required=True)
+
     control_build = subparsers.add_parser(
         "control-bundle-build",
         help="Build deterministic control evidence bundle v3 from a verified reachability bundle v2",
@@ -200,6 +208,12 @@ def main(argv: list[str] | None = None) -> int:
             model = load_reachability_model(args.model.resolve())
             _emit(run_reachability_model(model))
             return EXIT_OK
+        if args.command == "reachability-delta":
+            base_model = load_reachability_model(args.base_model.resolve())
+            head_model = load_reachability_model(args.head_model.resolve())
+            result = compare_reachability_models(base_model, head_model)
+            _emit(result)
+            return EXIT_VALIDATION if result["status"] == "risk_increase_detected" else EXIT_OK
         if args.command == "control-bundle-build":
             post_model = load_post_impact_model(args.post_impact_model.resolve())
             _emit(
@@ -242,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
             "validate",
             "fingerprint",
             "reachability",
+            "reachability-delta",
             "control-bundle-build",
             "verify-control-bundle",
             "verify-bundle",
