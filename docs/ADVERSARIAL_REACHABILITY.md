@@ -112,7 +112,7 @@ duplicate-settlement
 
 ## CLI
 
-The repository-owned model can now be executed directly:
+The repository-owned model can be executed directly:
 
 ```bash
 cgqa reachability --model scenarios/adversarial-wallet-replay.json
@@ -145,11 +145,11 @@ Example shape:
 }
 ```
 
-The exact selected path is deterministic for the same semantic model and bound.
+The exact selected path is deterministic for the same semantic model and bound. When multiple targets are reachable at the same depth, deterministic adjacency ordering provides the tie-break.
 
 ## Runtime model contract
 
-`contractgraph_qa.reachability` now includes a strict stdlib-only loader. The runtime rejects:
+`contractgraph_qa.reachability` includes a strict stdlib-only loader. The runtime rejects:
 
 - unexpected root or entity fields;
 - missing required fields;
@@ -192,18 +192,56 @@ result = run_reachability_model(model)
 
 The module provides the domain model, strict validation, deterministic model hashing, bounded reachability, and stable semantic serialization for evidence integration.
 
-## Evidence integration status
+## Evidence bundle integration
 
-The reachability result is currently a standalone deterministic artifact. It is **not yet** included in the existing `finding.json` / evidence ZIP semantic chain. That boundary is deliberate so the current verified finding format remains backward compatible while the reachability contract stabilizes.
+The reachability model can now be bound into the existing single-finding product pipeline with an optional product-config field:
 
-The next slice will bind `modelSha256`, violated assumptions, capability transitions, crossed boundaries, and the shortest `ImpactPath` into the existing finding/evidence pipeline and independent bundle verification.
+```toml
+reachabilityModel = "scenarios/adversarial-wallet-replay.json"
+```
+
+When `reachabilityModel` is absent, `cgqa run` keeps producing the existing backward-compatible **bundle v1**.
+
+When it is present, the pipeline loads and re-runs the model, attaches the deterministic result to `finding.json -> evidence.reachability`, and emits **bundle v2**:
+
+```text
+manifest.json
+result.json
+reachability-model.json
+reachability.json
+finding.json
+report.md
+bundle.json
+```
+
+The reachability model is serialized canonically inside the bundle. `reachability.json` contains the bounded result and `modelSha256`; `finding.json` references both bundle artifacts and embeds the same deterministic semantic result.
+
+`cgqa verify-bundle` independently checks the v2 chain:
+
+```text
+reachability-model.json
+        ↓ strict runtime validation
+canonical model SHA-256
+        ↓
+deterministic bounded search
+        ↓
+reachability.json
+        ↓
+finding.json evidence binding
+        ↓
+report.md
+```
+
+Verification rejects artifact hash/size drift, non-canonical model bytes, a reachability result that does not recompute from the bundled model, a mismatched `reachabilityModelSha256`, or a finding that does not match the recomputed reachability evidence.
+
+This keeps the existing contract/result evidence chain intact while adding a second independently recomputable causal path.
 
 ## Next integration steps
 
-1. Bind `ImpactPath` and `modelSha256` into existing finding/evidence output without breaking current findings.
-2. Record recovery/containment and verification nodes explicitly.
-3. Include the reachability artifact in deterministic evidence ZIP verification.
-4. Add dedicated examples for approval bypass, stale/revoked authority, idempotency/replay, and duplicate settlement.
+1. Record recovery/containment and verification nodes explicitly.
+2. Render a dedicated human-readable capability/reachability section in the client report.
+3. Add dedicated examples for approval bypass, stale/revoked authority, idempotency/replay, and duplicate settlement.
+4. Include the graph path in the client proof pack.
 5. Compare old/new reachability graphs to detect newly reachable forbidden capabilities after a patch or PR.
 
 Tracking issue: #26.
