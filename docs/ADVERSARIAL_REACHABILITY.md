@@ -110,35 +110,94 @@ duplicate-settlement
   → duplicate financial settlement
 ```
 
+## CLI
+
+The repository-owned model can now be executed directly:
+
+```bash
+cgqa reachability --model scenarios/adversarial-wallet-replay.json
+```
+
+The command loads and validates the strict JSON model, runs deterministic bounded breadth-first search, and emits an evidence-oriented JSON result with:
+
+- `status`: `reachable` or `not_found_within_bound`;
+- `modelSha256`: canonical model fingerprint;
+- `maxDepth`;
+- declared violated assumptions and target capabilities;
+- the shortest reachable `ImpactPath`, when one exists.
+
+Example shape:
+
+```json
+{
+  "status": "reachable",
+  "modelSha256": "...",
+  "maxDepth": 4,
+  "path": {
+    "initialCapability": "request-spend",
+    "targetCapability": "duplicate-settlement",
+    "violatedAssumptions": ["fresh-policy-state", "unique-settlement"],
+    "invariantIds": ["settlement-at-most-once"],
+    "crossedBoundaries": ["settlement-idempotency"],
+    "impact": "duplicate financial settlement",
+    "transitions": []
+  }
+}
+```
+
+The exact selected path is deterministic for the same semantic model and bound.
+
+## Runtime model contract
+
+`contractgraph_qa.reachability` now includes a strict stdlib-only loader. The runtime rejects:
+
+- unexpected root or entity fields;
+- missing required fields;
+- whitespace-only identifiers or descriptions;
+- duplicate values in capability/assumption reference arrays;
+- duplicate capability, assumption, or transition identifiers;
+- unknown source/target capabilities;
+- unknown assumption references;
+- invalid `maxDepth` values.
+
+The checked-in JSON Schema is:
+
+[`graph/schema/adversarial-reachability.schema.json`](../graph/schema/adversarial-reachability.schema.json)
+
+`tools/check_schema_contract.py` binds this schema to the runtime key sets, required fields, non-blank string rules, optional fields, and bound semantics so schema/runtime drift fails CI.
+
 ## Determinism and fail-closed behavior
 
 The MVP follows the existing ContractGraph-QA evidence philosophy:
 
-- models reject duplicate capability and transition identifiers;
-- unknown source/target capabilities are rejected;
-- unknown assumption references are rejected when assumptions are declared;
 - edge traversal requires all declared assumption violations;
 - adjacency ordering is deterministic;
-- search is bounded by `max_depth`;
-- no reachable path is not a proof of safety beyond the declared model and bound.
+- model serialization is canonicalized before SHA-256 fingerprinting;
+- search is bounded by `maxDepth`;
+- no reachable path is not a proof of safety beyond the declared model and bound;
+- malformed or ambiguous models fail closed before search.
 
 ## Python API
 
-The first vertical slice lives in `contractgraph_qa.reachability`:
-
 ```python
-from contractgraph_qa.reachability import find_shortest_impact_path
+from pathlib import Path
+from contractgraph_qa.reachability import (
+    load_reachability_model,
+    run_reachability_model,
+)
+
+model = load_reachability_model(Path("scenarios/adversarial-wallet-replay.json"))
+result = run_reachability_model(model)
 ```
 
-The module currently provides the domain model, validation, bounded deterministic search, and stable semantic serialization for later evidence integration.
+The module provides the domain model, strict validation, deterministic model hashing, bounded reachability, and stable semantic serialization for evidence integration.
 
 ## Next integration steps
 
-1. Parse the JSON model directly into the Python domain objects.
-2. Add schema/runtime contract checks to CI.
-3. Bind `ImpactPath` output into finding JSON and deterministic evidence ZIPs.
-4. Record recovery/containment and verification nodes explicitly.
-5. Add CLI support such as `cgqa reachability --model ...`.
-6. Compare old/new reachability graphs to detect newly reachable forbidden capabilities after a patch or PR.
+1. Bind `ImpactPath` and `modelSha256` into existing finding/evidence output without breaking current findings.
+2. Record recovery/containment and verification nodes explicitly.
+3. Include the reachability artifact in deterministic evidence ZIP verification.
+4. Add dedicated examples for approval bypass, stale/revoked authority, idempotency/replay, and duplicate settlement.
+5. Compare old/new reachability graphs to detect newly reachable forbidden capabilities after a patch or PR.
 
 Tracking issue: #26.
