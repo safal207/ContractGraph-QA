@@ -69,7 +69,7 @@ It then canonicalizes and re-runs both the reachability model and the post-impac
 - containment targets the exact selected forbidden capability;
 - successful recovery restores only to a declared non-forbidden capability;
 - `post-impact.json` is exactly the deterministic result of the bundled model;
-- `control-report.md` is exactly regenerated from the recomputed post-impact graph;
+- `control-report.md` is regenerated from that recomputed result and matches byte-for-byte;
 - every artifact hash and byte count in bundle v3 matches the embedded bytes.
 
 Build and verify through the product CLI:
@@ -85,15 +85,9 @@ cgqa verify-control-bundle dist/CGQA-005/CGQA-005.control.evidence.zip
 
 ## Client control report
 
-`control-report.md` is a deterministic human-readable projection of the same post-impact result accepted by the verifier. It shows:
+`control-report.md` is a deterministic human-readable projection of the same post-impact result accepted by the verifier. It shows the reached forbidden capability, aggregate control status, canonical model hashes, and every `contained_by`, `recovered_by`, `restores_to`, and `verified_by` edge together with the target-node outcome/evidence.
 
-- the reached forbidden capability;
-- aggregate control status;
-- canonical reachability/post-impact model hashes;
-- every `contained_by`, `recovered_by`, `restores_to`, and `verified_by` relation;
-- target-node outcome and evidence text.
-
-The verifier regenerates this report and requires exact byte equality, so changing the narrative without changing and re-verifying the underlying model invalidates the bundle.
+This is intentionally stronger than merely shipping prose next to JSON: a narrative edit without a matching recomputable post-impact graph invalidates the bundle.
 
 Bundle v1 and v2 semantics are unchanged. v3 remains an additive control-evidence envelope over a previously verified v2 reachability bundle.
 
