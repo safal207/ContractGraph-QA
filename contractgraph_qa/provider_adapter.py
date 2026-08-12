@@ -2,8 +2,10 @@
 
 v0.1 requires a fully specified evidence precedence and retry policy.
 v0.2 adds an explicit fail-closed representation for public contracts where
-precedence or recovery semantics are not documented. No network calls occur
-here: adapters only normalize already-captured observations.
+evidence precedence is not documented.
+v0.3 separates reconciliation finality from retry authority so a provider can
+report a final failure while retry semantics remain explicitly unresolved.
+No network calls occur here: adapters only normalize already-captured observations.
 """
 
 from __future__ import annotations
@@ -14,7 +16,8 @@ from typing import Any
 
 ADAPTER_SCHEMA_V1 = "cgqa.payment-provider-adapter.v0.1"
 ADAPTER_SCHEMA_V2 = "cgqa.payment-provider-adapter.v0.2"
-ADAPTER_SCHEMAS = {ADAPTER_SCHEMA_V1, ADAPTER_SCHEMA_V2}
+ADAPTER_SCHEMA_V3 = "cgqa.payment-provider-adapter.v0.3"
+ADAPTER_SCHEMAS = {ADAPTER_SCHEMA_V1, ADAPTER_SCHEMA_V2, ADAPTER_SCHEMA_V3}
 OBSERVATION_SCHEMA = "cgqa.payment-provider-observations.v0.1"
 RESULT_SCHEMA = "cgqa.payment-provider-reconciliation.v0.1"
 _FINAL_OUTCOMES = {"committed", "failed"}
@@ -112,6 +115,32 @@ def _validate_common(payload: dict[str, Any]) -> tuple[str, str, list[str], set[
     return provider_id, profile_version, source_names, seen, len(normalized_states)
 
 
+def _validate_v2_v3_precedence(payload: dict[str, Any], seen: set[str]) -> tuple[str, list[str]]:
+    precedence_status = _required_text(
+        payload.get("evidencePrecedenceStatus"), "evidencePrecedenceStatus"
+    ).lower()
+    if precedence_status not in {"documented", "unresolved"}:
+        raise ProviderAdapterError(
+            "evidencePrecedenceStatus must be documented or unresolved"
+        )
+    precedence = payload.get("evidencePrecedence")
+    if not isinstance(precedence, list):
+        raise ProviderAdapterError("evidencePrecedence must be an array")
+    precedence_names = [_required_text(item, "evidencePrecedence item") for item in precedence]
+    if precedence_status == "documented":
+        if not precedence_names:
+            raise ProviderAdapterError("documented evidence precedence must be non-empty")
+        if len(precedence_names) != len(set(precedence_names)):
+            raise ProviderAdapterError("evidencePrecedence must not contain duplicates")
+        if set(precedence_names) != seen:
+            raise ProviderAdapterError(
+                "documented evidencePrecedence must contain every evidence source exactly once"
+            )
+    elif precedence_names:
+        raise ProviderAdapterError("unresolved evidence precedence must not invent an ordering")
+    return precedence_status, precedence_names
+
+
 def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
     """Validate a declarative provider adapter and return a compact summary."""
     schema = payload.get("schema")
@@ -121,6 +150,8 @@ def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     provider_id, profile_version, source_names, seen, state_count = _validate_common(payload)
+    retry_semantics_status: str | None = None
+    retry_allowed_after: list[str] = []
 
     if schema == ADAPTER_SCHEMA_V1:
         retry = payload.get("retryPolicy")
@@ -147,32 +178,7 @@ def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
             )
         precedence_status = "documented"
     else:
-        precedence_status = _required_text(
-            payload.get("evidencePrecedenceStatus"), "evidencePrecedenceStatus"
-        ).lower()
-        if precedence_status not in {"documented", "unresolved"}:
-            raise ProviderAdapterError(
-                "evidencePrecedenceStatus must be documented or unresolved"
-            )
-        precedence = payload.get("evidencePrecedence")
-        if not isinstance(precedence, list):
-            raise ProviderAdapterError("evidencePrecedence must be an array")
-        precedence_names = [_required_text(item, "evidencePrecedence item") for item in precedence]
-        if precedence_status == "documented":
-            if not precedence_names:
-                raise ProviderAdapterError(
-                    "documented evidence precedence must be non-empty"
-                )
-            if len(precedence_names) != len(set(precedence_names)):
-                raise ProviderAdapterError("evidencePrecedence must not contain duplicates")
-            if set(precedence_names) != seen:
-                raise ProviderAdapterError(
-                    "documented evidencePrecedence must contain every evidence source exactly once"
-                )
-        elif precedence_names:
-            raise ProviderAdapterError(
-                "unresolved evidence precedence must not invent an ordering"
-            )
+        precedence_status, precedence_names = _validate_v2_v3_precedence(payload, seen)
 
         open_questions = payload.get("openQuestions", [])
         if not isinstance(open_questions, list):
@@ -180,7 +186,37 @@ def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
         for index, question in enumerate(open_questions):
             _required_text(question, f"openQuestions[{index}]")
 
-    return {
+        if schema == ADAPTER_SCHEMA_V3:
+            retry_semantics_status = _required_text(
+                payload.get("retrySemanticsStatus"), "retrySemanticsStatus"
+            ).lower()
+            if retry_semantics_status not in {"documented", "unresolved"}:
+                raise ProviderAdapterError(
+                    "retrySemanticsStatus must be documented or unresolved"
+                )
+            retry_allowed = payload.get("retryAllowedAfterProviderStates")
+            if not isinstance(retry_allowed, list):
+                raise ProviderAdapterError("retryAllowedAfterProviderStates must be an array")
+            retry_allowed_after = [
+                _required_text(item, "retryAllowedAfterProviderStates item").lower()
+                for item in retry_allowed
+            ]
+            if len(retry_allowed_after) != len(set(retry_allowed_after)):
+                raise ProviderAdapterError(
+                    "retryAllowedAfterProviderStates must not contain duplicates"
+                )
+            if retry_semantics_status == "unresolved" and retry_allowed_after:
+                raise ProviderAdapterError(
+                    "unresolved retry semantics must not invent retry-authorized states"
+                )
+            known_states = {str(key).lower() for key in payload["stateMap"]}
+            unknown_retry_states = set(retry_allowed_after) - known_states
+            if unknown_retry_states:
+                raise ProviderAdapterError(
+                    "retryAllowedAfterProviderStates must reference mapped provider states"
+                )
+
+    summary = {
         "schema": schema,
         "providerId": provider_id,
         "profileVersion": profile_version,
@@ -195,6 +231,10 @@ def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
             "productionAuthorization": False,
         },
     }
+    if schema == ADAPTER_SCHEMA_V3:
+        summary["retrySemanticsStatus"] = retry_semantics_status
+        summary["retryAllowedAfterProviderStates"] = retry_allowed_after
+    return summary
 
 
 def _select_evidence(
@@ -226,6 +266,25 @@ def _select_evidence(
         else "evidence_precedence_unresolved"
     )
     return selected, False, reason
+
+
+def _retry_decision(adapter: dict[str, Any], selected: dict[str, Any], final: bool, outcome: str) -> tuple[bool, str | None]:
+    if not final or outcome != "failed":
+        return False, None
+
+    if adapter["schema"] != ADAPTER_SCHEMA_V3:
+        return True, None
+
+    retry_status = str(adapter["retrySemanticsStatus"]).lower()
+    if retry_status == "unresolved":
+        return False, "retry_semantics_unresolved"
+
+    allowed_states = {
+        str(item).lower() for item in adapter.get("retryAllowedAfterProviderStates", [])
+    }
+    if str(selected["providerState"]).lower() in allowed_states:
+        return True, None
+    return False, "retry_not_documented_for_state"
 
 
 def reconcile_provider_observations(
@@ -281,6 +340,7 @@ def reconcile_provider_observations(
         and selected_outcome in _FINAL_OUTCOMES
     )
     outcome = selected_outcome if final or selected_outcome in {"pending", "unknown"} else "unknown"
+    retry_allowed, retry_block_reason = _retry_decision(adapter, selected, final, outcome)
 
     overridden = [
         item
@@ -300,7 +360,7 @@ def reconcile_provider_observations(
         "selectedEvidence": selected,
         "overriddenEvidence": overridden,
         "normalizedObservations": normalized,
-        "retryAllowed": bool(final and outcome == "failed"),
+        "retryAllowed": retry_allowed,
         "authority": {
             "classification": "RESEARCH_ONLY",
             "securityCertification": False,
@@ -310,6 +370,8 @@ def reconcile_provider_observations(
     }
     if block_reason:
         result["reconciliationBlockReason"] = block_reason
+    if retry_block_reason:
+        result["retryBlockReason"] = retry_block_reason
     if final:
         result["reconcileEvent"] = {
             "type": "reconcile",

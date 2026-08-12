@@ -21,6 +21,9 @@ FINAL = BASE / "example-observations-final.json"
 CROSSMINT = BASE / "crossmint-public-contract.v0.1.json"
 CROSSMINT_GET_SUCCESS = BASE / "crossmint-observations-get-success.json"
 CROSSMINT_WEBHOOK_ONLY = BASE / "crossmint-observations-webhook-only.json"
+PAYRAM = BASE / "payram-payout-public-contract.v0.1.json"
+PAYRAM_PROCESSED = BASE / "payram-observations-processed.json"
+PAYRAM_FAILED = BASE / "payram-observations-failed.json"
 
 
 class ProviderAdapterTest(unittest.TestCase):
@@ -149,6 +152,46 @@ class ProviderAdapterTest(unittest.TestCase):
         self.assertEqual(result["reconciliationBlockReason"], "evidence_precedence_unresolved")
         self.assertFalse(result["retryAllowed"])
         self.assertNotIn("reconcileEvent", result)
+
+    def test_payram_public_profile_preserves_unresolved_retry_semantics(self) -> None:
+        adapter = load_provider_adapter(PAYRAM)
+        summary = validate_provider_adapter(adapter)
+
+        self.assertEqual(summary["providerId"], "payram-payout-public")
+        self.assertEqual(summary["retrySemanticsStatus"], "unresolved")
+        self.assertEqual(summary["retryAllowedAfterProviderStates"], [])
+        self.assertFalse(adapter["create"]["supportsIdempotencyKey"])
+        self.assertFalse(adapter["create"]["sameKeyReplayDocumented"])
+
+    def test_payram_processed_is_committed_but_never_retryable(self) -> None:
+        adapter = load_provider_adapter(PAYRAM)
+        observations = load_provider_observations(PAYRAM_PROCESSED)
+        result = reconcile_provider_observations(adapter, observations)
+
+        self.assertEqual(result["status"], "final")
+        self.assertEqual(result["outcome"], "committed")
+        self.assertEqual(result["selectedEvidence"]["source"], "get-payout-status")
+        self.assertFalse(result["retryAllowed"])
+        self.assertNotIn("retryBlockReason", result)
+
+    def test_payram_failed_is_final_but_retry_authority_remains_unresolved(self) -> None:
+        adapter = load_provider_adapter(PAYRAM)
+        observations = load_provider_observations(PAYRAM_FAILED)
+        result = reconcile_provider_observations(adapter, observations)
+
+        self.assertEqual(result["status"], "final")
+        self.assertEqual(result["outcome"], "failed")
+        self.assertFalse(result["retryAllowed"])
+        self.assertEqual(result["retryBlockReason"], "retry_semantics_unresolved")
+        self.assertIn("reconcileEvent", result)
+
+    def test_v03_unresolved_retry_semantics_reject_invented_retry_states(self) -> None:
+        adapter = load_provider_adapter(PAYRAM)
+        adapter = copy.deepcopy(adapter)
+        adapter["retryAllowedAfterProviderStates"] = ["failed"]
+
+        with self.assertRaisesRegex(ProviderAdapterError, "must not invent"):
+            validate_provider_adapter(adapter)
 
 
 if __name__ == "__main__":
