@@ -8,6 +8,10 @@ import sys
 from pathlib import Path
 
 from contractgraph_qa import __version__
+from contractgraph_qa.control_bundle import (
+    create_control_evidence_bundle,
+    verify_control_evidence_bundle,
+)
 from contractgraph_qa.demo import run_demo
 from contractgraph_qa.engagement import (
     EngagementError,
@@ -19,6 +23,7 @@ from contractgraph_qa.engagement_run import (
     load_engagement_run_config,
     run_engagement_pipeline,
 )
+from contractgraph_qa.postimpact import load_post_impact_model
 from contractgraph_qa.product import (
     ProductError,
     doctor,
@@ -113,6 +118,20 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Adversarial reachability model JSON",
     )
 
+    control_build = subparsers.add_parser(
+        "control-bundle-build",
+        help="Build deterministic control evidence bundle v3 from a verified reachability bundle v2",
+    )
+    control_build.add_argument("--base-bundle", type=Path, required=True, help="Verified reachability-aware bundle v2")
+    control_build.add_argument("--post-impact-model", type=Path, required=True, help="Post-impact control model JSON")
+    control_build.add_argument("--output", type=Path, required=True, help="Destination control evidence ZIP")
+
+    control_verify = subparsers.add_parser(
+        "verify-control-bundle",
+        help="Independently verify control evidence bundle v3 and reconstructed base v2 evidence",
+    )
+    control_verify.add_argument("bundle", type=Path)
+
     verify = subparsers.add_parser("verify-bundle", help="Verify single-finding evidence ZIP integrity and semantic chain")
     verify.add_argument("bundle", type=Path)
 
@@ -166,6 +185,19 @@ def main(argv: list[str] | None = None) -> int:
             model = load_reachability_model(args.model.resolve())
             _emit(run_reachability_model(model))
             return EXIT_OK
+        if args.command == "control-bundle-build":
+            post_model = load_post_impact_model(args.post_impact_model.resolve())
+            _emit(
+                create_control_evidence_bundle(
+                    args.base_bundle.resolve(),
+                    post_model,
+                    args.output.resolve(),
+                )
+            )
+            return EXIT_OK
+        if args.command == "verify-control-bundle":
+            _emit(verify_control_evidence_bundle(args.bundle.resolve()))
+            return EXIT_OK
         if args.command == "verify-bundle":
             _emit(verify_evidence_bundle(args.bundle))
             return EXIT_OK
@@ -190,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
             "validate",
             "fingerprint",
             "reachability",
+            "control-bundle-build",
+            "verify-control-bundle",
             "verify-bundle",
             "verify-engagement-bundle",
         }
