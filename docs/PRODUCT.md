@@ -12,6 +12,7 @@ Given:
 2. a reviewed adapter manifest;
 3. a deterministic Foundry adapter/capture test;
 4. explicit invariants;
+5. optionally, a reviewed adversarial reachability model;
 
 ContractGraph-QA can produce a reproducible evidence chain:
 
@@ -28,6 +29,8 @@ explorer-result JSON
       ↓
 manifest/result provenance validation
       ↓
+[optional] assumption/capability reachability
+      ↓
 finding JSON
       ↓
 client Markdown report
@@ -37,7 +40,7 @@ deterministic evidence ZIP
 independent bundle verification
 ```
 
-The product does not claim that bounded search proves a contract secure. Results are limited to the modeled actors, actions, parameter corpus, time assumptions, search depth, state hash, adapter mapping, snapshot, and invariants.
+The product does not claim that bounded search proves a contract secure. Results are limited to the modeled actors, actions, parameter corpus, time assumptions, search depth, state hash, adapter mapping, snapshot, invariants, declared reachability assumptions, and capability graph.
 
 ## Runtime components
 
@@ -64,6 +67,16 @@ The adapter manifest is the human-reviewable engagement contract for:
 - allowed actions and actors;
 - invariants and client-facing finding metadata.
 
+### Optional reachability model
+
+A product config can add:
+
+```toml
+reachabilityModel = "scenarios/adversarial-wallet-replay.json"
+```
+
+The model declares assumptions, capabilities, guarded capability transitions, initial capabilities, target capabilities, violated assumptions, and a search bound. It is strict, deterministic, stdlib-only, and separately fingerprinted by canonical SHA-256.
+
 ### Product CLI
 
 `cgqa` supplies the operator workflow:
@@ -71,12 +84,15 @@ The adapter manifest is the human-reviewable engagement contract for:
 - `doctor` — dependency check;
 - `validate` — manifest/result validation;
 - `fingerprint` — canonical manifest SHA-256;
-- `run` — capture → export → report → bundle;
+- `reachability` — bounded assumption/capability reachability;
+- `run` — capture → optional reachability → export → report → bundle;
 - `verify-bundle` — independent integrity + semantic-chain verification.
 
-## Deterministic evidence bundle
+## Deterministic evidence bundles
 
-A v1 bundle contains exactly:
+### Bundle v1
+
+Configs without a reachability model keep the existing bundle shape:
 
 ```text
 manifest.json
@@ -86,11 +102,27 @@ report.md
 bundle.json
 ```
 
-`bundle.json` records the tool version, finding ID, canonical manifest SHA-256, and exact SHA-256/byte count for every evidence artifact.
+### Bundle v2
 
-The ZIP writer fixes file order, metadata timestamps, permissions, and names so identical inputs produce identical bundle bytes.
+Configs with `reachabilityModel` produce:
 
-`cgqa verify-bundle` checks both integrity and meaning:
+```text
+manifest.json
+result.json
+reachability-model.json
+reachability.json
+finding.json
+report.md
+bundle.json
+```
+
+`reachability-model.json` is the canonicalized model. `reachability.json` is the deterministic bounded result. `finding.json` binds that result under `evidence.reachability`, including the model SHA-256 and artifact references.
+
+`bundle.json` records the tool version, finding ID, canonical manifest SHA-256, exact SHA-256/byte count for every evidence artifact, and for v2 the reachability model SHA-256.
+
+The ZIP writer fixes file order, metadata timestamps, permissions, and names so identical semantic inputs produce identical bundle bytes.
+
+`cgqa verify-bundle` checks integrity and meaning. For v1 it checks:
 
 1. exact entry set and order;
 2. per-entry size limits;
@@ -99,6 +131,16 @@ The ZIP writer fixes file order, metadata timestamps, permissions, and names so 
 5. manifest/result provenance binding;
 6. deterministic re-export of `finding.json`;
 7. deterministic re-render of `report.md`.
+
+For v2 it additionally:
+
+8. validates and canonicalizes the bundled reachability model;
+9. recomputes the reachability model SHA-256;
+10. re-runs bounded reachability from the bundled model;
+11. requires `reachability.json` to equal that recomputed result;
+12. requires `finding.json` to carry exactly the recomputed reachability evidence.
+
+This preserves backward compatibility for existing evidence while making the new capability path independently recomputable.
 
 ## Product safety boundaries
 
@@ -109,7 +151,7 @@ ContractGraph-QA is for:
 - client contracts with explicit authorization;
 - public bug-bounty assets strictly within published scope and rules.
 
-A public address, ABI, source repository, manifest file, or RPC endpoint is not authorization by itself.
+A public address, ABI, source repository, manifest file, reachability model, or RPC endpoint is not authorization by itself.
 
 The CLI does not execute arbitrary shell strings. Foundry is invoked as an argument array, and capture profile/test identifiers are restricted to safe identifier characters.
 
