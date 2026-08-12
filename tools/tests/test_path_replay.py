@@ -12,8 +12,8 @@ class PriorPathReplayTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.root = Path(__file__).resolve().parents[2]
-        cls.before = load_reachability_model(
-            cls.root / "scenarios/adversarial-adapter-fixture-before.json"
+        cls.fixed = load_reachability_model(
+            cls.root / "scenarios/adversarial-adapter-fixture-fixed.json"
         )
         cls.failing = load_reachability_model(
             cls.root / "scenarios/adversarial-adapter-fixture.json"
@@ -26,7 +26,7 @@ class PriorPathReplayTest(unittest.TestCase):
         self.assertTrue(result["alternateReachability"]["reachable"])
 
     def test_fix_verified_when_prior_path_and_target_are_no_longer_reachable(self) -> None:
-        result = replay_prior_model_path(self.failing, self.before)
+        result = replay_prior_model_path(self.failing, self.fixed)
         self.assertEqual(result["status"], "fix_verified")
         self.assertFalse(result["exactReplay"]["reachedForbiddenCapability"])
         self.assertFalse(result["alternateReachability"]["reachable"])
