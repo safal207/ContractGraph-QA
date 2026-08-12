@@ -125,6 +125,19 @@ cgqa verify-control-bundle dist/client.control.evidence.zip
 
 Verification reconstructs the exact embedded v2 bundle, checks its SHA-256, runs the existing v2 semantic verifier, then independently re-runs both reachability and post-impact models. The command fails closed on artifact tampering, model/result drift, target-capability mismatch, invalid recovery semantics, or a broken base evidence chain.
 
+## `cgqa payment-recovery-evaluate`
+
+Evaluate a vendor-neutral Agent Payment Recovery Benchmark v0.1 trace.
+
+```bash
+cgqa payment-recovery-evaluate \
+  --scenario benchmarks/agent-payment-recovery-v0.1/cases/pass_committed_stop.json
+```
+
+The evaluator checks whether an ambiguous financial execution is reconciled before another monetary action occurs. It keeps `logicalOperationId`, concrete `executionId`, and idempotency identity separate, treats `pending` / `unknown` as unresolved, and emits deterministic invariant violations. Passing traces exit `0`; valid traces with benchmark violations exit `10`.
+
+This command is local and provider-neutral. It performs no network call or financial action.
+
 ## `cgqa run`
 
 Run the single-finding capture and evidence pipeline.
