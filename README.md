@@ -103,13 +103,15 @@ IMPACT
 
 The command emits deterministic JSON containing a canonical model SHA-256, the declared violated assumptions, and the shortest reachable impact path within the configured bound. `not_found_within_bound` is bounded evidence only, not a safety certification.
 
-The same model can now be bound into the single-finding product pipeline by adding:
+A reachability model can also be bound into the single-finding product pipeline. The repository-owned binding fixture uses:
 
 ```toml
-reachabilityModel = "scenarios/adversarial-wallet-replay.json"
+reachabilityModel = "scenarios/adversarial-adapter-fixture.json"
 ```
 
-`cgqa run` then emits a backward-compatible **bundle v2** containing canonical `reachability-model.json` and recomputable `reachability.json`, and binds the result into `finding.json -> evidence.reachability`. `cgqa verify-bundle` independently re-runs the bundled model and rejects any mismatch in the model hash, impact path, finding evidence, or artifact bytes. Configs without `reachabilityModel` continue to produce the existing bundle v1.
+Product binding is fail-closed: the selected target capability must be marked forbidden, every path invariant must exist in the reviewed manifest, and the path must include the exact invariant identified by the explorer result. An unrelated reachability model is rejected rather than silently attached to a finding.
+
+`cgqa run` then emits a backward-compatible **bundle v2** containing canonical `reachability-model.json` and recomputable `reachability.json`, and binds the result into `finding.json -> evidence.reachability`. `cgqa verify-bundle` independently re-runs the bundled model and rejects any mismatch in the model hash, impact path, finding invariant binding, or artifact bytes. Configs without `reachabilityModel` continue to produce the existing bundle v1.
 
 See [`docs/ADVERSARIAL_REACHABILITY.md`](docs/ADVERSARIAL_REACHABILITY.md).
 
