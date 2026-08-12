@@ -1,0 +1,35 @@
+{
+  "assumptions": [
+    {
+      "id": "terminal-transition-blocked",
+      "description": "The terminal violating transition remains unreachable in the reviewed adapter model."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "progress-state-machine",
+      "description": "Advance through reviewed local adapter states.",
+      "forbidden": false
+    },
+    {
+      "id": "terminal-state-reachable",
+      "description": "Reach the modeled terminal state that violates phase < 3.",
+      "forbidden": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "cross-terminal-bound",
+      "source": "progress-state-machine",
+      "target": "terminal-state-reachable",
+      "requiresViolations": ["terminal-transition-blocked"],
+      "invariantId": "adapter-terminal-state",
+      "boundary": "terminal-state-boundary",
+      "impact": "modeled terminal-state invariant becomes reachable"
+    }
+  ],
+  "initialCapabilities": ["progress-state-machine"],
+  "targetCapabilities": ["terminal-state-reachable"],
+  "violatedAssumptions": [],
+  "maxDepth": 2
+}
