@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import contextlib
+import io
+import json
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
 
+from contractgraph_qa.cli import EXIT_OK, main as cli_main
 from contractgraph_qa.control_bundle import (
     CONTROL_BUNDLE_FILES,
     create_control_evidence_bundle,
@@ -71,6 +75,41 @@ class ControlEvidenceBundleTest(unittest.TestCase):
             self.assertEqual(verified["bundleVersion"], 3)
             self.assertEqual(verified["findingId"], "CGQA-005")
             self.assertEqual(verified["postImpactStatus"], "contained_and_verified")
+            self.assertEqual(verified["boundTargetCapability"], "terminal-state-reachable")
+
+    def test_cli_builds_and_verifies_control_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            config = self._base_config(temp)
+            run_pipeline(config)
+            output = temp / "control.evidence.zip"
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                build_code = cli_main(
+                    [
+                        "control-bundle-build",
+                        "--base-bundle",
+                        str(config.bundle),
+                        "--post-impact-model",
+                        str(self.post_impact_model),
+                        "--output",
+                        str(output),
+                    ]
+                )
+            self.assertEqual(build_code, EXIT_OK)
+            built = json.loads(stdout.getvalue())
+            self.assertEqual(built["bundleVersion"], 3)
+            self.assertEqual(built["postImpactStatus"], "contained_and_verified")
+            self.assertTrue(output.is_file())
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                verify_code = cli_main(["verify-control-bundle", str(output)])
+            self.assertEqual(verify_code, EXIT_OK)
+            verified = json.loads(stdout.getvalue())
+            self.assertTrue(verified["ok"])
+            self.assertEqual(verified["bundleVersion"], 3)
             self.assertEqual(verified["boundTargetCapability"], "terminal-state-reachable")
 
     def test_post_impact_tamper_is_rejected(self) -> None:
