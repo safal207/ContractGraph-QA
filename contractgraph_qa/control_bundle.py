@@ -1,9 +1,4 @@
-"""Deterministic bundle v3 for post-impact containment/recovery evidence.
-
-This layer is intentionally additive: existing ContractGraph-QA bundle v1/v2
-semantics remain unchanged. A v3 control bundle embeds the exact verified v2
-bundle payload plus a canonical post-impact model and its deterministic result.
-"""
+"""Deterministic bundle v3 for post-impact containment/recovery evidence."""
 
 from __future__ import annotations
 
@@ -15,6 +10,7 @@ from typing import Any
 import zipfile
 
 from contractgraph_qa import __version__
+from contractgraph_qa.control_report import render_control_report
 from contractgraph_qa.finding import canonical_json
 from contractgraph_qa.postimpact import (
     PostImpactModel,
@@ -24,10 +20,7 @@ from contractgraph_qa.postimpact import (
     run_post_impact_model,
 )
 from contractgraph_qa.product import ProductError, verify_evidence_bundle
-from contractgraph_qa.reachability import (
-    reachability_model_from_dict,
-    run_reachability_model,
-)
+from contractgraph_qa.reachability import reachability_model_from_dict, run_reachability_model
 
 BASE_V2_FILES = (
     "manifest.json",
@@ -47,6 +40,7 @@ CONTROL_BUNDLE_FILES = (
     "post-impact.json",
     "finding.json",
     "report.md",
+    "control-report.md",
     "base-bundle.json",
     "bundle.json",
 )
@@ -118,7 +112,11 @@ def _reject_extra_keys(data: dict[str, Any], allowed: set[str], field: str) -> N
     _require(not extras, f"{field} contains unexpected fields: {', '.join(extras)}")
 
 
-def _canonical_post_impact(model: PostImpactModel, reachability_model_data: dict[str, Any], reachability_result: dict[str, Any]) -> tuple[bytes, bytes, dict[str, object]]:
+def _canonical_post_impact(
+    model: PostImpactModel,
+    reachability_model_data: dict[str, Any],
+    reachability_result: dict[str, Any],
+) -> tuple[bytes, bytes, bytes, dict[str, object]]:
     reachability_model = reachability_model_from_dict(reachability_model_data)
     expected_reachability = run_reachability_model(reachability_model)
     _require(
@@ -129,7 +127,8 @@ def _canonical_post_impact(model: PostImpactModel, reachability_model_data: dict
     post_result = run_post_impact_model(model, reachability_model, expected_reachability)
     model_bytes = canonical_json(post_impact_model_to_dict(model)).encode("utf-8")
     result_bytes = canonical_json(post_result).encode("utf-8")
-    return model_bytes, result_bytes, post_result
+    report_bytes = render_control_report(post_result).encode("utf-8")
+    return model_bytes, result_bytes, report_bytes, post_result
 
 
 def create_control_evidence_bundle(
@@ -141,12 +140,14 @@ def create_control_evidence_bundle(
 
     base_path = base_bundle.expanduser().resolve()
     base_verification = verify_evidence_bundle(base_path)
-    _require(base_verification.get("bundleVersion") == 2, "control bundle requires a reachability-aware bundle v2")
-
+    _require(
+        base_verification.get("bundleVersion") == 2,
+        "control bundle requires a reachability-aware bundle v2",
+    )
     base_payloads = _read_exact_zip(base_path, BASE_V2_FILES)
     reachability_model_data = _load_json(base_payloads["reachability-model.json"], "reachability-model.json")
     reachability_result = _load_json(base_payloads["reachability.json"], "reachability.json")
-    model_bytes, result_bytes, post_result = _canonical_post_impact(
+    model_bytes, result_bytes, report_bytes, post_result = _canonical_post_impact(
         post_impact_model,
         reachability_model_data,
         reachability_result,
@@ -161,12 +162,12 @@ def create_control_evidence_bundle(
         "post-impact.json": result_bytes,
         "finding.json": base_payloads["finding.json"],
         "report.md": base_payloads["report.md"],
+        "control-report.md": report_bytes,
         "base-bundle.json": base_payloads["bundle.json"],
     }
     for name, payload in payloads.items():
         _require(len(payload) <= MAX_ENTRY_BYTES, f"artifact too large for control bundle: {name}")
 
-    manifest = _load_json(base_payloads["manifest.json"], "manifest.json")
     reachability_model_hash = str(reachability_result["modelSha256"])
     control_manifest: dict[str, Any] = {
         "bundleVersion": 3,
@@ -181,9 +182,9 @@ def create_control_evidence_bundle(
             for name, payload in payloads.items()
         },
     }
-    _require(isinstance(manifest, dict), "manifest.json must be an object")
     payloads["bundle.json"] = canonical_json(control_manifest).encode("utf-8")
-    _write_zip(output.expanduser().resolve(), CONTROL_BUNDLE_FILES, payloads)
+    output_path = output.expanduser().resolve()
+    _write_zip(output_path, CONTROL_BUNDLE_FILES, payloads)
     return {
         "ok": True,
         "bundleVersion": 3,
@@ -192,8 +193,9 @@ def create_control_evidence_bundle(
         "reachabilityModelSha256": reachability_model_hash,
         "postImpactModelSha256": post_result["postImpactModelSha256"],
         "postImpactStatus": post_result["status"],
-        "bundle": str(output.expanduser().resolve()),
-        "bundleSha256": _sha256(output.expanduser().resolve().read_bytes()),
+        "controlReport": "control-report.md",
+        "bundle": str(output_path),
+        "bundleSha256": _sha256(output_path.read_bytes()),
     }
 
 
@@ -210,7 +212,10 @@ def verify_control_evidence_bundle(path: Path) -> dict[str, Any]:
     _require(isinstance(tool, dict), "bundle.tool must be an object")
     _reject_extra_keys(tool, TOOL_KEYS, "bundle.tool")
     _require(tool.get("name") == "contractgraph-qa", "bundle.tool.name mismatch")
-    _require(isinstance(tool.get("version"), str) and bool(tool["version"].strip()), "bundle.tool.version missing")
+    _require(
+        isinstance(tool.get("version"), str) and bool(tool["version"].strip()),
+        "bundle.tool.version missing",
+    )
 
     artifacts = control_manifest.get("artifacts")
     _require(isinstance(artifacts, dict), "bundle.artifacts must be an object")
@@ -244,19 +249,20 @@ def verify_control_evidence_bundle(path: Path) -> dict[str, Any]:
     reachability_model_data = _load_json(payloads["reachability-model.json"], "reachability-model.json")
     reachability_result = _load_json(payloads["reachability.json"], "reachability.json")
     post_model_data = _load_json(payloads["post-impact-model.json"], "post-impact-model.json")
-    bundled_post_result = _load_json(payloads["post-impact.json"], "post-impact.json")
     try:
         post_model = post_impact_model_from_dict(post_model_data)
-        expected_model_bytes, expected_result_bytes, expected_post_result = _canonical_post_impact(
-            post_model,
-            reachability_model_data,
-            reachability_result,
+        expected_model_bytes, expected_result_bytes, expected_report_bytes, expected_post_result = (
+            _canonical_post_impact(post_model, reachability_model_data, reachability_result)
         )
     except ValueError as exc:
         raise ProductError(f"invalid post-impact evidence: {exc}") from exc
 
     _require(expected_model_bytes == payloads["post-impact-model.json"], "post-impact-model.json is not canonical")
     _require(expected_result_bytes == payloads["post-impact.json"], "post-impact.json does not match post-impact-model.json")
+    _require(
+        expected_report_bytes == payloads["control-report.md"],
+        "control-report.md does not match post-impact.json",
+    )
     _require(
         control_manifest.get("postImpactModelSha256") == post_impact_model_sha256(post_model),
         "bundle postImpactModelSha256 mismatch",
@@ -282,4 +288,5 @@ def verify_control_evidence_bundle(path: Path) -> dict[str, Any]:
         "postImpactModelSha256": expected_post_result["postImpactModelSha256"],
         "postImpactStatus": expected_post_result["status"],
         "boundTargetCapability": expected_post_result["boundTargetCapability"],
+        "controlReport": "control-report.md",
     }
