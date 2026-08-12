@@ -1,9 +1,9 @@
-"""Provider Adapter Contract v0.1 for Agent Payment Recovery Benchmark.
+"""Provider Adapter Contract for Agent Payment Recovery Benchmark.
 
-A provider adapter is a declarative bridge between provider-specific public
-contract semantics and the vendor-neutral payment-recovery model. The adapter
-never performs network calls. It only validates a profile and normalizes
-captured observations into a reconciliation decision.
+v0.1 requires a fully specified evidence precedence and retry policy.
+v0.2 adds an explicit fail-closed representation for public contracts where
+precedence or recovery semantics are not documented. No network calls occur
+here: adapters only normalize already-captured observations.
 """
 
 from __future__ import annotations
@@ -12,7 +12,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-ADAPTER_SCHEMA = "cgqa.payment-provider-adapter.v0.1"
+ADAPTER_SCHEMA_V1 = "cgqa.payment-provider-adapter.v0.1"
+ADAPTER_SCHEMA_V2 = "cgqa.payment-provider-adapter.v0.2"
+ADAPTER_SCHEMAS = {ADAPTER_SCHEMA_V1, ADAPTER_SCHEMA_V2}
 OBSERVATION_SCHEMA = "cgqa.payment-provider-observations.v0.1"
 RESULT_SCHEMA = "cgqa.payment-provider-reconciliation.v0.1"
 _FINAL_OUTCOMES = {"committed", "failed"}
@@ -59,10 +61,7 @@ def load_provider_observations(path: Path) -> dict[str, Any]:
     return payload
 
 
-def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
-    """Validate a declarative provider adapter and return a compact summary."""
-    if payload.get("schema") != ADAPTER_SCHEMA:
-        raise ProviderAdapterError(f"schema must be {ADAPTER_SCHEMA}")
+def _validate_common(payload: dict[str, Any]) -> tuple[str, str, list[str], set[str], int]:
     provider_id = _required_text(payload.get("providerId"), "providerId")
     profile_version = _required_text(payload.get("profileVersion"), "profileVersion")
 
@@ -72,18 +71,6 @@ def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
     for field in ("supportsIdempotencyKey", "sameKeyReplayDocumented"):
         if not isinstance(create.get(field), bool):
             raise ProviderAdapterError(f"create.{field} must be boolean")
-
-    retry = payload.get("retryPolicy")
-    if not isinstance(retry, dict):
-        raise ProviderAdapterError("retryPolicy must be an object")
-    for field in (
-        "forbidBeforeFinalReconciliation",
-        "forbidAfterCommitted",
-        "requireSameLogicalOperationId",
-        "requireSameIdempotencyKey",
-    ):
-        if not isinstance(retry.get(field), bool):
-            raise ProviderAdapterError(f"retryPolicy.{field} must be boolean")
 
     state_map = payload.get("stateMap")
     if not isinstance(state_map, dict) or not state_map:
@@ -116,29 +103,90 @@ def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
                 f"evidenceSources[{index}].authoritativeForFinality must be boolean"
             )
 
-    precedence = payload.get("evidencePrecedence")
-    if not isinstance(precedence, list) or not precedence:
-        raise ProviderAdapterError("evidencePrecedence must be a non-empty array")
-    precedence_names = [_required_text(item, "evidencePrecedence item") for item in precedence]
-    if len(precedence_names) != len(set(precedence_names)):
-        raise ProviderAdapterError("evidencePrecedence must not contain duplicates")
-    if set(precedence_names) != seen:
-        raise ProviderAdapterError(
-            "evidencePrecedence must contain every evidence source exactly once"
-        )
-
     public_refs = payload.get("publicContractRefs", [])
     if not isinstance(public_refs, list):
         raise ProviderAdapterError("publicContractRefs must be an array")
     for index, ref in enumerate(public_refs):
         _required_text(ref, f"publicContractRefs[{index}]")
 
+    return provider_id, profile_version, source_names, seen, len(normalized_states)
+
+
+def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
+    """Validate a declarative provider adapter and return a compact summary."""
+    schema = payload.get("schema")
+    if schema not in ADAPTER_SCHEMAS:
+        raise ProviderAdapterError(
+            f"schema must be one of {', '.join(sorted(ADAPTER_SCHEMAS))}"
+        )
+
+    provider_id, profile_version, source_names, seen, state_count = _validate_common(payload)
+
+    if schema == ADAPTER_SCHEMA_V1:
+        retry = payload.get("retryPolicy")
+        if not isinstance(retry, dict):
+            raise ProviderAdapterError("retryPolicy must be an object")
+        for field in (
+            "forbidBeforeFinalReconciliation",
+            "forbidAfterCommitted",
+            "requireSameLogicalOperationId",
+            "requireSameIdempotencyKey",
+        ):
+            if not isinstance(retry.get(field), bool):
+                raise ProviderAdapterError(f"retryPolicy.{field} must be boolean")
+
+        precedence = payload.get("evidencePrecedence")
+        if not isinstance(precedence, list) or not precedence:
+            raise ProviderAdapterError("evidencePrecedence must be a non-empty array")
+        precedence_names = [_required_text(item, "evidencePrecedence item") for item in precedence]
+        if len(precedence_names) != len(set(precedence_names)):
+            raise ProviderAdapterError("evidencePrecedence must not contain duplicates")
+        if set(precedence_names) != seen:
+            raise ProviderAdapterError(
+                "evidencePrecedence must contain every evidence source exactly once"
+            )
+        precedence_status = "documented"
+    else:
+        precedence_status = _required_text(
+            payload.get("evidencePrecedenceStatus"), "evidencePrecedenceStatus"
+        ).lower()
+        if precedence_status not in {"documented", "unresolved"}:
+            raise ProviderAdapterError(
+                "evidencePrecedenceStatus must be documented or unresolved"
+            )
+        precedence = payload.get("evidencePrecedence")
+        if not isinstance(precedence, list):
+            raise ProviderAdapterError("evidencePrecedence must be an array")
+        precedence_names = [_required_text(item, "evidencePrecedence item") for item in precedence]
+        if precedence_status == "documented":
+            if not precedence_names:
+                raise ProviderAdapterError(
+                    "documented evidence precedence must be non-empty"
+                )
+            if len(precedence_names) != len(set(precedence_names)):
+                raise ProviderAdapterError("evidencePrecedence must not contain duplicates")
+            if set(precedence_names) != seen:
+                raise ProviderAdapterError(
+                    "documented evidencePrecedence must contain every evidence source exactly once"
+                )
+        elif precedence_names:
+            raise ProviderAdapterError(
+                "unresolved evidence precedence must not invent an ordering"
+            )
+
+        open_questions = payload.get("openQuestions", [])
+        if not isinstance(open_questions, list):
+            raise ProviderAdapterError("openQuestions must be an array")
+        for index, question in enumerate(open_questions):
+            _required_text(question, f"openQuestions[{index}]")
+
     return {
-        "schema": ADAPTER_SCHEMA,
+        "schema": schema,
         "providerId": provider_id,
         "profileVersion": profile_version,
-        "states": len(normalized_states),
+        "states": state_count,
         "evidenceSources": source_names,
+        "evidencePrecedenceStatus": precedence_status,
         "evidencePrecedence": precedence_names,
         "status": "valid",
         "authority": {
@@ -149,15 +197,41 @@ def validate_provider_adapter(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _select_evidence(
+    adapter: dict[str, Any],
+    normalized: list[dict[str, Any]],
+    latest_by_source: dict[str, dict[str, Any]],
+) -> tuple[dict[str, Any], bool, str | None]:
+    schema = adapter["schema"]
+    if schema == ADAPTER_SCHEMA_V1 or adapter.get("evidencePrecedenceStatus") == "documented":
+        precedence = [str(item) for item in adapter["evidencePrecedence"]]
+        for source in precedence:
+            if source in latest_by_source:
+                return latest_by_source[source], True, None
+        raise ProviderAdapterError("no selectable provider evidence")
+
+    authoritative = [item for item in normalized if item["authoritativeForFinality"]]
+    latest_authoritative: dict[str, dict[str, Any]] = {}
+    for item in authoritative:
+        latest_authoritative[str(item["source"])] = item
+    authoritative = list(latest_authoritative.values())
+
+    if len(authoritative) == 1:
+        return authoritative[0], True, None
+
+    selected = normalized[-1]
+    reason = (
+        "no_authoritative_finality_surface_observed"
+        if not authoritative
+        else "evidence_precedence_unresolved"
+    )
+    return selected, False, reason
+
+
 def reconcile_provider_observations(
     adapter: dict[str, Any], observations_payload: dict[str, Any]
 ) -> dict[str, Any]:
-    """Normalize provider evidence and derive a fail-closed reconciliation result.
-
-    The highest-precedence observed source wins only when that source is marked
-    authoritative for finality. If its state is pending/unknown, reconciliation
-    remains non-final even when a lower-precedence source reports a final state.
-    """
+    """Normalize provider evidence and derive a fail-closed reconciliation result."""
     validate_provider_adapter(adapter)
     if observations_payload.get("schema") != OBSERVATION_SCHEMA:
         raise ProviderAdapterError(f"observations.schema must be {OBSERVATION_SCHEMA}")
@@ -172,7 +246,6 @@ def reconcile_provider_observations(
 
     state_map = {str(key).lower(): str(value).lower() for key, value in adapter["stateMap"].items()}
     source_config = {str(item["kind"]): item for item in adapter["evidenceSources"]}
-    precedence = [str(item) for item in adapter["evidencePrecedence"]]
 
     normalized: list[dict[str, Any]] = []
     latest_by_source: dict[str, dict[str, Any]] = {}
@@ -200,17 +273,13 @@ def reconcile_provider_observations(
         normalized.append(normalized_item)
         latest_by_source[source] = normalized_item
 
-    selected: dict[str, Any] | None = None
-    for source in precedence:
-        if source in latest_by_source:
-            selected = latest_by_source[source]
-            break
-
-    if selected is None:
-        raise ProviderAdapterError("no selectable provider evidence")
-
+    selected, selection_safe, block_reason = _select_evidence(adapter, normalized, latest_by_source)
     selected_outcome = str(selected["outcome"])
-    final = bool(selected["authoritativeForFinality"]) and selected_outcome in _FINAL_OUTCOMES
+    final = (
+        selection_safe
+        and bool(selected["authoritativeForFinality"])
+        and selected_outcome in _FINAL_OUTCOMES
+    )
     outcome = selected_outcome if final or selected_outcome in {"pending", "unknown"} else "unknown"
 
     overridden = [
@@ -221,6 +290,7 @@ def reconcile_provider_observations(
 
     result: dict[str, Any] = {
         "schema": RESULT_SCHEMA,
+        "adapterSchema": adapter["schema"],
         "providerId": adapter["providerId"],
         "profileVersion": adapter["profileVersion"],
         "logicalOperationId": logical_operation_id,
@@ -238,6 +308,8 @@ def reconcile_provider_observations(
             "financialAuthorization": False,
         },
     }
+    if block_reason:
+        result["reconciliationBlockReason"] = block_reason
     if final:
         result["reconcileEvent"] = {
             "type": "reconcile",
