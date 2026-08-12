@@ -23,6 +23,10 @@ from contractgraph_qa.engagement_run import (
     load_engagement_run_config,
     run_engagement_pipeline,
 )
+from contractgraph_qa.payment_recovery import (
+    PaymentRecoveryError,
+    evaluate_payment_recovery_file,
+)
 from contractgraph_qa.postimpact import load_post_impact_model
 from contractgraph_qa.product import (
     ProductError,
@@ -141,6 +145,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     verify_engagement.add_argument("bundle", type=Path)
 
+    payment_recovery = subparsers.add_parser(
+        "payment-recovery-evaluate",
+        help="Evaluate a vendor-neutral agent-payment recovery trace",
+    )
+    payment_recovery.add_argument(
+        "--scenario",
+        type=Path,
+        required=True,
+        help="Agent Payment Recovery Benchmark v0.1 scenario JSON",
+    )
+
     doctor_parser = subparsers.add_parser("doctor", help="Check runtime dependencies")
     doctor_parser.add_argument("--require-forge", action="store_true")
 
@@ -204,6 +219,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "verify-engagement-bundle":
             _emit(verify_engagement_bundle(args.bundle))
             return EXIT_OK
+        if args.command == "payment-recovery-evaluate":
+            result = evaluate_payment_recovery_file(args.scenario.resolve())
+            _emit(result)
+            return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
         if args.command == "doctor":
             _emit(doctor(require_forge=args.require_forge))
             return EXIT_OK
@@ -214,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         EngagementError,
         EngagementRunError,
         ScaffoldError,
+        PaymentRecoveryError,
         FileNotFoundError,
         json.JSONDecodeError,
     ) as exc:
@@ -226,6 +246,7 @@ def main(argv: list[str] | None = None) -> int:
             "verify-control-bundle",
             "verify-bundle",
             "verify-engagement-bundle",
+            "payment-recovery-evaluate",
         }
         return EXIT_VALIDATION if args.command in validation_commands else EXIT_RUNTIME
     except KeyboardInterrupt:
