@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import copy
+import io
 import json
 import sys
 import unittest
@@ -10,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from contractgraph_qa.cli import EXIT_OK, main as cli_main  # noqa: E402
 from contractgraph_qa.reachability import (  # noqa: E402
     Assumption,
     Capability,
@@ -156,6 +159,18 @@ class AdversarialReachabilityTest(unittest.TestCase):
         assert isinstance(path, dict)
         self.assertIn(path["targetCapability"], {"overspend", "duplicate-settlement"})
         self.assertTrue(path["transitions"])
+
+    def test_cli_runs_repository_reachability_model(self) -> None:
+        model_path = ROOT / "scenarios" / "adversarial-wallet-replay.json"
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            exit_code = cli_main(["reachability", "--model", str(model_path)])
+
+        self.assertEqual(exit_code, EXIT_OK)
+        document = json.loads(stdout.getvalue())
+        self.assertEqual(document["status"], "reachable")
+        self.assertEqual(document["maxDepth"], 4)
+        self.assertIsInstance(document["path"], dict)
 
     def test_loader_rejects_schema_drift_and_whitespace_only_text(self) -> None:
         model_path = ROOT / "scenarios" / "adversarial-wallet-replay.json"
