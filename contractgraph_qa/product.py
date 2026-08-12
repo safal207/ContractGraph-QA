@@ -24,6 +24,14 @@ from contractgraph_qa.finding import (
     validate_manifest,
     validate_result,
 )
+from contractgraph_qa.reachability import (
+    ReachabilityModel,
+    load_reachability_model,
+    reachability_model_from_dict,
+    reachability_model_sha256,
+    reachability_model_to_dict,
+    run_reachability_model,
+)
 from contractgraph_qa.report import render_markdown
 
 CONFIG_KEYS = {
@@ -35,14 +43,25 @@ CONFIG_KEYS = {
     "bundle",
     "workingDirectory",
     "capture",
+    "reachabilityModel",
 }
 CAPTURE_KEYS = {"enabled", "profile", "test", "verbosity"}
-BUNDLE_MANIFEST_KEYS = {"bundleVersion", "tool", "findingId", "manifestSha256", "artifacts"}
+BUNDLE_MANIFEST_V1_KEYS = {"bundleVersion", "tool", "findingId", "manifestSha256", "artifacts"}
+BUNDLE_MANIFEST_V2_KEYS = BUNDLE_MANIFEST_V1_KEYS | {"reachabilityModelSha256"}
 BUNDLE_TOOL_KEYS = {"name", "version"}
 ARTIFACT_RECORD_KEYS = {"sha256", "bytes"}
 SAFE_PROFILE = re.compile(r"^[A-Za-z0-9_.-]+$")
 SAFE_TEST = re.compile(r"^[A-Za-z0-9_]+$")
-BUNDLE_FILES = ("manifest.json", "result.json", "finding.json", "report.md", "bundle.json")
+BUNDLE_FILES_V1 = ("manifest.json", "result.json", "finding.json", "report.md", "bundle.json")
+BUNDLE_FILES_V2 = (
+    "manifest.json",
+    "result.json",
+    "reachability-model.json",
+    "reachability.json",
+    "finding.json",
+    "report.md",
+    "bundle.json",
+)
 MAX_BUNDLE_ENTRY_BYTES = 16 * 1024 * 1024
 
 
@@ -68,6 +87,7 @@ class ProductConfig:
     report: Path
     bundle: Path
     capture: CaptureConfig
+    reachability_model: Path | None = None
 
 
 def _require(condition: bool, message: str) -> None:
@@ -131,7 +151,15 @@ def load_product_config(path: Path) -> ProductConfig:
     finding = _resolve(config_dir, data.get("finding"), "config.finding")
     report = _resolve(config_dir, data.get("report"), "config.report")
     bundle = _resolve(config_dir, data.get("bundle"), "config.bundle")
-    artifact_paths = (manifest, result, finding, report, bundle)
+    reachability_model = (
+        _resolve(config_dir, data["reachabilityModel"], "config.reachabilityModel")
+        if "reachabilityModel" in data
+        else None
+    )
+
+    artifact_paths: tuple[Path, ...] = (manifest, result, finding, report, bundle)
+    if reachability_model is not None:
+        artifact_paths = (*artifact_paths, reachability_model)
     _require(len(set(artifact_paths)) == len(artifact_paths), "config artifact paths must be distinct")
     _require(bundle.suffix.lower() == ".zip", "config.bundle must use a .zip extension")
 
@@ -144,6 +172,7 @@ def load_product_config(path: Path) -> ProductConfig:
         report=report,
         bundle=bundle,
         capture=CaptureConfig(enabled=enabled, profile=profile, test=test, verbosity=verbosity),
+        reachability_model=reachability_model,
     )
 
 
@@ -252,10 +281,44 @@ def run_capture(config: ProductConfig, manifest_fingerprint: str) -> None:
     _require(config.result.is_file(), f"capture completed but result file was not produced: {config.result}")
 
 
-def write_finding_and_report(config: ProductConfig) -> tuple[dict[str, Any], dict[str, Any]]:
+def _reachability_evidence(result: dict[str, object]) -> dict[str, object]:
+    """Bind a deterministic reachability result to a finding without duplicating the model."""
+
+    return {
+        "artifact": "reachability.json",
+        "modelArtifact": "reachability-model.json",
+        **result,
+    }
+
+
+def _attach_reachability(finding: dict[str, Any], result: dict[str, object] | None) -> None:
+    if result is None:
+        return
+    evidence = finding.get("evidence")
+    _require(isinstance(evidence, dict), "finding evidence must be an object")
+    evidence["reachability"] = _reachability_evidence(result)
+
+
+def _load_and_run_reachability(config: ProductConfig) -> tuple[ReachabilityModel, dict[str, object]] | None:
+    if config.reachability_model is None:
+        return None
+    _require(config.reachability_model.is_file(), f"reachability model not found: {config.reachability_model}")
+    try:
+        model = load_reachability_model(config.reachability_model)
+        result = run_reachability_model(model)
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        raise ProductError(f"invalid reachability model: {exc}") from exc
+    return model, result
+
+
+def write_finding_and_report(
+    config: ProductConfig,
+    reachability_result: dict[str, object] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     manifest = load_json_object(config.manifest, "manifest")
     result = load_json_object(config.result, "result")
     finding = export_finding(manifest, result)
+    _attach_reachability(finding, reachability_result)
     rendered = render_markdown(finding)
 
     config.finding.parent.mkdir(parents=True, exist_ok=True)
@@ -266,18 +329,25 @@ def write_finding_and_report(config: ProductConfig) -> tuple[dict[str, Any], dic
 
 
 def _bundle_manifest(
-    manifest: dict[str, Any], finding: dict[str, Any], payloads: dict[str, bytes]
+    manifest: dict[str, Any],
+    finding: dict[str, Any],
+    payloads: dict[str, bytes],
+    reachability_result: dict[str, object] | None = None,
 ) -> dict[str, Any]:
-    return {
-        "bundleVersion": 1,
+    artifact_names = tuple(name for name in payloads if name != "bundle.json")
+    bundle: dict[str, Any] = {
+        "bundleVersion": 2 if reachability_result is not None else 1,
         "tool": {"name": "contractgraph-qa", "version": __version__},
         "findingId": finding["id"],
         "manifestSha256": manifest_sha256(manifest),
         "artifacts": {
             name: {"sha256": sha256_bytes(payloads[name]), "bytes": len(payloads[name])}
-            for name in ("manifest.json", "result.json", "finding.json", "report.md")
+            for name in artifact_names
         },
     }
+    if reachability_result is not None:
+        bundle["reachabilityModelSha256"] = reachability_result["modelSha256"]
+    return bundle
 
 
 def _zip_entry(name: str) -> zipfile.ZipInfo:
@@ -288,39 +358,71 @@ def _zip_entry(name: str) -> zipfile.ZipInfo:
     return info
 
 
-def create_evidence_bundle(config: ProductConfig, manifest: dict[str, Any], finding: dict[str, Any]) -> dict[str, Any]:
-    payloads = {
+def create_evidence_bundle(
+    config: ProductConfig,
+    manifest: dict[str, Any],
+    finding: dict[str, Any],
+    reachability_model: ReachabilityModel | None = None,
+    reachability_result: dict[str, object] | None = None,
+) -> dict[str, Any]:
+    _require(
+        (reachability_model is None) == (reachability_result is None),
+        "reachability model and result must be supplied together",
+    )
+
+    payloads: dict[str, bytes] = {
         "manifest.json": config.manifest.read_bytes(),
         "result.json": config.result.read_bytes(),
-        "finding.json": config.finding.read_bytes(),
-        "report.md": config.report.read_bytes(),
     }
+    bundle_files = BUNDLE_FILES_V1
+    if reachability_model is not None and reachability_result is not None:
+        payloads["reachability-model.json"] = canonical_json(
+            reachability_model_to_dict(reachability_model)
+        ).encode("utf-8")
+        payloads["reachability.json"] = canonical_json(reachability_result).encode("utf-8")
+        bundle_files = BUNDLE_FILES_V2
+
+    payloads["finding.json"] = config.finding.read_bytes()
+    payloads["report.md"] = config.report.read_bytes()
+
     for name, payload in payloads.items():
         _require(len(payload) <= MAX_BUNDLE_ENTRY_BYTES, f"artifact too large for evidence bundle: {name}")
 
-    bundle_manifest = _bundle_manifest(manifest, finding, payloads)
+    bundle_manifest = _bundle_manifest(manifest, finding, payloads, reachability_result)
     payloads["bundle.json"] = canonical_json(bundle_manifest).encode("utf-8")
 
     config.bundle.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(config.bundle, "w") as archive:
-        for name in BUNDLE_FILES:
+        for name in bundle_files:
             archive.writestr(_zip_entry(name), payloads[name])
     return bundle_manifest
+
+
+def _read_bundle_payloads(source: Path) -> tuple[tuple[str, ...], dict[str, bytes]]:
+    try:
+        with zipfile.ZipFile(source, "r") as archive:
+            infos = archive.infolist()
+            names = tuple(info.filename for info in infos)
+            _require(
+                names in {BUNDLE_FILES_V1, BUNDLE_FILES_V2},
+                "bundle entries are missing, reordered, or unexpected",
+            )
+            for info in infos:
+                _require(
+                    info.file_size <= MAX_BUNDLE_ENTRY_BYTES,
+                    f"bundle entry exceeds size limit: {info.filename}",
+                )
+            payloads = {name: archive.read(name) for name in names}
+            return names, payloads
+    except (OSError, zipfile.BadZipFile, KeyError, RuntimeError) as exc:
+        raise ProductError(f"invalid evidence bundle: {exc}") from exc
 
 
 def verify_evidence_bundle(path: Path) -> dict[str, Any]:
     source = path.expanduser().resolve()
     _require(source.is_file(), f"bundle not found: {source}")
-    try:
-        with zipfile.ZipFile(source, "r") as archive:
-            infos = archive.infolist()
-            names = [info.filename for info in infos]
-            _require(names == list(BUNDLE_FILES), "bundle entries are missing, reordered, or unexpected")
-            for info in infos:
-                _require(info.file_size <= MAX_BUNDLE_ENTRY_BYTES, f"bundle entry exceeds size limit: {info.filename}")
-            payloads = {name: archive.read(name) for name in BUNDLE_FILES}
-    except (OSError, zipfile.BadZipFile, KeyError, RuntimeError) as exc:
-        raise ProductError(f"invalid evidence bundle: {exc}") from exc
+    names, payloads = _read_bundle_payloads(source)
+    expected_version = 2 if names == BUNDLE_FILES_V2 else 1
 
     try:
         bundle_manifest = json.loads(payloads["bundle.json"].decode("utf-8"))
@@ -332,8 +434,9 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
         raise ProductError(f"bundle contains invalid text/JSON: {exc}") from exc
 
     _require(isinstance(bundle_manifest, dict), "bundle.json must be an object")
-    _reject_extra_keys(bundle_manifest, BUNDLE_MANIFEST_KEYS, "bundle")
-    _require(bundle_manifest.get("bundleVersion") == 1, "unsupported bundleVersion")
+    manifest_keys = BUNDLE_MANIFEST_V2_KEYS if expected_version == 2 else BUNDLE_MANIFEST_V1_KEYS
+    _reject_extra_keys(bundle_manifest, manifest_keys, "bundle")
+    _require(bundle_manifest.get("bundleVersion") == expected_version, "unsupported bundleVersion")
     _require(isinstance(manifest, dict), "manifest.json must be an object")
     _require(isinstance(result, dict), "result.json must be an object")
     _require(isinstance(finding, dict), "finding.json must be an object")
@@ -347,13 +450,11 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
     )
     _non_empty_string(tool.get("version"), "bundle.tool.version")
 
+    artifact_names = set(names) - {"bundle.json"}
     artifacts = bundle_manifest.get("artifacts")
     _require(isinstance(artifacts, dict), "bundle.json artifacts must be an object")
-    _require(
-        set(artifacts) == {"manifest.json", "result.json", "finding.json", "report.md"},
-        "bundle artifact set mismatch",
-    )
-    for name in ("manifest.json", "result.json", "finding.json", "report.md"):
+    _require(set(artifacts) == artifact_names, "bundle artifact set mismatch")
+    for name in tuple(item for item in names if item != "bundle.json"):
         record = artifacts.get(name)
         _require(isinstance(record, dict), f"bundle artifact record missing: {name}")
         _reject_extra_keys(record, ARTIFACT_RECORD_KEYS, f"bundle.artifacts.{name}")
@@ -362,10 +463,40 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
 
     validate_manifest(manifest)
     validate_result(result)
+
+    reachability_result: dict[str, object] | None = None
+    if expected_version == 2:
+        try:
+            reachability_model_data = json.loads(payloads["reachability-model.json"].decode("utf-8"))
+            bundled_reachability = json.loads(payloads["reachability.json"].decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ProductError(f"bundle contains invalid reachability JSON: {exc}") from exc
+        _require(isinstance(reachability_model_data, dict), "reachability-model.json must be an object")
+        _require(isinstance(bundled_reachability, dict), "reachability.json must be an object")
+        try:
+            model = reachability_model_from_dict(reachability_model_data)
+            expected_model_bytes = canonical_json(reachability_model_to_dict(model)).encode("utf-8")
+            _require(
+                expected_model_bytes == payloads["reachability-model.json"],
+                "reachability-model.json is not canonical",
+            )
+            reachability_result = run_reachability_model(model)
+        except ValueError as exc:
+            raise ProductError(f"invalid reachability model in bundle: {exc}") from exc
+        _require(
+            canonical_json(reachability_result).encode("utf-8") == payloads["reachability.json"],
+            "reachability.json does not match reachability-model.json",
+        )
+        _require(
+            bundle_manifest.get("reachabilityModelSha256") == reachability_model_sha256(model),
+            "bundle reachabilityModelSha256 mismatch",
+        )
+
     expected_finding = export_finding(manifest, result)
+    _attach_reachability(expected_finding, reachability_result)
     _require(
         canonical_json(expected_finding).encode("utf-8") == payloads["finding.json"],
-        "finding.json does not match manifest + result",
+        "finding.json does not match manifest + result + reachability evidence",
     )
     _require(render_markdown(expected_finding) == report, "report.md does not match finding.json")
     _require(bundle_manifest.get("findingId") == expected_finding["id"], "bundle findingId mismatch")
@@ -374,13 +505,22 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
         "bundle manifestSha256 mismatch",
     )
 
-    return {
+    verification: dict[str, Any] = {
         "ok": True,
         "bundle": str(source),
+        "bundleVersion": expected_version,
         "findingId": expected_finding["id"],
         "manifestSha256": manifest_sha256(manifest),
         "bundleSha256": sha256_file(source),
     }
+    if reachability_result is not None:
+        verification.update(
+            {
+                "reachabilityStatus": reachability_result["status"],
+                "reachabilityModelSha256": reachability_result["modelSha256"],
+            }
+        )
+    return verification
 
 
 def run_pipeline(config: ProductConfig, clean: bool = False) -> dict[str, Any]:
@@ -398,11 +538,21 @@ def run_pipeline(config: ProductConfig, clean: bool = False) -> dict[str, Any]:
                 path.unlink()
 
     run_capture(config, fingerprint)
-    manifest, finding = write_finding_and_report(config)
-    create_evidence_bundle(config, manifest, finding)
+    reachability = _load_and_run_reachability(config)
+    reachability_model = reachability[0] if reachability is not None else None
+    reachability_result = reachability[1] if reachability is not None else None
+
+    manifest, finding = write_finding_and_report(config, reachability_result)
+    create_evidence_bundle(
+        config,
+        manifest,
+        finding,
+        reachability_model=reachability_model,
+        reachability_result=reachability_result,
+    )
     verification = verify_evidence_bundle(config.bundle)
 
-    return {
+    summary: dict[str, Any] = {
         "ok": True,
         "cgqaVersion": __version__,
         "findingId": finding["id"],
@@ -412,5 +562,14 @@ def run_pipeline(config: ProductConfig, clean: bool = False) -> dict[str, Any]:
         "finding": str(config.finding),
         "report": str(config.report),
         "bundle": str(config.bundle),
+        "bundleVersion": verification["bundleVersion"],
         "bundleSha256": verification["bundleSha256"],
     }
+    if reachability_result is not None:
+        summary.update(
+            {
+                "reachabilityStatus": reachability_result["status"],
+                "reachabilityModelSha256": reachability_result["modelSha256"],
+            }
+        )
+    return summary
