@@ -84,7 +84,7 @@ The MVP uses bounded breadth-first search and returns no path when the target is
 
 ## Programmable wallet example
 
-Repository-owned demo model:
+Repository-owned standalone demo model:
 
 [`scenarios/adversarial-wallet-replay.json`](../scenarios/adversarial-wallet-replay.json)
 
@@ -112,7 +112,7 @@ duplicate-settlement
 
 ## CLI
 
-The repository-owned model can be executed directly:
+The repository-owned wallet model can be executed directly:
 
 ```bash
 cgqa reachability --model scenarios/adversarial-wallet-replay.json
@@ -194,15 +194,26 @@ The module provides the domain model, strict validation, deterministic model has
 
 ## Evidence bundle integration
 
-The reachability model can now be bound into the existing single-finding product pipeline with an optional product-config field:
+A reachability model can be bound into the existing single-finding product pipeline with an optional product-config field. The repository-owned binding fixture is:
+
+[`scenarios/adversarial-adapter-fixture.json`](../scenarios/adversarial-adapter-fixture.json)
 
 ```toml
-reachabilityModel = "scenarios/adversarial-wallet-replay.json"
+reachabilityModel = "scenarios/adversarial-adapter-fixture.json"
 ```
+
+The product binding is intentionally stricter than standalone `cgqa reachability`. Before a reachability result may be attached to a violated finding, the pipeline requires:
+
+1. the reachability result is `reachable`;
+2. the selected target capability is explicitly marked `forbidden`;
+3. every `invariantId` on the selected path exists in the reviewed manifest;
+4. the selected path includes the exact invariant identified by the explorer result.
+
+This prevents a valid but unrelated capability graph from being silently attached to a different finding. The bundled finding also records `boundManifestSha256` and `boundInvariantId` next to the reachability evidence.
 
 When `reachabilityModel` is absent, `cgqa run` keeps producing the existing backward-compatible **bundle v1**.
 
-When it is present, the pipeline loads and re-runs the model, attaches the deterministic result to `finding.json -> evidence.reachability`, and emits **bundle v2**:
+When it is present and passes the binding gates, the pipeline re-runs the model, attaches the deterministic result to `finding.json -> evidence.reachability`, and emits **bundle v2**:
 
 ```text
 manifest.json
@@ -225,6 +236,8 @@ canonical model SHA-256
         ↓
 deterministic bounded search
         ↓
+forbidden target + finding-invariant binding
+        ↓
 reachability.json
         ↓
 finding.json evidence binding
@@ -232,7 +245,7 @@ finding.json evidence binding
 report.md
 ```
 
-Verification rejects artifact hash/size drift, non-canonical model bytes, a reachability result that does not recompute from the bundled model, a mismatched `reachabilityModelSha256`, or a finding that does not match the recomputed reachability evidence.
+Verification rejects artifact hash/size drift, non-canonical model bytes, a reachability result that does not recompute from the bundled model, a mismatched `reachabilityModelSha256`, a path unrelated to the finding invariant, or a finding that does not match the recomputed reachability evidence.
 
 This keeps the existing contract/result evidence chain intact while adding a second independently recomputable causal path.
 
