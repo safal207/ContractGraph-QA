@@ -32,6 +32,12 @@ from contractgraph_qa.product import (
     validate_manifest_result,
     verify_evidence_bundle,
 )
+from contractgraph_qa.provider_adapter import (
+    ProviderAdapterError,
+    load_provider_adapter,
+    reconcile_provider_files,
+    validate_provider_adapter,
+)
 from contractgraph_qa.scaffold import ScaffoldError, init_engagement
 
 EXIT_OK = 0
@@ -125,6 +131,34 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Agent Payment Recovery Benchmark v0.1 scenario JSON",
     )
 
+    provider_adapter_validate = subparsers.add_parser(
+        "provider-adapter-validate",
+        help="Validate a Provider Adapter Contract v0.1 profile",
+    )
+    provider_adapter_validate.add_argument(
+        "--adapter",
+        type=Path,
+        required=True,
+        help="Provider Adapter Contract v0.1 JSON",
+    )
+
+    provider_adapter_reconcile = subparsers.add_parser(
+        "provider-adapter-reconcile",
+        help="Normalize provider evidence into a fail-closed reconciliation decision",
+    )
+    provider_adapter_reconcile.add_argument(
+        "--adapter",
+        type=Path,
+        required=True,
+        help="Provider Adapter Contract v0.1 JSON",
+    )
+    provider_adapter_reconcile.add_argument(
+        "--observations",
+        type=Path,
+        required=True,
+        help="Captured provider observation JSON",
+    )
+
     doctor_parser = subparsers.add_parser("doctor", help="Check runtime dependencies")
     doctor_parser.add_argument("--require-forge", action="store_true")
 
@@ -175,6 +209,17 @@ def main(argv: list[str] | None = None) -> int:
             result = evaluate_payment_recovery_file(args.scenario.resolve())
             _emit(result)
             return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+        if args.command == "provider-adapter-validate":
+            adapter = load_provider_adapter(args.adapter.resolve())
+            _emit(validate_provider_adapter(adapter))
+            return EXIT_OK
+        if args.command == "provider-adapter-reconcile":
+            result = reconcile_provider_files(
+                args.adapter.resolve(),
+                args.observations.resolve(),
+            )
+            _emit(result)
+            return EXIT_OK if result["status"] == "final" else EXIT_VALIDATION
         if args.command == "doctor":
             _emit(doctor(require_forge=args.require_forge))
             return EXIT_OK
@@ -186,6 +231,7 @@ def main(argv: list[str] | None = None) -> int:
         EngagementRunError,
         ScaffoldError,
         PaymentRecoveryError,
+        ProviderAdapterError,
         FileNotFoundError,
         json.JSONDecodeError,
     ) as exc:
@@ -196,6 +242,8 @@ def main(argv: list[str] | None = None) -> int:
             "verify-bundle",
             "verify-engagement-bundle",
             "payment-recovery-evaluate",
+            "provider-adapter-validate",
+            "provider-adapter-reconcile",
         }
         return EXIT_VALIDATION if args.command in validation_commands else EXIT_RUNTIME
     except KeyboardInterrupt:
