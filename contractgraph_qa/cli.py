@@ -24,6 +24,7 @@ from contractgraph_qa.engagement_run import (
     run_engagement_pipeline,
 )
 from contractgraph_qa.graph_delta import compare_reachability_models
+from contractgraph_qa.path_replay import replay_prior_model_path
 from contractgraph_qa.payment_recovery import (
     PaymentRecoveryError,
     evaluate_payment_recovery_file,
@@ -130,6 +131,13 @@ def _build_parser() -> argparse.ArgumentParser:
     reachability_delta.add_argument("--base-model", type=Path, required=True)
     reachability_delta.add_argument("--head-model", type=Path, required=True)
 
+    reachability_replay = subparsers.add_parser(
+        "reachability-replay",
+        help="Replay the exact prior failing capability path against a proposed fixed model",
+    )
+    reachability_replay.add_argument("--prior-model", type=Path, required=True)
+    reachability_replay.add_argument("--fixed-model", type=Path, required=True)
+
     control_build = subparsers.add_parser(
         "control-bundle-build",
         help="Build deterministic control evidence bundle v3 from a verified reachability bundle v2",
@@ -214,6 +222,12 @@ def main(argv: list[str] | None = None) -> int:
             result = compare_reachability_models(base_model, head_model)
             _emit(result)
             return EXIT_VALIDATION if result["status"] == "risk_increase_detected" else EXIT_OK
+        if args.command == "reachability-replay":
+            prior_model = load_reachability_model(args.prior_model.resolve())
+            fixed_model = load_reachability_model(args.fixed_model.resolve())
+            result = replay_prior_model_path(prior_model, fixed_model)
+            _emit(result)
+            return EXIT_OK if result["status"] == "fix_verified" else EXIT_VALIDATION
         if args.command == "control-bundle-build":
             post_model = load_post_impact_model(args.post_impact_model.resolve())
             _emit(
@@ -257,6 +271,7 @@ def main(argv: list[str] | None = None) -> int:
             "fingerprint",
             "reachability",
             "reachability-delta",
+            "reachability-replay",
             "control-bundle-build",
             "verify-control-bundle",
             "verify-bundle",
