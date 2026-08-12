@@ -139,7 +139,10 @@ def _string_tuple(value: Any, field: str, *, non_empty: bool = False) -> tuple[s
     _require(isinstance(value, list), f"{field} must be an array")
     if non_empty:
         _require(bool(value), f"{field} must be non-empty")
-    items = tuple(_require_non_empty(item, f"{field}[{index}]") for index, item in enumerate(value))
+    items = tuple(
+        _require_non_empty(item, f"{field}[{index}]")
+        for index, item in enumerate(value)
+    )
     _require(len(items) == len(set(items)), f"{field} must contain unique values")
     return items
 
@@ -205,7 +208,10 @@ def reachability_model_from_dict(data: dict[str, Any]) -> ReachabilityModel:
     _require_keys(data, REACHABILITY_REQUIRED_KEYS, "reachability model")
 
     assumptions_raw = data["assumptions"]
-    _require(isinstance(assumptions_raw, list), "reachability model.assumptions must be an array")
+    _require(
+        isinstance(assumptions_raw, list),
+        "reachability model.assumptions must be an array",
+    )
     assumptions: list[Assumption] = []
     for index, item in enumerate(assumptions_raw):
         field = f"reachability model.assumptions[{index}]"
@@ -215,7 +221,9 @@ def reachability_model_from_dict(data: dict[str, Any]) -> ReachabilityModel:
         assumptions.append(
             Assumption(
                 id=_require_non_empty(item["id"], f"{field}.id"),
-                description=_require_non_empty(item["description"], f"{field}.description"),
+                description=_require_non_empty(
+                    item["description"], f"{field}.description"
+                ),
             )
         )
 
@@ -235,13 +243,18 @@ def reachability_model_from_dict(data: dict[str, Any]) -> ReachabilityModel:
         capabilities.append(
             Capability(
                 id=_require_non_empty(item["id"], f"{field}.id"),
-                description=_require_non_empty(item["description"], f"{field}.description"),
+                description=_require_non_empty(
+                    item["description"], f"{field}.description"
+                ),
                 forbidden=forbidden,
             )
         )
 
     transitions_raw = data["transitions"]
-    _require(isinstance(transitions_raw, list), "reachability model.transitions must be an array")
+    _require(
+        isinstance(transitions_raw, list),
+        "reachability model.transitions must be an array",
+    )
     transitions: list[CapabilityTransition] = []
     for index, item in enumerate(transitions_raw):
         field = f"reachability model.transitions[{index}]"
@@ -258,7 +271,9 @@ def reachability_model_from_dict(data: dict[str, Any]) -> ReachabilityModel:
                 source=_require_non_empty(item["source"], f"{field}.source"),
                 target=_require_non_empty(item["target"], f"{field}.target"),
                 requires_violations=requires_violations,
-                invariant_id=_optional_text(item.get("invariantId"), f"{field}.invariantId"),
+                invariant_id=_optional_text(
+                    item.get("invariantId"), f"{field}.invariantId"
+                ),
                 boundary=_optional_text(item.get("boundary"), f"{field}.boundary"),
                 impact=_optional_text(item.get("impact"), f"{field}.impact"),
             )
@@ -281,7 +296,9 @@ def reachability_model_from_dict(data: dict[str, Any]) -> ReachabilityModel:
 
     max_depth = data.get("maxDepth", 8)
     _require(
-        isinstance(max_depth, int) and not isinstance(max_depth, bool) and max_depth >= 0,
+        isinstance(max_depth, int)
+        and not isinstance(max_depth, bool)
+        and max_depth >= 0,
         "reachability model.maxDepth must be a non-negative integer",
     )
 
@@ -295,9 +312,18 @@ def reachability_model_from_dict(data: dict[str, Any]) -> ReachabilityModel:
     unknown_starts = sorted(set(initial_capabilities) - capability_ids)
     unknown_targets = sorted(set(target_capabilities) - capability_ids)
     unknown_violations = sorted(set(violated_assumptions) - assumption_ids)
-    _require(not unknown_starts, "unknown initial capabilities: " + ", ".join(unknown_starts))
-    _require(not unknown_targets, "unknown target capabilities: " + ", ".join(unknown_targets))
-    _require(not unknown_violations, "unknown violated assumptions: " + ", ".join(unknown_violations))
+    _require(
+        not unknown_starts,
+        "unknown initial capabilities: " + ", ".join(unknown_starts),
+    )
+    _require(
+        not unknown_targets,
+        "unknown target capabilities: " + ", ".join(unknown_targets),
+    )
+    _require(
+        not unknown_violations,
+        "unknown violated assumptions: " + ", ".join(unknown_violations),
+    )
 
     return ReachabilityModel(
         assumptions=tuple(assumptions),
@@ -363,6 +389,22 @@ def reachability_model_sha256(model: ReachabilityModel) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _path_violation_ids(
+    transitions: Sequence[CapabilityTransition],
+) -> tuple[str, ...]:
+    """Return only assumption violations actually required by a selected path."""
+
+    return tuple(
+        sorted(
+            {
+                violation
+                for edge in transitions
+                for violation in edge.requires_violations
+            }
+        )
+    )
+
+
 def find_shortest_impact_path(
     *,
     initial_capabilities: Iterable[str],
@@ -389,7 +431,9 @@ def find_shortest_impact_path(
         assumptions=assumptions,
     )
 
-    capability_by_id: Mapping[str, Capability] = {item.id: item for item in capabilities}
+    capability_by_id: Mapping[str, Capability] = {
+        item.id: item for item in capabilities
+    }
     starts = tuple(sorted(set(initial_capabilities)))
     targets = set(target_capabilities)
     violations = frozenset(violated_assumptions)
@@ -401,11 +445,15 @@ def find_shortest_impact_path(
 
     unknown_starts = sorted(set(starts) - capability_by_id.keys())
     if unknown_starts:
-        raise ValueError("unknown initial capabilities: " + ", ".join(unknown_starts))
+        raise ValueError(
+            "unknown initial capabilities: " + ", ".join(unknown_starts)
+        )
 
     unknown_targets = sorted(targets - capability_by_id.keys())
     if unknown_targets:
-        raise ValueError("unknown target capabilities: " + ", ".join(unknown_targets))
+        raise ValueError(
+            "unknown target capabilities: " + ", ".join(unknown_targets)
+        )
 
     if assumptions:
         known_assumptions = {item.id for item in assumptions}
@@ -430,7 +478,7 @@ def find_shortest_impact_path(
                 initial_capability=start,
                 target_capability=start,
                 transitions=(),
-                violated_assumptions=tuple(sorted(violations)),
+                violated_assumptions=(),
             )
         queue.append((start, start, ()))
         visited[start] = 0
@@ -452,7 +500,7 @@ def find_shortest_impact_path(
                     initial_capability=initial,
                     target_capability=edge.target,
                     transitions=next_path,
-                    violated_assumptions=tuple(sorted(violations)),
+                    violated_assumptions=_path_violation_ids(next_path),
                 )
 
             previous_depth = visited.get(edge.target)
@@ -501,7 +549,7 @@ def run_reachability_model(model: ReachabilityModel) -> dict[str, object]:
         assumptions=model.assumptions,
         max_depth=model.max_depth,
     )
-    result: dict[str, object] = {
+    return {
         "status": "reachable" if path is not None else "not_found_within_bound",
         "modelSha256": reachability_model_sha256(model),
         "maxDepth": model.max_depth,
@@ -509,4 +557,3 @@ def run_reachability_model(model: ReachabilityModel) -> dict[str, object]:
         "targetCapabilities": sorted(model.target_capabilities),
         "path": impact_path_to_dict(path) if path is not None else None,
     }
-    return result
