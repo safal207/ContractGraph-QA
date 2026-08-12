@@ -71,7 +71,7 @@ def _forbidden_definition_changes(
     base: dict[str, object],
     head: dict[str, object],
 ) -> dict[str, list[str]]:
-    """Detect changes that could make a historical forbidden target disappear by definition."""
+    """Detect attempts to erase a historical forbidden target by definition."""
 
     base_classification = base["capabilityClassification"]
     head_classification = head["capabilityClassification"]
@@ -105,8 +105,9 @@ def compare_reachability_models(
     """Compare old/new models and surface change-introduced causal risk.
 
     A PR is not allowed to manufacture a risk reduction merely by deleting a
-    historical forbidden capability or relabeling it as allowed. Such model
-    definition drift is surfaced separately and fails the CLI gate.
+    historical forbidden capability or relabeling it as allowed. Definition
+    drift therefore uses the existing ``risk_increase_detected`` gate status,
+    with ``gateReasons`` identifying the specific fail-closed condition.
     """
 
     base = reachability_snapshot(base_model)
@@ -132,9 +133,13 @@ def compare_reachability_models(
         or definition_changes["forbiddenToAllowedCapabilities"]
     )
 
+    gate_reasons: list[str] = []
+    if newly_reachable:
+        gate_reasons.append("new_forbidden_reachability")
     if forbidden_definition_changed:
-        status = "forbidden_definition_changed"
-    elif newly_reachable:
+        gate_reasons.append("forbidden_definition_changed")
+
+    if gate_reasons:
         status = "risk_increase_detected"
     elif removed_boundaries:
         status = "control_boundary_change"
@@ -151,6 +156,7 @@ def compare_reachability_models(
 
     return {
         "status": status,
+        "gateReasons": gate_reasons,
         "baseModelSha256": base["modelSha256"],
         "headModelSha256": head["modelSha256"],
         "newlyReachableForbiddenCapabilities": newly_reachable,
