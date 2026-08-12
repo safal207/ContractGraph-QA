@@ -62,13 +62,24 @@ class ControlEvidenceBundleTest(unittest.TestCase):
             self.assertEqual(first_bytes, second_bytes)
             self.assertEqual(first["bundleVersion"], 3)
             self.assertEqual(first["postImpactStatus"], "contained_and_verified")
+            self.assertEqual(first["controlReport"], "control-report.md")
             self.assertEqual(first["bundleSha256"], second["bundleSha256"])
 
             with zipfile.ZipFile(output, "r") as archive:
                 self.assertEqual(tuple(archive.namelist()), CONTROL_BUNDLE_FILES)
                 self.assertIn("post-impact-model.json", archive.namelist())
                 self.assertIn("post-impact.json", archive.namelist())
+                self.assertIn("control-report.md", archive.namelist())
                 self.assertIn("base-bundle.json", archive.namelist())
+                report = archive.read("control-report.md").decode("utf-8")
+
+            self.assertIn("# Post-impact control report", report)
+            self.assertIn("terminal-state-reachable", report)
+            self.assertIn("contained_by", report)
+            self.assertIn("recovered_by", report)
+            self.assertIn("restores_to", report)
+            self.assertIn("verified_by", report)
+            self.assertIn("contained_and_verified", report)
 
             verified = verify_control_evidence_bundle(output)
             self.assertTrue(verified["ok"])
@@ -76,41 +87,7 @@ class ControlEvidenceBundleTest(unittest.TestCase):
             self.assertEqual(verified["findingId"], "CGQA-005")
             self.assertEqual(verified["postImpactStatus"], "contained_and_verified")
             self.assertEqual(verified["boundTargetCapability"], "terminal-state-reachable")
-
-    def test_cli_builds_and_verifies_control_bundle(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp = Path(temp_dir)
-            config = self._base_config(temp)
-            run_pipeline(config)
-            output = temp / "control.evidence.zip"
-
-            stdout = io.StringIO()
-            with contextlib.redirect_stdout(stdout):
-                build_code = cli_main(
-                    [
-                        "control-bundle-build",
-                        "--base-bundle",
-                        str(config.bundle),
-                        "--post-impact-model",
-                        str(self.post_impact_model),
-                        "--output",
-                        str(output),
-                    ]
-                )
-            self.assertEqual(build_code, EXIT_OK)
-            built = json.loads(stdout.getvalue())
-            self.assertEqual(built["bundleVersion"], 3)
-            self.assertEqual(built["postImpactStatus"], "contained_and_verified")
-            self.assertTrue(output.is_file())
-
-            stdout = io.StringIO()
-            with contextlib.redirect_stdout(stdout):
-                verify_code = cli_main(["verify-control-bundle", str(output)])
-            self.assertEqual(verify_code, EXIT_OK)
-            verified = json.loads(stdout.getvalue())
-            self.assertTrue(verified["ok"])
-            self.assertEqual(verified["bundleVersion"], 3)
-            self.assertEqual(verified["boundTargetCapability"], "terminal-state-reachable")
+            self.assertEqual(verified["controlReport"], "control-report.md")
 
     def test_post_impact_tamper_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -133,6 +110,29 @@ class ControlEvidenceBundleTest(unittest.TestCase):
                     target.writestr(info, data)
 
             with self.assertRaisesRegex(ProductError, "hash mismatch: post-impact.json"):
+                verify_control_evidence_bundle(output)
+
+    def test_control_report_tamper_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            config = self._base_config(temp)
+            run_pipeline(config)
+            output = temp / "control.evidence.zip"
+            create_control_evidence_bundle(
+                config.bundle,
+                load_post_impact_model(self.post_impact_model),
+                output,
+            )
+
+            with zipfile.ZipFile(output, "r") as source:
+                entries = [(info, source.read(info.filename)) for info in source.infolist()]
+            with zipfile.ZipFile(output, "w") as target:
+                for info, data in entries:
+                    if info.filename == "control-report.md":
+                        data += b"\ntampered narrative\n"
+                    target.writestr(info, data)
+
+            with self.assertRaisesRegex(ProductError, "hash mismatch: control-report.md"):
                 verify_control_evidence_bundle(output)
 
     def test_control_bundle_requires_verified_reachability_v2(self) -> None:
@@ -158,6 +158,40 @@ class ControlEvidenceBundleTest(unittest.TestCase):
                     load_post_impact_model(self.post_impact_model),
                     temp / "control.evidence.zip",
                 )
+
+    def test_cli_builds_and_verifies_control_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            config = self._base_config(temp)
+            run_pipeline(config)
+            output = temp / "control.evidence.zip"
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                build_code = cli_main(
+                    [
+                        "control-bundle-build",
+                        "--base-bundle",
+                        str(config.bundle),
+                        "--post-impact-model",
+                        str(self.post_impact_model),
+                        "--output",
+                        str(output),
+                    ]
+                )
+            self.assertEqual(build_code, EXIT_OK)
+            built = json.loads(stdout.getvalue())
+            self.assertEqual(built["bundleVersion"], 3)
+            self.assertEqual(built["controlReport"], "control-report.md")
+
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                verify_code = cli_main(["verify-control-bundle", str(output)])
+            self.assertEqual(verify_code, EXIT_OK)
+            verified = json.loads(stdout.getvalue())
+            self.assertEqual(verified["bundleVersion"], 3)
+            self.assertEqual(verified["postImpactStatus"], "contained_and_verified")
+            self.assertEqual(verified["controlReport"], "control-report.md")
 
 
 if __name__ == "__main__":
