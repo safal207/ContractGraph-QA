@@ -1,0 +1,9 @@
+{
+  "assumptions": [{"id":"settlement-single-application","description":"A committed payment is applied to ledger and settlement state at most once."}],
+  "capabilities": [{"id":"process-settlement-confirmation","description":"Process a settlement confirmation for a logical payment operation.","forbidden":false},{"id":"apply-duplicate-settlement","description":"Apply settlement effects more than once for the same logical operation.","forbidden":true}],
+  "transitions": [{"id":"reapply-settlement-effect","source":"process-settlement-confirmation","target":"apply-duplicate-settlement","requiresViolations":["settlement-single-application"],"invariantId":"settlement-applied-once","boundary":"settlement-deduplication","impact":"ledger or payout state can be mutated twice for one committed payment"}],
+  "initialCapabilities":["process-settlement-confirmation"],
+  "targetCapabilities":["apply-duplicate-settlement"],
+  "violatedAssumptions":["settlement-single-application"],
+  "maxDepth":2
+}

@@ -1,0 +1,9 @@
+{
+  "assumptions": [{"id":"idempotency-identity-stable","description":"Retries preserve the same logical operation and idempotency identity until final reconciliation."}],
+  "capabilities": [{"id":"retry-pending-payment","description":"Retry a payment whose final outcome is not yet reconciled.","forbidden":false},{"id":"create-second-payment-attempt","description":"Create a second financial attempt for the same unresolved logical operation.","forbidden":true}],
+  "transitions": [{"id":"change-idempotency-identity","source":"retry-pending-payment","target":"create-second-payment-attempt","requiresViolations":["idempotency-identity-stable"],"invariantId":"retry-must-preserve-idempotency","boundary":"idempotency-continuity","impact":"an unresolved payment can be retried as a new financial operation"}],
+  "initialCapabilities":["retry-pending-payment"],
+  "targetCapabilities":["create-second-payment-attempt"],
+  "violatedAssumptions":["idempotency-identity-stable"],
+  "maxDepth":2
+}
