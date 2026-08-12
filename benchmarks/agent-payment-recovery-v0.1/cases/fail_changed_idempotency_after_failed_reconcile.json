@@ -1,0 +1,16 @@
+{
+  "schema": "cgqa.agent-payment-recovery-scenario.v0.1",
+  "scenarioId": "APR-FAIL-002-IDEMPOTENCY-DRIFT",
+  "policy": {
+    "requireIdempotencyKey": true,
+    "requireSameLogicalOperationIdOnRetry": true,
+    "requireSameIdempotencyKeyOnRetry": true
+  },
+  "events": [
+    {"seq": 1, "type": "authorize", "logicalOperationId": "pay-004"},
+    {"seq": 2, "type": "submit", "logicalOperationId": "pay-004", "executionId": "exec-004-a", "idempotencyKey": "idem-004"},
+    {"seq": 3, "type": "ambiguous", "logicalOperationId": "pay-004", "executionId": "exec-004-a", "reason": "timeout"},
+    {"seq": 4, "type": "reconcile", "logicalOperationId": "pay-004", "evidenceKind": "history", "evidenceRef": "history-row-004", "outcome": "failed"},
+    {"seq": 5, "type": "retry", "logicalOperationId": "pay-004", "executionId": "exec-004-b", "retryOfExecutionId": "exec-004-a", "idempotencyKey": "idem-004-NEW"}
+  ]
+}

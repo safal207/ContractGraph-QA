@@ -1,0 +1,15 @@
+{
+  "schema": "cgqa.agent-payment-recovery-scenario.v0.1",
+  "scenarioId": "APR-FAIL-001-RETRY-BEFORE-RECONCILE",
+  "policy": {
+    "requireIdempotencyKey": true,
+    "requireSameLogicalOperationIdOnRetry": true,
+    "requireSameIdempotencyKeyOnRetry": true
+  },
+  "events": [
+    {"seq": 1, "type": "authorize", "logicalOperationId": "pay-003"},
+    {"seq": 2, "type": "submit", "logicalOperationId": "pay-003", "executionId": "exec-003-a", "idempotencyKey": "idem-003"},
+    {"seq": 3, "type": "ambiguous", "logicalOperationId": "pay-003", "executionId": "exec-003-a", "reason": "timeout-after-send"},
+    {"seq": 4, "type": "retry", "logicalOperationId": "pay-003", "executionId": "exec-003-b", "retryOfExecutionId": "exec-003-a", "idempotencyKey": "idem-003"}
+  ]
+}

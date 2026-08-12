@@ -1,0 +1,16 @@
+{
+  "schema": "cgqa.agent-payment-recovery-scenario.v0.1",
+  "scenarioId": "APR-PASS-001-COMMITTED-STOP",
+  "policy": {
+    "requireIdempotencyKey": true,
+    "requireSameLogicalOperationIdOnRetry": true,
+    "requireSameIdempotencyKeyOnRetry": true
+  },
+  "events": [
+    {"seq": 1, "type": "authorize", "logicalOperationId": "pay-001"},
+    {"seq": 2, "type": "submit", "logicalOperationId": "pay-001", "executionId": "exec-001", "idempotencyKey": "idem-001"},
+    {"seq": 3, "type": "ambiguous", "logicalOperationId": "pay-001", "executionId": "exec-001", "reason": "client-timeout"},
+    {"seq": 4, "type": "reconcile", "logicalOperationId": "pay-001", "evidenceKind": "status_lookup", "evidenceRef": "tx-001", "outcome": "committed"},
+    {"seq": 5, "type": "stop", "logicalOperationId": "pay-001"}
+  ]
+}
