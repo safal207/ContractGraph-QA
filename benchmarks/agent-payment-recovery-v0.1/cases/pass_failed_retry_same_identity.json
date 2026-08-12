@@ -1,0 +1,17 @@
+{
+  "schema": "cgqa.agent-payment-recovery-scenario.v0.1",
+  "scenarioId": "APR-PASS-002-FAILED-RETRY",
+  "policy": {
+    "requireIdempotencyKey": true,
+    "requireSameLogicalOperationIdOnRetry": true,
+    "requireSameIdempotencyKeyOnRetry": true
+  },
+  "events": [
+    {"seq": 1, "type": "authorize", "logicalOperationId": "pay-002"},
+    {"seq": 2, "type": "submit", "logicalOperationId": "pay-002", "executionId": "exec-002-a", "idempotencyKey": "idem-002"},
+    {"seq": 3, "type": "ambiguous", "logicalOperationId": "pay-002", "executionId": "exec-002-a", "reason": "connection-reset"},
+    {"seq": 4, "type": "reconcile", "logicalOperationId": "pay-002", "evidenceKind": "webhook", "evidenceRef": "event-002", "outcome": "failed"},
+    {"seq": 5, "type": "retry", "logicalOperationId": "pay-002", "executionId": "exec-002-b", "retryOfExecutionId": "exec-002-a", "idempotencyKey": "idem-002"},
+    {"seq": 6, "type": "stop", "logicalOperationId": "pay-002"}
+  ]
+}
