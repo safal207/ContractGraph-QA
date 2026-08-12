@@ -281,12 +281,20 @@ def run_capture(config: ProductConfig, manifest_fingerprint: str) -> None:
     _require(config.result.is_file(), f"capture completed but result file was not produced: {config.result}")
 
 
-def _reachability_evidence(result: dict[str, object]) -> dict[str, object]:
-    """Bind a deterministic reachability result to a finding without duplicating the model."""
+def _reachability_evidence(
+    finding: dict[str, Any], result: dict[str, object]
+) -> dict[str, object]:
+    """Bind deterministic reachability evidence to the exact finding provenance."""
 
+    evidence = finding.get("evidence")
+    invariant = finding.get("invariant")
+    _require(isinstance(evidence, dict), "finding evidence must be an object")
+    _require(isinstance(invariant, dict), "finding invariant must be an object")
     return {
         "artifact": "reachability.json",
         "modelArtifact": "reachability-model.json",
+        "boundManifestSha256": evidence["manifestSha256"],
+        "boundInvariantId": invariant["id"],
         **result,
     }
 
@@ -296,10 +304,57 @@ def _attach_reachability(finding: dict[str, Any], result: dict[str, object] | No
         return
     evidence = finding.get("evidence")
     _require(isinstance(evidence, dict), "finding evidence must be an object")
-    evidence["reachability"] = _reachability_evidence(result)
+    evidence["reachability"] = _reachability_evidence(finding, result)
 
 
-def _load_and_run_reachability(config: ProductConfig) -> tuple[ReachabilityModel, dict[str, object]] | None:
+def _validate_reachability_binding(
+    model: ReachabilityModel,
+    reachability_result: dict[str, object],
+    manifest: dict[str, Any],
+    explorer_result: dict[str, Any],
+) -> None:
+    """Fail closed unless the capability path is semantically tied to this finding."""
+
+    _require(
+        reachability_result.get("status") == "reachable",
+        "reachability model must reach a target before it can be bound to a violated finding",
+    )
+    path = reachability_result.get("path")
+    _require(isinstance(path, dict), "reachable reachability result must contain a path")
+
+    target = path.get("targetCapability")
+    _require(isinstance(target, str) and bool(target.strip()), "reachability path targetCapability missing")
+    capability_by_id = {item.id: item for item in model.capabilities}
+    _require(target in capability_by_id, f"reachability path targets unknown capability: {target}")
+    _require(
+        capability_by_id[target].forbidden,
+        f"reachability target capability must be forbidden for finding binding: {target}",
+    )
+
+    invariant_ids = path.get("invariantIds")
+    _require(isinstance(invariant_ids, list), "reachability path invariantIds must be an array")
+    _require(
+        all(isinstance(item, str) and bool(item.strip()) for item in invariant_ids),
+        "reachability path invariantIds must contain non-empty strings",
+    )
+    manifest_invariant_ids = {item["id"] for item in manifest["invariants"]}
+    unknown = sorted(set(invariant_ids) - manifest_invariant_ids)
+    _require(
+        not unknown,
+        "reachability path references invariants outside the manifest: " + ", ".join(unknown),
+    )
+    finding_invariant = explorer_result["invariantId"]
+    _require(
+        finding_invariant in invariant_ids,
+        f"reachability path does not bind to finding invariant: {finding_invariant}",
+    )
+
+
+def _load_and_run_reachability(
+    config: ProductConfig,
+    manifest: dict[str, Any],
+    explorer_result: dict[str, Any],
+) -> tuple[ReachabilityModel, dict[str, object]] | None:
     if config.reachability_model is None:
         return None
     _require(config.reachability_model.is_file(), f"reachability model not found: {config.reachability_model}")
@@ -308,6 +363,7 @@ def _load_and_run_reachability(config: ProductConfig) -> tuple[ReachabilityModel
         result = run_reachability_model(model)
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         raise ProductError(f"invalid reachability model: {exc}") from exc
+    _validate_reachability_binding(model, result, manifest, explorer_result)
     return model, result
 
 
@@ -483,6 +539,7 @@ def verify_evidence_bundle(path: Path) -> dict[str, Any]:
             reachability_result = run_reachability_model(model)
         except ValueError as exc:
             raise ProductError(f"invalid reachability model in bundle: {exc}") from exc
+        _validate_reachability_binding(model, reachability_result, manifest, result)
         _require(
             canonical_json(reachability_result).encode("utf-8") == payloads["reachability.json"],
             "reachability.json does not match reachability-model.json",
@@ -538,7 +595,9 @@ def run_pipeline(config: ProductConfig, clean: bool = False) -> dict[str, Any]:
                 path.unlink()
 
     run_capture(config, fingerprint)
-    reachability = _load_and_run_reachability(config)
+    explorer_result = load_json_object(config.result, "result")
+    validate_result(explorer_result)
+    reachability = _load_and_run_reachability(config, manifest, explorer_result)
     reachability_model = reachability[0] if reachability is not None else None
     reachability_result = reachability[1] if reachability is not None else None
 
