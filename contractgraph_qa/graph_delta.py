@@ -36,6 +36,10 @@ def reachability_snapshot(model: ReachabilityModel) -> dict[str, object]:
     """Build a stable snapshot suitable for deterministic before/after comparison."""
 
     paths = _forbidden_paths(model)
+    capability_classification = {
+        item.id: {"forbidden": item.forbidden, "description": item.description}
+        for item in sorted(model.capabilities, key=lambda item: item.id)
+    }
     declared_boundaries = sorted(
         {edge.boundary for edge in model.transitions if edge.boundary is not None}
     )
@@ -50,6 +54,12 @@ def reachability_snapshot(model: ReachabilityModel) -> dict[str, object]:
     return {
         "modelSha256": reachability_model_sha256(model),
         "maxDepth": model.max_depth,
+        "capabilityClassification": capability_classification,
+        "declaredForbiddenCapabilities": sorted(
+            capability_id
+            for capability_id, value in capability_classification.items()
+            if value["forbidden"] is True
+        ),
         "reachableForbiddenCapabilities": sorted(paths),
         "declaredControlBoundaries": declared_boundaries,
         "reachableForbiddenBoundaries": reachable_boundaries,
@@ -57,11 +67,47 @@ def reachability_snapshot(model: ReachabilityModel) -> dict[str, object]:
     }
 
 
+def _forbidden_definition_changes(
+    base: dict[str, object],
+    head: dict[str, object],
+) -> dict[str, list[str]]:
+    """Detect changes that could make a historical forbidden target disappear by definition."""
+
+    base_classification = base["capabilityClassification"]
+    head_classification = head["capabilityClassification"]
+    assert isinstance(base_classification, dict)
+    assert isinstance(head_classification, dict)
+
+    base_forbidden = set(base["declaredForbiddenCapabilities"])
+    head_ids = set(head_classification)
+
+    removed = sorted(base_forbidden - head_ids)
+    reclassified_allowed = sorted(
+        capability_id
+        for capability_id in base_forbidden & head_ids
+        if head_classification[capability_id]["forbidden"] is not True
+    )
+    newly_declared_forbidden = sorted(
+        set(head["declaredForbiddenCapabilities"])
+        - set(base["declaredForbiddenCapabilities"])
+    )
+    return {
+        "removedFormerlyForbiddenCapabilities": removed,
+        "forbiddenToAllowedCapabilities": reclassified_allowed,
+        "newlyDeclaredForbiddenCapabilities": newly_declared_forbidden,
+    }
+
+
 def compare_reachability_models(
     base_model: ReachabilityModel,
     head_model: ReachabilityModel,
 ) -> dict[str, Any]:
-    """Compare old/new models and surface change-introduced causal risk."""
+    """Compare old/new models and surface change-introduced causal risk.
+
+    A PR is not allowed to manufacture a risk reduction merely by deleting a
+    historical forbidden capability or relabeling it as allowed. Such model
+    definition drift is surfaced separately and fails the CLI gate.
+    """
 
     base = reachability_snapshot(base_model)
     head = reachability_snapshot(head_model)
@@ -80,8 +126,15 @@ def compare_reachability_models(
     removed_reachable_boundaries = sorted(
         base_reachable_boundaries - head_reachable_boundaries
     )
+    definition_changes = _forbidden_definition_changes(base, head)
+    forbidden_definition_changed = bool(
+        definition_changes["removedFormerlyForbiddenCapabilities"]
+        or definition_changes["forbiddenToAllowedCapabilities"]
+    )
 
-    if newly_reachable:
+    if forbidden_definition_changed:
+        status = "forbidden_definition_changed"
+    elif newly_reachable:
         status = "risk_increase_detected"
     elif removed_boundaries:
         status = "control_boundary_change"
@@ -105,6 +158,7 @@ def compare_reachability_models(
         "removedDeclaredControlBoundaries": removed_boundaries,
         "addedDeclaredControlBoundaries": added_boundaries,
         "removedReachableForbiddenBoundaries": removed_reachable_boundaries,
+        "forbiddenDefinitionChanges": definition_changes,
         "introducedForbiddenPaths": introduced_paths,
         "base": base,
         "head": head,
