@@ -40,31 +40,11 @@ python tools/run_post_impact.py \
   --post-impact-model scenarios/post-impact-adapter-fixture.json
 ```
 
-The local fixture produces an explicit graph such as:
-
-```text
-capability:terminal-state-reachable
-        ↓ contained_by
-containment:terminal-state-containment
-        ↓ recovered_by
-recovery:reset-fixture-state
-        ↓ restores_to
-capability:advance-state-machine
-
-containment:terminal-state-containment
-        ↓ verified_by
-verification:verify-containment
-
-recovery:reset-fixture-state
-        ↓ verified_by
-verification:verify-recovery
-```
-
 The result is bound to the exact canonical reachability model SHA-256 and the selected forbidden target capability. A post-impact model that only describes an unrelated capability fails closed.
 
 ## Independently verified control evidence bundle v3
 
-The post-impact model can now be embedded together with an already verified reachability-aware bundle v2. The v3 control bundle contains:
+The post-impact model can be embedded together with an already verified reachability-aware bundle v2. The v3 control bundle contains:
 
 ```text
 manifest.json
@@ -75,6 +55,7 @@ post-impact-model.json
 post-impact.json
 finding.json
 report.md
+control-report.md
 base-bundle.json
 bundle.json
 ```
@@ -88,24 +69,36 @@ It then canonicalizes and re-runs both the reachability model and the post-impac
 - containment targets the exact selected forbidden capability;
 - successful recovery restores only to a declared non-forbidden capability;
 - `post-impact.json` is exactly the deterministic result of the bundled model;
+- `control-report.md` is exactly regenerated from the recomputed post-impact graph;
 - every artifact hash and byte count in bundle v3 matches the embedded bytes.
 
-Build and verify a repository-local v3 bundle with:
+Build and verify through the product CLI:
 
 ```bash
-python tools/build_control_bundle.py build \
+cgqa control-bundle-build \
   --base-bundle dist/CGQA-005/CGQA-005.evidence.zip \
   --post-impact-model scenarios/post-impact-adapter-fixture.json \
   --output dist/CGQA-005/CGQA-005.control.evidence.zip
 
-python tools/build_control_bundle.py verify \
-  dist/CGQA-005/CGQA-005.control.evidence.zip
+cgqa verify-control-bundle dist/CGQA-005/CGQA-005.control.evidence.zip
 ```
 
-Bundle v1 and v2 semantics are unchanged. v3 is an additive control-evidence envelope over a previously verified v2 reachability bundle.
+## Client control report
+
+`control-report.md` is a deterministic human-readable projection of the same post-impact result accepted by the verifier. It shows:
+
+- the reached forbidden capability;
+- aggregate control status;
+- canonical reachability/post-impact model hashes;
+- every `contained_by`, `recovered_by`, `restores_to`, and `verified_by` relation;
+- target-node outcome and evidence text.
+
+The verifier regenerates this report and requires exact byte equality, so changing the narrative without changing and re-verifying the underlying model invalidates the bundle.
+
+Bundle v1 and v2 semantics are unchanged. v3 remains an additive control-evidence envelope over a previously verified v2 reachability bundle.
 
 ## Determinism and safety boundary
 
 The implementation is stdlib-only, repository-local, deterministic, and does not execute any external target. It models control and recovery evidence; it does not claim that a textual recovery declaration proves a production system was repaired.
 
-The next integration step is to expose this v3 control bundle through the product-facing CLI/report path and then use the same graph vocabulary for PR/patch risk deltas.
+The next product layer is PR/change graph delta: compare old/new modeled reachability and containment to surface newly reachable forbidden capabilities and removed control boundaries.
