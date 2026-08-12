@@ -23,7 +23,8 @@ class ProductRuntimeTest(unittest.TestCase):
         cls.root = Path(__file__).resolve().parents[2]
         cls.manifest = cls.root / "manifests/examples/adapter-fixture.json"
         cls.result = cls.root / "results/examples/CGQA-005.result.json"
-        cls.reachability_model = cls.root / "scenarios/adversarial-wallet-replay.json"
+        cls.reachability_model = cls.root / "scenarios/adversarial-adapter-fixture.json"
+        cls.unbound_reachability_model = cls.root / "scenarios/adversarial-wallet-replay.json"
 
     def test_example_config_loads(self) -> None:
         config = load_product_config(self.root / "cgqa.example.toml")
@@ -142,7 +143,10 @@ class ProductRuntimeTest(unittest.TestCase):
             self.assertEqual(bound["artifact"], "reachability.json")
             self.assertEqual(bound["modelArtifact"], "reachability-model.json")
             self.assertEqual(bound["modelSha256"], reachability["modelSha256"])
-            self.assertEqual(bound["path"]["targetCapability"], "duplicate-settlement")
+            self.assertEqual(bound["boundManifestSha256"], finding["evidence"]["manifestSha256"])
+            self.assertEqual(bound["boundInvariantId"], "adapter-terminal-state")
+            self.assertEqual(bound["path"]["targetCapability"], "terminal-state-reachable")
+            self.assertEqual(bound["path"]["invariantIds"], ["adapter-terminal-state"])
 
             verified = verify_evidence_bundle(config.bundle)
             self.assertTrue(verified["ok"])
@@ -151,6 +155,29 @@ class ProductRuntimeTest(unittest.TestCase):
             self.assertEqual(
                 verified["reachabilityModelSha256"], first["reachabilityModelSha256"]
             )
+
+    def test_pipeline_rejects_unbound_reachability_model(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            config = ProductConfig(
+                source=temp / "cgqa.toml",
+                working_directory=self.root,
+                manifest=self.manifest,
+                result=self.result,
+                finding=temp / "finding.json",
+                report=temp / "report.md",
+                bundle=temp / "evidence.zip",
+                capture=CaptureConfig(
+                    enabled=False,
+                    profile="capture",
+                    test="test_CaptureExplorerResult",
+                    verbosity=3,
+                ),
+                reachability_model=self.unbound_reachability_model,
+            )
+
+            with self.assertRaisesRegex(ProductError, "outside the manifest"):
+                run_pipeline(config)
 
     def test_bundle_tamper_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
