@@ -69,13 +69,15 @@ The adapter manifest is the human-reviewable engagement contract for:
 
 ### Optional reachability model
 
-A product config can add:
+A product config can add a reviewed model that is specifically tied to the finding being exported:
 
 ```toml
-reachabilityModel = "scenarios/adversarial-wallet-replay.json"
+reachabilityModel = "scenarios/adversarial-adapter-fixture.json"
 ```
 
 The model declares assumptions, capabilities, guarded capability transitions, initial capabilities, target capabilities, violated assumptions, and a search bound. It is strict, deterministic, stdlib-only, and separately fingerprinted by canonical SHA-256.
+
+Standalone reachability models can be explored with `cgqa reachability`, but product evidence binding is fail-closed. The selected result must be `reachable`; the selected target must be marked forbidden; every path invariant must exist in the reviewed manifest; and the path must include the exact invariant identified by the explorer result. This prevents an unrelated capability graph from being attached to a finding just because it is structurally valid.
 
 ### Product CLI
 
@@ -104,7 +106,7 @@ bundle.json
 
 ### Bundle v2
 
-Configs with `reachabilityModel` produce:
+Configs with a bound `reachabilityModel` produce:
 
 ```text
 manifest.json
@@ -116,7 +118,7 @@ report.md
 bundle.json
 ```
 
-`reachability-model.json` is the canonicalized model. `reachability.json` is the deterministic bounded result. `finding.json` binds that result under `evidence.reachability`, including the model SHA-256 and artifact references.
+`reachability-model.json` is the canonicalized model. `reachability.json` is the deterministic bounded result. `finding.json` binds that result under `evidence.reachability`, including the model SHA-256, artifact references, `boundManifestSha256`, and `boundInvariantId`.
 
 `bundle.json` records the tool version, finding ID, canonical manifest SHA-256, exact SHA-256/byte count for every evidence artifact, and for v2 the reachability model SHA-256.
 
@@ -137,10 +139,11 @@ For v2 it additionally:
 8. validates and canonicalizes the bundled reachability model;
 9. recomputes the reachability model SHA-256;
 10. re-runs bounded reachability from the bundled model;
-11. requires `reachability.json` to equal that recomputed result;
-12. requires `finding.json` to carry exactly the recomputed reachability evidence.
+11. verifies the forbidden target and manifest/finding invariant binding;
+12. requires `reachability.json` to equal that recomputed result;
+13. requires `finding.json` to carry exactly the recomputed reachability evidence.
 
-This preserves backward compatibility for existing evidence while making the new capability path independently recomputable.
+This preserves backward compatibility for existing evidence while making the new capability path independently recomputable and semantically tied to the finding it supports.
 
 ## Product safety boundaries
 
