@@ -23,10 +23,10 @@ class CausalGraphVocabularyTest(unittest.TestCase):
             cls.root / "scenarios" / "escrow-approval-bypass.json"
         )
 
-    def _path(self, model):
+    def _path(self, model, *, targets=None):
         path = find_shortest_impact_path(
             initial_capabilities=model.initial_capabilities,
-            target_capabilities=model.target_capabilities,
+            target_capabilities=targets or model.target_capabilities,
             capabilities=model.capabilities,
             transitions=model.transitions,
             violated_assumptions=model.violated_assumptions,
@@ -76,20 +76,18 @@ class CausalGraphVocabularyTest(unittest.TestCase):
         )
 
     def test_used_assumption_violations_exclude_unrelated_declared_breaks(self) -> None:
-        path = self._path(self.wallet)
-        used = path_used_violation_ids(path)
-        expected = tuple(
-            sorted(
-                {
-                    violation
-                    for transition in path.transitions
-                    for violation in transition.requires_violations
-                }
-            )
+        path = self._path(self.wallet, targets=("overspend",))
+        self.assertEqual(
+            set(self.wallet.violated_assumptions),
+            {"fresh-policy-state", "unique-settlement"},
         )
-        self.assertEqual(used, expected)
+        self.assertEqual(path_used_violation_ids(path), ("fresh-policy-state",))
         graph = build_causal_graph(path)
-        self.assertEqual(graph["usedAssumptionViolations"], list(expected))
+        self.assertEqual(graph["usedAssumptionViolations"], ["fresh-policy-state"])
+        self.assertNotIn(
+            "assumption-violation:unique-settlement",
+            {node["id"] for node in graph["nodes"]},
+        )
 
     def test_capability_transition_nodes_preserve_boundary_and_impact(self) -> None:
         graph = build_causal_graph(self._path(self.escrow))
