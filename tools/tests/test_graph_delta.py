@@ -6,6 +6,7 @@ from pathlib import Path
 
 from contractgraph_qa.graph_delta import compare_reachability_models
 from contractgraph_qa.reachability import (
+    Capability,
     CapabilityTransition,
     load_reachability_model,
 )
@@ -25,6 +26,7 @@ class ReachabilityGraphDeltaTest(unittest.TestCase):
     def test_newly_reachable_forbidden_capability_is_reported(self) -> None:
         result = compare_reachability_models(self.base, self.head)
         self.assertEqual(result["status"], "risk_increase_detected")
+        self.assertEqual(result["gateReasons"], ["new_forbidden_reachability"])
         self.assertEqual(
             result["newlyReachableForbiddenCapabilities"],
             ["terminal-state-reachable"],
@@ -36,6 +38,7 @@ class ReachabilityGraphDeltaTest(unittest.TestCase):
     def test_identical_model_has_no_material_delta(self) -> None:
         result = compare_reachability_models(self.head, self.head)
         self.assertEqual(result["status"], "no_material_delta")
+        self.assertEqual(result["gateReasons"], [])
         self.assertEqual(result["newlyReachableForbiddenCapabilities"], [])
         self.assertEqual(result["removedDeclaredControlBoundaries"], [])
 
@@ -67,6 +70,54 @@ class ReachabilityGraphDeltaTest(unittest.TestCase):
         self.assertEqual(result["status"], "risk_reduced")
         self.assertEqual(
             result["noLongerReachableForbiddenCapabilities"],
+            ["terminal-state-reachable"],
+        )
+        self.assertEqual(
+            result["forbiddenDefinitionChanges"]["forbiddenToAllowedCapabilities"],
+            [],
+        )
+
+    def test_relabeling_forbidden_capability_as_allowed_fails_gate(self) -> None:
+        reclassified = replace(
+            self.head,
+            capabilities=tuple(
+                Capability(
+                    item.id,
+                    item.description,
+                    forbidden=False if item.id == "terminal-state-reachable" else item.forbidden,
+                )
+                for item in self.head.capabilities
+            ),
+        )
+        result = compare_reachability_models(self.head, reclassified)
+        self.assertEqual(result["status"], "risk_increase_detected")
+        self.assertEqual(result["gateReasons"], ["forbidden_definition_changed"])
+        self.assertEqual(
+            result["forbiddenDefinitionChanges"]["forbiddenToAllowedCapabilities"],
+            ["terminal-state-reachable"],
+        )
+
+    def test_removing_forbidden_capability_fails_gate(self) -> None:
+        without_target = replace(
+            self.head,
+            capabilities=tuple(
+                item
+                for item in self.head.capabilities
+                if item.id != "terminal-state-reachable"
+            ),
+            transitions=tuple(
+                edge
+                for edge in self.head.transitions
+                if edge.source != "terminal-state-reachable"
+                and edge.target != "terminal-state-reachable"
+            ),
+            target_capabilities=("advance-state-machine",),
+        )
+        result = compare_reachability_models(self.head, without_target)
+        self.assertEqual(result["status"], "risk_increase_detected")
+        self.assertEqual(result["gateReasons"], ["forbidden_definition_changed"])
+        self.assertEqual(
+            result["forbiddenDefinitionChanges"]["removedFormerlyForbiddenCapabilities"],
             ["terminal-state-reachable"],
         )
 
