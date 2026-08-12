@@ -39,6 +39,10 @@ def replay_impact_path(
     also performs a fresh search to detect alternate paths to the same forbidden
     target, preventing a blocked historical path from being mistaken for a
     complete fix when another route remains reachable.
+
+    The historical target identity is part of the proof contract. Removing that
+    capability from the fixed model or merely relabeling it as allowed is not
+    accepted as a verified fix; either change produces ``target_definition_changed``.
     """
 
     capability_by_id = {item.id: item for item in fixed_model.capabilities}
@@ -88,7 +92,9 @@ def replay_impact_path(
                 }
                 break
 
-            missing_violations = sorted(set(fixed_edge.requires_violations) - violations)
+            missing_violations = sorted(
+                set(fixed_edge.requires_violations) - violations
+            )
             if missing_violations:
                 blocked_at = {
                     "step": index,
@@ -109,15 +115,23 @@ def replay_impact_path(
 
     target = prior_path.target_capability
     target_capability = capability_by_id.get(target)
+    target_definition_status = (
+        "missing"
+        if target_capability is None
+        else "forbidden"
+        if target_capability.forbidden
+        else "no_longer_forbidden"
+    )
+    target_definition_preserved = target_definition_status == "forbidden"
+
     exact_path_reaches_target = blocked_at is None and current == target
     exact_path_reaches_forbidden = bool(
         exact_path_reaches_target
-        and target_capability is not None
-        and target_capability.forbidden
+        and target_definition_preserved
     )
 
     alternate_path = None
-    if target_capability is not None and target_capability.forbidden:
+    if target_definition_preserved:
         alternate = find_shortest_impact_path(
             initial_capabilities=fixed_model.initial_capabilities,
             target_capabilities=(target,),
@@ -130,7 +144,9 @@ def replay_impact_path(
         if alternate is not None:
             alternate_path = impact_path_to_dict(alternate)
 
-    if exact_path_reaches_forbidden:
+    if not target_definition_preserved:
+        status = "target_definition_changed"
+    elif exact_path_reaches_forbidden:
         status = "failing_path_persists"
     elif alternate_path is not None:
         status = "path_eliminated_but_risk_remains"
@@ -141,6 +157,11 @@ def replay_impact_path(
         "status": status,
         "fixedModelSha256": reachability_model_sha256(fixed_model),
         "priorPath": impact_path_to_dict(prior_path),
+        "historicalTarget": {
+            "capabilityId": target,
+            "definitionStatus": target_definition_status,
+            "definitionPreserved": target_definition_preserved,
+        },
         "exactReplay": {
             "reachedTargetCapability": exact_path_reaches_target,
             "reachedForbiddenCapability": exact_path_reaches_forbidden,
@@ -149,7 +170,7 @@ def replay_impact_path(
         },
         "alternateReachability": {
             "targetCapability": target,
-            "stillForbidden": bool(target_capability is not None and target_capability.forbidden),
+            "stillForbidden": target_definition_preserved,
             "reachable": alternate_path is not None,
             "path": alternate_path,
         },
