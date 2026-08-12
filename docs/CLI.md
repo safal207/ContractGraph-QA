@@ -102,6 +102,29 @@ Representative output:
 
 Model semantics and schema are documented in [`ADVERSARIAL_REACHABILITY.md`](ADVERSARIAL_REACHABILITY.md).
 
+## `cgqa control-bundle-build`
+
+Upgrade an already verified reachability-aware bundle v2 into a deterministic control evidence bundle v3 by binding the post-impact containment/recovery/verification model.
+
+```bash
+cgqa control-bundle-build \
+  --base-bundle dist/client.evidence.zip \
+  --post-impact-model scenarios/post-impact-adapter-fixture.json \
+  --output dist/client.control.evidence.zip
+```
+
+The command first verifies the supplied base v2 bundle. It then canonicalizes and runs the post-impact model, binds it to the exact reached forbidden capability and reachability-model SHA-256, and writes a deterministic v3 ZIP. Existing v1/v2 semantics are unchanged.
+
+## `cgqa verify-control-bundle`
+
+Independently verify a control evidence bundle v3.
+
+```bash
+cgqa verify-control-bundle dist/client.control.evidence.zip
+```
+
+Verification reconstructs the exact embedded v2 bundle, checks its SHA-256, runs the existing v2 semantic verifier, then independently re-runs both reachability and post-impact models. The command fails closed on artifact tampering, model/result drift, target-capability mismatch, invalid recovery semantics, or a broken base evidence chain.
+
 ## `cgqa run`
 
 Run the single-finding capture and evidence pipeline.
