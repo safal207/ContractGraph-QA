@@ -28,6 +28,7 @@ from contractgraph_qa.product import (
     validate_manifest_result,
     verify_evidence_bundle,
 )
+from contractgraph_qa.reachability import load_reachability_model, run_reachability_model
 from contractgraph_qa.scaffold import ScaffoldError, init_engagement
 
 EXIT_OK = 0
@@ -101,6 +102,17 @@ def _build_parser() -> argparse.ArgumentParser:
     fingerprint = subparsers.add_parser("fingerprint", help="Print canonical manifest SHA-256")
     fingerprint.add_argument("--manifest", type=Path, required=True)
 
+    reachability = subparsers.add_parser(
+        "reachability",
+        help="Run deterministic bounded adversarial capability reachability from a JSON model",
+    )
+    reachability.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Adversarial reachability model JSON",
+    )
+
     verify = subparsers.add_parser("verify-bundle", help="Verify single-finding evidence ZIP integrity and semantic chain")
     verify.add_argument("bundle", type=Path)
 
@@ -150,6 +162,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "fingerprint":
             _emit({"manifestSha256": fingerprint_manifest(args.manifest.resolve())})
             return EXIT_OK
+        if args.command == "reachability":
+            model = load_reachability_model(args.model.resolve())
+            _emit(run_reachability_model(model))
+            return EXIT_OK
         if args.command == "verify-bundle":
             _emit(verify_evidence_bundle(args.bundle))
             return EXIT_OK
@@ -173,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
         validation_commands = {
             "validate",
             "fingerprint",
+            "reachability",
             "verify-bundle",
             "verify-engagement-bundle",
         }
