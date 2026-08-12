@@ -1,0 +1,17 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "pay-example-001",
+  "executionId": "exec-example-001",
+  "observations": [
+    {
+      "source": "status-api",
+      "providerState": "pending",
+      "evidenceRef": "fixture://status/pending"
+    },
+    {
+      "source": "onchain-state",
+      "providerState": "success",
+      "evidenceRef": "fixture://onchain/committed"
+    }
+  ]
+}
