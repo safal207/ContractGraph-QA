@@ -14,7 +14,7 @@ class ReachabilityReplayCliTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.root = Path(__file__).resolve().parents[2]
         cls.prior = cls.root / "scenarios/adversarial-adapter-fixture.json"
-        cls.fixed = cls.root / "scenarios/adversarial-adapter-fixture-before.json"
+        cls.fixed = cls.root / "scenarios/adversarial-adapter-fixture-fixed.json"
 
     def _run(self, fixed: Path) -> tuple[int, dict[str, object]]:
         stdout = io.StringIO()
@@ -35,6 +35,10 @@ class ReachabilityReplayCliTest(unittest.TestCase):
         self.assertEqual(code, EXIT_OK)
         self.assertEqual(payload["status"], "fix_verified")
         self.assertFalse(payload["alternateReachability"]["reachable"])
+        self.assertEqual(
+            payload["exactReplay"]["blockedAt"]["reason"],
+            "assumption_guard_restored",
+        )
 
     def test_persistent_path_returns_validation_exit(self) -> None:
         code, payload = self._run(self.prior)
