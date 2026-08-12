@@ -1,0 +1,12 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "crossmint-public-example-002",
+  "executionId": "exec-crossmint-public-002",
+  "observations": [
+    {
+      "source": "wallet-transfer-webhook",
+      "providerState": "succeeded",
+      "evidenceRef": "fixture://crossmint/wallet-transfer-webhook/succeeded"
+    }
+  ]
+}
