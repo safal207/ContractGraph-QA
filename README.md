@@ -75,6 +75,36 @@ The generated scaffold deliberately starts fail-closed and is not execution-read
 
 See [`docs/PRODUCT.md`](docs/PRODUCT.md), [`docs/CLI.md`](docs/CLI.md), and [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md).
 
+## Adversarial capability reachability
+
+The experimental reachability layer models a second question:
+
+> Can a broken assumption make a previously forbidden capability reachable, cross a control boundary, and produce a bounded, reproducible impact path?
+
+Repository-owned models can be executed without network access or Forge:
+
+```bash
+cgqa reachability --model scenarios/adversarial-wallet-replay.json
+```
+
+The current model is:
+
+```text
+ASSUMPTION
+    ↓ violation
+CAPABILITY
+    ↓ transition
+CONTROL BOUNDARY / INVARIANT
+    ↓
+FORBIDDEN CAPABILITY
+    ↓
+IMPACT
+```
+
+The command emits deterministic JSON containing a canonical model SHA-256, the declared violated assumptions, and the shortest reachable impact path within the configured bound. `not_found_within_bound` is bounded evidence only, not a safety certification.
+
+See [`docs/ADVERSARIAL_REACHABILITY.md`](docs/ADVERSARIAL_REACHABILITY.md).
+
 ## Mental model
 
 ```text
@@ -178,6 +208,7 @@ cgqa init-engagement acme-escrow
 cgqa fingerprint --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json --result results/client.result.json
+cgqa reachability --model scenarios/adversarial-wallet-replay.json
 cgqa run --config cgqa.toml --clean
 cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
 cgqa verify-bundle dist/client.evidence.zip
@@ -224,6 +255,7 @@ contractgraph_qa/
   scaffold.py
   finding.py
   report.py
+  reachability.py
   demo_assets/
 
 src/harness/
@@ -248,75 +280,15 @@ results/examples/
 results/generated/
 reports/examples/
 graph/schema/
+scenarios/
 
 tools/
 docs/
   PRODUCT.md
   CLI.md
   ENGAGEMENT.md
+  ADVERSARIAL_REACHABILITY.md
   DISTRIBUTION.md
   RELEASE.md
   client-proof/
-
-.github/workflows/
-  ci.yml
-  reporting.yml
-  product.yml
-  distribution.yml
-  authorized-fork.yml
 ```
-
-## Development and release gates
-
-```bash
-forge fmt --check
-forge build --sizes
-forge test -vvv
-python -m unittest discover -s tools/tests -p 'test_*.py' -v
-python -m pip wheel . --no-deps --wheel-dir .product-wheel
-cgqa demo --output-dir /tmp/cgqa-demo
-cgqa verify-bundle /tmp/cgqa-demo/CGQA-005.evidence.zip
-```
-
-Release/version policy: [`CHANGELOG.md`](CHANGELOG.md) and [`docs/RELEASE.md`](docs/RELEASE.md).
-Distribution instructions: [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
-Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## What ContractGraph-QA proves — and what it does not
-
-ContractGraph-QA provides reproducible evidence **within an explicit bounded model**.
-
-It does not claim that:
-
-- bounded graph exploration proves an arbitrary protocol secure;
-- the chosen invariants are complete;
-- the state hash is automatically complete;
-- a finite parameter corpus covers every possible value;
-- `not_found_within_bound` means no vulnerability exists;
-- a QA engagement is equivalent to formal verification or an independent full security audit.
-
-Security conclusions remain limited to the modeled actors, actions, parameters, time assumptions, search depth, state-hash completeness, authorization scope, fork snapshot, adapter mapping, manifest correctness, capture mapping, and explicit invariants.
-
-## Product evolution
-
-- **v1.0** — installable runtime, deterministic evidence bundles, independent verification.
-- **v1.1** — schema/runtime contract parity gate.
-- **v1.2** — multi-invariant engagement engine.
-- **v1.3** — direct multi-invariant Foundry capture.
-- **v1.4** — one-command `engagement-run`.
-- **v1.5** — fail-closed client engagement scaffold.
-- **v1.6** — packaged self-serve demo and verified distribution artifact workflow.
-
-Earlier v0.x engine milestones remain documented in Git history and the changelog.
-
-## Safety
-
-Use ContractGraph-QA only on contracts you own, repository-local/open-source test fixtures, systems where you have explicit authorization, or public bug-bounty assets strictly within their published scope and rules.
-
-Never commit RPC secrets, private keys, seed phrases, or client credentials.
-
-See [`SECURITY.md`](SECURITY.md).
-
-## License
-
-Apache-2.0
