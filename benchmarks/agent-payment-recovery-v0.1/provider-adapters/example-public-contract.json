@@ -1,0 +1,44 @@
+{
+  "schema": "cgqa.payment-provider-adapter.v0.1",
+  "providerId": "example-provider",
+  "profileVersion": "0.1",
+  "create": {
+    "supportsIdempotencyKey": true,
+    "sameKeyReplayDocumented": true
+  },
+  "stateMap": {
+    "awaiting-approval": "pending",
+    "pending": "pending",
+    "success": "committed",
+    "failed": "failed",
+    "unknown": "unknown"
+  },
+  "evidenceSources": [
+    {
+      "kind": "onchain-state",
+      "authoritativeForFinality": true
+    },
+    {
+      "kind": "status-api",
+      "authoritativeForFinality": true
+    },
+    {
+      "kind": "webhook",
+      "authoritativeForFinality": true
+    }
+  ],
+  "evidencePrecedence": [
+    "onchain-state",
+    "status-api",
+    "webhook"
+  ],
+  "retryPolicy": {
+    "forbidBeforeFinalReconciliation": true,
+    "forbidAfterCommitted": true,
+    "requireSameLogicalOperationId": true,
+    "requireSameIdempotencyKey": true
+  },
+  "publicContractRefs": [
+    "EXAMPLE_ONLY:no-provider-claim"
+  ]
+}
