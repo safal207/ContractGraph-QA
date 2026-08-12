@@ -192,6 +192,12 @@ result = run_reachability_model(model)
 
 The module provides the domain model, strict validation, deterministic model hashing, bounded reachability, and stable semantic serialization for evidence integration.
 
+## Evidence integration status
+
+The reachability result is currently a standalone deterministic artifact. It is **not yet** included in the existing `finding.json` / evidence ZIP semantic chain. That boundary is deliberate so the current verified finding format remains backward compatible while the reachability contract stabilizes.
+
+The next slice will bind `modelSha256`, violated assumptions, capability transitions, crossed boundaries, and the shortest `ImpactPath` into the existing finding/evidence pipeline and independent bundle verification.
+
 ## Next integration steps
 
 1. Bind `ImpactPath` and `modelSha256` into existing finding/evidence output without breaking current findings.
