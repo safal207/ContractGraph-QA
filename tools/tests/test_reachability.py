@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -14,6 +16,9 @@ from contractgraph_qa.reachability import (  # noqa: E402
     CapabilityTransition,
     find_shortest_impact_path,
     impact_path_to_dict,
+    load_reachability_model,
+    reachability_model_from_dict,
+    run_reachability_model,
 )
 
 
@@ -134,6 +139,45 @@ class AdversarialReachabilityTest(unittest.TestCase):
         self.assertEqual(document["targetCapability"], "duplicate-settlement")
         self.assertEqual(document["invariantIds"], ["settlement-at-most-once"])
         self.assertEqual(document["crossedBoundaries"], ["settlement-idempotency"])
+
+    def test_repository_model_loads_and_runs_deterministically(self) -> None:
+        model_path = ROOT / "scenarios" / "adversarial-wallet-replay.json"
+        model = load_reachability_model(model_path)
+
+        first = run_reachability_model(model)
+        second = run_reachability_model(model)
+
+        self.assertEqual(first, second)
+        self.assertEqual(first["status"], "reachable")
+        self.assertEqual(first["maxDepth"], 4)
+        self.assertEqual(len(first["modelSha256"]), 64)
+        path = first["path"]
+        self.assertIsInstance(path, dict)
+        assert isinstance(path, dict)
+        self.assertIn(path["targetCapability"], {"overspend", "duplicate-settlement"})
+        self.assertTrue(path["transitions"])
+
+    def test_loader_rejects_schema_drift_and_whitespace_only_text(self) -> None:
+        model_path = ROOT / "scenarios" / "adversarial-wallet-replay.json"
+        data = json.loads(model_path.read_text(encoding="utf-8"))
+
+        with_extra = copy.deepcopy(data)
+        with_extra["surprise"] = True
+        with self.assertRaisesRegex(ValueError, "unexpected fields"):
+            reachability_model_from_dict(with_extra)
+
+        whitespace = copy.deepcopy(data)
+        whitespace["capabilities"][0]["description"] = "   "
+        with self.assertRaisesRegex(ValueError, "must be a non-empty string"):
+            reachability_model_from_dict(whitespace)
+
+    def test_loader_rejects_unknown_violation_reference(self) -> None:
+        model_path = ROOT / "scenarios" / "adversarial-wallet-replay.json"
+        data = json.loads(model_path.read_text(encoding="utf-8"))
+        data["violatedAssumptions"].append("not-declared")
+
+        with self.assertRaisesRegex(ValueError, "unknown violated assumptions"):
+            reachability_model_from_dict(data)
 
 
 if __name__ == "__main__":
