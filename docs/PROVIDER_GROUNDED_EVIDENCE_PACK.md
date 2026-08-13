@@ -20,16 +20,15 @@ canonical SHA-256 bindings
 independent local replay
 ```
 
-The pack preserves the **exact** adapter, observations, authority payload, and provider-decision result. It does not reduce those inputs to a human summary.
+The pack preserves the exact adapter, observations, authority payload, and provider-decision result.
 
-## What verification proves
+## Verification scope
 
-`verify_provider_decision_evidence` performs two independent checks:
+Local verification recomputes every embedded payload digest and re-runs `evaluate_provider_payment_decision`. Replay comparison uses canonical JSON bytes, so JSON values such as `false` and `0` remain distinct.
 
-1. recompute canonical SHA-256 for every embedded payload;
-2. re-run `evaluate_provider_payment_decision` from the embedded adapter, observations, authority evidence, fulfillment state, and decision ID, then require exact equality with the embedded decision result.
+Without a digest stored separately from the pack, this proves local consistency and catches changes whose embedded digest was not updated. It does not establish provenance of an earlier pack version.
 
-This catches both byte-level payload tampering and semantic tampering where an attacker edits the decision and recomputes its hash.
+For a stronger integrity check, record the canonical digest printed by the build command separately and pass it back during verification with `--expected-pack-sha256`. This binds verification to that separately supplied digest. It is an integrity check, not an identity signature or provider attestation.
 
 ## Determinism
 
@@ -49,18 +48,26 @@ python tools/run_provider_decision_evidence.py build \
   --output .cgqa/crossmint-provider-evidence.json
 ```
 
-Verify it independently:
+Verify local consistency:
 
 ```bash
 python tools/run_provider_decision_evidence.py verify \
   --evidence .cgqa/crossmint-provider-evidence.json
 ```
 
-The verifier performs no provider call. A successful verification means the embedded decision is reproducible from the embedded reviewed public-contract evidence under the repository's decision logic.
+Verify against a separately supplied pack digest:
+
+```bash
+python tools/run_provider_decision_evidence.py verify \
+  --evidence .cgqa/crossmint-provider-evidence.json \
+  --expected-pack-sha256 <expected-digest>
+```
+
+The verifier performs no provider call. A successful local verification means the embedded decision is reproducible from the embedded reviewed public-contract evidence under the repository's decision logic.
 
 ## Trust and claim boundary
 
-This is **public-contract replay evidence**, not a live Crossmint audit or a statement about production wallet behavior.
+This is public-contract replay evidence, not a live Crossmint audit or a statement about production wallet behavior.
 
 It does not use Crossmint credentials, call provider APIs, execute a wallet operation, write to testnet/mainnet, grant financial authority, certify security, make a compliance claim, or imply Crossmint endorsement.
 
