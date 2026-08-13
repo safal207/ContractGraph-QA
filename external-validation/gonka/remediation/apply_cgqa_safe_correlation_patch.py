@@ -8,7 +8,9 @@ Proof-only transformation:
 - persist canonical request accounting + client correlation atomically;
 - expose an explicit correlation lookup endpoint;
 - initialize proof-only correlation storage when PerfStore opens, never on the
-  inference hot path.
+  inference hot path;
+- preserve Gonka's v2 state-root protocol version even when proof images use a
+  CGQA-specific binary version marker.
 """
 
 from __future__ import annotations
@@ -31,6 +33,8 @@ STORE_RETURN_NEW = '''store := &PerfStore{db: db, path: dbPath}
 \t\treturn nil, fmt.Errorf("create CGQA correlation schema: %w", err)
 \t}
 \treturn store, nil'''
+PROTOCOL_LDFLAG_OLD = '-X devshard/types.buildStateRootProtocolVersion=${DEVSHARD_VERSION}'
+PROTOCOL_LDFLAG_NEW = '-X devshard/types.buildStateRootProtocolVersion=v2'
 
 
 def replace_exact(path: Path, old: str, new: str, expected: int) -> None:
@@ -62,6 +66,7 @@ def apply(root: Path) -> None:
     proxy = root / "devshard/cmd/devshardctl/proxy.go"
     redundancy = root / "devshard/cmd/devshardctl/redundancy.go"
     perfstore = root / "devshard/cmd/devshardctl/perfstore.go"
+    dockerfile = root / "devshard/Dockerfile"
 
     # Correlation storage is created with the store, before request traffic.
     replace_exact(perfstore, STORE_RETURN_OLD, STORE_RETURN_NEW, 1)
@@ -77,11 +82,16 @@ def apply(root: Path) -> None:
     replace_exact(redundancy, START_OLD, START_NEW, 1)
     # RuntimeMux owns /v1/requests and the proof correlation lookup route.
     replace_exact(gateway, ROUTE_OLD, ROUTE_NEW, 1)
+    # DEVSHARD_VERSION is also wired into the state-root protocol ldflag in the
+    # pinned Dockerfile. Proof workflows intentionally use CGQA-specific image
+    # version markers, so keep those markers in main.Version while pinning the
+    # protocol value itself to the upstream v2 runtime expected by versiond.
+    replace_exact(dockerfile, PROTOCOL_LDFLAG_OLD, PROTOCOL_LDFLAG_NEW, 3)
 
     print(
         "CGQA safe correlation proof patch applied: internal request IDs remain canonical; "
         "caller correlation is one-to-many, atomically persisted with accounting, separately queryable, "
-        "and schema DDL stays off the inference hot path"
+        "schema DDL stays off the inference hot path, and state-root protocol remains v2"
     )
 
 
