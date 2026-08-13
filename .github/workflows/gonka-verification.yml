@@ -63,7 +63,8 @@ jobs:
         run: |
           cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
           cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
-          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
           cd upstream-gonka/devshard
           TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
 
@@ -122,20 +123,21 @@ jobs:
         run: |
           cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
           cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
-          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
           mkdir -p "$CGQA_EVIDENCE_DIR"
 
       - name: Build Gonka devshardd for local Docker testenv
         working-directory: upstream-gonka/devshard/testenv
         run: make build-devshardd
 
-      - name: Execute request-accounting identity boundary control
+      - name: Collect request-accounting identity boundary evidence
         working-directory: upstream-gonka/devshard
         env:
           TESTENV_CITEST: '1'
         run: >-
           go test -tags=testenvci ./testenv/citest
-          -run '^TestCGQAGonkaIdentityBoundary$'
+          -run '^TestCGQAGonkaIdentityBoundaryEvidence$'
           -v -count=1 -timeout=30m
 
       - name: Validate identity source artifact completeness
@@ -225,3 +227,22 @@ jobs:
           path: cgqa-evidence/G-001-ID
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Enforce G-001-ID verification gate
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID' / 'reconciliation.json'
+          if not p.is_file():
+              raise SystemExit('G-001-ID evidence missing: gate is INCONCLUSIVE')
+          d = json.loads(p.read_text(encoding='utf-8'))
+          verdict = d.get('verdict')
+          print(f'G-001-ID verdict: {verdict}')
+          if verdict != 'PASS':
+              raise SystemExit(f'G-001-ID gate requires PASS, got {verdict}')
+          PY
