@@ -1,0 +1,22 @@
+{
+  "schema": "cgqa.agent-payment-decision-input.v0.1",
+  "decisionId": "demo-timeout-settled-fulfillment-unknown",
+  "logicalOperationId": "demo-order-001",
+  "authority": {
+    "status": "authorized",
+    "evidenceRef": "synthetic:authority/demo-agent-001"
+  },
+  "payment": {
+    "outcome": "committed",
+    "reconciliationStatus": "final",
+    "evidenceRef": "synthetic:settlement/tx-demo-001",
+    "retryAuthorityStatus": "not_applicable",
+    "retryAllowed": false
+  },
+  "fulfillment": {
+    "required": true,
+    "outcome": "unknown",
+    "evidenceRef": "synthetic:transport/final-response-lost-after-settlement",
+    "recoveryStatus": "unresolved"
+  }
+}
