@@ -1,0 +1,8 @@
+{
+  "schema": "cgqa.agent-payment-decision-input.v0.1",
+  "decisionId": "decision-ambiguous-reconcile",
+  "logicalOperationId": "op-ambiguous",
+  "authority": {"status": "authorized", "evidenceRef": "fixture://authority/grant"},
+  "payment": {"outcome": "unknown", "reconciliationStatus": "nonfinal", "evidenceRef": "fixture://payment/timeout", "retryAuthorityStatus": "unresolved", "retryAllowed": false},
+  "fulfillment": {"required": false, "outcome": "not_applicable", "recoveryStatus": "not_applicable"}
+}
