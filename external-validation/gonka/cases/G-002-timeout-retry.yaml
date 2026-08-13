@@ -2,93 +2,162 @@ id: G-002
 title: Retry after ambiguous client/gateway timeout
 profile: gonka-verification-v0.1
 priority: P0
-status: specified
+status: executable_contract
+upstream_revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
 safety:
   environment: devnet_or_explicitly_permitted_gateway
   mainnet_destructive_testing: forbidden
-  fault_injection_scope: client_or_gateway_boundary_only
+  fault_injection_scope: client_boundary_only
   secrets_in_evidence: redact
 
 intent:
   logical_operation: one_semantic_chat_completion_with_recovery
   endpoint: /v1/chat/completions
   method: POST
-  invariant_goal: retry_must_not_create_an_unintended_duplicate_billable_effect
+  invariant_goal: ambiguous_transport_failure_must_remain_reconcilable_to_execution_and_cost
+
+upstream_anchors:
+  request_identity:
+    header: X-Request-Id
+    behavior: inbound_id_is_bound_to_request_context_and_echoed_on_response
+  request_accounting:
+    endpoint: /v1/requests/{request_id}
+    observed_fields:
+      - request_id
+      - escrow_id
+      - outcome
+      - decision
+      - winner_nonce
+      - attempts[].nonce
+      - attempts[].host_idx
+      - attempts[].participant_key
+      - attempts[].winner
+      - cost.winner_actual_cost
+      - cost.other_attempts_actual_cost
+      - cost.all_attempts_actual_cost
+  concurrency:
+    documented_behavior: chat_completions_can_return_429_while_another_inference_is_in_flight
+  disconnect_semantics:
+    documented_behavior: gateway_can_continue_draining_host_SSE_after_client_disconnect_for_protocol_completion
 
 preconditions:
   - G-001_control_has_passed_or_has_a_known_baseline
   - valid_test_devshard_is_active
-  - baseline_devshard_and_accounting_state_is_captured
+  - baseline_gateway_status_is_captured
+  - baseline_request_accounting_is_empty_for_test_ids
   - timeout_can_be_induced_without_attacking_or_disrupting_other_users
 
+variants:
+  - id: G-002A
+    name: stable_request_identity_retry
+    purpose: verify_recovery_when_client_reuses_the_same_X_Request_Id
+    logical_operation_id: stable
+    request_id_policy: same_X_Request_Id_on_attempt_1_and_attempt_2
+  - id: G-002B
+    name: fresh_transport_identity_retry
+    purpose: characterize_behavior_when_retry_uses_a_new_X_Request_Id_but_same_logical_operation
+    logical_operation_id: stable
+    request_id_policy: unique_X_Request_Id_per_transport_attempt
+    warning: no_deduplication_assumption_without_protocol_evidence
+
 stimulus:
+  common_request:
+    model: configured_test_model
+    messages:
+      - role: user
+        content: "CGQA timeout/retry probe: return a short deterministic acknowledgement."
+    max_tokens: 32
+    stream: false
   attempt_1:
     action: submit_valid_chat_completion
-    fault: induce_ambiguous_client_side_timeout_after_request_dispatch
+    fault: induce_client_side_timeout_after_request_dispatch
     requirement: do_not_assume_execution_failed
+  observation_after_attempt_1:
+    - query_/v1/requests/{request_id}
+    - capture_gateway_status
+    - classify_as_not_seen_in_flight_completed_or_ambiguous
   recovery:
     action: retry_same_logical_operation_once
     correlation:
       logical_operation_id: stable_across_attempts
       execution_attempt_id: unique_per_attempt
+      X_Request_Id: according_to_variant
+  observation_after_attempt_2:
+    - query_request_accounting_for_every_transport_request_id
+    - capture_gateway_status
+    - reconcile_attempt_nonces_winner_and_costs
 
 expected:
   - id: INV-G002-01
     assertion: timeout_is_recorded_as_ambiguous_not_as_proven_non_execution
   - id: INV-G002-02
-    assertion: two_transport_attempts_remain_linked_to_one_logical_operation
+    assertion: transport_attempts_are_reconstructable_under_one_test_logical_operation
   - id: INV-G002-03
-    assertion: billing_and_settlement_do_not_silently_treat_transport_retry_as_two_independent_user_intents
+    assertion: every_observed_execution_nonce_is_attributable_to_a_request_accounting_record_or_explicitly_explained
   - id: INV-G002-04
-    assertion: if_two_executions_are_protocol_expected_they_are_explicitly_distinguishable_and_reconcilable
+    assertion: winner_and_nonwinner_attempt_costs_sum_to_reported_all_attempts_actual_cost
   - id: INV-G002-05
-    assertion: final_accounting_state_has_no_unexplained_duplicate_effect
+    assertion: final_accounting_state_contains_no_unexplained_duplicate_effect
+  - id: INV-G002-06
+    assertion: a_429_retry_while_first_request_is_in_flight_is_not_misclassified_as_a_second_execution
+  - id: INV-G002-07
+    assertion: if_a_cached_or_aliased_response_is_observed_its_source_request_and_cost_lineage_are_preserved
 
 evidence:
   required:
     - run_metadata.json
     - attempt-1.request.redacted.json
     - attempt-1.transport-outcome.json
+    - attempt-1.accounting.json
     - attempt-2.request.redacted.json
-    - attempt-2.response.redacted.json
+    - attempt-2.transport-outcome.json
+    - attempt-2.accounting.json
     - gateway_status.before.json
-    - gateway_status.after.json
-    - devshard_state.before.json
-    - devshard_state.after.json
+    - gateway_status.after-attempt-1.json
+    - gateway_status.after-attempt-2.json
     - reconciliation.json
   conditional:
+    - response.redacted.json
     - gateway_logs.redacted.txt
+    - captured_request.redacted.json
+    - devshard_state.before.json
+    - devshard_state.after.json
     - settlement.json
     - chain_state.before.json
     - chain_state.after.json
   correlation_fields:
     - logical_operation_id
     - execution_attempt_id
+    - X_Request_Id
     - request_hash
     - client_timestamp_start
     - client_timestamp_end
-    - response_id
-    - escrow_or_devshard_id
+    - escrow_id
+    - winner_nonce
+    - attempt_nonces
     - observed_usage_delta
+    - all_attempts_actual_cost
 
 pass_criteria:
-  any_of:
-    - condition: one_execution_one_billable_effect
-      requires:
-        - retry_is_deduplicated_or_first_attempt_is_proven_non_execution
-        - final_state_reconciles
-    - condition: protocol_allows_multiple_executions
-      requires:
-        - executions_are_explicitly_distinguishable
-        - billing_semantics_are_documented_and_reconcilable
-        - no_hidden_duplicate_mutation
+  all:
+    - every_transport_attempt_has_a_known_disposition
+    - every_execution_nonce_has_a_known_request_lineage
+    - accounting_cost_arithmetic_reconciles
+    - final_state_has_no_unexplained_duplicate_or_orphaned_effect
+  acceptable_outcomes:
+    - first_attempt_completes_and_retry_is_replayed_cached_or_otherwise_reconciled
+    - retry_is_rejected_429_while_first_attempt_remains_in_flight_and_first_attempt_later_reconciles
+    - first_attempt_is_proven_non_execution_and_retry_executes_once
+    - protocol_permits_two_executions_and_both_are_explicitly_distinguishable_and_fully_reconciled
 
 fail_criteria:
   any:
     - timeout_is_treated_as_non_execution_without_evidence
-    - duplicate_charge_or_usage_effect_is_not_explainable_from_protocol_semantics
+    - execution_nonce_exists_without_request_lineage
+    - request_accounting_cost_breakdown_does_not_sum
     - retry_creates_orphaned_usage
-    - final_settlement_cannot_be_mapped_back_to_attempts
+    - duplicate_charge_or_usage_effect_is_not_explainable_from_protocol_semantics
+    - final_settlement_cannot_be_mapped_back_to_observed_execution_attempts
     - local_recovery_state_and_chain_state_disagree_without_explicit_resolution
 
 classification:
@@ -96,5 +165,7 @@ classification:
   disclosure: private_until_triaged
 
 notes:
-  - Do not claim idempotency unless Gonka documents or demonstrates it. The test verifies reconciliation and causal identity, not a preconceived implementation.
-  - The critical distinction is logical operation versus transport execution attempt.
+  - X-Request-Id is a correlation primitive; this contract does not assume it is an idempotency key.
+  - G-002A and G-002B deliberately separate stable request identity from stable semantic intent.
+  - The gateway may continue protocol completion after a client disconnect, so a client timeout is intentionally treated as an ambiguous outcome.
+  - Do not publish a security-sensitive failure before coordinated disclosure.
