@@ -14,7 +14,7 @@ jobs:
   contract-guard:
     name: Gonka upstream contract guard
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     env:
       GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
     steps:
@@ -47,12 +47,22 @@ jobs:
           grep -F 'TestHandleRequestAccountingResolvesCachedRequestAliasCosts' upstream-gonka/devshard/cmd/devshardctl/request_accounting_test.go
           test -f upstream-gonka/devshard/testenv/README.md
           grep -F 'TestGatewayChat' upstream-gonka/devshard/testenv/README.md
+          grep -F 'e.POST("/testenv/fault", s.handleFaultPatch)' upstream-gonka/devshard/testenv/mockopenai/server.go
+          grep -F 'LatencyMs' upstream-gonka/devshard/testenv/mockopenai/config.go
 
       - name: Setup upstream Go toolchain
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: upstream-gonka/devshard/go.mod
           cache: false
+
+      - name: Compile CGQA evidence harness against pinned Gonka
+        shell: bash
+        run: |
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cd upstream-gonka/devshard
+          TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
 
       - name: Run pinned upstream request-accounting controls
         working-directory: upstream-gonka/devshard
@@ -71,6 +81,7 @@ jobs:
             echo '- CGQA YAML/JSON artifacts parse successfully.'
             echo '- X-Request-Id correlation primitive is present upstream.'
             echo '- /v1/requests/{request_id} accounting surface is present upstream.'
+            echo '- Mock OpenAI deterministic latency fault hook is present upstream.'
+            echo '- CGQA G-001/G-002 harness compiles against the pinned Gonka testenv.'
             echo '- Upstream joined-cost and cached-alias accounting controls pass.'
-            echo '- Local Docker testenv remains the execution target for G-001/G-002.'
           } >> "$GITHUB_STEP_SUMMARY"
