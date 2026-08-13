@@ -6,7 +6,9 @@ Proof-only transformation:
 - bind caller X-Request-Id as a separate client correlation value;
 - propagate both identities through detached background inference;
 - persist one-to-many client -> internal request mappings;
-- expose an explicit correlation lookup endpoint.
+- expose an explicit correlation lookup endpoint;
+- initialize proof-only correlation storage when PerfStore opens, never on the
+  inference hot path.
 """
 
 from __future__ import annotations
@@ -25,6 +27,13 @@ START_NEW = '''e.perf.RecordAccountingRequestStart(requestID, e.devshardID, para
 \t}'''
 ROUTE_OLD = 'mux.HandleFunc("GET /v1/requests/{request_id}", proxy.handleRequestAccounting)'
 ROUTE_NEW = ROUTE_OLD + '\n\tmux.HandleFunc("GET /v1/request-correlations/{client_request_id}", proxy.handleCGQARequestCorrelation)'
+STORE_RETURN_OLD = 'return &PerfStore{db: db, path: dbPath}, nil'
+STORE_RETURN_NEW = '''store := &PerfStore{db: db, path: dbPath}
+\tif err := store.ensureCGQARequestCorrelationSchema(); err != nil {
+\t\tdb.Close()
+\t\treturn nil, fmt.Errorf("create CGQA correlation schema: %w", err)
+\t}
+\treturn store, nil'''
 
 
 def replace_exact(path: Path, old: str, new: str, expected: int) -> None:
@@ -56,7 +65,10 @@ def apply(root: Path) -> None:
     gateway = root / "devshard/cmd/devshardctl/gateway.go"
     proxy = root / "devshard/cmd/devshardctl/proxy.go"
     redundancy = root / "devshard/cmd/devshardctl/redundancy.go"
+    perfstore = root / "devshard/cmd/devshardctl/perfstore.go"
 
+    # Correlation storage is created with the store, before request traffic.
+    replace_exact(perfstore, STORE_RETURN_OLD, STORE_RETURN_NEW, 1)
     # Two gateway chat entrypoints (pooled + explicit devshard route).
     replace_exact(gateway, ENTRY_OLD, ENTRY_NEW, 2)
     # Direct proxy chat entrypoint.
@@ -71,7 +83,7 @@ def apply(root: Path) -> None:
 
     print(
         "CGQA safe correlation proof patch applied: internal request IDs remain canonical; "
-        "caller correlation is one-to-many and separately queryable"
+        "caller correlation is one-to-many, separately queryable, and schema DDL stays off the inference hot path"
     )
 
 
