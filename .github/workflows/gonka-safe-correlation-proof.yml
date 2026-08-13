@@ -1,0 +1,162 @@
+name: Gonka safe correlation proof
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/remediation/cgqa_safe_correlation_support.go'
+      - 'external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py'
+      - 'external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go'
+      - 'external-validation/gonka/safe-correlation.schema.json'
+      - '.github/workflows/gonka-safe-correlation-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safe-correlation:
+    name: Gonka non-collapsing correlation proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+      CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-safe-correlation
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install proof support and unchanged harness dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp external-validation/gonka/remediation/cgqa_safe_correlation_support.go upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_timeout_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_timeout_identity_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_safe_correlation_evidence_test.go
+          mkdir -p "$CGQA_EVIDENCE_DIR"
+
+      - name: Apply non-collapsing correlation proof patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py upstream-gonka
+          gofmt -w \
+            upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go \
+            upstream-gonka/devshard/cmd/devshardctl/gateway.go \
+            upstream-gonka/devshard/cmd/devshardctl/proxy.go \
+            upstream-gonka/devshard/cmd/devshardctl/redundancy.go \
+            upstream-gonka/devshard/testenv/citest/cgqa_*_test.go
+          test "$(grep -F -c 'RunInference(propagateCGQARequestContext(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
+          grep -F 'GET /v1/request-correlations/{client_request_id}' upstream-gonka/devshard/cmd/devshardctl/gateway.go
+          grep -F 'PRIMARY KEY (client_correlation_id, internal_request_id, escrow_id)' upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+
+      - name: Compile patched Gonka and proof harness
+        working-directory: upstream-gonka/devshard
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./cmd/devshardctl -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$' -count=1
+          TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
+
+      - name: Build patched devshardctl image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --file upstream-gonka/devshard/Dockerfile \
+            --target devshardctl-runtime \
+            --build-arg DEVSHARD_VERSION=cgqa-safe-correlation \
+            --tag devshard-runtime:latest \
+            upstream-gonka
+          docker image inspect devshard-runtime:latest --format '{{.Id}}' > "$CGQA_EVIDENCE_DIR/devshardctl.image-id.txt"
+
+      - name: Build Gonka devshardd
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Execute safe correlation proof
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaSafeCorrelationEvidence$'
+          -v -count=1 -timeout=30m
+
+      - name: Validate proof evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-CORR-SAFE'
+          p = root / 'reconciliation.json'
+          if not p.is_file() or p.stat().st_size == 0:
+              raise SystemExit('safe correlation reconciliation evidence missing')
+          schema = json.loads(Path('external-validation/gonka/safe-correlation.schema.json').read_text(encoding='utf-8'))
+          instance = json.loads(p.read_text(encoding='utf-8'))
+          Draft202012Validator.check_schema(schema)
+          errors = sorted(Draft202012Validator(schema).iter_errors(instance), key=lambda e: list(e.path))
+          if errors:
+              raise SystemExit('\n'.join(f'{e.json_path}: {e.message}' for e in errors))
+          print(json.dumps(instance, indent=2))
+          if instance.get('verdict') != 'PASS':
+              raise SystemExit('safe correlation proof did not pass')
+          PY
+
+      - name: Publish proof summary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          import os
+          from pathlib import Path
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-CORR-SAFE/reconciliation.json'
+          print('### Gonka non-collapsing correlation proof')
+          if not p.is_file():
+              print('- evidence missing')
+          else:
+              d = json.loads(p.read_text(encoding='utf-8'))
+              print(f"- verdict: `{d.get('verdict')}`")
+              print(f"- repeated correlation -> internal IDs: `{d.get('internal_request_ids')}`")
+              print(f"- lookup matches: `{d.get('correlation_match_ids')}`")
+              print(f"- canonical IDs distinct: `{d.get('canonical_ids_distinct')}`")
+              print(f"- winner nonces distinct: `{d.get('winner_nonces_distinct')}`")
+              print(f"- timeout observed: `{d.get('timeout_observed')}`")
+              print(f"- timeout correlation lookup: `{d.get('timeout_correlation_match_ids')}`")
+              print(f"- timeout accounting resolved: `{d.get('timeout_accounting_resolved')}`")
+          PY
+
+      - name: Upload safe correlation proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-safe-correlation-proof
+          path: cgqa-safe-correlation
+          if-no-files-found: error
+          retention-days: 14
