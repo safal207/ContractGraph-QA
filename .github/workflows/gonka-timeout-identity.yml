@@ -1,0 +1,167 @@
+name: Gonka G-002-ID timeout identity
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/**'
+      - '.github/workflows/gonka-timeout-identity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  timeout-identity:
+    name: Gonka G-002-ID conclusive timeout identity evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+      CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-timeout-identity
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install CGQA harness dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_timeout_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_timeout_identity_evidence_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_*_test.go
+          mkdir -p "$CGQA_EVIDENCE_DIR"
+
+      - name: Apply proven G-001 identity propagation patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python external-validation/gonka/remediation/apply_cgqa_gonka_001_proof_patch.py upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          gofmt -w upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          test "$(grep -F -c 'RunInference(logging.PropagateRequestID(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
+          test "$(grep -F -c 'RunInference(context.Background(), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go || true)" -eq 0
+
+      - name: Compile patched accounting controls and timeout harness
+        working-directory: upstream-gonka/devshard
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./cmd/devshardctl -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$' -count=1
+          TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
+
+      - name: Build Gonka devshardd
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Collect G-002-ID timeout evidence
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaTimeoutIdentityEvidence$'
+          -v -count=1 -timeout=25m
+
+      - name: Validate timeout identity evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-002-ID'
+          required = [
+              'run_metadata.json', 'request.redacted.json', 'transport.json',
+              'gateway_status.before.json', 'gateway_status.after.json',
+              'devshard_state.before.json', 'devshard_state.after.json',
+              'debug_perf.before.json', 'debug_perf.after.json',
+              'accounting.client-id.json', 'reconciliation.json',
+          ]
+          missing = [str(root / name) for name in required if not (root / name).is_file() or (root / name).stat().st_size == 0]
+          if missing:
+              raise SystemExit('G-002-ID evidence incomplete:\n' + '\n'.join(missing))
+
+          for path in root.glob('*.json'):
+              json.loads(path.read_text(encoding='utf-8'))
+
+          schema = json.loads(Path('external-validation/gonka/timeout-identity-boundary.schema.json').read_text(encoding='utf-8'))
+          Draft202012Validator.check_schema(schema)
+          instance = json.loads((root / 'reconciliation.json').read_text(encoding='utf-8'))
+          errors = sorted(Draft202012Validator(schema).iter_errors(instance), key=lambda e: list(e.path))
+          if errors:
+              raise SystemExit('\n'.join(f'{e.json_path}: {e.message}' for e in errors))
+          print('G-002-ID evidence is complete and schema-valid.')
+          PY
+
+      - name: Summarize timeout identity verdict
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          import os
+          from pathlib import Path
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-002-ID/reconciliation.json'
+          print('### Gonka G-002-ID timeout identity')
+          if not p.is_file():
+              print('- reconciliation evidence missing')
+          else:
+              d = json.loads(p.read_text(encoding='utf-8'))
+              print(f"- verdict: `{d.get('verdict')}`")
+              print(f"- client timeout observed: `{d.get('client_timeout_observed')}`")
+              print(f"- response request id: `{d.get('response_request_id') or '<unavailable>'}`")
+              print(f"- post-timeout perf record added: `{d.get('perf_record_added_after_timeout')}`")
+              print(f"- state progressed: `{d.get('state_progressed')}`")
+              print(f"- client-known ID resolves accounting: `{d.get('accounting_resolved_by_client_id')}`")
+              print(f"- private hypothesis: `{d.get('private_hypothesis_id')}`")
+          PY
+
+      - name: Upload G-002-ID evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-g002-id-timeout-identity
+          path: cgqa-timeout-identity/G-002-ID
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Require conclusive timeout identity result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-002-ID/reconciliation.json'
+          if not p.is_file():
+              raise SystemExit('G-002-ID reconciliation missing')
+          d = json.loads(p.read_text(encoding='utf-8'))
+          verdict = d.get('verdict')
+          print(f'G-002-ID verdict: {verdict}')
+          if verdict not in {'PASS', 'FAIL'}:
+              raise SystemExit('G-002-ID was not conclusive')
+          PY
