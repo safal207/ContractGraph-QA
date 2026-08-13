@@ -1,0 +1,100 @@
+id: G-002
+title: Retry after ambiguous client/gateway timeout
+profile: gonka-verification-v0.1
+priority: P0
+status: specified
+safety:
+  environment: devnet_or_explicitly_permitted_gateway
+  mainnet_destructive_testing: forbidden
+  fault_injection_scope: client_or_gateway_boundary_only
+  secrets_in_evidence: redact
+
+intent:
+  logical_operation: one_semantic_chat_completion_with_recovery
+  endpoint: /v1/chat/completions
+  method: POST
+  invariant_goal: retry_must_not_create_an_unintended_duplicate_billable_effect
+
+preconditions:
+  - G-001_control_has_passed_or_has_a_known_baseline
+  - valid_test_devshard_is_active
+  - baseline_devshard_and_accounting_state_is_captured
+  - timeout_can_be_induced_without_attacking_or_disrupting_other_users
+
+stimulus:
+  attempt_1:
+    action: submit_valid_chat_completion
+    fault: induce_ambiguous_client_side_timeout_after_request_dispatch
+    requirement: do_not_assume_execution_failed
+  recovery:
+    action: retry_same_logical_operation_once
+    correlation:
+      logical_operation_id: stable_across_attempts
+      execution_attempt_id: unique_per_attempt
+
+expected:
+  - id: INV-G002-01
+    assertion: timeout_is_recorded_as_ambiguous_not_as_proven_non_execution
+  - id: INV-G002-02
+    assertion: two_transport_attempts_remain_linked_to_one_logical_operation
+  - id: INV-G002-03
+    assertion: billing_and_settlement_do_not_silently_treat_transport_retry_as_two_independent_user_intents
+  - id: INV-G002-04
+    assertion: if_two_executions_are_protocol_expected_they_are_explicitly_distinguishable_and_reconcilable
+  - id: INV-G002-05
+    assertion: final_accounting_state_has_no_unexplained_duplicate_effect
+
+evidence:
+  required:
+    - run_metadata.json
+    - attempt-1.request.redacted.json
+    - attempt-1.transport-outcome.json
+    - attempt-2.request.redacted.json
+    - attempt-2.response.redacted.json
+    - gateway_status.before.json
+    - gateway_status.after.json
+    - devshard_state.before.json
+    - devshard_state.after.json
+    - reconciliation.json
+  conditional:
+    - gateway_logs.redacted.txt
+    - settlement.json
+    - chain_state.before.json
+    - chain_state.after.json
+  correlation_fields:
+    - logical_operation_id
+    - execution_attempt_id
+    - request_hash
+    - client_timestamp_start
+    - client_timestamp_end
+    - response_id
+    - escrow_or_devshard_id
+    - observed_usage_delta
+
+pass_criteria:
+  any_of:
+    - condition: one_execution_one_billable_effect
+      requires:
+        - retry_is_deduplicated_or_first_attempt_is_proven_non_execution
+        - final_state_reconciles
+    - condition: protocol_allows_multiple_executions
+      requires:
+        - executions_are_explicitly_distinguishable
+        - billing_semantics_are_documented_and_reconcilable
+        - no_hidden_duplicate_mutation
+
+fail_criteria:
+  any:
+    - timeout_is_treated_as_non_execution_without_evidence
+    - duplicate_charge_or_usage_effect_is_not_explainable_from_protocol_semantics
+    - retry_creates_orphaned_usage
+    - final_settlement_cannot_be_mapped_back_to_attempts
+    - local_recovery_state_and_chain_state_disagree_without_explicit_resolution
+
+classification:
+  on_failure: hypothesis_CGQA-GONKA-001
+  disclosure: private_until_triaged
+
+notes:
+  - Do not claim idempotency unless Gonka documents or demonstrates it. The test verifies reconciliation and causal identity, not a preconceived implementation.
+  - The critical distinction is logical operation versus transport execution attempt.
