@@ -1,0 +1,18 @@
+diff --git a/devshard/cmd/devshardctl/proxy.go b/devshard/cmd/devshardctl/proxy.go
+--- a/devshard/cmd/devshardctl/proxy.go
++++ b/devshard/cmd/devshardctl/proxy.go
+@@ -16,6 +16,7 @@ import (
+ 	"time"
+ 
++	"devshard/logging"
+ 	"devshard/state"
+ 	"devshard/types"
+ 	"devshard/user"
+@@ -1,1 +1,1 @@
+-	err := p.redundancy.RunInference(context.Background(), params, dw, flag)
++	runCtx := logging.PropagateRequestID(context.Background(), r.Context())
++	err := p.redundancy.RunInference(runCtx, params, dw, flag)
+@@ -1,1 +1,1 @@
+-	err := p.redundancy.RunInference(context.Background(), params, &buf, flag)
++	runCtx := logging.PropagateRequestID(context.Background(), r.Context())
++	err := p.redundancy.RunInference(runCtx, params, &buf, flag)
