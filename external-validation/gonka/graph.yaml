@@ -1,6 +1,13 @@
 profile: gonka-verification-v0.1
 model: actor-action-state-transition-invariant-evidence
 
+identity:
+  logical_operation_id:
+    purpose: stable semantic operation across retries and re-drives
+  execution_attempt_id:
+    purpose: one concrete transport/execution attempt
+  rule: execution_attempt_id_must_not_replace_logical_operation_id
+
 actors:
   - developer
   - gateway
@@ -44,6 +51,10 @@ transitions:
     to: inference_dispatched
     actor: gateway
     invariant: I3_logical_request_maps_to_single_billable_operation
+    evidence:
+      - logical_operation_id
+      - execution_attempt_id
+      - request_digest
 
   - id: T4
     from: inference_dispatched
@@ -88,9 +99,26 @@ transitions:
     invariant: I9_reward_claim_is_epoch_bound_and_recoverable_when_retryable
 
 failure_edges:
-  - timeout -> retry_same_logical_operation
-  - duplicate_delivery -> suppress_duplicate_billable_effect
-  - gateway_restart -> recover_pending_state
-  - settlement_retry -> no_double_settlement
-  - epoch_boundary -> rotate_without_orphaning_usage
-  - chain_unavailable -> defer_and_retry_without_mutation_loss
+  - trigger: client_timeout_after_dispatch
+    rule: ambiguous_transport_outcome_is_not_proof_of_non_execution
+    recovery: retry_same_logical_operation_with_new_execution_attempt
+  - trigger: duplicate_delivery
+    rule: duplicate_billable_effect_must_be_suppressed_or_explicitly_reconcilable
+  - trigger: gateway_restart
+    rule: recover_pending_state_and_causal_linkage
+  - trigger: settlement_retry
+    rule: no_unexplained_double_settlement
+  - trigger: epoch_boundary
+    rule: rotate_without_orphaning_or_duplicating_usage
+  - trigger: chain_unavailable
+    rule: defer_and_retry_without_mutation_loss
+
+safety:
+  permitted:
+    - local_gonka_testenv
+    - community_devnet
+    - explicitly_authorized_test_environment
+  forbidden:
+    - destructive_mainnet_testing
+    - real_funds_fault_injection_without_explicit_authorization
+    - public_disclosure_of_untriaged_security_sensitive_findings
