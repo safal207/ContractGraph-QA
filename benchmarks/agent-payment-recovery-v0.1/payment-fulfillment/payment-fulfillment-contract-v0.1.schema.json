@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schemas/payment-fulfillment-contract-v0.1.schema.json",
+  "title": "ContractGraph-QA Payment Fulfillment Coupling Contract v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "providerId",
+    "profileVersion",
+    "financialFinalityEvidenceSources",
+    "fulfillmentEvidenceSources",
+    "financialFinalityImpliesFulfillment",
+    "fulfillmentRecoveryStatus",
+    "publicContractRefs"
+  ],
+  "properties": {
+    "schema": {"const": "cgqa.payment-fulfillment-contract.v0.1"},
+    "providerId": {"type": "string", "minLength": 1},
+    "profileVersion": {"type": "string", "minLength": 1},
+    "financialFinalityEvidenceSources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "fulfillmentEvidenceSources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "financialFinalityImpliesFulfillment": {"type": "boolean"},
+    "fulfillmentRecoveryStatus": {"enum": ["documented", "unresolved"]},
+    "publicContractRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "openQuestions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

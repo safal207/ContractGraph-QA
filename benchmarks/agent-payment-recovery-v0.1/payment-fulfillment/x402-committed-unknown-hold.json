@@ -1,0 +1,20 @@
+{
+  "schema": "cgqa.payment-fulfillment-scenario.v0.1",
+  "scenarioId": "x402-committed-unknown-hold",
+  "logicalOperationId": "x402-op-002",
+  "payment": {
+    "outcome": "committed",
+    "evidence": {
+      "kind": "settlement-response",
+      "ref": "fixture://x402/facilitator/settle-success"
+    }
+  },
+  "fulfillment": {
+    "outcome": "unknown",
+    "evidence": {
+      "kind": "client-transport-outcome",
+      "ref": "fixture://x402/http/final-response-lost"
+    }
+  },
+  "nextAction": "hold"
+}
