@@ -1,7 +1,7 @@
-"""Bridge provider reconciliation into the Unified Agent Payment Decision Gate.
+"""Bridge the reviewed Crossmint public adapter into the Unified Payment Gate.
 
-The bridge never calls a provider and never infers financial authority. It composes
-already-captured provider observations with explicit authority evidence, then applies
+The pilot never calls a provider and never infers financial authority. It composes
+already-captured Crossmint observations with explicit authority evidence, then applies
 a fail-closed retry-authority mapping before delegating the final decision to the
 repository's Unified Agent Payment Decision Gate.
 """
@@ -12,15 +12,15 @@ from typing import Any
 
 from contractgraph_qa.agent_payment_decision import evaluate_agent_payment_decision
 from contractgraph_qa.provider_adapter import (
-    ADAPTER_SCHEMA_V1,
     ADAPTER_SCHEMA_V2,
-    ADAPTER_SCHEMA_V3,
     reconcile_provider_observations,
     validate_provider_adapter,
 )
 
 RESULT_SCHEMA = "cgqa.provider-payment-decision.v0.1"
 _AUTHORITY = {"authorized", "revoked", "expired", "unknown"}
+_REVIEWED_PROVIDER_ID = "crossmint-wallet-transactions-public"
+_REVIEWED_PROFILE_VERSION = "0.1"
 
 
 class ProviderPaymentDecisionError(ValueError):
@@ -45,32 +45,33 @@ def _authority_payload(authority: dict[str, Any]) -> dict[str, str]:
     return {"status": status, "evidenceRef": evidence_ref}
 
 
-def _retry_authority(
-    adapter: dict[str, Any], reconciliation: dict[str, Any]
-) -> tuple[str, bool, str | None]:
-    """Map provider retry semantics into the stricter unified decision vocabulary."""
+def _validate_reviewed_profile(adapter: dict[str, Any]) -> None:
+    """Accept only the exact public-contract profile reviewed for this pilot."""
+    validate_provider_adapter(adapter)
+    if adapter.get("schema") != ADAPTER_SCHEMA_V2:
+        raise ProviderPaymentDecisionError(
+            "pilot requires the reviewed Crossmint Provider Adapter Contract v0.2 profile"
+        )
+    if adapter.get("providerId") != _REVIEWED_PROVIDER_ID:
+        raise ProviderPaymentDecisionError(
+            f"pilot requires providerId={_REVIEWED_PROVIDER_ID}"
+        )
+    if adapter.get("profileVersion") != _REVIEWED_PROFILE_VERSION:
+        raise ProviderPaymentDecisionError(
+            f"pilot requires profileVersion={_REVIEWED_PROFILE_VERSION}"
+        )
+
+
+def _retry_authority(reconciliation: dict[str, Any]) -> tuple[str, bool, str | None]:
+    """Map Crossmint v0.2 failures to unresolved retry authority."""
     if reconciliation["outcome"] != "failed":
         return "not_applicable", False, None
 
-    schema = adapter["schema"]
-    if schema == ADAPTER_SCHEMA_V3:
-        status = str(adapter.get("retrySemanticsStatus", "unresolved")).lower()
-        if status == "documented":
-            return "documented", bool(reconciliation.get("retryAllowed", False)), None
-        return "unresolved", False, "provider_retry_semantics_unresolved"
-
-    if schema == ADAPTER_SCHEMA_V2:
-        # v0.2 can represent evidence-precedence uncertainty, but it has no field that
-        # can establish retry authority. The legacy reconciler's retryAllowed value is
-        # therefore deliberately NOT promoted into a monetary authorization here.
-        return "unresolved", False, "adapter_schema_does_not_encode_retry_authority"
-
-    if schema == ADAPTER_SCHEMA_V1:
-        # v0.1 requires an explicit retryPolicy contract. Preserve its final-failure
-        # decision while keeping the stronger unified gate as the final authority.
-        return "documented", bool(reconciliation.get("retryAllowed", False)), None
-
-    raise ProviderPaymentDecisionError(f"unsupported adapter schema: {schema}")
+    # The reviewed v0.2 profile can represent evidence-precedence uncertainty,
+    # but it has no field that can establish retry authority. The legacy
+    # reconciler's retryAllowed value is therefore deliberately NOT promoted
+    # into a monetary authorization here.
+    return "unresolved", False, "adapter_schema_does_not_encode_retry_authority"
 
 
 def evaluate_provider_payment_decision(
@@ -81,8 +82,8 @@ def evaluate_provider_payment_decision(
     fulfillment: dict[str, Any] | None = None,
     decision_id: str | None = None,
 ) -> dict[str, Any]:
-    """Reconcile provider evidence and derive one fail-closed agent-payment decision."""
-    validate_provider_adapter(adapter)
+    """Reconcile reviewed Crossmint evidence and derive a fail-closed decision."""
+    _validate_reviewed_profile(adapter)
     authority_state = _authority_payload(authority)
     reconciliation = reconcile_provider_observations(adapter, observations)
 
@@ -99,7 +100,7 @@ def evaluate_provider_payment_decision(
         selected.get("evidenceRef"), "reconciliation.selectedEvidence.evidenceRef"
     )
 
-    retry_status, retry_allowed, retry_reason = _retry_authority(adapter, reconciliation)
+    retry_status, retry_allowed, retry_reason = _retry_authority(reconciliation)
 
     if fulfillment is None:
         fulfillment_state: dict[str, Any] = {
