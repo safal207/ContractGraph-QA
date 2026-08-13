@@ -34,9 +34,21 @@ def replace_exact(path: Path, old: str, new: str, expected: int) -> None:
         raise SystemExit(f"{path}: expected {expected} occurrences of patch anchor, found {count}")
     if new in text:
         raise SystemExit(f"{path}: proof patch appears already applied")
+
     patched = text.replace(old, new)
-    if patched.count(old) != 0 or patched.count(new) != expected:
-        raise SystemExit(f"{path}: replacement did not complete exactly")
+
+    # Some proof transformations deliberately retain the original statement
+    # and append a second statement after it (for example canonical accounting
+    # start + correlation insert, or existing route + correlation route). In
+    # those cases `old` is a substring of `new`, so counting `old` after the
+    # replacement cannot distinguish a successful insertion from a leftover.
+    # We still fail closed on the exact pre-patch count and require the exact
+    # post-patch replacement count.
+    if old not in new and patched.count(old) != 0:
+        raise SystemExit(f"{path}: original patch anchor remains after replacement")
+    if patched.count(new) != expected:
+        raise SystemExit(f"{path}: replacement count is not exact")
+
     path.write_text(patched, encoding="utf-8")
 
 
