@@ -1,0 +1,166 @@
+id: G-004D
+name: challenge invalidation compensation reconciliation
+status: specified-blocked-on-g004-runtime
+profile: gonka
+upstream_revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+environment: gonka-local-devshard-testenv
+
+purpose: >-
+  Prove that an inference which was executed and charged, then challenged and
+  ultimately invalidated, preserves the historical execution charge while a
+  separate causally-bound compensation reverses the executor cost and refunds
+  the inference ActualCost to escrow. The resulting history must remain durable
+  and replayable in LiminalDB without rolling back the fact that execution and
+  its original side effect occurred.
+
+blocked_on:
+  - G-004 obtains an actual runtime financial verdict on the same pinned Gonka revision.
+  - G-CORR-SAFE non-collapsing correlation prerequisite passes on the executed environment.
+  - The base charge path has a stable causal mapping from internal_request_id to inference nonce and ActualCost.
+
+upstream_semantics:
+  finished:
+    historical_actual_cost_retained: true
+    host_cost_effect: +ActualCost
+    escrow_effect: -ActualCost
+  challenged:
+    trigger: first invalid validation from an eligible validator
+    status_transition: finished -> challenged
+    financial_refund_at_challenge: false
+  invalidated:
+    trigger: votes_invalid > vote_threshold
+    status_transition: challenged -> invalidated
+    host_invalid_counter_effect: +1
+    host_cost_effect: -ActualCost
+    escrow_effect: +ActualCost
+    inference_actual_cost_history_retained: true
+  protocol_fees:
+    tracked_separately: true
+    note: >-
+      FeePerNonce and other protocol fees are not inference ActualCost refunds.
+      G-004D must reconcile fees_before/fees_after independently and must not
+      require the total escrow balance to return to its pre-execution value
+      unless the measured fee delta is zero.
+
+causal_spine:
+  - logical_operation_id
+  - client_correlation_id
+  - internal_request_id
+  - inference_nonce
+  - execution_actual_cost
+  - charge_observation
+  - challenge_observation
+  - invalidation_observation
+  - compensation_observation
+  - protocol_fee_delta
+  - LiminalDB_transition_id
+
+required_snapshots:
+  - before_execution
+  - after_finished_charge
+  - after_challenge
+  - after_invalidation_compensation
+
+primary_invariants:
+  - historical_actual_cost_after_invalidation == historical_actual_cost_after_finish
+  - challenge_refund_delta == 0
+  - invalidation_balance_credit == historical_actual_cost
+  - invalidation_host_cost_reversal == historical_actual_cost
+  - host_invalid_counter_delta == 1
+  - gross_execution_charge == compensation_credit
+  - net_inference_execution_effect == 0
+  - unexplained_financial_effects.length == 0
+
+balance_reconciliation: >-
+  balance_after - balance_before is reconciled from the signed sum of inference
+  charge/refund effects plus independently observed protocol fee effects and any
+  other explicitly evidenced state transition. Full balance restoration is not
+  required when FeePerNonce or another legitimate protocol fee changed.
+
+causal_double_entry:
+  debit:
+    event: finished_execution_charge
+    amount: ActualCost
+    evidence:
+      - request_accounting_attempt
+      - inference_record_actual_cost
+      - host_stats_cost_increase
+      - escrow_balance_debit
+  credit:
+    event: invalidation_compensation
+    amount: ActualCost
+    evidence:
+      - invalidated_status
+      - host_stats_cost_decrease
+      - escrow_balance_credit
+      - host_invalid_counter_increment
+  net:
+    inference_execution_effect: 0
+    historical_events_preserved: true
+
+liminaldb:
+  revision: 0cd6e77d52787bb36a97b75ba1a37cb027268eb3
+  transition_id: logical_operation_id
+  same_transition_as_charge: true
+  history_rule: >-
+    Never rewrite side_effect_committed true to false and never rewrite
+    OBSERVED_EXECUTED to a non-executed state. Challenge and compensation are
+    appended as new observations under the existing transition.
+  challenge_phase_append:
+    records:
+      - observation: challenge
+      - response_integrity: NOT_EVALUATED
+      - causal_audit: NOT_EVALUATED
+      - continuity_snapshot: REVALIDATE
+  invalidation_phase_append:
+    records:
+      - observation: invalidation_and_compensation
+      - response_integrity: NOT_EVALUATED
+      - causal_audit: VALID
+      - continuity_snapshot: REPORT_ONLY
+  final_dimensions:
+    authority: VALID
+    execution: OBSERVED_EXECUTED
+    response_integrity: NOT_EVALUATED
+    causal_validity: VALID
+    continuity_posture: REPORT_ONLY
+  side_effect_committed: true
+  require_snapshot: true
+  require_close_reopen_full_replay: true
+  replay_must_preserve:
+    - original execution observation
+    - original financial charge observation
+    - challenge observation
+    - invalidation compensation observation
+    - final causal audit
+
+pass_requires:
+  - base execution reached finished and had nonzero or explicitly evidenced ActualCost
+  - challenged state was observed before invalidated state
+  - no refund was attributed to challenge alone
+  - invalidation refund exactly matches historical ActualCost
+  - HostStats.Cost reversal exactly matches historical ActualCost
+  - inference ActualCost remains historically observable after invalidation
+  - protocol fee delta is independently reconciled
+  - unexplained_financial_effects.length == 0
+  - LiminalDB replay_verified == true
+  - LiminalDB retains execution == OBSERVED_EXECUTED
+  - LiminalDB retains side_effect_committed == true
+
+fail_semantics: >-
+  FAIL means the compensation/reconciliation invariant was not satisfied under
+  the pinned local test environment. It does not by itself establish a security
+  vulnerability, exploitable financial loss, or mainnet settlement defect.
+
+not_claimed:
+  - mainnet settlement correctness
+  - validator economic incentives
+  - chain-level reward distribution
+  - malicious-validator exploitability
+  - semantic correctness of the model response
+  - exact-once retry behavior
+
+implementation_gate: >-
+  Do not wire G-004D as a blocking executable workflow until the base G-004
+  charge path reaches a real runtime verdict. The specification may evolve only
+  if upstream state-machine evidence contradicts these pinned semantics.
