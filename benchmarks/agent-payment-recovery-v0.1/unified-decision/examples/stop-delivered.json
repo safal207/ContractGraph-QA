@@ -1,0 +1,8 @@
+{
+  "schema": "cgqa.agent-payment-decision-input.v0.1",
+  "decisionId": "decision-committed-delivered-stop",
+  "logicalOperationId": "op-delivered",
+  "authority": {"status": "authorized", "evidenceRef": "fixture://authority/grant"},
+  "payment": {"outcome": "committed", "reconciliationStatus": "final", "evidenceRef": "fixture://payment/settled", "retryAuthorityStatus": "not_applicable", "retryAllowed": false},
+  "fulfillment": {"required": true, "outcome": "delivered", "evidenceRef": "fixture://fulfillment/resource-received", "recoveryStatus": "documented"}
+}

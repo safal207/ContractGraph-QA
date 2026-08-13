@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schemas/agent-payment-decision-result-v0.1.schema.json",
+  "title": "ContractGraph-QA Unified Agent Payment Decision Result v0.1",
+  "type": "object",
+  "required": ["schema", "gate", "decisionId", "logicalOperationId", "decision", "reason", "monetaryActionAllowed", "blockers", "state", "invariants", "authority"],
+  "properties": {
+    "schema": {"const": "cgqa.agent-payment-decision-result.v0.1"},
+    "gate": {"const": "agent-payment-decision-v0.1"},
+    "decisionId": {"type": "string", "minLength": 1},
+    "logicalOperationId": {"type": "string", "minLength": 1},
+    "decision": {"enum": ["ALLOW", "HOLD", "STOP", "RECONCILE", "COMPENSATE"]},
+    "reason": {"type": "string", "minLength": 1},
+    "monetaryActionAllowed": {"type": "boolean"},
+    "blockers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "state": {"type": "object"},
+    "invariants": {"type": "object"},
+    "authority": {"type": "object"}
+  }
+}

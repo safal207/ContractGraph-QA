@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schemas/agent-payment-decision-input-v0.1.schema.json",
+  "title": "ContractGraph-QA Unified Agent Payment Decision Input v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "decisionId", "logicalOperationId", "authority", "payment", "fulfillment"],
+  "properties": {
+    "schema": {"const": "cgqa.agent-payment-decision-input.v0.1"},
+    "decisionId": {"type": "string", "minLength": 1},
+    "logicalOperationId": {"type": "string", "minLength": 1},
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidenceRef"],
+      "properties": {
+        "status": {"enum": ["authorized", "revoked", "expired", "unknown"]},
+        "evidenceRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "payment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "reconciliationStatus", "retryAuthorityStatus", "retryAllowed"],
+      "properties": {
+        "outcome": {"enum": ["not_started", "committed", "failed", "pending", "unknown"]},
+        "reconciliationStatus": {"enum": ["not_started", "final", "nonfinal"]},
+        "evidenceRef": {"type": "string", "minLength": 1},
+        "retryAuthorityStatus": {"enum": ["not_applicable", "documented", "unresolved"]},
+        "retryAllowed": {"type": "boolean"}
+      }
+    },
+    "fulfillment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "outcome", "recoveryStatus"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "outcome": {"enum": ["not_applicable", "delivered", "not_delivered", "unknown"]},
+        "evidenceRef": {"type": "string", "minLength": 1},
+        "recoveryStatus": {"enum": ["not_applicable", "documented", "unresolved"]}
+      }
+    }
+  }
+}
