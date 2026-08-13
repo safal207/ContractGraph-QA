@@ -37,6 +37,25 @@ The runner resolves `base-ref` and `HEAD` to full commit SHAs, reads the base mo
 
 No target execution, external RPC, or network request is performed after the repository checkout.
 
+## Pull-request workflow
+
+`.github/workflows/causal-security-gate.yml` runs the same gate automatically for every pull request.
+
+The workflow checks out the exact pull-request head SHA with full git history, passes the exact pull-request base SHA to the runner, and keeps repository credentials disabled after checkout. The gate therefore compares the reviewed base commit with the actual proposed head rather than relying on GitHub's synthetic merge commit.
+
+The workflow always writes `.cgqa/causal-security-gate.json`, renders a concise Markdown job summary, uploads the JSON as the `causal-security-gate-<PR number>` artifact, and only then enforces the gate decision. This preserves machine evidence even when the final decision is blocking.
+
+The job summary surfaces, where applicable:
+
+- model id and gate status;
+- gate reason;
+- forbidden target capability;
+- invariant ids;
+- crossed or removed control boundaries;
+- exact introduced transition sequence.
+
+The artifact is deterministic for the same base/head/config/model bytes and is retained for 14 days by the repository workflow.
+
 ## Result semantics
 
 Top-level statuses are:
