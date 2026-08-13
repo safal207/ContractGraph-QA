@@ -96,8 +96,8 @@ func TestCGQAGonkaIdentityBoundaryEvidence(t *testing.T) {
 	}
 	writeJSONArtifact(t, caseDir, "accounting.response-id.json", responseProbe)
 
-	beforeNonce := extractNonce(beforeState)
-	afterNonce := extractNonce(afterState)
+	beforeNonce := identityStateNonce(beforeState)
+	afterNonce := identityStateNonce(afterState)
 	stateProgressed := beforeNonce != nil && afterNonce != nil && *afterNonce > *beforeNonce
 	requestSucceeded := transport.Err == nil && transport.Status >= http.StatusOK && transport.Status < http.StatusMultipleChoices
 
@@ -136,4 +136,23 @@ func TestCGQAGonkaIdentityBoundaryEvidence(t *testing.T) {
 	}
 	writeJSONArtifact(t, caseDir, "reconciliation.json", evidence)
 	t.Logf("G-001-ID evidence collected with verdict=%s", verdict)
+}
+
+func identityStateNonce(raw []byte) *uint64 {
+	var envelope struct {
+		Nonce   *uint64 `json:"nonce"`
+		Session *struct {
+			LatestNonce *uint64 `json:"latest_nonce"`
+		} `json:"session"`
+	}
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return nil
+	}
+	if envelope.Nonce != nil {
+		return envelope.Nonce
+	}
+	if envelope.Session != nil && envelope.Session.LatestNonce != nil {
+		return envelope.Session.LatestNonce
+	}
+	return nil
 }
