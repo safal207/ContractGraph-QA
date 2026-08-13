@@ -60,6 +60,7 @@ jobs:
           python external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py upstream-gonka
           gofmt -w \
             upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go \
+            upstream-gonka/devshard/cmd/devshardctl/perfstore.go \
             upstream-gonka/devshard/cmd/devshardctl/gateway.go \
             upstream-gonka/devshard/cmd/devshardctl/proxy.go \
             upstream-gonka/devshard/cmd/devshardctl/redundancy.go \
@@ -67,6 +68,7 @@ jobs:
           test "$(grep -F -c 'RunInference(propagateCGQARequestContext(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
           grep -F 'GET /v1/request-correlations/{client_request_id}' upstream-gonka/devshard/cmd/devshardctl/gateway.go
           grep -F 'PRIMARY KEY (client_correlation_id, internal_request_id, escrow_id)' upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+          grep -F 'store.ensureCGQARequestCorrelationSchema()' upstream-gonka/devshard/cmd/devshardctl/perfstore.go
 
       - name: Compile patched Gonka and proof harness
         working-directory: upstream-gonka/devshard
