@@ -82,12 +82,16 @@ func (s *PerfStore) upsertCGQAAccountingRequestWithCorrelation(requestID, escrow
 		startedAt = time.Now()
 	}
 
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "tx-begin-enter", "request_id", requestID, "client_correlation_id", clientID, "escrow_id", escrowID)
 	tx, err := s.db.Begin()
 	if err != nil {
+		logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "tx-begin-error", "request_id", requestID, "error", err)
 		return err
 	}
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "tx-begin-complete", "request_id", requestID)
 	defer tx.Rollback()
 
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "accounting-upsert-enter", "request_id", requestID)
 	if _, err := tx.Exec(
 		`INSERT INTO request_accounting (request_id, escrow_id, model, started_at)
 		 VALUES (?, ?, ?, ?)
@@ -98,10 +102,13 @@ func (s *PerfStore) upsertCGQAAccountingRequestWithCorrelation(requestID, escrow
 		model,
 		startedAt.Format(time.RFC3339Nano),
 	); err != nil {
+		logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "accounting-upsert-error", "request_id", requestID, "error", err)
 		return err
 	}
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "accounting-upsert-complete", "request_id", requestID)
 
 	if clientID != "" {
+		logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "correlation-upsert-enter", "request_id", requestID, "client_correlation_id", clientID)
 		if _, err := tx.Exec(
 			`INSERT OR IGNORE INTO cgqa_request_correlations
 			 (client_correlation_id, internal_request_id, escrow_id, created_at)
@@ -111,11 +118,19 @@ func (s *PerfStore) upsertCGQAAccountingRequestWithCorrelation(requestID, escrow
 			escrowID,
 			startedAt.Format(time.RFC3339Nano),
 		); err != nil {
+			logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "correlation-upsert-error", "request_id", requestID, "client_correlation_id", clientID, "error", err)
 			return err
 		}
+		logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "correlation-upsert-complete", "request_id", requestID, "client_correlation_id", clientID)
 	}
 
-	return tx.Commit()
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "tx-commit-enter", "request_id", requestID)
+	if err := tx.Commit(); err != nil {
+		logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "tx-commit-error", "request_id", requestID, "error", err)
+		return err
+	}
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "tx-commit-complete", "request_id", requestID)
+	return nil
 }
 
 func (s *PerfStore) findCGQARequestCorrelations(clientID, escrowID string) ([]cgqaRequestCorrelation, error) {
@@ -150,13 +165,18 @@ func (t *PerfTracker) recordCGQAAccountingRequestStart(requestID, escrowID, mode
 	if t == nil || t.store == nil {
 		return
 	}
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "record-start-enter", "request_id", strings.TrimSpace(requestID), "client_correlation_id", strings.TrimSpace(clientID), "escrow_id", strings.TrimSpace(escrowID))
 	if strings.TrimSpace(clientID) == "" {
 		t.RecordAccountingRequestStart(requestID, escrowID, model, startedAt)
+		logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "record-start-upstream-complete", "request_id", strings.TrimSpace(requestID))
 		return
 	}
 	if err := t.store.upsertCGQAAccountingRequestWithCorrelation(requestID, escrowID, model, clientID, startedAt); err != nil {
 		fmt.Printf("cgqa: persist atomic request accounting correlation: %v\n", err)
+		logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "record-start-error", "request_id", strings.TrimSpace(requestID), "error", err)
+		return
 	}
+	logging.Info("CGQA safe correlation accounting", "subsystem", "cgqa-correlation", "stage", "record-start-complete", "request_id", strings.TrimSpace(requestID))
 }
 
 func (p *Proxy) handleCGQARequestCorrelation(w http.ResponseWriter, r *http.Request) {
