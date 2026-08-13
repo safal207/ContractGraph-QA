@@ -1,0 +1,92 @@
+id: G-004P
+name: post-success pending reserve liveness
+status: executable-awaiting-runtime-evidence
+upstream:
+  repository: gonka-ai/gonka
+  revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+environment: gonka-local-devshard-testenv
+
+motivation: |
+  G-004 reached a real timeout/retry financial observation window after the
+  non-collapsing correlation prerequisite passed. In that run, four independent
+  cost surfaces agreed at 7900, while escrow balance debit was 33600. The
+  discrepancy was fully decomposable as 7900 finished actual cost + 23700
+  reserved by a second winner nonce still reported as pending + two 1000
+  FeePerNonce protocol charges. This does not yet establish a Gonka financial
+  defect; it shows G-004 sampled a non-terminal balance state.
+
+question: |
+  After the retry is already client-visible success (HTTP 2xx), does the retry
+  winner nonce reach a financially terminal state within a bounded local
+  observation window, and if a pending reservation is observed, does its
+  reserve-to-actual release reconcile against escrow balance and HostStats.Cost?
+
+preconditions:
+  - first request uses deterministic mock-openai latency of 1800 ms
+  - first client timeout is 350 ms
+  - first timed-out request produces a completion witness before retry
+  - retry reuses the same client_correlation_id
+  - correlation mapping preserves two distinct internal request IDs
+  - retry returns HTTP 2xx
+  - retry internal request accounting resolves a concrete winner nonce
+
+observation:
+  window_seconds: 120
+  sample_interval_seconds: 2
+  surfaces:
+    - retry winner inference status
+    - reserved_cost
+    - actual_cost
+    - escrow session balance
+    - aggregate HostStats.Cost
+
+terminal_states:
+  included:
+    - finished
+    - timed_out
+  excluded_from_v0_1:
+    - challenged
+    - invalidated
+
+invariants:
+  - description: successful retry winner must become terminal inside the bounded observation window
+  - description: if pending is observed, pending_reserved_cost must be at least terminal_actual_cost
+  - description: if pending is observed, expected surplus release is pending_reserved_cost - terminal_actual_cost
+  - description: if pending is observed, terminal_balance - pending_balance must equal expected surplus release
+  - description: if pending is observed, aggregate HostStats.Cost increase across pending -> terminal must equal terminal_actual_cost
+  - description: caller correlation remains separate from unique internal request identity
+
+classification:
+  terminal_without_observed_pending: |
+    The winner was already terminal by the first post-success sample. This is a
+    PASS for bounded liveness but does not reproduce the earlier pending lag.
+  pending_then_terminal: |
+    A pending reservation was observed after client-visible success and later
+    terminalized within the window. PASS additionally requires balance/host-cost
+    release reconciliation.
+  nonterminal_after_observation_window: |
+    The winner remained outside finished/timed_out for at least 120 seconds after
+    the retry started. This is a local liveness defect candidate and must remain
+    FAIL pending semantic triage; it is not automatically a mainnet financial
+    vulnerability claim.
+
+safety:
+  - local testenv only
+  - deterministic mock-openai fault injection only
+  - no mainnet or public testnet fault injection
+  - no real funds
+  - no vulnerability claim from this case alone
+
+relationship_to_g004: |
+  G-004 should not be weakened to treat a pending reservation as terminal cost.
+  G-004P determines whether the observed balance mismatch is transient protocol
+  liveness or a durable non-terminal state. Only after this classification should
+  G-004 be updated to distinguish transient balance from terminal reconciliation.
+
+evidence_outputs:
+  - attempt-1.transport.json
+  - attempt-2.transport.json
+  - correlation.lookup.json
+  - retry.accounting.json
+  - timeline.json
+  - reconciliation.json
