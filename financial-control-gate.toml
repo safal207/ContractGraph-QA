@@ -1,0 +1,21 @@
+schemaVersion = 1
+
+[[models]]
+id = "escrow-approval-control"
+path = "scenarios/financial-control-baselines/escrow-approval.json"
+
+[[models]]
+id = "authority-freshness-control"
+path = "scenarios/financial-control-baselines/authority-freshness.json"
+
+[[models]]
+id = "authority-revocation-control"
+path = "scenarios/financial-control-baselines/authority-revocation.json"
+
+[[models]]
+id = "idempotency-continuity-control"
+path = "scenarios/financial-control-baselines/idempotency-continuity.json"
+
+[[models]]
+id = "settlement-deduplication-control"
+path = "scenarios/financial-control-baselines/settlement-deduplication.json"

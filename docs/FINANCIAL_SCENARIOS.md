@@ -36,3 +36,11 @@ financial intent
 ```
 
 The scenarios deliberately keep one causal transition each so the evidence is easy to inspect. More realistic adapters can expand the same vocabulary into multi-step resolution, retry, webhook, ledger, settlement, approval, and authority paths without changing the fail-closed semantics of the engine.
+
+## Failure examples vs reviewed baselines
+
+The five models above are deliberately unsafe examples: each one declares the control assumption needed to traverse its forbidden transition as violated.
+
+For PR-level regression gating, use the corresponding reviewed baseline models under `scenarios/financial-control-baselines/`. They preserve the same assumption, forbidden capability, transition, invariant, boundary, and impact identities while leaving `violatedAssumptions` empty.
+
+See [`FINANCIAL_CONTROL_BASELINES.md`](FINANCIAL_CONTROL_BASELINES.md) and the machine-readable `financial-control-gate.toml` profile for the staged path from synthetic examples to a trusted financial-control pilot.
