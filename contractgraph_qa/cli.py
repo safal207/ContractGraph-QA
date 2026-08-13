@@ -25,6 +25,10 @@ from contractgraph_qa.engagement_run import (
 )
 from contractgraph_qa.graph_delta import compare_reachability_models
 from contractgraph_qa.path_replay import replay_prior_model_path
+from contractgraph_qa.payment_fulfillment import (
+    PaymentFulfillmentError,
+    evaluate_payment_fulfillment_files,
+)
 from contractgraph_qa.payment_recovery import (
     PaymentRecoveryError,
     evaluate_payment_recovery_file,
@@ -178,15 +182,32 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Agent Payment Recovery Benchmark v0.1 scenario JSON",
     )
 
+    payment_fulfillment = subparsers.add_parser(
+        "payment-fulfillment-evaluate",
+        help="Evaluate payment finality and paid-resource fulfillment as separate claims",
+    )
+    payment_fulfillment.add_argument(
+        "--contract",
+        type=Path,
+        required=True,
+        help="Payment ↔ Fulfillment Coupling Contract v0.1 JSON",
+    )
+    payment_fulfillment.add_argument(
+        "--scenario",
+        type=Path,
+        required=True,
+        help="Payment ↔ Fulfillment Coupling scenario JSON",
+    )
+
     provider_adapter_validate = subparsers.add_parser(
         "provider-adapter-validate",
-        help="Validate a Provider Adapter Contract v0.1 profile",
+        help="Validate a Provider Adapter Contract profile",
     )
     provider_adapter_validate.add_argument(
         "--adapter",
         type=Path,
         required=True,
-        help="Provider Adapter Contract v0.1 JSON",
+        help="Provider Adapter Contract JSON",
     )
 
     provider_adapter_reconcile = subparsers.add_parser(
@@ -197,7 +218,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--adapter",
         type=Path,
         required=True,
-        help="Provider Adapter Contract v0.1 JSON",
+        help="Provider Adapter Contract JSON",
     )
     provider_adapter_reconcile.add_argument(
         "--observations",
@@ -285,6 +306,13 @@ def main(argv: list[str] | None = None) -> int:
             result = evaluate_payment_recovery_file(args.scenario.resolve())
             _emit(result)
             return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+        if args.command == "payment-fulfillment-evaluate":
+            result = evaluate_payment_fulfillment_files(
+                args.contract.resolve(),
+                args.scenario.resolve(),
+            )
+            _emit(result)
+            return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
         if args.command == "provider-adapter-validate":
             adapter = load_provider_adapter(args.adapter.resolve())
             _emit(validate_provider_adapter(adapter))
@@ -307,6 +335,7 @@ def main(argv: list[str] | None = None) -> int:
         EngagementRunError,
         ScaffoldError,
         PaymentRecoveryError,
+        PaymentFulfillmentError,
         ProviderAdapterError,
         FileNotFoundError,
         json.JSONDecodeError,
@@ -323,6 +352,7 @@ def main(argv: list[str] | None = None) -> int:
             "verify-bundle",
             "verify-engagement-bundle",
             "payment-recovery-evaluate",
+            "payment-fulfillment-evaluate",
             "provider-adapter-validate",
             "provider-adapter-reconcile",
         }
