@@ -85,6 +85,52 @@ class ChangeGateSummaryTests(unittest.TestCase):
         self.assertIn("**Status:** `review`", rendered)
         self.assertIn("settlement-idempotency", rendered)
 
+    def test_verified_fix_summary_uses_machine_replay_evidence(self) -> None:
+        result = {
+            "status": "pass",
+            "baseCommitSha": "a" * 40,
+            "headCommitSha": "b" * 40,
+            "models": [
+                {
+                    "id": "escrow",
+                    "status": "pass",
+                    "gateReasons": [],
+                    "delta": {
+                        "introducedForbiddenPaths": {},
+                        "removedDeclaredControlBoundaries": [],
+                    },
+                    "fixReplays": [
+                        {
+                            "targetCapability": "release-without-approval",
+                            "status": "fix_verified",
+                            "verified": True,
+                            "replay": {
+                                "priorPath": {
+                                    "transitions": [
+                                        {"id": "enter-approval-stage"},
+                                        {"id": "bypass-approval"},
+                                    ]
+                                },
+                                "exactReplay": {
+                                    "blockedAt": {
+                                        "reason": "assumption_guard_restored"
+                                    }
+                                },
+                                "alternateReachability": {"reachable": False},
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
+        rendered = render_change_gate_summary(result)
+        self.assertIn("## Exact historical fix replay", rendered)
+        self.assertIn("release-without-approval", rendered)
+        self.assertIn("fix_verified", rendered)
+        self.assertIn("enter-approval-stage → bypass-approval", rendered)
+        self.assertIn("assumption_guard_restored", rendered)
+        self.assertIn("| no |", rendered)
+
 
 if __name__ == "__main__":
     unittest.main()

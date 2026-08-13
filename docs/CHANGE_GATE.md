@@ -4,9 +4,9 @@ The change gate turns adversarial reachability into a repository-level regressio
 
 ## Core question
 
-> Did this change make a historically forbidden capability newly reachable, or alter the historical forbidden definition to manufacture a pass?
+> Did this change make a historically forbidden capability newly reachable, alter the historical forbidden definition to manufacture a pass, or manufacture a fix by shrinking the modeled search bound while the exact failing path still exists?
 
-The gate reuses `contractgraph_qa.graph_delta`; it does not implement a second risk model.
+The gate reuses `contractgraph_qa.graph_delta` and `contractgraph_qa.path_replay`; it does not implement a second risk model.
 
 ## Repository configuration
 
@@ -52,7 +52,8 @@ The job summary surfaces, where applicable:
 - forbidden target capability;
 - invariant ids;
 - crossed or removed control boundaries;
-- exact introduced transition sequence.
+- exact introduced transition sequence;
+- exact historical fix replay and alternate-path result.
 
 The artifact is deterministic for the same base/head/config/model bytes and is retained for 14 days by the repository workflow.
 
@@ -68,6 +69,7 @@ Blocking reasons include:
 
 - `new_forbidden_reachability`;
 - `forbidden_definition_changed`;
+- `fix_replay_not_verified`;
 - `configured_model_removed`;
 - `configured_model_path_changed`;
 - `base_model_missing`;
@@ -78,10 +80,20 @@ For valid model pairs, the embedded `delta` contains the exact shortest introduc
 
 The local runner exits `10` on `blocked` and `0` on `pass` or `review`.
 
+## Exact historical fix replay
+
+A non-blocking delta that says a formerly reachable forbidden capability is no longer reachable is treated as a machine-level fix claim. The gate does not accept that claim from the bounded search result alone.
+
+For every such historical target, the gate reconstructs the exact shortest path from the base model and replays that transition sequence against the head model. The replay must return `fix_verified`: the historical target definition must remain forbidden, the exact path must be blocked, and a fresh alternate-path search must not reach the same target.
+
+The replay evidence is embedded under each model's `fixReplays` entry and binds the historical model SHA-256 to the fixed model SHA-256. The GitHub job summary renders the same machine evidence without reinterpreting it.
+
+This catches a subtle bound-manipulation failure mode. If a two-edge forbidden path remains structurally traversable but a PR merely reduces `maxDepth` from `2` to `1`, graph delta alone can report the target as no longer reachable within the new bound. Exact historical replay still traverses the old two-edge sequence, returns `failing_path_persists`, and the change gate blocks with `fix_replay_not_verified`.
+
 ## Bootstrap behavior
 
 The first PR that introduces `causal-security-gate.toml` can still compare configured model paths against the supplied base commit even though the base commit has no gate config yet. The result records `baselineConfigPresent: false`. After the config is merged once, later attempts to remove or rename configured entries are detected explicitly.
 
 ## Safety boundary
 
-The gate is bounded model evidence. A pass means the configured model did not introduce one of the declared blocking deltas within the modeled bound. It is not proof that the production system is secure or that an unmodeled path cannot exist.
+The gate is bounded model evidence. A pass means the configured model did not introduce one of the declared blocking deltas within the modeled bound, and any machine-reported removal of a formerly reachable forbidden target survived exact historical replay. It is not proof that the production system is secure or that an unmodeled path cannot exist.

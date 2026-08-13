@@ -49,6 +49,21 @@ def _path_transition_ids(path: dict[str, Any] | None) -> str:
     return " → ".join(ids) if ids else "—"
 
 
+def _fix_replay_rows(models: list[object]) -> list[tuple[str, dict[str, Any]]]:
+    rows: list[tuple[str, dict[str, Any]]] = []
+    for model in models:
+        if not isinstance(model, dict):
+            continue
+        model_id = str(model.get("id", "—"))
+        replays = model.get("fixReplays")
+        if not isinstance(replays, list):
+            continue
+        for replay in replays:
+            if isinstance(replay, dict):
+                rows.append((model_id, replay))
+    return rows
+
+
 def render_change_gate_summary(result: dict[str, Any]) -> str:
     """Render a concise deterministic Markdown summary from machine gate output."""
 
@@ -97,6 +112,43 @@ def render_change_gate_summary(result: dict[str, Any]) -> str:
                 path_ids=_path_transition_ids(path),
             )
         )
+
+    fix_rows = _fix_replay_rows(models)
+    if fix_rows:
+        lines.extend(
+            [
+                "",
+                "## Exact historical fix replay",
+                "",
+                "| Model | Historical target | Replay status | Historical path | Blocked at | Alternate path reachable |",
+                "|---|---|---|---|---|---|",
+            ]
+        )
+        for model_id, item in fix_rows:
+            replay = item.get("replay")
+            replay_dict = replay if isinstance(replay, dict) else {}
+            prior_path = replay_dict.get("priorPath")
+            prior_path_dict = prior_path if isinstance(prior_path, dict) else None
+            exact = replay_dict.get("exactReplay")
+            exact_dict = exact if isinstance(exact, dict) else {}
+            blocked_at = exact_dict.get("blockedAt")
+            blocked_dict = blocked_at if isinstance(blocked_at, dict) else {}
+            alternate = replay_dict.get("alternateReachability")
+            alternate_dict = alternate if isinstance(alternate, dict) else {}
+            alternate_reachable = alternate_dict.get("reachable")
+            alternate_text = (
+                "yes" if alternate_reachable is True else "no" if alternate_reachable is False else "—"
+            )
+            lines.append(
+                "| {model_id} | {target} | {status} | {path_ids} | {blocked} | {alternate} |".format(
+                    model_id=model_id,
+                    target=item.get("targetCapability", "—"),
+                    status=item.get("status", "—"),
+                    path_ids=_path_transition_ids(prior_path_dict),
+                    blocked=blocked_dict.get("reason", "—"),
+                    alternate=alternate_text,
+                )
+            )
 
     if not models:
         error = result.get("error")

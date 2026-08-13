@@ -7,10 +7,16 @@ import subprocess
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Protocol
+from typing import Any, Protocol
 
 from contractgraph_qa.graph_delta import compare_reachability_models
-from contractgraph_qa.reachability import ReachabilityModel, reachability_model_from_dict
+from contractgraph_qa.path_replay import replay_impact_path
+from contractgraph_qa.reachability import (
+    ReachabilityModel,
+    find_shortest_impact_path,
+    reachability_model_from_dict,
+    reachability_model_sha256,
+)
 
 
 class ChangeGateError(ValueError):
@@ -169,6 +175,67 @@ def _config_relative_path(config_path: Path, repo_root: Path) -> str:
     return PurePosixPath(relative.as_posix()).as_posix()
 
 
+def _verified_fix_replays(
+    base_model: ReachabilityModel,
+    head_model: ReachabilityModel,
+    delta: dict[str, Any],
+) -> tuple[list[dict[str, object]], bool]:
+    """Replay each non-blocking removed forbidden path against the proposed head.
+
+    A graph delta that reports a formerly reachable forbidden capability as no
+    longer reachable is a machine-level fix claim. The gate preserves the exact
+    historical path and independently replays it against the head model before
+    accepting that reduction as verified evidence.
+    """
+
+    if delta.get("gateReasons"):
+        return [], False
+
+    raw_targets = delta.get("noLongerReachableForbiddenCapabilities")
+    if not isinstance(raw_targets, list):
+        return [], False
+
+    results: list[dict[str, object]] = []
+    replay_failed = False
+    prior_model_sha = reachability_model_sha256(base_model)
+    for target in sorted(value for value in raw_targets if isinstance(value, str)):
+        prior_path = find_shortest_impact_path(
+            initial_capabilities=base_model.initial_capabilities,
+            target_capabilities=(target,),
+            capabilities=base_model.capabilities,
+            transitions=base_model.transitions,
+            violated_assumptions=base_model.violated_assumptions,
+            assumptions=base_model.assumptions,
+            max_depth=base_model.max_depth,
+        )
+        if prior_path is None:
+            replay_failed = True
+            results.append(
+                {
+                    "targetCapability": target,
+                    "status": "prior_path_missing",
+                    "verified": False,
+                    "priorModelSha256": prior_model_sha,
+                }
+            )
+            continue
+
+        replay = replay_impact_path(prior_path, head_model)
+        replay["priorModelSha256"] = prior_model_sha
+        verified = replay["status"] == "fix_verified"
+        replay_failed = replay_failed or not verified
+        results.append(
+            {
+                "targetCapability": target,
+                "status": replay["status"],
+                "verified": verified,
+                "replay": replay,
+            }
+        )
+
+    return results, replay_failed
+
+
 def run_change_gate(
     config_path: Path,
     base_ref: str,
@@ -235,21 +302,41 @@ def run_change_gate(
             continue
 
         delta = compare_reachability_models(base_model, head_model)
-        blocking = delta["status"] == "risk_increase_detected"
-        review = delta["status"] == "control_boundary_change"
+        fix_replays, fix_replay_failed = _verified_fix_replays(
+            base_model,
+            head_model,
+            delta,
+        )
+        gate_reasons = list(delta["gateReasons"])
+        if fix_replay_failed:
+            gate_reasons.append("fix_replay_not_verified")
+
+        blocking = delta["status"] == "risk_increase_detected" or fix_replay_failed
+        review = delta["status"] == "control_boundary_change" and not blocking
         results.append(
             {
                 "id": model_id,
                 "path": model_path,
                 "status": "blocked" if blocking else "review" if review else "pass",
                 "blocking": blocking,
-                "gateReasons": delta["gateReasons"],
+                "gateReasons": gate_reasons,
                 "delta": delta,
+                "fixReplays": fix_replays,
             }
         )
 
     blocking_models = [item["id"] for item in results if item["blocking"] is True]
     review_models = [item["id"] for item in results if item["status"] == "review"]
+    verified_fix_models = [
+        item["id"]
+        for item in results
+        if isinstance(item.get("fixReplays"), list)
+        and item["fixReplays"]
+        and all(
+            isinstance(replay, dict) and replay.get("verified") is True
+            for replay in item["fixReplays"]
+        )
+    ]
     status = "blocked" if blocking_models else "review" if review_models else "pass"
 
     return {
@@ -262,5 +349,6 @@ def run_change_gate(
         "baselineConfigPresent": baseline_config_present,
         "blockingModels": blocking_models,
         "reviewModels": review_models,
+        "verifiedFixModels": verified_fix_models,
         "models": results,
     }

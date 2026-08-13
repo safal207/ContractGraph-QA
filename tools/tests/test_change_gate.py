@@ -45,6 +45,45 @@ BASE_MODEL = {
 }
 
 
+DEEP_FAILING_MODEL = {
+    "assumptions": [
+        {
+            "id": "approval-gate-holds",
+            "description": "Approval remains required before release.",
+        }
+    ],
+    "capabilities": [
+        {"id": "request-release", "description": "Request release.", "forbidden": False},
+        {"id": "approval-stage", "description": "Reach approval stage.", "forbidden": False},
+        {"id": "release-without-approval", "description": "Release without approval.", "forbidden": True},
+    ],
+    "transitions": [
+        {
+            "id": "enter-approval-stage",
+            "source": "request-release",
+            "target": "approval-stage",
+            "requiresViolations": [],
+            "invariantId": "approval-required",
+            "boundary": "approval-boundary",
+            "impact": "approval stage reached",
+        },
+        {
+            "id": "bypass-approval",
+            "source": "approval-stage",
+            "target": "release-without-approval",
+            "requiresViolations": ["approval-gate-holds"],
+            "invariantId": "approval-required",
+            "boundary": "approval-boundary",
+            "impact": "funds can be released without approval",
+        },
+    ],
+    "initialCapabilities": ["request-release"],
+    "targetCapabilities": ["release-without-approval"],
+    "violatedAssumptions": ["approval-gate-holds"],
+    "maxDepth": 2,
+}
+
+
 def encoded(model: dict[str, object]) -> bytes:
     return json.dumps(model, sort_keys=True).encode("utf-8")
 
@@ -110,6 +149,7 @@ class ChangeGateTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first["status"], "pass")
         self.assertEqual(first["blockingModels"], [])
+        self.assertEqual(first["verifiedFixModels"], [])
         self.assertFalse(first["baselineConfigPresent"])
 
     def test_new_forbidden_reachability_blocks(self) -> None:
@@ -124,12 +164,39 @@ class ChangeGateTests(unittest.TestCase):
             "terminal-state-reachable",
         )
 
-    def test_real_risk_reduction_does_not_block(self) -> None:
+    def test_real_risk_reduction_is_exactly_replayed(self) -> None:
         base = dict(BASE_MODEL)
         base["violatedAssumptions"] = ["terminal-transition-blocked"]
         result = self.run_gate(base, BASE_MODEL)
         self.assertEqual(result["status"], "pass")
-        self.assertEqual(result["models"][0]["delta"]["status"], "risk_reduced")
+        self.assertEqual(result["verifiedFixModels"], ["adapter"])
+
+        model = result["models"][0]
+        self.assertEqual(model["delta"]["status"], "risk_reduced")
+        self.assertEqual(len(model["fixReplays"]), 1)
+        fix = model["fixReplays"][0]
+        self.assertTrue(fix["verified"])
+        self.assertEqual(fix["status"], "fix_verified")
+        self.assertEqual(fix["targetCapability"], "terminal-state-reachable")
+        replay = fix["replay"]
+        self.assertEqual(replay["priorModelSha256"], model["delta"]["baseModelSha256"])
+        self.assertEqual(replay["fixedModelSha256"], model["delta"]["headModelSha256"])
+        self.assertEqual(
+            replay["exactReplay"]["blockedAt"]["reason"],
+            "assumption_guard_restored",
+        )
+        self.assertFalse(replay["alternateReachability"]["reachable"])
+
+    def test_reducing_search_bound_cannot_manufacture_fix(self) -> None:
+        head = json.loads(json.dumps(DEEP_FAILING_MODEL))
+        head["maxDepth"] = 1
+        result = self.run_gate(DEEP_FAILING_MODEL, head)
+        self.assertEqual(result["status"], "blocked")
+        model = result["models"][0]
+        self.assertEqual(model["delta"]["status"], "risk_reduced")
+        self.assertEqual(model["gateReasons"], ["fix_replay_not_verified"])
+        self.assertEqual(model["fixReplays"][0]["status"], "failing_path_persists")
+        self.assertFalse(model["fixReplays"][0]["verified"])
 
     def test_deleted_head_model_fails_closed(self) -> None:
         result = self.run_gate(BASE_MODEL, None)
