@@ -1,41 +1,71 @@
 name: Causal security gate
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
 
 jobs:
   causal-security-gate:
-    name: forbidden reachability regression
+    name: trusted forbidden reachability regression
     runs-on: ubuntu-latest
     steps:
-      - name: Check out exact PR head with history
+      - name: Check out exact trusted base
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 0
           persist-credentials: false
+          path: trusted
+
+      - name: Check out exact PR head as data only
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: ${{ github.repository }}
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
+          fetch-depth: 0
+          persist-credentials: false
+          path: candidate
+
+      - name: Verify trusted base and candidate head identity
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          trusted_sha="$(git -C trusted rev-parse HEAD)"
+          candidate_sha="$(git -C candidate rev-parse HEAD)"
+          if [[ "${trusted_sha}" != "${BASE_SHA}" ]]; then
+            echo "Trusted checkout mismatch: expected ${BASE_SHA}, got ${trusted_sha}" >&2
+            exit 1
+          fi
+          if [[ "${candidate_sha}" != "${HEAD_SHA}" ]]; then
+            echo "Candidate checkout mismatch: expected ${HEAD_SHA}, got ${candidate_sha}" >&2
+            exit 1
+          fi
+          git -C candidate cat-file -e "${BASE_SHA}^{commit}"
 
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
 
-      - name: Run causal security change gate
+      - name: Run trusted causal security change gate
         id: gate
+        working-directory: trusted
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/trusted
         run: |
           mkdir -p .cgqa
           set +e
           python tools/run_change_gate.py \
             --base-ref "${BASE_SHA}" \
-            --config causal-security-gate.toml \
-            --repo-root . \
+            --config ../candidate/causal-security-gate.toml \
+            --repo-root ../candidate \
             > .cgqa/causal-security-gate.json
           gate_exit=$?
           set -e
@@ -45,24 +75,26 @@ jobs:
             exit "${gate_exit}"
           fi
 
-      - name: Render causal security job summary
+      - name: Render causal security job summary from trusted code
         if: always()
+        working-directory: trusted
         shell: bash
         env:
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/trusted
         run: |
           python tools/render_change_gate_summary.py \
             --input .cgqa/causal-security-gate.json \
             >> "${GITHUB_STEP_SUMMARY}"
 
-      - name: Bind gate result into client proof
+      - name: Bind gate result into client proof with trusted code
         if: always()
+        working-directory: trusted
         shell: bash
         env:
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/trusted
         run: |
           python tools/bind_change_gate_client_proof.py \
-            --proof docs/client-proof/proof.json \
+            --proof ../candidate/docs/client-proof/proof.json \
             --gate-result .cgqa/causal-security-gate.json \
             --output .cgqa/client-proof.with-gate.json
 
@@ -72,8 +104,8 @@ jobs:
         with:
           name: causal-security-gate-${{ github.event.pull_request.number }}
           path: |
-            .cgqa/causal-security-gate.json
-            .cgqa/client-proof.with-gate.json
+            trusted/.cgqa/causal-security-gate.json
+            trusted/.cgqa/client-proof.with-gate.json
           if-no-files-found: error
           retention-days: 14
 
