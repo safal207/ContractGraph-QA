@@ -1,0 +1,5 @@
+schemaVersion = 1
+
+[[models]]
+id = "adapter-terminal-reachability"
+path = "scenarios/adversarial-adapter-fixture.json"
