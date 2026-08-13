@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schemas/gonka-reconciliation-v0.1.json",
+  "title": "Gonka CGQA Reconciliation Evidence v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "run_id",
+    "logical_operation_id",
+    "transport_request_ids",
+    "transport_dispositions",
+    "observed_execution_nonces",
+    "cost",
+    "unexplained_effects",
+    "verdict"
+  ],
+  "properties": {
+    "schema_version": {"const": "gonka-reconciliation-v0.1"},
+    "case_id": {"enum": ["G-001", "G-002A", "G-002B"]},
+    "run_id": {"type": "string", "minLength": 1},
+    "upstream_revision": {"type": "string"},
+    "environment": {"type": "string"},
+    "logical_operation_id": {"type": "string", "minLength": 1},
+    "transport_request_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "transport_dispositions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["attempt_id", "request_id", "outcome"],
+        "properties": {
+          "attempt_id": {"type": "string"},
+          "request_id": {"type": "string"},
+          "http_status": {"type": ["integer", "null"], "minimum": 100, "maximum": 599},
+          "client_exit_code": {"type": ["integer", "null"]},
+          "outcome": {
+            "enum": [
+              "success",
+              "client_timeout_ambiguous",
+              "rejected_429_in_flight",
+              "cached_or_replayed",
+              "proven_non_execution",
+              "transport_error_ambiguous",
+              "other"
+            ]
+          },
+          "started_at": {"type": "string"},
+          "ended_at": {"type": "string"},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "escrow_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "observed_execution_nonces": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 1},
+      "uniqueItems": true
+    },
+    "winner_nonce": {"type": ["integer", "null"], "minimum": 1},
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["nonce", "winner", "actual_cost"],
+        "properties": {
+          "request_id": {"type": "string"},
+          "escrow_id": {"type": "string"},
+          "nonce": {"type": "integer", "minimum": 1},
+          "host_idx": {"type": ["integer", "null"]},
+          "participant_key": {"type": ["string", "null"]},
+          "probe": {"type": "boolean"},
+          "winner": {"type": "boolean"},
+          "actual_cost": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["winner_actual_cost", "other_attempts_actual_cost", "all_attempts_actual_cost", "arithmetic_reconciles"],
+      "properties": {
+        "winner_actual_cost": {"type": "integer", "minimum": 0},
+        "other_attempts_actual_cost": {"type": "integer", "minimum": 0},
+        "all_attempts_actual_cost": {"type": "integer", "minimum": 0},
+        "arithmetic_reconciles": {"type": "boolean"}
+      }
+    },
+    "settlement_refs": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "unexplained_effects": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "verdict": {"enum": ["PASS", "FAIL", "INCONCLUSIVE"]},
+    "private_hypothesis_id": {"type": ["string", "null"]},
+    "notes": {"type": "string"}
+  }
+}
