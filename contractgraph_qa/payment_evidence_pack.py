@@ -18,6 +18,12 @@ MANIFEST_SCHEMA = "cgqa.agent-payment-evidence-pack-manifest.v0.1"
 _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 _CONTENT_NAMES = ["input.json", "decision.json", "customer-summary.md"]
 _PACK_NAMES = [*_CONTENT_NAMES, "manifest.json"]
+_AUTHORITY = {
+    "classification": "RESEARCH_ONLY",
+    "securityCertification": False,
+    "productionAuthorization": False,
+    "financialAuthorization": False,
+}
 
 
 class PaymentEvidencePackError(ValueError):
@@ -136,12 +142,7 @@ def build_payment_evidence_pack(input_path: Path, output_path: Path) -> dict[str
             {"path": name, "sha256": _sha256(artifacts[name]), "bytes": len(artifacts[name])}
             for name in _CONTENT_NAMES
         ],
-        "authority": {
-            "classification": "RESEARCH_ONLY",
-            "securityCertification": False,
-            "productionAuthorization": False,
-            "financialAuthorization": False,
-        },
+        "authority": dict(_AUTHORITY),
     }
     manifest_bytes = _canonical_json(manifest)
 
@@ -163,14 +164,22 @@ def build_payment_evidence_pack(input_path: Path, output_path: Path) -> dict[str
 
 
 def verify_payment_evidence_pack(pack_path: Path) -> dict[str, Any]:
-    """Verify hashes and recompute the machine decision and human summary."""
+    """Verify canonical ZIP metadata, hashes, decision and human summary."""
     try:
         with zipfile.ZipFile(pack_path, "r") as archive:
-            names = archive.namelist()
+            infos = archive.infolist()
+            names = [info.filename for info in infos]
             if names != _PACK_NAMES:
                 raise PaymentEvidencePackError(
                     f"pack entries must be exactly {', '.join(_PACK_NAMES)} in canonical order"
                 )
+            for info in infos:
+                if info.date_time != _FIXED_ZIP_TIME:
+                    raise PaymentEvidencePackError(f"non-canonical ZIP timestamp: {info.filename}")
+                if info.compress_type != zipfile.ZIP_STORED:
+                    raise PaymentEvidencePackError(f"non-canonical ZIP compression: {info.filename}")
+                if info.create_system != 3 or info.external_attr != 0o100644 << 16:
+                    raise PaymentEvidencePackError(f"non-canonical ZIP file mode: {info.filename}")
             blobs = {name: archive.read(name) for name in names}
     except (OSError, zipfile.BadZipFile, KeyError) as exc:
         raise PaymentEvidencePackError(f"unable to read evidence pack: {exc}") from exc
@@ -183,6 +192,10 @@ def verify_payment_evidence_pack(pack_path: Path) -> dict[str, Any]:
         raise PaymentEvidencePackError(f"pack JSON is invalid: {exc}") from exc
     if not isinstance(manifest, dict) or manifest.get("schema") != MANIFEST_SCHEMA:
         raise PaymentEvidencePackError("manifest schema mismatch")
+    if manifest.get("packSchema") != PACK_SCHEMA:
+        raise PaymentEvidencePackError("manifest packSchema mismatch")
+    if manifest.get("authority") != _AUTHORITY:
+        raise PaymentEvidencePackError("manifest authority boundary mismatch")
     if blobs["manifest.json"] != _canonical_json(manifest):
         raise PaymentEvidencePackError("manifest.json is not canonical JSON")
     if blobs["input.json"] != _canonical_json(source_input):
