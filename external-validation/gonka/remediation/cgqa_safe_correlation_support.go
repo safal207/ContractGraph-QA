@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
@@ -71,9 +70,6 @@ func (s *PerfStore) recordCGQARequestCorrelation(clientID, internalID, escrowID 
 	if s == nil || clientID == "" || internalID == "" || escrowID == "" {
 		return nil
 	}
-	if err := s.ensureCGQARequestCorrelationSchema(); err != nil {
-		return err
-	}
 	if createdAt.IsZero() {
 		createdAt = time.Now()
 	}
@@ -92,9 +88,6 @@ func (s *PerfStore) findCGQARequestCorrelations(clientID, escrowID string) ([]cg
 	if s == nil || clientID == "" || escrowID == "" {
 		return nil, nil
 	}
-	if err := s.ensureCGQARequestCorrelationSchema(); err != nil {
-		return nil, err
-	}
 	rows, err := s.db.Query(
 		`SELECT client_correlation_id, internal_request_id, escrow_id, created_at
 		 FROM cgqa_request_correlations
@@ -103,9 +96,6 @@ func (s *PerfStore) findCGQARequestCorrelations(clientID, escrowID string) ([]cg
 		clientID, escrowID,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
 		return nil, err
 	}
 	defer rows.Close()
