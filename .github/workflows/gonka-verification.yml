@@ -1,0 +1,76 @@
+name: Gonka verification contract
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/**'
+      - '.github/workflows/gonka-verification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract-guard:
+    name: Gonka upstream contract guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Validate CGQA profile artifacts
+        shell: bash
+        run: |
+          python -m json.tool external-validation/gonka/evidence.schema.json >/dev/null
+          ruby -e 'require "yaml"; %w[external-validation/gonka/graph.yaml external-validation/gonka/cases/G-001-normal-inference.yaml external-validation/gonka/cases/G-002-timeout-retry.yaml].each { |f| YAML.load_file(f) }'
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Verify upstream causal/accounting primitives
+        shell: bash
+        run: |
+          grep -F 'mux.HandleFunc("GET /v1/requests/{request_id}"' upstream-gonka/devshard/cmd/devshardctl/gateway.go
+          grep -F 'const RequestIDHeader = "X-Request-Id"' upstream-gonka/devshard/observability/ctx.go
+          grep -F 'request_accounting_attempts' upstream-gonka/devshard/cmd/devshardctl/request_accounting.go
+          grep -F 'TestHandleRequestAccountingReturnsJoinedInferenceCosts' upstream-gonka/devshard/cmd/devshardctl/request_accounting_test.go
+          grep -F 'TestHandleRequestAccountingResolvesCachedRequestAliasCosts' upstream-gonka/devshard/cmd/devshardctl/request_accounting_test.go
+          test -f upstream-gonka/devshard/testenv/README.md
+          grep -F 'TestGatewayChat' upstream-gonka/devshard/testenv/README.md
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Run pinned upstream request-accounting controls
+        working-directory: upstream-gonka/devshard
+        run: >-
+          go test ./cmd/devshardctl
+          -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$'
+          -count=1
+
+      - name: Contract summary
+        shell: bash
+        run: |
+          {
+            echo '### Gonka verification contract guard'
+            echo
+            echo "Pinned upstream: \`$GONKA_SHA\`"
+            echo '- CGQA YAML/JSON artifacts parse successfully.'
+            echo '- X-Request-Id correlation primitive is present upstream.'
+            echo '- /v1/requests/{request_id} accounting surface is present upstream.'
+            echo '- Upstream joined-cost and cached-alias accounting controls pass.'
+            echo '- Local Docker testenv remains the execution target for G-001/G-002.'
+          } >> "$GITHUB_STEP_SUMMARY"
