@@ -7,6 +7,7 @@ on:
       - 'external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go'
       - 'external-validation/gonka/remediation/cgqa_safe_correlation_support.go'
       - 'external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py'
+      - 'external-validation/gonka/liminaldb/**'
       - '.github/workflows/gonka-safe-timeout-retry.yml'
   workflow_dispatch:
 
@@ -17,9 +18,10 @@ jobs:
   safe-timeout-retry:
     name: Gonka G-002A/B safe correlation reconciliation
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 65
     env:
       GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+      LIMINALDB_SHA: 0cd6e77d52787bb36a97b75ba1a37cb027268eb3
       CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-safe-timeout-retry
     steps:
       - name: Checkout ContractGraph-QA
@@ -33,6 +35,14 @@ jobs:
           repository: gonka-ai/gonka
           ref: ${{ env.GONKA_SHA }}
           path: upstream-gonka
+          persist-credentials: false
+
+      - name: Checkout pinned LiminalDB revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: safal207/LiminalDB
+          ref: ${{ env.LIMINALDB_SHA }}
+          path: upstream-liminaldb
           persist-credentials: false
 
       - name: Setup upstream Go toolchain
@@ -154,6 +164,90 @@ jobs:
               raise SystemExit('bundle verdict is not PASS')
           PY
 
+      - name: Build LiminalDB transition bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile external-validation/gonka/liminaldb/build_transition_bundle.py
+          python external-validation/gonka/liminaldb/build_transition_bundle.py \
+            --input cgqa-safe-timeout-retry/reconciliation.json \
+            --output cgqa-safe-timeout-retry/liminaldb-transition-bundle.json \
+            --liminaldb-revision "$LIMINALDB_SHA"
+          cp external-validation/gonka/liminaldb/cgqa_gonka_bridge.rs \
+            upstream-liminaldb/liminal-db/crates/liminal-store/examples/cgqa_gonka_bridge.rs
+
+      - name: Append reconciliation into native LiminalDB ledger and prove replay
+        shell: bash
+        env:
+          CARGO_INCREMENTAL: '0'
+        run: |
+          set -euo pipefail
+          rustc --version
+          cargo --version
+          cargo run -q --locked \
+            --manifest-path upstream-liminaldb/liminal-db/Cargo.toml \
+            -p liminal-store \
+            --example cgqa_gonka_bridge -- \
+            cgqa-safe-timeout-retry/reconciliation.json \
+            cgqa-safe-timeout-retry/liminaldb-transition-bundle.json \
+            cgqa-safe-timeout-retry/liminaldb-ledger \
+            cgqa-safe-timeout-retry/liminaldb-bridge-receipt.json
+
+      - name: Enforce LiminalDB causal-memory receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = Path('cgqa-safe-timeout-retry/reconciliation.json')
+          bundle_path = Path('cgqa-safe-timeout-retry/liminaldb-transition-bundle.json')
+          receipt_path = Path('cgqa-safe-timeout-retry/liminaldb-bridge-receipt.json')
+          if not bundle_path.is_file() or not receipt_path.is_file():
+              raise SystemExit('LiminalDB bridge bundle/receipt missing')
+
+          bundle = json.loads(bundle_path.read_text())
+          receipt = json.loads(receipt_path.read_text())
+          expected_digest = 'sha256:' + hashlib.sha256(evidence.read_bytes()).hexdigest()
+
+          if bundle.get('schema') != 'cgqa-gonka-liminaldb-transition-bundle-v0.1':
+              raise SystemExit('unexpected LiminalDB transition bundle schema')
+          if receipt.get('schema') != 'cgqa-gonka-liminaldb-bridge-receipt-v0.1':
+              raise SystemExit('unexpected LiminalDB bridge receipt schema')
+          if bundle.get('source_evidence_digest') != expected_digest or receipt.get('source_evidence_digest') != expected_digest:
+              raise SystemExit('LiminalDB source evidence digest is not bound to reconciliation bytes')
+          if receipt.get('liminaldb_revision') != os.environ['LIMINALDB_SHA']:
+              raise SystemExit('LiminalDB revision mismatch in receipt')
+          if receipt.get('replay_verified') is not True:
+              raise SystemExit('LiminalDB close/reopen/full replay was not verified')
+          if receipt.get('transition_count') != 2 or receipt.get('event_count') != 12:
+              raise SystemExit(f"unexpected LiminalDB projection cardinality: transitions={receipt.get('transition_count')} events={receipt.get('event_count')}")
+          hashes = receipt.get('event_hashes') or []
+          if len(hashes) != 12 or receipt.get('event_chain_head') != hashes[-1]:
+              raise SystemExit('LiminalDB event chain head/hash list mismatch')
+
+          expected_ids = set(bundle.get('transition_ids') or [])
+          projections = receipt.get('projections') or []
+          if {p.get('transition_id') for p in projections} != expected_ids:
+              raise SystemExit('LiminalDB recovered transition IDs differ from source logical_operation_ids')
+          for projection in projections:
+              dims = projection.get('dimensions') or {}
+              if projection.get('event_count') != 6:
+                  raise SystemExit(f"{projection.get('transition_id')}: expected 6 semantic transition records")
+              if projection.get('side_effect_committed') is not True:
+                  raise SystemExit(f"{projection.get('transition_id')}: committed execution effect was not retained")
+              if dims.get('authority') != 'VALID' or dims.get('execution') != 'OBSERVED_EXECUTED':
+                  raise SystemExit(f"{projection.get('transition_id')}: authority/execution projection mismatch")
+              if dims.get('response_integrity') != 'NOT_EVALUATED':
+                  raise SystemExit(f"{projection.get('transition_id')}: response integrity was overclaimed")
+              if dims.get('causal_validity') != 'VALID' or dims.get('continuity_posture') != 'REPORT_ONLY':
+                  raise SystemExit(f"{projection.get('transition_id')}: causal/continuity projection mismatch")
+          print(json.dumps(receipt, indent=2))
+          PY
+
       - name: Publish summary
         if: always()
         shell: bash
@@ -162,6 +256,7 @@ jobs:
           import json
           from pathlib import Path
           p = Path('cgqa-safe-timeout-retry/reconciliation.json')
+          receipt_path = Path('cgqa-safe-timeout-retry/liminaldb-bridge-receipt.json')
           print('### Gonka safe timeout/retry reconciliation')
           if not p.is_file():
               print('- evidence missing')
@@ -170,6 +265,16 @@ jobs:
               print(f"- bundle verdict: `{d.get('verdict')}`")
               for c in d.get('cases', []):
                   print(f"- {c.get('case_id')}: `{c.get('verdict')}`; correlations={c.get('client_correlation_ids')}; internal_ids={c.get('internal_request_ids')}; winner_nonces={c.get('winner_nonces')}; unexplained={c.get('unexplained_effects')}")
+          print('### LiminalDB causal memory')
+          if not receipt_path.is_file():
+              print('- bridge receipt missing')
+          else:
+              r = json.loads(receipt_path.read_text())
+              print(f"- pinned revision: `{r.get('liminaldb_revision')}`")
+              print(f"- transitions: `{r.get('transition_count')}`; events: `{r.get('event_count')}`")
+              print(f"- replay verified: `{r.get('replay_verified')}`")
+              print(f"- event chain head: `{r.get('event_chain_head')}`")
+              print(f"- snapshot digest: `{r.get('snapshot_digest')}`")
           PY
 
       - name: Upload reconciliation evidence
