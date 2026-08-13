@@ -1,0 +1,35 @@
+{
+  "assumptions": [
+    {
+      "id": "revocation-propagated",
+      "description": "Authority revocation is propagated before any later delegated financial action is resolved."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "submit-revoked-delegation",
+      "description": "Submit a payment using a delegation that has been revoked.",
+      "forbidden": false
+    },
+    {
+      "id": "spend-after-revocation",
+      "description": "Execute a payment after the delegated authority has been revoked.",
+      "forbidden": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "ignore-revocation",
+      "source": "submit-revoked-delegation",
+      "target": "spend-after-revocation",
+      "requiresViolations": ["revocation-propagated"],
+      "invariantId": "revoked-authority-cannot-spend",
+      "boundary": "authority-revocation",
+      "impact": "funds can move after delegated authority has been revoked"
+    }
+  ],
+  "initialCapabilities": ["submit-revoked-delegation"],
+  "targetCapabilities": ["spend-after-revocation"],
+  "violatedAssumptions": [],
+  "maxDepth": 2
+}

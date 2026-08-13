@@ -1,0 +1,35 @@
+{
+  "assumptions": [
+    {
+      "id": "approval-threshold-enforced",
+      "description": "Escrow release above the configured threshold requires the declared approval set."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "request-escrow-release",
+      "description": "Request release from the authorized escrow workflow.",
+      "forbidden": false
+    },
+    {
+      "id": "release-without-required-approval",
+      "description": "Release escrowed value without the required approval quorum.",
+      "forbidden": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "bypass-approval-threshold",
+      "source": "request-escrow-release",
+      "target": "release-without-required-approval",
+      "requiresViolations": ["approval-threshold-enforced"],
+      "invariantId": "escrow-release-requires-approval",
+      "boundary": "approval-threshold",
+      "impact": "escrow value can be released without the required approval quorum"
+    }
+  ],
+  "initialCapabilities": ["request-escrow-release"],
+  "targetCapabilities": ["release-without-required-approval"],
+  "violatedAssumptions": [],
+  "maxDepth": 2
+}
