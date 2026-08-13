@@ -33,7 +33,9 @@ EXACT HISTORICAL PATH REPLAY
       ↓
 ALTERNATE-PATH SEARCH
       ↓
-DETERMINISTIC EVIDENCE + CLIENT PROOF
+PR CHANGE GATE RESULT
+      ↓
+CONTENT-ADDRESSED CLIENT EVIDENCE
 ```
 
 ## Proof case
@@ -73,6 +75,40 @@ The checked-in proof is regression-tested against the live reachability, post-im
 
 The claim boundary remains explicit: this is an authorized repository-local model demonstration. It is not proof of production exploitability and not an exhaustive security certification.
 
+## Bind PR change-gate evidence
+
+The pull-request gate already emits one canonical machine result: `.cgqa/causal-security-gate.json`. Client proof packs consume that **same object** instead of reconstructing targets, invariants, paths, or fix conclusions a second time.
+
+Bind an exact gate artifact into a proof pack with:
+
+```bash
+python tools/bind_change_gate_client_proof.py \
+  --proof docs/client-proof/proof.json \
+  --gate-result .cgqa/causal-security-gate.json \
+  --output .cgqa/client-proof.with-gate.json
+```
+
+The resulting `changeGateEvidence` contains:
+
+- `schema = cgqa.client-change-gate-evidence.v1`;
+- the complete gate result, preserved verbatim as JSON semantics;
+- a canonical SHA-256 over that exact result.
+
+The client-proof layer validates only the result envelope needed for identity binding: schema version, `PASS / REVIEW / BLOCK`, exact base commit SHA, exact head commit SHA, and the model-result array. It deliberately does **not** re-derive forbidden targets, invariants, shortest paths, or replay status. Those claims remain owned by the gate JSON itself.
+
+`verify_change_gate_evidence(...)` recomputes the canonical digest and rejects nested tampering. Rebinding a proof pack to a different gate result also fails closed instead of silently replacing historical review evidence. A `blocked` gate result is still valid client evidence; a fatal runner/config error without explicit commit identity is not.
+
+This gives one continuous delivery-to-client chain:
+
+```text
+PR base/head
+→ causal security gate JSON
+→ introduced forbidden path OR exact verified fix replay
+→ CI decision
+→ canonical gate-result digest
+→ client proof pack
+```
+
 ## Reproduce the proof
 
 From the repository root:
@@ -87,7 +123,7 @@ cgqa reachability-replay \
   --fixed-model scenarios/adversarial-adapter-fixture-fixed.json
 ```
 
-The Product E2E workflow runs the installed `cgqa` wheel outside the checkout, performs the engagement twice, requires byte-for-byte identical ZIP output, and verifies the final bundle independently. Unit regressions also recompute the client proof's causal path, control graph, and exact fix replay.
+The Product E2E workflow runs the installed `cgqa` wheel outside the checkout, performs the engagement twice, requires byte-for-byte identical ZIP output, and verifies the final bundle independently. Unit regressions also recompute the client proof's causal path, control graph, exact fix replay, and content-addressed change-gate binding.
 
 ## Commercial pilot
 
