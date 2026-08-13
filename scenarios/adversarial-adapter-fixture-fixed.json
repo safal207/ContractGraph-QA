@@ -1,0 +1,35 @@
+{
+  "assumptions": [
+    {
+      "id": "terminal-transition-blocked",
+      "description": "The modeled terminal-state transition remains unreachable after the proposed fix."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "advance-state-machine",
+      "description": "The authorized fixture actor can advance the modeled state machine.",
+      "forbidden": false
+    },
+    {
+      "id": "terminal-state-reachable",
+      "description": "The actor can drive the fixture into the modeled terminal violating state.",
+      "forbidden": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "cross-terminal-state-boundary",
+      "source": "advance-state-machine",
+      "target": "terminal-state-reachable",
+      "requiresViolations": ["terminal-transition-blocked"],
+      "invariantId": "adapter-terminal-state",
+      "boundary": "terminal-state-boundary",
+      "impact": "modeled terminal-state violation becomes reachable"
+    }
+  ],
+  "initialCapabilities": ["advance-state-machine"],
+  "targetCapabilities": ["terminal-state-reachable"],
+  "violatedAssumptions": [],
+  "maxDepth": 2
+}

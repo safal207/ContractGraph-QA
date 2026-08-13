@@ -1,0 +1,64 @@
+{
+  "assumptions": [
+    {
+      "id": "fresh-policy-state",
+      "description": "Authorization evaluates the latest spending policy."
+    },
+    {
+      "id": "unique-settlement",
+      "description": "One logical payment is settled at most once."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "request-spend",
+      "description": "The delegated agent may request a payment.",
+      "forbidden": false
+    },
+    {
+      "id": "authorized-spend",
+      "description": "The payment request is authorized for settlement.",
+      "forbidden": false
+    },
+    {
+      "id": "overspend",
+      "description": "The agent can exceed the delegated daily spending limit.",
+      "forbidden": true
+    },
+    {
+      "id": "duplicate-settlement",
+      "description": "The same logical payment can settle more than once.",
+      "forbidden": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "authorize-with-stale-policy",
+      "source": "request-spend",
+      "target": "authorized-spend",
+      "requiresViolations": ["fresh-policy-state"]
+    },
+    {
+      "id": "exceed-daily-limit",
+      "source": "authorized-spend",
+      "target": "overspend",
+      "requiresViolations": [],
+      "invariantId": "daily-limit",
+      "boundary": "delegated-spend-policy",
+      "impact": "unauthorized financial loss"
+    },
+    {
+      "id": "replay-settlement",
+      "source": "authorized-spend",
+      "target": "duplicate-settlement",
+      "requiresViolations": ["unique-settlement"],
+      "invariantId": "settlement-at-most-once",
+      "boundary": "settlement-idempotency",
+      "impact": "duplicate financial settlement"
+    }
+  ],
+  "initialCapabilities": ["request-spend"],
+  "targetCapabilities": ["overspend", "duplicate-settlement"],
+  "violatedAssumptions": ["fresh-policy-state", "unique-settlement"],
+  "maxDepth": 4
+}

@@ -1,0 +1,39 @@
+{
+  "containments": [
+    {
+      "id": "terminal-state-containment",
+      "capabilityId": "terminal-state-reachable",
+      "description": "The local fixture isolates the violating terminal state from further modeled propagation.",
+      "outcome": "contained",
+      "evidence": "repository-owned fixture records containment after the terminal-state violation"
+    }
+  ],
+  "recoveries": [
+    {
+      "id": "reset-fixture-state",
+      "containmentId": "terminal-state-containment",
+      "description": "The repository-owned fixture restores the modeled actor to the allowed advance capability.",
+      "outcome": "recovered",
+      "restoredCapabilityId": "advance-state-machine",
+      "evidence": "local deterministic reset restores the pre-impact capability"
+    }
+  ],
+  "verifications": [
+    {
+      "id": "verify-containment",
+      "subjectType": "containment",
+      "subjectId": "terminal-state-containment",
+      "description": "Verify that the terminal-state capability no longer propagates after containment.",
+      "outcome": "verified",
+      "evidence": "repository-owned replay observes no modeled propagation beyond the containment node"
+    },
+    {
+      "id": "verify-recovery",
+      "subjectType": "recovery",
+      "subjectId": "reset-fixture-state",
+      "description": "Verify that recovery returns to an allowed capability rather than another forbidden capability.",
+      "outcome": "verified",
+      "evidence": "repository-owned replay observes advance-state-machine as the restored capability"
+    }
+  ]
+}

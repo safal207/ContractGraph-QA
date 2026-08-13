@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/post-impact.schema.json",
+  "title": "ContractGraph QA Post-Impact Control Graph",
+  "type": "object",
+  "required": ["containments", "recoveries", "verifications"],
+  "properties": {
+    "containments": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/containment" }
+    },
+    "recoveries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/recovery" }
+    },
+    "verifications": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/verification" }
+    }
+  },
+  "$defs": {
+    "containment": {
+      "type": "object",
+      "required": ["id", "capabilityId", "description", "outcome", "evidence"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "capabilityId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "description": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "outcome": { "type": "string", "enum": ["contained", "escaped"] },
+        "evidence": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      },
+      "additionalProperties": false
+    },
+    "recovery": {
+      "type": "object",
+      "required": ["id", "containmentId", "description", "outcome", "evidence"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "containmentId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "description": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "outcome": { "type": "string", "enum": ["recovered", "failed", "not_attempted"] },
+        "restoredCapabilityId": {
+          "oneOf": [
+            { "type": "string", "minLength": 1, "pattern": "\\S" },
+            { "type": "null" }
+          ]
+        },
+        "evidence": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "object",
+      "required": ["id", "subjectType", "subjectId", "description", "outcome", "evidence"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "subjectType": { "type": "string", "enum": ["containment", "recovery"] },
+        "subjectId": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "description": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "outcome": { "type": "string", "enum": ["verified", "failed", "inconclusive"] },
+        "evidence": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

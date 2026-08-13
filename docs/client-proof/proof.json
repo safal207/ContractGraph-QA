@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceType": "repository-owned-local-demo",
   "engagementId": "CGQA-E-001",
   "adapterId": "engagement-fixture-v1.3",
@@ -15,6 +15,49 @@
     "advance",
     "advance"
   ],
+  "causalSecurityProof": {
+    "sourceType": "repository-owned-local-causal-fixture",
+    "priorModel": "scenarios/adversarial-adapter-fixture.json",
+    "postImpactModel": "scenarios/post-impact-adapter-fixture.json",
+    "fixedModel": "scenarios/adversarial-adapter-fixture-fixed.json",
+    "forbiddenCapability": "terminal-state-reachable",
+    "causalPath": {
+      "initialCapability": "advance-state-machine",
+      "transitionIds": [
+        "cross-terminal-state-boundary"
+      ],
+      "violatedAssumptions": [
+        "terminal-transition-blocked"
+      ],
+      "invariantIds": [
+        "adapter-terminal-state"
+      ],
+      "controlBoundaries": [
+        "terminal-state-boundary"
+      ],
+      "impact": "modeled terminal-state violation becomes reachable"
+    },
+    "controlPath": {
+      "status": "contained_and_verified",
+      "relations": [
+        "contained_by",
+        "recovered_by",
+        "restores_to",
+        "verified_by"
+      ],
+      "restoredCapability": "advance-state-machine"
+    },
+    "fixReplay": {
+      "status": "fix_verified",
+      "blockedReason": "assumption_guard_restored",
+      "alternateReachability": false
+    },
+    "claimBoundary": {
+      "authorizedLocalModelOnly": true,
+      "productionExploitabilityClaim": false,
+      "exhaustiveSecurityClaim": false
+    }
+  },
   "pilot": {
     "priceUsd": 200,
     "maxPrioritizedInvariants": 5,

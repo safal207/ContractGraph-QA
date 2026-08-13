@@ -1,0 +1,9 @@
+{
+  "assumptions": [{"id":"authority-state-fresh","description":"Delegated spending authority is evaluated against fresh policy and allowance state."}],
+  "capabilities": [{"id":"submit-delegated-payment","description":"Submit a payment using previously delegated authority.","forbidden":false},{"id":"spend-under-stale-authority","description":"Execute a payment using authority that is no longer valid under current policy state.","forbidden":true}],
+  "transitions": [{"id":"use-stale-authority-snapshot","source":"submit-delegated-payment","target":"spend-under-stale-authority","requiresViolations":["authority-state-fresh"],"invariantId":"payment-authority-must-be-current","boundary":"authority-freshness","impact":"payment can execute under stale delegated authority"}],
+  "initialCapabilities":["submit-delegated-payment"],
+  "targetCapabilities":["spend-under-stale-authority"],
+  "violatedAssumptions":["authority-state-fresh"],
+  "maxDepth":2
+}

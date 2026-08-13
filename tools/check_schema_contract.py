@@ -28,10 +28,20 @@ from contractgraph_qa.finding import (  # noqa: E402
     SEVERITIES,
     STEP_KEYS,
 )
+from contractgraph_qa.reachability import (  # noqa: E402
+    ASSUMPTION_KEYS,
+    CAPABILITY_KEYS,
+    CAPABILITY_REQUIRED_KEYS,
+    REACHABILITY_MODEL_KEYS,
+    REACHABILITY_REQUIRED_KEYS,
+    TRANSITION_KEYS,
+    TRANSITION_REQUIRED_KEYS,
+)
 
 MANIFEST_SCHEMA = ROOT / "graph" / "schema" / "adapter-manifest.schema.json"
 RESULT_SCHEMA = ROOT / "graph" / "schema" / "explorer-result.schema.json"
 ENGAGEMENT_RESULT_SCHEMA = ROOT / "graph" / "schema" / "engagement-result.schema.json"
+REACHABILITY_SCHEMA = ROOT / "graph" / "schema" / "adversarial-reachability.schema.json"
 NON_WHITESPACE_PATTERN = r"\S"
 
 
@@ -73,6 +83,25 @@ def _non_blank_string(schema: dict[str, Any], field: str) -> None:
     _require(schema.get("pattern") == NON_WHITESPACE_PATTERN, f"{field}.pattern must equal \\S")
 
 
+def _unique_string_array(
+    schema: dict[str, Any], field: str, *, min_items: int | None = None
+) -> None:
+    _require(schema.get("type") == "array", f"{field} must be an array")
+    _require(schema.get("uniqueItems") is True, f"{field} must require uniqueItems")
+    if min_items is not None:
+        _require(schema.get("minItems") == min_items, f"{field}.minItems drift")
+    _non_blank_string(schema["items"], f"{field}[]")
+
+
+def _nullable_non_blank_string(schema: dict[str, Any], field: str) -> None:
+    one_of = schema.get("oneOf")
+    _require(isinstance(one_of, list) and len(one_of) == 2, f"{field}.oneOf drift")
+    null_entries = [entry for entry in one_of if isinstance(entry, dict) and entry.get("type") == "null"]
+    string_entries = [entry for entry in one_of if isinstance(entry, dict) and entry.get("type") == "string"]
+    _require(len(null_entries) == 1 and len(string_entries) == 1, f"{field} nullable type drift")
+    _non_blank_string(string_entries[0], field)
+
+
 def _step_contract(step: dict[str, Any], field: str) -> None:
     _strict_object(step, field)
     _require(_keys(step, field) == STEP_KEYS, f"{field} property set drift")
@@ -88,10 +117,111 @@ def _step_contract(step: dict[str, Any], field: str) -> None:
     )
 
 
+def _reachability_contract(schema: dict[str, Any]) -> None:
+    _strict_object(schema, "reachabilityModel")
+    _require(
+        _keys(schema, "reachabilityModel") == REACHABILITY_MODEL_KEYS,
+        "reachability model property set drift",
+    )
+    _require(
+        _required(schema, "reachabilityModel") == REACHABILITY_REQUIRED_KEYS,
+        "reachability model required set drift",
+    )
+
+    assumptions = schema["properties"]["assumptions"]
+    _require(assumptions.get("type") == "array", "reachability assumptions must be array")
+    assumption = schema["$defs"]["assumption"]
+    _strict_object(assumption, "reachabilityModel.assumptions[]")
+    _require(
+        _keys(assumption, "reachabilityModel.assumptions[]") == ASSUMPTION_KEYS,
+        "reachability assumption property set drift",
+    )
+    _require(
+        _required(assumption, "reachabilityModel.assumptions[]") == ASSUMPTION_KEYS,
+        "reachability assumption required set drift",
+    )
+    for name in sorted(ASSUMPTION_KEYS):
+        _non_blank_string(
+            assumption["properties"][name],
+            f"reachabilityModel.assumptions[].{name}",
+        )
+
+    capabilities = schema["properties"]["capabilities"]
+    _require(capabilities.get("type") == "array", "reachability capabilities must be array")
+    _require(capabilities.get("minItems") == 1, "reachability capabilities.minItems drift")
+    capability = schema["$defs"]["capability"]
+    _strict_object(capability, "reachabilityModel.capabilities[]")
+    _require(
+        _keys(capability, "reachabilityModel.capabilities[]") == CAPABILITY_KEYS,
+        "reachability capability property set drift",
+    )
+    _require(
+        _required(capability, "reachabilityModel.capabilities[]") == CAPABILITY_REQUIRED_KEYS,
+        "reachability capability required set drift",
+    )
+    for name in ("id", "description"):
+        _non_blank_string(
+            capability["properties"][name],
+            f"reachabilityModel.capabilities[].{name}",
+        )
+    _require(
+        capability["properties"]["forbidden"] == {"type": "boolean", "default": False},
+        "reachability capability.forbidden drift",
+    )
+
+    transitions = schema["properties"]["transitions"]
+    _require(transitions.get("type") == "array", "reachability transitions must be array")
+    transition = schema["$defs"]["transition"]
+    _strict_object(transition, "reachabilityModel.transitions[]")
+    _require(
+        _keys(transition, "reachabilityModel.transitions[]") == TRANSITION_KEYS,
+        "reachability transition property set drift",
+    )
+    _require(
+        _required(transition, "reachabilityModel.transitions[]") == TRANSITION_REQUIRED_KEYS,
+        "reachability transition required set drift",
+    )
+    for name in ("id", "source", "target"):
+        _non_blank_string(
+            transition["properties"][name],
+            f"reachabilityModel.transitions[].{name}",
+        )
+    _unique_string_array(
+        transition["properties"]["requiresViolations"],
+        "reachabilityModel.transitions[].requiresViolations",
+    )
+    for name in ("invariantId", "boundary", "impact"):
+        _nullable_non_blank_string(
+            transition["properties"][name],
+            f"reachabilityModel.transitions[].{name}",
+        )
+
+    _unique_string_array(
+        schema["properties"]["initialCapabilities"],
+        "reachabilityModel.initialCapabilities",
+        min_items=1,
+    )
+    _unique_string_array(
+        schema["properties"]["targetCapabilities"],
+        "reachabilityModel.targetCapabilities",
+        min_items=1,
+    )
+    _unique_string_array(
+        schema["properties"]["violatedAssumptions"],
+        "reachabilityModel.violatedAssumptions",
+    )
+    _require(
+        schema["properties"]["maxDepth"]
+        == {"type": "integer", "minimum": 0, "default": 8},
+        "reachability maxDepth schema drift",
+    )
+
+
 def check_schema_contract() -> dict[str, Any]:
     manifest = _load(MANIFEST_SCHEMA)
     result = _load(RESULT_SCHEMA)
     engagement_result = _load(ENGAGEMENT_RESULT_SCHEMA)
+    reachability = _load(REACHABILITY_SCHEMA)
 
     _strict_object(manifest, "manifest")
     _require(_keys(manifest, "manifest") == MANIFEST_KEYS, "manifest property set drift")
@@ -212,11 +342,14 @@ def check_schema_contract() -> dict[str, Any]:
     all_of = check.get("allOf")
     _require(isinstance(all_of, list) and len(all_of) == 1, "engagement status conditional drift")
 
+    _reachability_contract(reachability)
+
     return {
         "ok": True,
         "manifestSchema": str(MANIFEST_SCHEMA.relative_to(ROOT)),
         "resultSchema": str(RESULT_SCHEMA.relative_to(ROOT)),
         "engagementResultSchema": str(ENGAGEMENT_RESULT_SCHEMA.relative_to(ROOT)),
+        "reachabilitySchema": str(REACHABILITY_SCHEMA.relative_to(ROOT)),
         "severityValues": sorted(SEVERITIES),
         "engagementStatuses": sorted(STATUSES),
     }

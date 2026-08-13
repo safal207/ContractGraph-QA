@@ -75,6 +75,46 @@ The generated scaffold deliberately starts fail-closed and is not execution-read
 
 See [`docs/PRODUCT.md`](docs/PRODUCT.md), [`docs/CLI.md`](docs/CLI.md), and [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md).
 
+## Adversarial capability reachability
+
+The experimental reachability layer models a second question:
+
+> Can a broken assumption make a previously forbidden capability reachable, cross a control boundary, and produce a bounded, reproducible impact path?
+
+Repository-owned models can be executed without network access or Forge:
+
+```bash
+cgqa reachability --model scenarios/adversarial-wallet-replay.json
+```
+
+The current model is:
+
+```text
+ASSUMPTION
+    ↓ violation
+CAPABILITY
+    ↓ transition
+CONTROL BOUNDARY / INVARIANT
+    ↓
+FORBIDDEN CAPABILITY
+    ↓
+IMPACT
+```
+
+The command emits deterministic JSON containing a canonical model SHA-256, the declared violated assumptions, and the shortest reachable impact path within the configured bound. `not_found_within_bound` is bounded evidence only, not a safety certification.
+
+A reachability model can also be bound into the single-finding product pipeline. The repository-owned binding fixture uses:
+
+```toml
+reachabilityModel = "scenarios/adversarial-adapter-fixture.json"
+```
+
+Product binding is fail-closed: the selected target capability must be marked forbidden, every path invariant must exist in the reviewed manifest, and the path must include the exact invariant identified by the explorer result. An unrelated reachability model is rejected rather than silently attached to a finding.
+
+`cgqa run` then emits a backward-compatible **bundle v2** containing canonical `reachability-model.json` and recomputable `reachability.json`, and binds the result into `finding.json -> evidence.reachability`. `cgqa verify-bundle` independently re-runs the bundled model and rejects any mismatch in the model hash, impact path, finding invariant binding, or artifact bytes. Configs without `reachabilityModel` continue to produce the existing bundle v1.
+
+See [`docs/ADVERSARIAL_REACHABILITY.md`](docs/ADVERSARIAL_REACHABILITY.md).
+
 ## Mental model
 
 ```text
@@ -178,6 +218,7 @@ cgqa init-engagement acme-escrow
 cgqa fingerprint --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json --result results/client.result.json
+cgqa reachability --model scenarios/adversarial-wallet-replay.json
 cgqa run --config cgqa.toml --clean
 cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
 cgqa verify-bundle dist/client.evidence.zip
@@ -224,6 +265,7 @@ contractgraph_qa/
   scaffold.py
   finding.py
   report.py
+  reachability.py
   demo_assets/
 
 src/harness/
@@ -248,12 +290,14 @@ results/examples/
 results/generated/
 reports/examples/
 graph/schema/
+scenarios/
 
 tools/
 docs/
   PRODUCT.md
   CLI.md
   ENGAGEMENT.md
+  ADVERSARIAL_REACHABILITY.md
   DISTRIBUTION.md
   RELEASE.md
   client-proof/

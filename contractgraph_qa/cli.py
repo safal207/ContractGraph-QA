@@ -8,6 +8,10 @@ import sys
 from pathlib import Path
 
 from contractgraph_qa import __version__
+from contractgraph_qa.control_bundle import (
+    create_control_evidence_bundle,
+    verify_control_evidence_bundle,
+)
 from contractgraph_qa.demo import run_demo
 from contractgraph_qa.engagement import (
     EngagementError,
@@ -19,10 +23,13 @@ from contractgraph_qa.engagement_run import (
     load_engagement_run_config,
     run_engagement_pipeline,
 )
+from contractgraph_qa.graph_delta import compare_reachability_models
+from contractgraph_qa.path_replay import replay_prior_model_path
 from contractgraph_qa.payment_recovery import (
     PaymentRecoveryError,
     evaluate_payment_recovery_file,
 )
+from contractgraph_qa.postimpact import load_post_impact_model
 from contractgraph_qa.product import (
     ProductError,
     doctor,
@@ -38,6 +45,7 @@ from contractgraph_qa.provider_adapter import (
     reconcile_provider_files,
     validate_provider_adapter,
 )
+from contractgraph_qa.reachability import load_reachability_model, run_reachability_model
 from contractgraph_qa.scaffold import ScaffoldError, init_engagement
 
 EXIT_OK = 0
@@ -110,6 +118,45 @@ def _build_parser() -> argparse.ArgumentParser:
 
     fingerprint = subparsers.add_parser("fingerprint", help="Print canonical manifest SHA-256")
     fingerprint.add_argument("--manifest", type=Path, required=True)
+
+    reachability = subparsers.add_parser(
+        "reachability",
+        help="Run deterministic bounded adversarial capability reachability from a JSON model",
+    )
+    reachability.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Adversarial reachability model JSON",
+    )
+
+    reachability_delta = subparsers.add_parser(
+        "reachability-delta",
+        help="Compare before/after reachability models for newly reachable forbidden capabilities",
+    )
+    reachability_delta.add_argument("--base-model", type=Path, required=True)
+    reachability_delta.add_argument("--head-model", type=Path, required=True)
+
+    reachability_replay = subparsers.add_parser(
+        "reachability-replay",
+        help="Replay the exact prior failing capability path against a proposed fixed model",
+    )
+    reachability_replay.add_argument("--prior-model", type=Path, required=True)
+    reachability_replay.add_argument("--fixed-model", type=Path, required=True)
+
+    control_build = subparsers.add_parser(
+        "control-bundle-build",
+        help="Build deterministic control evidence bundle v3 from a verified reachability bundle v2",
+    )
+    control_build.add_argument("--base-bundle", type=Path, required=True, help="Verified reachability-aware bundle v2")
+    control_build.add_argument("--post-impact-model", type=Path, required=True, help="Post-impact control model JSON")
+    control_build.add_argument("--output", type=Path, required=True, help="Destination control evidence ZIP")
+
+    control_verify = subparsers.add_parser(
+        "verify-control-bundle",
+        help="Independently verify control evidence bundle v3 and reconstructed base v2 evidence",
+    )
+    control_verify.add_argument("bundle", type=Path)
 
     verify = subparsers.add_parser("verify-bundle", help="Verify single-finding evidence ZIP integrity and semantic chain")
     verify.add_argument("bundle", type=Path)
@@ -199,6 +246,35 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "fingerprint":
             _emit({"manifestSha256": fingerprint_manifest(args.manifest.resolve())})
             return EXIT_OK
+        if args.command == "reachability":
+            model = load_reachability_model(args.model.resolve())
+            _emit(run_reachability_model(model))
+            return EXIT_OK
+        if args.command == "reachability-delta":
+            base_model = load_reachability_model(args.base_model.resolve())
+            head_model = load_reachability_model(args.head_model.resolve())
+            result = compare_reachability_models(base_model, head_model)
+            _emit(result)
+            return EXIT_VALIDATION if result["status"] == "risk_increase_detected" else EXIT_OK
+        if args.command == "reachability-replay":
+            prior_model = load_reachability_model(args.prior_model.resolve())
+            fixed_model = load_reachability_model(args.fixed_model.resolve())
+            result = replay_prior_model_path(prior_model, fixed_model)
+            _emit(result)
+            return EXIT_OK if result["status"] == "fix_verified" else EXIT_VALIDATION
+        if args.command == "control-bundle-build":
+            post_model = load_post_impact_model(args.post_impact_model.resolve())
+            _emit(
+                create_control_evidence_bundle(
+                    args.base_bundle.resolve(),
+                    post_model,
+                    args.output.resolve(),
+                )
+            )
+            return EXIT_OK
+        if args.command == "verify-control-bundle":
+            _emit(verify_control_evidence_bundle(args.bundle.resolve()))
+            return EXIT_OK
         if args.command == "verify-bundle":
             _emit(verify_evidence_bundle(args.bundle))
             return EXIT_OK
@@ -239,6 +315,11 @@ def main(argv: list[str] | None = None) -> int:
         validation_commands = {
             "validate",
             "fingerprint",
+            "reachability",
+            "reachability-delta",
+            "reachability-replay",
+            "control-bundle-build",
+            "verify-control-bundle",
             "verify-bundle",
             "verify-engagement-bundle",
             "payment-recovery-evaluate",
