@@ -1,0 +1,8 @@
+{
+  "schema": "cgqa.agent-payment-decision-input.v0.1",
+  "decisionId": "decision-failed-retry-hold",
+  "logicalOperationId": "op-failed",
+  "authority": {"status": "authorized", "evidenceRef": "fixture://authority/grant"},
+  "payment": {"outcome": "failed", "reconciliationStatus": "final", "evidenceRef": "fixture://provider/status-failed", "retryAuthorityStatus": "unresolved", "retryAllowed": false},
+  "fulfillment": {"required": false, "outcome": "not_applicable", "recoveryStatus": "not_applicable"}
+}

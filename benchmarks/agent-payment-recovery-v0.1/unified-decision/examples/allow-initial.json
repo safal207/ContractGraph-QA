@@ -1,0 +1,8 @@
+{
+  "schema": "cgqa.agent-payment-decision-input.v0.1",
+  "decisionId": "decision-initial-allow",
+  "logicalOperationId": "op-initial",
+  "authority": {"status": "authorized", "evidenceRef": "fixture://authority/grant"},
+  "payment": {"outcome": "not_started", "reconciliationStatus": "not_started", "retryAuthorityStatus": "not_applicable", "retryAllowed": false},
+  "fulfillment": {"required": false, "outcome": "not_applicable", "recoveryStatus": "not_applicable"}
+}
