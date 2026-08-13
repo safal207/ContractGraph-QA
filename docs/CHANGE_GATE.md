@@ -33,17 +33,35 @@ python tools/run_change_gate.py \
   --repo-root .
 ```
 
-The runner resolves `base-ref` and `HEAD` to full commit SHAs, reads the base model with `git show <base-sha>:<path>`, reads the head model from the checked-out worktree, and binds both commit SHAs plus both canonical model hashes into the result.
+The runner resolves `base-ref` and `HEAD` to full commit SHAs, reads the base model with `git show <base-sha>:<path>`, reads the proposed model from the checked-out worktree, and binds both commit SHAs plus both canonical model hashes into the result.
 
-No target execution, external RPC, or network request is performed after the repository checkout.
+The CI trust boundary is stricter than this convenience mode: CI uses an exact clean candidate checkout and executes the gate engine only from the trusted base checkout.
 
-## Pull-request workflow
+No target execution, external RPC, or network request is performed by the gate after repository checkout.
 
-`.github/workflows/causal-security-gate.yml` runs the same gate automatically for every pull request.
+## Trusted pull-request workflow
 
-The workflow checks out the exact pull-request head SHA with full git history, passes the exact pull-request base SHA to the runner, and keeps repository credentials disabled after checkout. The gate therefore compares the reviewed base commit with the actual proposed head rather than relying on GitHub's synthetic merge commit.
+`.github/workflows/causal-security-gate.yml` uses `pull_request_target` so the workflow definition and enforcement code come from the base repository rather than from the candidate change.
 
-The workflow always writes `.cgqa/causal-security-gate.json`, renders a concise Markdown job summary, uploads the JSON as the `causal-security-gate-<PR number>` artifact, and only then enforces the gate decision. This preserves machine evidence even when the final decision is blocking.
+The workflow creates two separate checkouts:
+
+```text
+trusted/
+  exact pull-request base SHA
+  gate engine + summary renderer + proof binder
+
+candidate/
+  exact pull-request head SHA
+  treated as data only
+```
+
+The candidate checkout is never used as `PYTHONPATH`, never used as the working directory for Python execution, and no shell script, build step, repository executable, or imported module from `candidate/` is run by the gate. Candidate TOML/JSON/model files are parsed by the trusted base implementation.
+
+Both checkouts use pinned `actions/checkout`, full history where needed, and `persist-credentials: false`. The workflow explicitly verifies the resolved base and head SHAs before evaluating the candidate. Permissions are limited to `contents: read`, and the workflow consumes no repository secrets.
+
+The workflow writes `trusted/.cgqa/causal-security-gate.json`, renders a concise Markdown job summary using trusted code, binds the same machine result into a client proof using trusted code, uploads both evidence files, and only then enforces the gate decision. Blocking changes therefore retain machine-readable evidence.
+
+Because `pull_request_target` workflow code must already exist on the default branch, the trust-hardened automation becomes the independent gate for pull requests after the workflow itself has first landed on `main`. The bootstrap PR that introduces the workflow must be reviewed and validated by the repository's existing CI before that trust anchor exists.
 
 The job summary surfaces, where applicable:
 
@@ -55,7 +73,7 @@ The job summary surfaces, where applicable:
 - exact introduced transition sequence;
 - exact historical fix replay and alternate-path result.
 
-The artifact is deterministic for the same base/head/config/model bytes and is retained for 14 days by the repository workflow.
+The evidence is deterministic for the same base/head/config/model bytes and is retained for 14 days by the repository workflow.
 
 ## Result semantics
 
@@ -90,9 +108,17 @@ The replay evidence is embedded under each model's `fixReplays` entry and binds 
 
 This catches a subtle bound-manipulation failure mode. If a two-edge forbidden path remains structurally traversable but a PR merely reduces `maxDepth` from `2` to `1`, graph delta alone can report the target as no longer reachable within the new bound. Exact historical replay still traverses the old two-edge sequence, returns `failing_path_persists`, and the change gate blocks with `fix_replay_not_verified`.
 
+## Client proof binding
+
+The same `causal-security-gate.json` object can be attached to a client proof pack without recalculating its causal claims. The proof layer stores the machine result verbatim together with a canonical SHA-256 digest. Nested tampering or conflicting re-binding is rejected.
+
+This digest is a content-integrity binding, not a standalone signer identity or external attestation. Provenance still comes from the reviewed repository/workflow context and the retained CI artifact.
+
 ## Bootstrap behavior
 
-The first PR that introduces `causal-security-gate.toml` can still compare configured model paths against the supplied base commit even though the base commit has no gate config yet. The result records `baselineConfigPresent: false`. After the config is merged once, later attempts to remove or rename configured entries are detected explicitly.
+The first merge that introduces `causal-security-gate.toml` can compare configured model paths against a base commit that has no gate config yet; the result records `baselineConfigPresent: false`. After the config is present on `main`, later attempts to remove or rename configured entries are detected explicitly.
+
+The trusted `pull_request_target` enforcement workflow itself similarly becomes available only after its first reviewed merge to the default branch.
 
 ## Safety boundary
 
