@@ -16,6 +16,8 @@ from contractgraph_qa.agent_payment_decision import (
 PACK_SCHEMA = "cgqa.agent-payment-evidence-pack.v0.1"
 MANIFEST_SCHEMA = "cgqa.agent-payment-evidence-pack-manifest.v0.1"
 _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
+_CONTENT_NAMES = ["input.json", "decision.json", "customer-summary.md"]
+_PACK_NAMES = [*_CONTENT_NAMES, "manifest.json"]
 
 
 class PaymentEvidencePackError(ValueError):
@@ -102,9 +104,9 @@ def _customer_summary(decision: dict[str, Any]) -> bytes:
     return "\n".join(lines).encode("utf-8")
 
 
-def _zip_entry(name: str, data: bytes) -> zipfile.ZipInfo:
+def _zip_entry(name: str) -> zipfile.ZipInfo:
     info = zipfile.ZipInfo(name, date_time=_FIXED_ZIP_TIME)
-    info.compress_type = zipfile.ZIP_DEFLATED
+    info.compress_type = zipfile.ZIP_STORED
     info.create_system = 3
     info.external_attr = 0o100644 << 16
     return info
@@ -118,13 +120,10 @@ def build_payment_evidence_pack(input_path: Path, output_path: Path) -> dict[str
     except AgentPaymentDecisionError as exc:
         raise PaymentEvidencePackError(str(exc)) from exc
 
-    input_bytes = _canonical_json(payload)
-    decision_bytes = _canonical_json(decision)
-    summary_bytes = _customer_summary(decision)
     artifacts = {
-        "input.json": input_bytes,
-        "decision.json": decision_bytes,
-        "customer-summary.md": summary_bytes,
+        "input.json": _canonical_json(payload),
+        "decision.json": _canonical_json(decision),
+        "customer-summary.md": _customer_summary(decision),
     }
     manifest = {
         "schema": MANIFEST_SCHEMA,
@@ -134,8 +133,8 @@ def build_payment_evidence_pack(input_path: Path, output_path: Path) -> dict[str
         "decision": decision["decision"],
         "monetaryActionAllowed": decision["monetaryActionAllowed"],
         "entries": [
-            {"path": name, "sha256": _sha256(data), "bytes": len(data)}
-            for name, data in artifacts.items()
+            {"path": name, "sha256": _sha256(artifacts[name]), "bytes": len(artifacts[name])}
+            for name in _CONTENT_NAMES
         ],
         "authority": {
             "classification": "RESEARCH_ONLY",
@@ -147,10 +146,10 @@ def build_payment_evidence_pack(input_path: Path, output_path: Path) -> dict[str
     manifest_bytes = _canonical_json(manifest)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output_path, "w") as archive:
-        for name, data in artifacts.items():
-            archive.writestr(_zip_entry(name, data), data)
-        archive.writestr(_zip_entry("manifest.json", manifest_bytes), manifest_bytes)
+    with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_STORED) as archive:
+        for name in _CONTENT_NAMES:
+            archive.writestr(_zip_entry(name), artifacts[name])
+        archive.writestr(_zip_entry("manifest.json"), manifest_bytes)
 
     pack_bytes = output_path.read_bytes()
     return {
@@ -159,19 +158,18 @@ def build_payment_evidence_pack(input_path: Path, output_path: Path) -> dict[str
         "sha256": _sha256(pack_bytes),
         "decision": decision["decision"],
         "monetaryActionAllowed": decision["monetaryActionAllowed"],
-        "entries": ["input.json", "decision.json", "customer-summary.md", "manifest.json"],
+        "entries": _PACK_NAMES,
     }
 
 
 def verify_payment_evidence_pack(pack_path: Path) -> dict[str, Any]:
-    """Verify hashes and recompute the machine decision from the packed input."""
+    """Verify hashes and recompute the machine decision and human summary."""
     try:
         with zipfile.ZipFile(pack_path, "r") as archive:
             names = archive.namelist()
-            expected_names = ["input.json", "decision.json", "customer-summary.md", "manifest.json"]
-            if names != expected_names:
+            if names != _PACK_NAMES:
                 raise PaymentEvidencePackError(
-                    f"pack entries must be exactly {', '.join(expected_names)} in canonical order"
+                    f"pack entries must be exactly {', '.join(_PACK_NAMES)} in canonical order"
                 )
             blobs = {name: archive.read(name) for name in names}
     except (OSError, zipfile.BadZipFile, KeyError) as exc:
@@ -185,17 +183,24 @@ def verify_payment_evidence_pack(pack_path: Path) -> dict[str, Any]:
         raise PaymentEvidencePackError(f"pack JSON is invalid: {exc}") from exc
     if not isinstance(manifest, dict) or manifest.get("schema") != MANIFEST_SCHEMA:
         raise PaymentEvidencePackError("manifest schema mismatch")
+    if blobs["manifest.json"] != _canonical_json(manifest):
+        raise PaymentEvidencePackError("manifest.json is not canonical JSON")
+    if blobs["input.json"] != _canonical_json(source_input):
+        raise PaymentEvidencePackError("input.json is not canonical JSON")
+    if blobs["decision.json"] != _canonical_json(packed_decision):
+        raise PaymentEvidencePackError("decision.json is not canonical JSON")
 
     declared = manifest.get("entries")
-    if not isinstance(declared, list) or len(declared) != 3:
+    if not isinstance(declared, list) or len(declared) != len(_CONTENT_NAMES):
         raise PaymentEvidencePackError("manifest must hash exactly three content entries")
+    declared_names = [item.get("path") if isinstance(item, dict) else None for item in declared]
+    if declared_names != _CONTENT_NAMES:
+        raise PaymentEvidencePackError("manifest content entries are not canonical")
     for item in declared:
         if not isinstance(item, dict):
             raise PaymentEvidencePackError("manifest entry must be an object")
-        name = item.get("path")
-        if name not in {"input.json", "decision.json", "customer-summary.md"}:
-            raise PaymentEvidencePackError(f"unexpected manifest entry: {name}")
-        data = blobs[str(name)]
+        name = str(item["path"])
+        data = blobs[name]
         if item.get("sha256") != _sha256(data) or item.get("bytes") != len(data):
             raise PaymentEvidencePackError(f"content hash/size mismatch: {name}")
 
@@ -203,8 +208,14 @@ def verify_payment_evidence_pack(pack_path: Path) -> dict[str, Any]:
         recomputed = evaluate_agent_payment_decision(source_input)
     except AgentPaymentDecisionError as exc:
         raise PaymentEvidencePackError(f"packed decision input is invalid: {exc}") from exc
-    if _canonical_json(recomputed) != _canonical_json(packed_decision):
+    if _canonical_json(recomputed) != blobs["decision.json"]:
         raise PaymentEvidencePackError("decision.json does not match recomputed decision from input.json")
+    if _customer_summary(recomputed) != blobs["customer-summary.md"]:
+        raise PaymentEvidencePackError("customer-summary.md does not match the recomputed decision")
+    if manifest.get("decisionId") != recomputed["decisionId"]:
+        raise PaymentEvidencePackError("manifest decisionId mismatch")
+    if manifest.get("logicalOperationId") != recomputed["logicalOperationId"]:
+        raise PaymentEvidencePackError("manifest logicalOperationId mismatch")
     if manifest.get("decision") != recomputed["decision"]:
         raise PaymentEvidencePackError("manifest decision does not match recomputed decision")
     if manifest.get("monetaryActionAllowed") != recomputed["monetaryActionAllowed"]:
