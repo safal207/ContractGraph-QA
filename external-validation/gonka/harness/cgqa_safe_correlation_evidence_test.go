@@ -49,7 +49,7 @@ type cgqaSafeCorrelationEvidence struct {
 	CorrelationMatchIDs                 []string `json:"correlation_match_ids"`
 	CanonicalIDsDistinct                bool     `json:"canonical_ids_distinct"`
 	AccountingResolvedForEachInternalID bool     `json:"accounting_resolved_for_each_internal_id"`
-	WinnerNonces                        []uint64 `json:"winner_nonces"`
+	WinnerNonces                        []uint64  `json:"winner_nonces"`
 	WinnerNoncesDistinct                bool     `json:"winner_nonces_distinct"`
 	TimeoutClientCorrelationID          string   `json:"timeout_client_correlation_id"`
 	TimeoutObserved                     bool     `json:"timeout_observed"`
@@ -64,7 +64,7 @@ func TestCGQAGonkaSafeCorrelationEvidence(t *testing.T) {
 	harness.SkipUnlessEnv(t, "TESTENV_CITEST")
 	harness.RequireDocker(t)
 
-	_, cfg, eps := harness.BootAdversarialStack(t, "cgqa-gonka-safe-corr-*")
+	stack, cfg, eps := harness.BootAdversarialStack(t, "cgqa-gonka-safe-corr-*")
 	client := harness.GatewayChatClient()
 	model := config.PrimaryModelID(cfg)
 	adminKey := harness.TestenvAdminAPIKey
@@ -73,6 +73,9 @@ func TestCGQAGonkaSafeCorrelationEvidence(t *testing.T) {
 
 	t.Cleanup(func() {
 		harness.ResetMockOpenAIFault(t, client, eps.MockOpenAIHTTP)
+		if t.Failed() {
+			harness.DumpComposeLogs(t, stack, "devshardctl", "versiond-0", "versiond-1", "mock-openai")
+		}
 	})
 
 	// Regression 1: two independent operations reuse one caller correlation ID.
@@ -80,13 +83,17 @@ func TestCGQAGonkaSafeCorrelationEvidence(t *testing.T) {
 	bodyA := chatBody(t, model, "CGQA safe correlation independent operation A")
 	bodyB := chatBody(t, model, "CGQA safe correlation independent operation B")
 
+	t.Logf("G-CORR-SAFE stage=operation-a dispatch correlation=%s", reusedClientID)
 	respA := postIdentityChat(eps.GatewayHTTP, adminKey, reusedClientID, bodyA, client)
+	t.Logf("G-CORR-SAFE stage=operation-a complete status=%d err=%v response_request_id=%q", respA.Status, respA.Err, respA.ResponseRequestID)
 	require.NoError(t, respA.Err)
 	require.GreaterOrEqual(t, respA.Status, http.StatusOK)
 	require.Less(t, respA.Status, http.StatusMultipleChoices)
 	require.NotEmpty(t, respA.ResponseRequestID)
 
+	t.Logf("G-CORR-SAFE stage=operation-b dispatch correlation=%s", reusedClientID)
 	respB := postIdentityChat(eps.GatewayHTTP, adminKey, reusedClientID, bodyB, client)
+	t.Logf("G-CORR-SAFE stage=operation-b complete status=%d err=%v response_request_id=%q", respB.Status, respB.Err, respB.ResponseRequestID)
 	require.NoError(t, respB.Err)
 	require.GreaterOrEqual(t, respB.Status, http.StatusOK)
 	require.Less(t, respB.Status, http.StatusMultipleChoices)
@@ -117,7 +124,9 @@ func TestCGQAGonkaSafeCorrelationEvidence(t *testing.T) {
 	harness.PatchMockOpenAIFault(t, client, eps.MockOpenAIHTTP, mockopenai.FaultPatch{LatencyMs: &latencyMS})
 	shortClient := &http.Client{Timeout: 350 * time.Millisecond}
 	timeoutBody := chatBody(t, model, "CGQA safe correlation post-timeout lookup")
+	t.Logf("G-CORR-SAFE stage=timeout dispatch correlation=%s latency_ms=%d client_timeout_ms=350", timeoutClientID, latencyMS)
 	timeoutTransport := postIdentityChat(eps.GatewayHTTP, adminKey, timeoutClientID, timeoutBody, shortClient)
+	t.Logf("G-CORR-SAFE stage=timeout complete status=%d timeout=%v err=%v response_request_id=%q", timeoutTransport.Status, isTimeout(timeoutTransport.Err), timeoutTransport.Err, timeoutTransport.ResponseRequestID)
 	timeoutObserved := isTimeout(timeoutTransport.Err)
 	writeJSONArtifact(t, caseDir, "timeout.transport.json", map[string]any{
 		"client_correlation_id": timeoutClientID,
