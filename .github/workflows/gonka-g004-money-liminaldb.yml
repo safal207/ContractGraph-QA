@@ -1,0 +1,297 @@
+name: Gonka G-004 causal money reconciliation
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/harness/cgqa_money_reconciliation_test.go'
+      - 'external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go'
+      - 'external-validation/gonka/remediation/cgqa_safe_correlation_support.go'
+      - 'external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py'
+      - 'external-validation/gonka/liminaldb/build_money_transition_bundle.py'
+      - 'external-validation/gonka/liminaldb/cgqa_gonka_bridge.rs'
+      - '.github/workflows/gonka-g004-money-liminaldb.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  money-reconciliation:
+    name: G-004 accounting to protocol-state reconciliation
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+      LIMINALDB_SHA: 0cd6e77d52787bb36a97b75ba1a37cb027268eb3
+      CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-g004-money
+
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Checkout pinned LiminalDB revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: safal207/LiminalDB
+          ref: ${{ env.LIMINALDB_SHA }}
+          path: upstream-liminaldb
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install safe-correlation support and G-004 harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp external-validation/gonka/remediation/cgqa_safe_correlation_support.go upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_timeout_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_timeout_identity_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_safe_correlation_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_money_reconciliation_test.go upstream-gonka/devshard/testenv/citest/cgqa_money_reconciliation_test.go
+          mkdir -p "$CGQA_EVIDENCE_DIR"
+
+      - name: Apply non-collapsing correlation proof patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py upstream-gonka
+          gofmt -w \
+            upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go \
+            upstream-gonka/devshard/cmd/devshardctl/perfstore.go \
+            upstream-gonka/devshard/cmd/devshardctl/gateway.go \
+            upstream-gonka/devshard/cmd/devshardctl/proxy.go \
+            upstream-gonka/devshard/cmd/devshardctl/redundancy.go \
+            upstream-gonka/devshard/testenv/citest/cgqa_*_test.go
+          test "$(grep -F -c 'RunInference(propagateCGQARequestContext(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
+          grep -F 'PRIMARY KEY (client_correlation_id, internal_request_id, escrow_id)' upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+
+      - name: Compile G-004 criterion against pinned Gonka
+        working-directory: upstream-gonka/devshard
+        run: TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
+
+      - name: Build patched devshardctl image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --file upstream-gonka/devshard/Dockerfile \
+            --target devshardctl-runtime \
+            --build-arg DEVSHARD_VERSION=cgqa-g004-money \
+            --tag devshard-runtime:latest \
+            upstream-gonka
+          docker image inspect devshard-runtime:latest --format '{{.Id}}' > "$CGQA_EVIDENCE_DIR/devshardctl.image-id.txt"
+
+      - name: Build Gonka devshardd
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Re-prove non-collapsing correlation prerequisite
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+          CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-g004-prerequisite
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaSafeCorrelationEvidence$'
+          -v -count=1 -timeout=30m
+
+      - name: Require correlation prerequisite PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('cgqa-g004-prerequisite/G-CORR-SAFE/reconciliation.json')
+          if not p.is_file():
+              raise SystemExit('G-CORR-SAFE prerequisite evidence missing')
+          d = json.loads(p.read_text())
+          if d.get('verdict') != 'PASS':
+              raise SystemExit(f"G-CORR-SAFE prerequisite verdict={d.get('verdict')}")
+          if not d.get('canonical_ids_distinct') or not d.get('accounting_resolved_for_each_internal_id'):
+              raise SystemExit('G-CORR-SAFE prerequisite lost non-collapsing accounting semantics')
+          PY
+
+      - name: Execute G-004 causal money reconciliation
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+          CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-g004-money
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaMoneyReconciliation$'
+          -v -count=1 -timeout=30m
+
+      - name: Enforce G-004 evidence contract
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('cgqa-g004-money/reconciliation.json')
+          if not p.is_file():
+              raise SystemExit('G-004 reconciliation evidence missing')
+          d = json.loads(p.read_text())
+          print(json.dumps(d, indent=2))
+          if d.get('schema_version') != 'gonka-causal-money-reconciliation-v0.1':
+              raise SystemExit('unexpected G-004 evidence schema')
+          if d.get('case_id') != 'G-004' or d.get('verdict') != 'PASS':
+              raise SystemExit(f"G-004 verdict={d.get('verdict')} unexplained={d.get('unexplained_financial_effects')}")
+          if not d.get('timeout_observed') or not d.get('first_completion_observed'):
+              raise SystemExit('G-004 did not prove the timeout ambiguity precondition')
+          if len(d.get('internal_request_ids') or []) != 2 or len(d.get('requests') or []) != 2:
+              raise SystemExit('G-004 did not preserve exactly two internal request lineages')
+          if not d.get('attempt_nonces_unique'):
+              raise SystemExit('G-004 attempt nonces are not uniquely owned by request lineages')
+          if not d.get('four_way_reconciles'):
+              raise SystemExit('G-004 four-way financial reconciliation failed')
+          values = [
+              d.get('accounting_attempt_cost'),
+              d.get('accounting_reported_cost'),
+              d.get('inference_actual_cost'),
+              d.get('host_cost_delta'),
+              d.get('balance_debit'),
+          ]
+          if any(v is None for v in values) or len(set(values)) != 1:
+              raise SystemExit(f'G-004 cost surfaces diverged: {values}')
+          if d.get('unexplained_financial_effects'):
+              raise SystemExit(f"G-004 unexplained financial effects remain: {d.get('unexplained_financial_effects')}")
+          statuses = set((d.get('terminal_inference_statuses') or {}).values())
+          if not statuses or not statuses.issubset({'finished', 'timed_out'}):
+              raise SystemExit(f'G-004 entered excluded dispute/nonterminal states: {sorted(statuses)}')
+          PY
+
+      - name: Build G-004 LiminalDB transition bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile external-validation/gonka/liminaldb/build_money_transition_bundle.py
+          python external-validation/gonka/liminaldb/build_money_transition_bundle.py \
+            --input cgqa-g004-money/reconciliation.json \
+            --output cgqa-g004-money/liminaldb-transition-bundle.json \
+            --liminaldb-revision "$LIMINALDB_SHA"
+          cp external-validation/gonka/liminaldb/cgqa_gonka_bridge.rs \
+            upstream-liminaldb/liminal-db/crates/liminal-store/examples/cgqa_gonka_bridge.rs
+
+      - name: Persist G-004 into native LiminalDB and prove replay
+        shell: bash
+        env:
+          CARGO_INCREMENTAL: '0'
+        run: |
+          set -euo pipefail
+          rustc --version
+          cargo --version
+          cargo run -q --locked \
+            --manifest-path upstream-liminaldb/liminal-db/Cargo.toml \
+            -p liminal-store \
+            --example cgqa_gonka_bridge -- \
+            cgqa-g004-money/reconciliation.json \
+            cgqa-g004-money/liminaldb-transition-bundle.json \
+            cgqa-g004-money/liminaldb-ledger \
+            cgqa-g004-money/liminaldb-bridge-receipt.json
+
+      - name: Enforce durable G-004 causal-memory receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = Path('cgqa-g004-money/reconciliation.json')
+          bundle = json.loads(Path('cgqa-g004-money/liminaldb-transition-bundle.json').read_text())
+          receipt = json.loads(Path('cgqa-g004-money/liminaldb-bridge-receipt.json').read_text())
+          expected_digest = 'sha256:' + hashlib.sha256(evidence.read_bytes()).hexdigest()
+
+          if receipt.get('schema') != 'cgqa-gonka-liminaldb-bridge-receipt-v0.1':
+              raise SystemExit('unexpected LiminalDB bridge receipt schema')
+          if bundle.get('source_evidence_digest') != expected_digest or receipt.get('source_evidence_digest') != expected_digest:
+              raise SystemExit('G-004 LiminalDB receipt is not bound to exact evidence bytes')
+          if receipt.get('liminaldb_revision') != os.environ['LIMINALDB_SHA']:
+              raise SystemExit('G-004 LiminalDB revision mismatch')
+          if receipt.get('replay_verified') is not True:
+              raise SystemExit('G-004 LiminalDB close/reopen/full replay was not verified')
+          if receipt.get('transition_count') != 1 or receipt.get('event_count') != 7:
+              raise SystemExit(f"unexpected G-004 LiminalDB cardinality: transitions={receipt.get('transition_count')} events={receipt.get('event_count')}")
+          hashes = receipt.get('event_hashes') or []
+          if len(hashes) != 7 or receipt.get('event_chain_head') != hashes[-1]:
+              raise SystemExit('G-004 LiminalDB event-chain head mismatch')
+          projections = receipt.get('projections') or []
+          if len(projections) != 1:
+              raise SystemExit('G-004 LiminalDB projection missing')
+          projection = projections[0]
+          if projection.get('transition_id') not in set(bundle.get('transition_ids') or []):
+              raise SystemExit('G-004 logical_operation_id was not retained as LiminalDB transition_id')
+          if projection.get('event_count') != 7 or projection.get('side_effect_committed') is not True:
+              raise SystemExit('G-004 committed financial effect was not durably retained')
+          dims = projection.get('dimensions') or {}
+          expected = {
+              'authority': 'VALID',
+              'execution': 'OBSERVED_EXECUTED',
+              'response_integrity': 'NOT_EVALUATED',
+              'causal_validity': 'VALID',
+              'continuity_posture': 'REPORT_ONLY',
+          }
+          if any(dims.get(k) != v for k, v in expected.items()):
+              raise SystemExit(f'G-004 recovered LiminalDB dimensions mismatch: {dims}')
+          print(json.dumps(receipt, indent=2))
+          PY
+
+      - name: Publish G-004 summary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+          print('### Gonka G-004 causal money reconciliation')
+          p = Path('cgqa-g004-money/reconciliation.json')
+          if not p.is_file():
+              print('- evidence missing')
+          else:
+              d = json.loads(p.read_text())
+              print(f"- verdict: `{d.get('verdict')}`")
+              print(f"- logical operation: `{d.get('logical_operation_id')}`")
+              print(f"- internal requests: `{d.get('internal_request_ids')}`")
+              print(f"- accounting attempts cost: `{d.get('accounting_attempt_cost')}`")
+              print(f"- inference actual cost: `{d.get('inference_actual_cost')}`")
+              print(f"- host cost delta: `{d.get('host_cost_delta')}`")
+              print(f"- escrow balance debit: `{d.get('balance_debit')}`")
+              print(f"- four-way reconciliation: `{d.get('four_way_reconciles')}`")
+              print(f"- unexplained financial effects: `{d.get('unexplained_financial_effects')}`")
+          r = Path('cgqa-g004-money/liminaldb-bridge-receipt.json')
+          if r.is_file():
+              receipt = json.loads(r.read_text())
+              print(f"- LiminalDB replay verified: `{receipt.get('replay_verified')}`")
+              print(f"- LiminalDB event chain head: `{receipt.get('event_chain_head')}`")
+          PY
+
+      - name: Upload G-004 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-g004-money-liminaldb-evidence
+          path: |
+            cgqa-g004-prerequisite
+            cgqa-g004-money
+          if-no-files-found: error
+          retention-days: 14
