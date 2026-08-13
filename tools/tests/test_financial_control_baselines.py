@@ -10,6 +10,7 @@ from contractgraph_qa.reachability import load_reachability_model, run_reachabil
 class FinancialControlBaselineTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        """Resolve repository paths and the safe/failure control pairs once."""
         cls.root = Path(__file__).resolve().parents[2]
         cls.cases = {
             "escrow-approval": (
@@ -55,6 +56,7 @@ class FinancialControlBaselineTest(unittest.TestCase):
         }
 
     def test_safe_baselines_keep_forbidden_security_objects_but_block_the_path(self) -> None:
+        """Keep security identity stable while proving the safe path is blocked."""
         for baseline_name, (
             failure_name,
             assumption_id,
@@ -99,6 +101,7 @@ class FinancialControlBaselineTest(unittest.TestCase):
                 self.assertEqual(failure_result["path"]["targetCapability"], target)
 
     def test_financial_control_profile_is_strict_and_points_to_all_baselines(self) -> None:
+        """Bind every profile model ID to its exact reviewed baseline path."""
         config = load_change_gate_config(self.root / "financial-control-gate.toml")
         self.assertEqual(config.schema_version, 1)
         self.assertEqual(len(config.models), 5)
@@ -113,7 +116,15 @@ class FinancialControlBaselineTest(unittest.TestCase):
                 "settlement-deduplication-control",
             ],
         )
+        expected_paths = {
+            "authority-freshness-control": "scenarios/financial-control-baselines/authority-freshness.json",
+            "authority-revocation-control": "scenarios/financial-control-baselines/authority-revocation.json",
+            "escrow-approval-control": "scenarios/financial-control-baselines/escrow-approval.json",
+            "idempotency-continuity-control": "scenarios/financial-control-baselines/idempotency-continuity.json",
+            "settlement-deduplication-control": "scenarios/financial-control-baselines/settlement-deduplication.json",
+        }
         for model in config.models:
+            self.assertEqual(model.path, expected_paths[model.id])
             self.assertTrue((self.root / model.path).is_file(), model.path)
 
 
