@@ -1,0 +1,84 @@
+id: G-001
+title: Normal inference within a valid devshard
+profile: gonka-verification-v0.1
+priority: P0
+status: specified
+safety:
+  environment: devnet_or_explicitly_permitted_gateway
+  mainnet_destructive_testing: forbidden
+  secrets_in_evidence: redact
+
+intent:
+  logical_operation: single_chat_completion
+  endpoint: /v1/chat/completions
+  method: POST
+
+preconditions:
+  - gateway_health_is_ok
+  - valid_api_key_is_available
+  - exactly_one_active_test_devshard_is_selected
+  - baseline_devshard_state_is_captured
+  - baseline_chain_state_is_captured_when_available
+
+stimulus:
+  request:
+    model: configured_test_model
+    messages:
+      - role: user
+        content: "CGQA control request: reply with a short deterministic acknowledgement."
+    max_tokens: 32
+  client_policy:
+    attempts: 1
+    no_retry: true
+
+expected:
+  - id: INV-G001-01
+    assertion: one_client_attempt_maps_to_one_observed_terminal_request_outcome
+  - id: INV-G001-02
+    assertion: successful_response_has_nonempty_request_or_completion_identity
+  - id: INV-G001-03
+    assertion: observed_usage_effect_is_attributable_to_the_selected_devshard
+  - id: INV-G001-04
+    assertion: no_unrelated_devshard_or_accounting_state_mutates
+  - id: INV-G001-05
+    assertion: later_finalize_and_settlement_can_reconcile_this_usage_without_negative_or_duplicate_effect
+
+evidence:
+  required:
+    - run_metadata.json
+    - request.redacted.json
+    - response.redacted.json
+    - gateway_status.before.json
+    - gateway_status.after.json
+    - devshard_state.before.json
+    - devshard_state.after.json
+  conditional:
+    - chain_state.before.json
+    - chain_state.after.json
+    - settlement.json
+    - gateway_logs.redacted.txt
+  correlation_fields:
+    - logical_operation_id
+    - execution_attempt_id
+    - client_timestamp_start
+    - client_timestamp_end
+    - response_id
+    - escrow_or_devshard_id
+
+pass_criteria:
+  all:
+    - request_has_one_terminal_outcome
+    - accounting_delta_is_explainable
+    - no_duplicate_usage_effect_detected
+    - evidence_has_sufficient_correlation_to_replay_reasoning
+
+fail_criteria:
+  any:
+    - more_than_one_billable_effect_for_one_attempt
+    - unexplained_accounting_delta
+    - successful_response_without_reconcilable_devshard_attribution
+    - unrelated_state_mutation
+
+notes:
+  - This is the control case. G-002 must reuse the same evidence schema so deltas are comparable.
+  - A successful inference is not by itself a PASS; the state transition and accounting evidence must reconcile.
