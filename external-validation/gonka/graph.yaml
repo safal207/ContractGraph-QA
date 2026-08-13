@@ -1,0 +1,96 @@
+profile: gonka-verification-v0.1
+model: actor-action-state-transition-invariant-evidence
+
+actors:
+  - developer
+  - gateway
+  - broker
+  - host
+  - executor
+  - validator
+  - chain
+
+states:
+  - request_created
+  - request_authorized
+  - devshard_open
+  - escrow_funded
+  - inference_dispatched
+  - inference_executed
+  - result_returned
+  - usage_accounted_offchain
+  - settlement_submitted
+  - settlement_finalized
+  - epoch_rotated
+  - reward_pending
+  - reward_claimed
+  - recovery_pending
+
+transitions:
+  - id: T1
+    from: request_created
+    to: request_authorized
+    actor: gateway
+    invariant: I1_authorization_before_execution
+
+  - id: T2
+    from: request_authorized
+    to: devshard_open
+    actor: gateway
+    invariant: I2_escrow_precedes_billable_execution
+
+  - id: T3
+    from: devshard_open
+    to: inference_dispatched
+    actor: gateway
+    invariant: I3_logical_request_maps_to_single_billable_operation
+
+  - id: T4
+    from: inference_dispatched
+    to: inference_executed
+    actor: host
+    invariant: I3_logical_request_maps_to_single_billable_operation
+
+  - id: T5
+    from: inference_executed
+    to: result_returned
+    actor: host
+    invariant: I4_result_and_usage_share_operation_identity
+
+  - id: T6
+    from: result_returned
+    to: usage_accounted_offchain
+    actor: gateway
+    invariant: I5_usage_accounting_matches_observed_execution
+
+  - id: T7
+    from: usage_accounted_offchain
+    to: settlement_submitted
+    actor: gateway
+    invariant: I6_settlement_matches_accumulated_usage
+
+  - id: T8
+    from: settlement_submitted
+    to: settlement_finalized
+    actor: chain
+    invariant: I7_finalization_is_idempotent
+
+  - id: T9
+    from: settlement_finalized
+    to: epoch_rotated
+    actor: gateway
+    invariant: I8_epoch_rotation_preserves_accounting_continuity
+
+  - id: T10
+    from: reward_pending
+    to: reward_claimed
+    actor: host
+    invariant: I9_reward_claim_is_epoch_bound_and_recoverable_when_retryable
+
+failure_edges:
+  - timeout -> retry_same_logical_operation
+  - duplicate_delivery -> suppress_duplicate_billable_effect
+  - gateway_restart -> recover_pending_state
+  - settlement_retry -> no_double_settlement
+  - epoch_boundary -> rotate_without_orphaning_usage
+  - chain_unavailable -> defer_and_retry_without_mutation_loss
