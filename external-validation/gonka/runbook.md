@@ -2,51 +2,75 @@
 
 Pinned upstream revision: `f040d0a5b5ef207a0c431894c9f9e2608f9d3073`
 
-This runbook is intentionally limited to a Gonka DevNet/test gateway or another environment where testing is explicitly permitted. Do not point these procedures at mainnet.
+This runbook is intentionally limited to Gonka's local Docker testenv, a Community DevNet, or another environment where testing is explicitly permitted. Do not point ambiguity/fault procedures at mainnet or an unconsenting public broker.
 
 ## Upstream surfaces used
 
-The current devshard gateway exposes an OpenAI-compatible `POST /v1/chat/completions`, public `GET /v1/status`, and request accounting at `GET /v1/requests/{request_id}`. The gateway binds an inbound `X-Request-Id` into request context and echoes that identity on the response. Request accounting persists request/escrow identity plus execution attempts and can join those attempts to actual inference costs.
+The devshard gateway exposes an OpenAI-compatible `POST /v1/chat/completions`, public `GET /v1/status`, per-request accounting at `GET /v1/requests/{request_id}`, and an escrow-keyed form under `/devshard/{escrow_id}/...`. The gateway binds inbound `X-Request-Id` into request context and echoes that identity on the response. Request accounting exposes execution-attempt and cost lineage.
 
-A client disconnect is not proof that execution stopped. Gonka documents a meta-drain window that can continue draining host SSE after the client disconnects so protocol completion can finish. Therefore G-002 treats client timeout as an ambiguous outcome.
+A client disconnect is not proof that execution stopped. The gateway can continue protocol completion after the client disconnects. G-002 therefore classifies a client timeout as an ambiguous transport outcome until accounting evidence resolves it.
 
 ## Required environment
 
-Set these values only for an explicitly permitted test environment:
-
 ```bash
-export GONKA_GATEWAY_BASE="https://<permitted-devnet-gateway>"
+export GONKA_GATEWAY_BASE="https://<explicitly-permitted-test-gateway>"
 export GONKA_API_KEY="<test-api-key-if-required>"
 export GONKA_MODEL="<advertised-test-model>"
+export GONKA_ESCROW_ID="<selected-test-escrow-id>"
 export CGQA_RUN_ID="gonka-$(date -u +%Y%m%dT%H%M%SZ)"
 ```
 
-Do not store secrets in evidence. Redact Authorization headers and any private/admin material.
+Build authentication arguments once. An empty API key must not produce an empty Bearer credential:
+
+```bash
+GONKA_AUTH_ARGS=()
+if [ -n "${GONKA_API_KEY:-}" ]; then
+  GONKA_AUTH_ARGS=(-H "Authorization: Bearer $GONKA_API_KEY")
+fi
+```
+
+Do not store secrets in evidence. Never persist `GONKA_AUTH_ARGS`, Authorization headers, private keys, or admin material.
 
 ## Evidence directory
 
 ```bash
-mkdir -p "evidence/$CGQA_RUN_ID/G-001" "evidence/$CGQA_RUN_ID/G-002A" "evidence/$CGQA_RUN_ID/G-002B"
+mkdir -p \
+  "evidence/$CGQA_RUN_ID/G-001" \
+  "evidence/$CGQA_RUN_ID/G-002A" \
+  "evidence/$CGQA_RUN_ID/G-002B"
 ```
 
-Each case should record UTC timestamps and the pinned upstream revision.
+Every reconciliation bundle records UTC timestamps, the pinned upstream revision, one CGQA `logical_operation_id`, transport request IDs, execution nonces, and cost lineage.
 
 ---
 
 ## G-001 — normal inference control
 
-### 1. Capture baseline status
+### 1. Capture baseline status and selected devshard state
 
 ```bash
-curl -fsS "$GONKA_GATEWAY_BASE/v1/status" \
+curl -fsS "${GONKA_AUTH_ARGS[@]}" \
+  "$GONKA_GATEWAY_BASE/v1/status" \
   > "evidence/$CGQA_RUN_ID/G-001/gateway_status.before.json"
+
+curl -fsS "${GONKA_AUTH_ARGS[@]}" \
+  "$GONKA_GATEWAY_BASE/devshard/$GONKA_ESCROW_ID/v1/state" \
+  > "evidence/$CGQA_RUN_ID/G-001/devshard_state.before.json"
 ```
 
-### 2. Choose one explicit request identity
+Confirm the selected test escrow/devshard is funded before dispatch. Funding is a precondition, not something inferred from a successful response.
+
+### 2. Create request metadata and redacted request body
 
 ```bash
 export G001_REQUEST_ID="cgqa-$CGQA_RUN_ID-g001-a1"
+
+cat > "evidence/$CGQA_RUN_ID/G-001/request.redacted.json" <<EOF
+{"model":"$GONKA_MODEL","messages":[{"role":"user","content":"CGQA control request: reply with a short deterministic acknowledgement."}],"max_tokens":32,"stream":false}
+EOF
 ```
+
+Create `run_metadata.json` with at least `case_id`, `run_id`, `logical_operation_id`, pinned upstream revision, environment, model, escrow ID, and UTC start time.
 
 ### 3. Submit exactly one request, no client retry
 
@@ -57,35 +81,43 @@ curl -fsS \
   -o "evidence/$CGQA_RUN_ID/G-001/response.redacted.json" \
   -X POST "$GONKA_GATEWAY_BASE/v1/chat/completions" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $GONKA_API_KEY" \
+  "${GONKA_AUTH_ARGS[@]}" \
   -H "X-Request-Id: $G001_REQUEST_ID" \
-  -d "{\"model\":\"$GONKA_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"CGQA control request: reply with a short deterministic acknowledgement.\"}],\"max_tokens\":32,\"stream\":false}"
+  --data-binary @"evidence/$CGQA_RUN_ID/G-001/request.redacted.json"
 ```
-
-Before preserving `response.headers.txt`, redact Authorization if your HTTP tooling ever records request headers.
 
 ### 4. Query request accounting
 
 ```bash
-curl -fsS "$GONKA_GATEWAY_BASE/v1/requests/$G001_REQUEST_ID" \
-  > "evidence/$CGQA_RUN_ID/G-001/request-accounting.json"
+curl -fsS "${GONKA_AUTH_ARGS[@]}" \
+  "$GONKA_GATEWAY_BASE/devshard/$GONKA_ESCROW_ID/v1/requests/$G001_REQUEST_ID" \
+  > "evidence/$CGQA_RUN_ID/G-001/accounting.json"
 ```
 
-### 5. Capture final status
+### 5. Capture final state
 
 ```bash
-curl -fsS "$GONKA_GATEWAY_BASE/v1/status" \
+curl -fsS "${GONKA_AUTH_ARGS[@]}" \
+  "$GONKA_GATEWAY_BASE/v1/status" \
   > "evidence/$CGQA_RUN_ID/G-001/gateway_status.after.json"
+
+curl -fsS "${GONKA_AUTH_ARGS[@]}" \
+  "$GONKA_GATEWAY_BASE/devshard/$GONKA_ESCROW_ID/v1/state" \
+  > "evidence/$CGQA_RUN_ID/G-001/devshard_state.after.json"
 ```
+
+Create `reconciliation.json` conforming to `evidence.schema.json`.
 
 ### G-001 minimum PASS
 
-- response is terminal and attributable to `$G001_REQUEST_ID`;
-- accounting exposes a consistent escrow/request lineage;
-- attempt cost arithmetic reconciles;
-- no unexplained second billable effect exists.
+- every transport request ID has a terminal disposition;
+- request accounting exists;
+- every execution nonce has known request lineage;
+- winner/non-winner totals derived from `attempts[]` match the reported cost fields;
+- required source artifacts exist;
+- there are zero unexplained effects.
 
-Do not proceed to G-002 if G-001 cannot be reconciled; fix the baseline first.
+Do not proceed to G-002 if G-001 cannot be reconciled.
 
 ---
 
@@ -93,18 +125,24 @@ Do not proceed to G-002 if G-001 cannot be reconciled; fix the baseline first.
 
 Purpose: determine what happens when one semantic operation is retried with the same protocol request identity.
 
-### 1. Stable identities
+### 1. Stable identities and request source
 
 ```bash
-export G002_LOGICAL_ID="cgqa-$CGQA_RUN_ID-logical-timeout"
+export G002A_LOGICAL_ID="cgqa-$CGQA_RUN_ID-logical-g002a"
 export G002A_REQUEST_ID="cgqa-$CGQA_RUN_ID-g002a"
+
+cat > "evidence/$CGQA_RUN_ID/G-002A/attempt-1.request.redacted.json" <<EOF
+{"model":"$GONKA_MODEL","messages":[{"role":"user","content":"CGQA timeout/retry probe: return a short deterministic acknowledgement."}],"max_tokens":32,"stream":false}
+EOF
+cp "evidence/$CGQA_RUN_ID/G-002A/attempt-1.request.redacted.json" \
+   "evidence/$CGQA_RUN_ID/G-002A/attempt-2.request.redacted.json"
 ```
 
-Record `G002_LOGICAL_ID` in local evidence only; Gonka's observable request identity is `X-Request-Id`.
+Capture `gateway_status.before.json`, `devshard_state.before.json`, and `run_metadata.json` before dispatch.
 
 ### 2. First attempt — intentionally short client timeout
 
-Choose a timeout that is short enough to create a client-side ambiguous outcome but does not attack the server or other users. Start conservatively.
+Use this only on an explicitly permitted test gateway. The local Docker harness uses Gonka's deterministic mock-openai latency hook instead of relying on public-network latency.
 
 ```bash
 set +e
@@ -112,108 +150,91 @@ curl -sS \
   --max-time 1 \
   -D "evidence/$CGQA_RUN_ID/G-002A/attempt-1.headers.txt" \
   -o "evidence/$CGQA_RUN_ID/G-002A/attempt-1.response.redacted.json" \
-  -w '%{http_code}\n' \
   -X POST "$GONKA_GATEWAY_BASE/v1/chat/completions" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $GONKA_API_KEY" \
+  "${GONKA_AUTH_ARGS[@]}" \
   -H "X-Request-Id: $G002A_REQUEST_ID" \
-  -d "{\"model\":\"$GONKA_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"CGQA timeout/retry probe: return a short deterministic acknowledgement.\"}],\"max_tokens\":32,\"stream\":false}" \
-  > "evidence/$CGQA_RUN_ID/G-002A/attempt-1.http-code.txt"
-export G002A_ATTEMPT1_EXIT=$?
+  --data-binary @"evidence/$CGQA_RUN_ID/G-002A/attempt-1.request.redacted.json"
+G002A_ATTEMPT1_EXIT=$?
 set -e
 ```
 
-Record the curl exit code and UTC timestamps in `attempt-1.transport-outcome.json`. A timeout is **ambiguous**, not failure-to-execute.
+Write `attempt-1.transport-outcome.json` with the request ID, timestamps, client exit code, HTTP status if any, and disposition. A client timeout is `client_timeout_ambiguous`, never `proven_non_execution` by assumption.
 
-### 3. Observe accounting before retry
+### 3. Observe before retry
 
-```bash
-curl -sS "$GONKA_GATEWAY_BASE/v1/requests/$G002A_REQUEST_ID" \
-  > "evidence/$CGQA_RUN_ID/G-002A/attempt-1.accounting.json"
-```
+Capture:
 
-Possible legitimate observations include: not yet visible, in-progress/partial state, completed accounting, or a terminal response that the client missed.
+- `attempt-1.accounting.json` — the observed accounting snapshot, or an explicit JSON `observed:false` record;
+- `gateway_status.after-attempt-1.json`.
 
-### 4. Retry once with the same request identity
+### 4. Retry exactly once with the same request identity
 
 ```bash
 curl -sS \
   --max-time 120 \
   -D "evidence/$CGQA_RUN_ID/G-002A/attempt-2.headers.txt" \
   -o "evidence/$CGQA_RUN_ID/G-002A/attempt-2.response.redacted.json" \
-  -w '%{http_code}\n' \
   -X POST "$GONKA_GATEWAY_BASE/v1/chat/completions" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $GONKA_API_KEY" \
+  "${GONKA_AUTH_ARGS[@]}" \
   -H "X-Request-Id: $G002A_REQUEST_ID" \
-  -d "{\"model\":\"$GONKA_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"CGQA timeout/retry probe: return a short deterministic acknowledgement.\"}],\"max_tokens\":32,\"stream\":false}" \
-  > "evidence/$CGQA_RUN_ID/G-002A/attempt-2.http-code.txt"
+  --data-binary @"evidence/$CGQA_RUN_ID/G-002A/attempt-2.request.redacted.json"
 ```
 
-A `429` while the first request is still in flight is not a duplicate execution; capture it as a concurrency disposition and keep observing the first request.
+A `429` while the first operation is in flight is explicit proof that the retry was rejected at that boundary; do not count it as an execution.
 
-### 5. Reconcile
-
-```bash
-curl -sS "$GONKA_GATEWAY_BASE/v1/requests/$G002A_REQUEST_ID" \
-  > "evidence/$CGQA_RUN_ID/G-002A/final.accounting.json"
-```
-
-Check:
-
-- all observed attempt nonces;
-- winner nonce;
-- winner vs non-winner attempts;
-- `winner_actual_cost + other_attempts_actual_cost == all_attempts_actual_cost`;
-- whether the second transport request was rejected, replayed/cached, or created an additional execution;
-- whether every additional execution is explicitly represented and financially reconcilable.
+Capture `attempt-2.transport-outcome.json`, `attempt-2.accounting.json`, `gateway_status.after-attempt-2.json`, `devshard_state.after.json`, and final `reconciliation.json`.
 
 ---
 
 ## G-002B — ambiguous timeout, fresh transport request identity
 
-Purpose: characterize a common generic-client retry policy where each HTTP attempt receives a new request ID even though the user's semantic intent did not change.
-
-Use:
+Purpose: characterize a generic retry policy where each HTTP attempt has a fresh request ID while CGQA preserves one semantic intent.
 
 ```bash
+export G002B_LOGICAL_ID="cgqa-$CGQA_RUN_ID-logical-g002b"
 export G002B_REQUEST_ID_1="cgqa-$CGQA_RUN_ID-g002b-a1"
 export G002B_REQUEST_ID_2="cgqa-$CGQA_RUN_ID-g002b-a2"
 ```
 
-Repeat the G-002 procedure, but send attempt 1 with `$G002B_REQUEST_ID_1` and retry with `$G002B_REQUEST_ID_2`.
+Repeat the G-002 procedure with attempt 1 using `$G002B_REQUEST_ID_1` and attempt 2 using `$G002B_REQUEST_ID_2`.
 
-Do **not** expect Gonka to deduplicate two distinct request identities unless the protocol explicitly promises that behavior. The verification target is instead:
+Do **not** assume Gonka deduplicates distinct request identities. PASS requires instead that:
 
-1. both executions, if any, are independently observable;
-2. both costs, if any, are independently observable;
-3. the CGQA evidence layer preserves one `logical_operation_id` across both transport IDs;
-4. no execution/cost becomes orphaned or silently hidden.
-
-This distinction matters because `X-Request-Id` is verified as a correlation primitive, not assumed to be an idempotency key.
+1. both transport attempts have known dispositions;
+2. a successful/ambiguous attempt has accounting lineage or the case is `INCONCLUSIVE`;
+3. an explicitly rejected attempt is recorded as non-executing at that boundary;
+4. every observed execution nonce and cost is attributable;
+5. cached aliases are reconciled back to one source lineage rather than double-counted;
+6. no effect is silently orphaned.
 
 ---
 
-## Reconciliation object
+## Cost reconciliation
 
-Create one `reconciliation.json` per case with at least:
+For every unique accounting source:
 
-```json
-{
-  "case_id": "G-002A",
-  "logical_operation_id": "...",
-  "transport_request_ids": ["..."],
-  "observed_execution_nonces": [],
-  "winner_nonce": null,
-  "winner_actual_cost": 0,
-  "other_attempts_actual_cost": 0,
-  "all_attempts_actual_cost": 0,
-  "transport_dispositions": [],
-  "unexplained_effects": [],
-  "verdict": "PASS|FAIL|INCONCLUSIVE"
-}
+```text
+derived_winner_cost = sum(attempt.actual_cost where attempt.winner == true)
+derived_other_cost  = sum(attempt.actual_cost where attempt.winner == false)
+derived_all_cost    = derived_winner_cost + derived_other_cost
 ```
 
-## Failure handling
+Require:
 
-If a test produces an unexplained financial/state effect, stop escalating the fault. Preserve and redact evidence, classify it as a private hypothesis, and do not disclose security-sensitive details publicly until coordinated triage.
+```text
+derived_winner_cost == cost.winner_actual_cost
+derived_other_cost  == cost.other_attempts_actual_cost
+derived_all_cost    == cost.all_attempts_actual_cost
+```
+
+A summary whose aggregate fields add up but disagree with `attempts[]` is not valid evidence.
+
+## Verdict handling
+
+- `PASS` — complete source evidence and no unexplained effects.
+- `INCONCLUSIVE` — one or more required causal observations cannot be resolved; do not treat as PASS.
+- `FAIL` — reconciliation invariant violated. The Docker test must fail on a conclusive `FAIL`.
+
+A `FAIL` is not automatically a vulnerability. Preserve/redact evidence, stop increasing fault intensity, and classify security-sensitive or financial discrepancies as private hypotheses until independently reproduced and responsibly disclosed.

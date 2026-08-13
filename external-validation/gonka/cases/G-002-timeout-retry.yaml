@@ -5,9 +5,9 @@ priority: P0
 status: executable_contract
 upstream_revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
 safety:
-  environment: devnet_or_explicitly_permitted_gateway
+  environment: local_testenv_or_explicitly_permitted_gateway
   mainnet_destructive_testing: forbidden
-  fault_injection_scope: client_boundary_only
+  fault_injection_scope: client_boundary_or_local_mock_latency_only
   secrets_in_evidence: redact
 
 intent:
@@ -22,6 +22,7 @@ upstream_anchors:
     behavior: inbound_id_is_bound_to_request_context_and_echoed_on_response
   request_accounting:
     endpoint: /v1/requests/{request_id}
+    escrow_keyed_endpoint: /devshard/{escrow_id}/v1/requests/{request_id}
     observed_fields:
       - request_id
       - escrow_id
@@ -32,28 +33,35 @@ upstream_anchors:
       - attempts[].host_idx
       - attempts[].participant_key
       - attempts[].winner
+      - attempts[].actual_cost
       - cost.winner_actual_cost
       - cost.other_attempts_actual_cost
       - cost.all_attempts_actual_cost
   concurrency:
     documented_behavior: chat_completions_can_return_429_while_another_inference_is_in_flight
   disconnect_semantics:
-    documented_behavior: gateway_can_continue_draining_host_SSE_after_client_disconnect_for_protocol_completion
+    documented_behavior: gateway_can_continue_protocol_completion_after_client_disconnect
+  local_fault_hook:
+    endpoint: mock-openai_/testenv/fault
+    control: latency_ms
 
 preconditions:
-  - G-001_control_has_passed_or_has_a_known_baseline
-  - valid_test_devshard_is_active
+  - G-001_control_has_passed
+  - valid_funded_test_devshard_is_active
   - baseline_gateway_status_is_captured
+  - baseline_devshard_state_is_captured
   - baseline_request_accounting_is_empty_for_test_ids
-  - timeout_can_be_induced_without_attacking_or_disrupting_other_users
+  - timeout_is_induced_only_in_local_testenv_or_explicitly_permitted_environment
 
 variants:
   - id: G-002A
+    evidence_directory: G-002A
     name: stable_request_identity_retry
     purpose: verify_recovery_when_client_reuses_the_same_X_Request_Id
     logical_operation_id: stable
     request_id_policy: same_X_Request_Id_on_attempt_1_and_attempt_2
   - id: G-002B
+    evidence_directory: G-002B
     name: fresh_transport_identity_retry
     purpose: characterize_behavior_when_retry_uses_a_new_X_Request_Id_but_same_logical_operation
     logical_operation_id: stable
@@ -73,9 +81,9 @@ stimulus:
     fault: induce_client_side_timeout_after_request_dispatch
     requirement: do_not_assume_execution_failed
   observation_after_attempt_1:
-    - query_/v1/requests/{request_id}
+    - capture_transport_disposition
+    - query_request_accounting_or_record_explicit_not_observed_snapshot
     - capture_gateway_status
-    - classify_as_not_seen_in_flight_completed_or_ambiguous
   recovery:
     action: retry_same_logical_operation_once
     correlation:
@@ -83,28 +91,34 @@ stimulus:
       execution_attempt_id: unique_per_attempt
       X_Request_Id: according_to_variant
   observation_after_attempt_2:
-    - query_request_accounting_for_every_transport_request_id
+    - capture_transport_disposition
+    - query_request_accounting_or_record_explicit_non_execution_rejection
     - capture_gateway_status
+    - capture_final_devshard_state
     - reconcile_attempt_nonces_winner_and_costs
 
 expected:
   - id: INV-G002-01
     assertion: timeout_is_recorded_as_ambiguous_not_as_proven_non_execution
   - id: INV-G002-02
-    assertion: transport_attempts_are_reconstructable_under_one_test_logical_operation
+    assertion: every_declared_transport_request_id_has_a_known_disposition
   - id: INV-G002-03
-    assertion: every_observed_execution_nonce_is_attributable_to_a_request_accounting_record_or_explicitly_explained
+    assertion: every_successful_or_ambiguous_transport_has_accounting_lineage_or_case_is_inconclusive
   - id: INV-G002-04
-    assertion: winner_and_nonwinner_attempt_costs_sum_to_reported_all_attempts_actual_cost
+    assertion: every_observed_execution_nonce_is_attributable_to_a_request_accounting_record
   - id: INV-G002-05
-    assertion: final_accounting_state_contains_no_unexplained_duplicate_effect
+    assertion: winner_and_nonwinner_costs_derived_from_attempts_equal_reported_cost_fields
   - id: INV-G002-06
-    assertion: a_429_retry_while_first_request_is_in_flight_is_not_misclassified_as_a_second_execution
+    assertion: reported_winner_plus_other_cost_equals_reported_all_attempts_cost
   - id: INV-G002-07
-    assertion: if_a_cached_or_aliased_response_is_observed_its_source_request_and_cost_lineage_are_preserved
+    assertion: a_429_retry_while_first_request_is_in_flight_is_explicit_non_execution_at_that_retry_boundary
+  - id: INV-G002-08
+    assertion: cached_or_aliased_accounting_preserves_source_request_and_cost_lineage
+  - id: INV-G002-09
+    assertion: final_accounting_state_contains_no_unexplained_duplicate_or_orphaned_effect
 
 evidence:
-  required:
+  per_variant_required:
     - run_metadata.json
     - attempt-1.request.redacted.json
     - attempt-1.transport-outcome.json
@@ -115,13 +129,14 @@ evidence:
     - gateway_status.before.json
     - gateway_status.after-attempt-1.json
     - gateway_status.after-attempt-2.json
-    - reconciliation.json
-  conditional:
-    - response.redacted.json
-    - gateway_logs.redacted.txt
-    - captured_request.redacted.json
     - devshard_state.before.json
     - devshard_state.after.json
+    - reconciliation.json
+  conditional:
+    - attempt-1.response.redacted.json
+    - attempt-2.response.redacted.json
+    - gateway_logs.redacted.txt
+    - captured_request.redacted.json
     - settlement.json
     - chain_state.before.json
     - chain_state.after.json
@@ -129,20 +144,22 @@ evidence:
     - logical_operation_id
     - execution_attempt_id
     - X_Request_Id
-    - request_hash
     - client_timestamp_start
     - client_timestamp_end
     - escrow_id
     - winner_nonce
     - attempt_nonces
-    - observed_usage_delta
+    - attempts[].actual_cost
     - all_attempts_actual_cost
 
 pass_criteria:
   all:
-    - every_transport_attempt_has_a_known_disposition
-    - every_execution_nonce_has_a_known_request_lineage
-    - accounting_cost_arithmetic_reconciles
+    - all_required_evidence_artifacts_exist
+    - every_transport_request_id_has_a_known_disposition
+    - every_successful_or_ambiguous_transport_has_resolved_accounting_lineage
+    - every_execution_nonce_has_known_request_lineage
+    - attempt_derived_costs_equal_reported_cost_fields
+    - aggregate_accounting_cost_arithmetic_reconciles
     - final_state_has_no_unexplained_duplicate_or_orphaned_effect
   acceptable_outcomes:
     - first_attempt_completes_and_retry_is_replayed_cached_or_otherwise_reconciled
@@ -150,11 +167,18 @@ pass_criteria:
     - first_attempt_is_proven_non_execution_and_retry_executes_once
     - protocol_permits_two_executions_and_both_are_explicitly_distinguishable_and_fully_reconciled
 
+inconclusive_criteria:
+  any:
+    - ambiguous_or_successful_transport_has_no_resolved_accounting_lineage
+    - required_observation_is_unavailable_without_evidence_of_invariant_violation
+
 fail_criteria:
   any:
     - timeout_is_treated_as_non_execution_without_evidence
+    - transport_request_id_has_no_disposition
     - execution_nonce_exists_without_request_lineage
-    - request_accounting_cost_breakdown_does_not_sum
+    - attempt_derived_costs_disagree_with_reported_cost_fields
+    - reported_accounting_cost_breakdown_does_not_sum
     - retry_creates_orphaned_usage
     - duplicate_charge_or_usage_effect_is_not_explainable_from_protocol_semantics
     - final_settlement_cannot_be_mapped_back_to_observed_execution_attempts
@@ -167,5 +191,6 @@ classification:
 notes:
   - X-Request-Id is a correlation primitive; this contract does not assume it is an idempotency key.
   - G-002A and G-002B deliberately separate stable request identity from stable semantic intent.
-  - The gateway may continue protocol completion after a client disconnect, so a client timeout is intentionally treated as an ambiguous outcome.
-  - Do not publish a security-sensitive failure before coordinated disclosure.
+  - A client timeout is intentionally ambiguous because protocol completion can continue after disconnect.
+  - INCONCLUSIVE is never promoted to PASS.
+  - A local FAIL is a private verification hypothesis until independently reproduced and triaged.

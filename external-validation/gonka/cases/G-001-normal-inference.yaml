@@ -1,10 +1,11 @@
 id: G-001
-title: Normal inference within a valid devshard
+title: Normal inference within a valid funded devshard
 profile: gonka-verification-v0.1
 priority: P0
-status: specified
+status: executable_contract
+upstream_revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
 safety:
-  environment: devnet_or_explicitly_permitted_gateway
+  environment: local_testenv_or_explicitly_permitted_gateway
   mainnet_destructive_testing: forbidden
   secrets_in_evidence: redact
 
@@ -15,10 +16,11 @@ intent:
 
 preconditions:
   - gateway_health_is_ok
-  - valid_api_key_is_available
-  - exactly_one_active_test_devshard_is_selected
+  - valid_test_credentials_are_available_if_required
+  - exactly_one_test_devshard_is_selected
+  - selected_devshard_is_funded_before_dispatch
+  - baseline_gateway_status_is_captured
   - baseline_devshard_state_is_captured
-  - baseline_chain_state_is_captured_when_available
 
 stimulus:
   request:
@@ -27,23 +29,25 @@ stimulus:
       - role: user
         content: "CGQA control request: reply with a short deterministic acknowledgement."
     max_tokens: 32
+    stream: false
   client_policy:
     attempts: 1
     no_retry: true
 
 expected:
   - id: INV-G001-01
-    assertion: one_client_attempt_maps_to_one_observed_terminal_request_outcome
+    assertion: one_client_attempt_maps_to_one_observed_terminal_transport_outcome
   - id: INV-G001-02
-    assertion: successful_response_has_nonempty_request_or_completion_identity
+    assertion: selected_devshard_was_funded_before_billable_dispatch
   - id: INV-G001-03
-    assertion: observed_usage_effect_is_attributable_to_the_selected_devshard
+    assertion: observed_execution_and_usage_are_attributable_to_the_selected_devshard
   - id: INV-G001-04
-    assertion: no_unrelated_devshard_or_accounting_state_mutates
+    assertion: winner_and_nonwinner_attempt_costs_reconcile_with_reported_cost_fields
   - id: INV-G001-05
-    assertion: later_finalize_and_settlement_can_reconcile_this_usage_without_negative_or_duplicate_effect
+    assertion: no_unexplained_duplicate_or_orphaned_effect_exists
 
 evidence:
+  directory: G-001
   required:
     - run_metadata.json
     - request.redacted.json
@@ -52,6 +56,8 @@ evidence:
     - gateway_status.after.json
     - devshard_state.before.json
     - devshard_state.after.json
+    - accounting.json
+    - reconciliation.json
   conditional:
     - chain_state.before.json
     - chain_state.after.json
@@ -60,25 +66,32 @@ evidence:
   correlation_fields:
     - logical_operation_id
     - execution_attempt_id
+    - X_Request_Id
     - client_timestamp_start
     - client_timestamp_end
-    - response_id
-    - escrow_or_devshard_id
+    - escrow_id
+    - attempt_nonces
+    - all_attempts_actual_cost
 
 pass_criteria:
   all:
-    - request_has_one_terminal_outcome
-    - accounting_delta_is_explainable
-    - no_duplicate_usage_effect_detected
-    - evidence_has_sufficient_correlation_to_replay_reasoning
+    - every_transport_request_id_has_a_terminal_disposition
+    - request_accounting_is_observed
+    - every_execution_nonce_has_known_request_lineage
+    - attempt_derived_costs_equal_reported_cost_fields
+    - aggregate_accounting_cost_arithmetic_reconciles
+    - no_unexplained_effects_exist
+    - all_required_evidence_artifacts_exist
 
 fail_criteria:
   any:
-    - more_than_one_billable_effect_for_one_attempt
-    - unexplained_accounting_delta
+    - successful_transport_without_request_accounting
+    - execution_nonce_without_request_lineage
+    - attempt_costs_disagree_with_reported_costs
+    - more_than_one_unexplained_billable_effect_for_one_attempt
     - successful_response_without_reconcilable_devshard_attribution
-    - unrelated_state_mutation
+    - required_evidence_artifact_missing
 
 notes:
-  - This is the control case. G-002 must reuse the same evidence schema so deltas are comparable.
-  - A successful inference is not by itself a PASS; the state transition and accounting evidence must reconcile.
+  - This is the control case. G-002 reuses the same reconciliation schema so deltas are comparable.
+  - A successful inference is not by itself a PASS; transport, execution, accounting, and source evidence must reconcile.

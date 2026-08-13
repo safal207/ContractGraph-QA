@@ -92,6 +92,24 @@ type cgqaEvidence struct {
 	Notes                   string                     `json:"notes,omitempty"`
 }
 
+type cgqaRunMetadata struct {
+	CaseID             string `json:"case_id"`
+	RunID              string `json:"run_id"`
+	LogicalOperationID string `json:"logical_operation_id"`
+	UpstreamRevision   string `json:"upstream_revision"`
+	Environment        string `json:"environment"`
+	Model              string `json:"model"`
+	EscrowID           string `json:"escrow_id"`
+	StartedAt          string `json:"started_at"`
+}
+
+type cgqaAccountingObservation struct {
+	Observed  bool            `json:"observed"`
+	RequestID string          `json:"request_id"`
+	Reason    string          `json:"reason,omitempty"`
+	Accounting *cgqaAccounting `json:"accounting,omitempty"`
+}
+
 type cgqaHTTPResult struct {
 	Status    int
 	Body      []byte
@@ -111,6 +129,7 @@ func TestCGQAGonkaG001G002(t *testing.T) {
 	adminKey := harness.TestenvAdminAPIKey
 	escrowID := harness.GetGatewayEscrowID(t, client, eps.GatewayHTTP)
 	runID := fmt.Sprintf("cgqa-gonka-%d", time.Now().UTC().UnixNano())
+	evidenceRoot := cgqaEvidenceRoot(t)
 
 	t.Cleanup(func() {
 		harness.ResetMockOpenAIFault(t, client, eps.MockOpenAIHTTP)
@@ -119,97 +138,185 @@ func TestCGQAGonkaG001G002(t *testing.T) {
 		}
 	})
 
-	// G-001: clean control.
-	g001ReqID := runID + "-g001"
-	g001Body := chatBody(t, model, "CGQA G-001 deterministic control")
-	g001HTTP := postChat(eps.GatewayHTTP, adminKey, g001ReqID, g001Body, client)
-	require.NoError(t, g001HTTP.Err)
-	require.Equal(t, http.StatusOK, g001HTTP.Status, "G-001 response: %s", string(g001HTTP.Body))
-	g001Accounting, ok := waitAccounting(client, eps.GatewayHTTP, adminKey, escrowID, g001ReqID, 20*time.Second)
+	runG001(t, client, eps.GatewayHTTP, adminKey, escrowID, model, runID, evidenceRoot)
+	runG002A(t, client, eps.GatewayHTTP, eps.MockOpenAIHTTP, adminKey, escrowID, model, runID, evidenceRoot)
+	runG002B(t, client, eps.GatewayHTTP, eps.MockOpenAIHTTP, adminKey, escrowID, model, runID, evidenceRoot)
+}
+
+func runG001(t *testing.T, client *http.Client, gatewayURL, adminKey, escrowID, model, runID, root string) {
+	t.Helper()
+	caseID := "G-001"
+	logicalID := runID + "-logical-g001"
+	requestID := runID + "-g001"
+	caseDir := cgqaCaseDir(t, root, caseID)
+	body := chatBody(t, model, "CGQA G-001 deterministic control")
+
+	writeJSONArtifact(t, caseDir, "run_metadata.json", runMetadata(caseID, runID+"-g001", logicalID, model, escrowID))
+	writeRawJSONArtifact(t, caseDir, "request.redacted.json", body)
+	writeRawJSONArtifact(t, caseDir, "gateway_status.before.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+	writeRawJSONArtifact(t, caseDir, "devshard_state.before.json", requireDevshardState(t, client, gatewayURL, adminKey, escrowID))
+
+	result := postChat(gatewayURL, adminKey, requestID, body, client)
+	require.NoError(t, result.Err)
+	require.Equal(t, http.StatusOK, result.Status, "G-001 response: %s", string(result.Body))
+	writeRawJSONArtifact(t, caseDir, "response.redacted.json", result.Body)
+
+	acct, rawAccounting, ok := waitAccounting(client, gatewayURL, adminKey, escrowID, requestID, 20*time.Second)
 	require.True(t, ok, "G-001 request accounting not observed")
-	g001 := buildEvidence("G-001", runID+"-g001", "g001-control", []string{g001ReqID}, []cgqaTransportDisposition{
-		disposition("transport-1", g001HTTP, "success", "single control request"),
-	}, []cgqaAccounting{g001Accounting})
-	require.Equal(t, "PASS", g001.Verdict, "G-001 reconciliation: %+v", g001.UnexplainedEffects)
-	writeEvidence(t, "G-001.json", g001)
+	writeRawJSONArtifact(t, caseDir, "accounting.json", rawAccounting)
+	writeRawJSONArtifact(t, caseDir, "gateway_status.after.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+	writeRawJSONArtifact(t, caseDir, "devshard_state.after.json", requireDevshardState(t, client, gatewayURL, adminKey, escrowID))
 
-	// G-002A: induce an ambiguous client-side timeout, then immediately retry
-	// with the same X-Request-Id. A 429 while the first operation is still in
-	// flight is a valid reconciled outcome and must not be mistaken for a
-	// second execution.
+	evidence := buildEvidence(caseID, runID+"-g001", logicalID, []string{requestID}, []cgqaTransportDisposition{
+		disposition("transport-1", result, "success", "single control request"),
+	}, []cgqaAccounting{acct})
+	writeJSONArtifact(t, caseDir, "reconciliation.json", evidence)
+	require.Equal(t, "PASS", evidence.Verdict, "G-001 reconciliation: %+v", evidence.UnexplainedEffects)
+}
+
+func runG002A(t *testing.T, client *http.Client, gatewayURL, mockOpenAIURL, adminKey, escrowID, model, runID, root string) {
+	t.Helper()
+	caseID := "G-002A"
+	logicalID := runID + "-logical-g002a"
+	requestID := runID + "-g002a"
+	caseDir := cgqaCaseDir(t, root, caseID)
+	body := chatBody(t, model, "CGQA G-002A timeout retry same request id")
+
+	writeJSONArtifact(t, caseDir, "run_metadata.json", runMetadata(caseID, runID+"-g002a", logicalID, model, escrowID))
+	writeRawJSONArtifact(t, caseDir, "attempt-1.request.redacted.json", body)
+	writeRawJSONArtifact(t, caseDir, "attempt-2.request.redacted.json", body)
+	writeRawJSONArtifact(t, caseDir, "gateway_status.before.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+	writeRawJSONArtifact(t, caseDir, "devshard_state.before.json", requireDevshardState(t, client, gatewayURL, adminKey, escrowID))
+
 	latencyMs := 1800
-	harness.PatchMockOpenAIFault(t, client, eps.MockOpenAIHTTP, mockopenai.FaultPatch{LatencyMs: &latencyMs})
-	g002aReqID := runID + "-g002a"
-	g002aBody := chatBody(t, model, "CGQA G-002A timeout retry same request id")
+	harness.PatchMockOpenAIFault(t, client, mockOpenAIURL, mockopenai.FaultPatch{LatencyMs: &latencyMs})
 	shortClient := &http.Client{Timeout: 350 * time.Millisecond}
-	firstA := postChat(eps.GatewayHTTP, adminKey, g002aReqID, g002aBody, shortClient)
-	require.True(t, isTimeout(firstA.Err), "G-002A expected client timeout, got status=%d err=%v body=%s", firstA.Status, firstA.Err, string(firstA.Body))
+	first := postChat(gatewayURL, adminKey, requestID, body, shortClient)
+	require.True(t, isTimeout(first.Err), "G-002A expected client timeout, got status=%d err=%v body=%s", first.Status, first.Err, string(first.Body))
+	firstDisposition := disposition("transport-1", first, "client_timeout_ambiguous", "request dispatched; client timed out while deterministic downstream latency was injected")
+	writeJSONArtifact(t, caseDir, "attempt-1.transport-outcome.json", firstDisposition)
+
+	acctBeforeRetry, rawBeforeRetry, seenBeforeRetry := getAccounting(client, gatewayURL, adminKey, escrowID, requestID)
+	writeAccountingObservation(t, caseDir, "attempt-1.accounting.json", requestID, acctBeforeRetry, rawBeforeRetry, seenBeforeRetry, "not observed at the pre-retry snapshot")
+	writeRawJSONArtifact(t, caseDir, "gateway_status.after-attempt-1.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+
 	zero := 0
-	harness.PatchMockOpenAIFault(t, client, eps.MockOpenAIHTTP, mockopenai.FaultPatch{LatencyMs: &zero})
-	secondA := postChat(eps.GatewayHTTP, adminKey, g002aReqID, g002aBody, client)
-	require.True(t, secondA.Err == nil, "G-002A retry transport failed: %v", secondA.Err)
-	require.Contains(t, []int{http.StatusOK, http.StatusTooManyRequests}, secondA.Status, "G-002A retry status=%d body=%s", secondA.Status, string(secondA.Body))
-	acctA, okA := waitAccounting(client, eps.GatewayHTTP, adminKey, escrowID, g002aReqID, 20*time.Second)
-	accountsA := []cgqaAccounting{}
-	if okA {
-		accountsA = append(accountsA, acctA)
+	harness.PatchMockOpenAIFault(t, client, mockOpenAIURL, mockopenai.FaultPatch{LatencyMs: &zero})
+	second := postChat(gatewayURL, adminKey, requestID, body, client)
+	require.NoError(t, second.Err)
+	require.Contains(t, []int{http.StatusOK, http.StatusTooManyRequests}, second.Status, "G-002A retry status=%d body=%s", second.Status, string(second.Body))
+	outcome2 := "success"
+	if second.Status == http.StatusTooManyRequests {
+		outcome2 = "rejected_429_in_flight"
 	}
-	outcomeA2 := "success"
-	if secondA.Status == http.StatusTooManyRequests {
-		outcomeA2 = "rejected_429_in_flight"
+	secondDisposition := disposition("transport-2", second, outcome2, "immediate retry reused X-Request-Id")
+	writeJSONArtifact(t, caseDir, "attempt-2.transport-outcome.json", secondDisposition)
+	if len(second.Body) > 0 {
+		writeRawJSONArtifact(t, caseDir, "attempt-2.response.redacted.json", second.Body)
 	}
-	g002a := buildEvidence("G-002A", runID+"-g002a", "g002a-same-request-id", []string{g002aReqID}, []cgqaTransportDisposition{
-		disposition("transport-1", firstA, "client_timeout_ambiguous", "request dispatched; client timed out while downstream latency was injected"),
-		disposition("transport-2", secondA, outcomeA2, "immediate retry reused X-Request-Id"),
-	}, accountsA)
-	if !okA {
-		g002a.Verdict = "INCONCLUSIVE"
-		g002a.Notes += "; no request-accounting record was observable after the ambiguity window"
-	}
-	writeEvidence(t, "G-002A.json", g002a)
 
-	// G-002B: timeout one transport request, let protocol completion converge,
-	// then retry the same semantic body with a fresh transport request id. If
-	// upstream returns a cached alias, deduplicate that lineage instead of
-	// double-counting the same accounting source.
-	harness.PatchMockOpenAIFault(t, client, eps.MockOpenAIHTTP, mockopenai.FaultPatch{LatencyMs: &latencyMs})
-	g002bReq1 := runID + "-g002b-1"
-	g002bReq2 := runID + "-g002b-2"
-	g002bBody := chatBody(t, model, "CGQA G-002B timeout retry fresh transport id")
-	firstB := postChat(eps.GatewayHTTP, adminKey, g002bReq1, g002bBody, shortClient)
-	require.True(t, isTimeout(firstB.Err), "G-002B expected client timeout, got status=%d err=%v body=%s", firstB.Status, firstB.Err, string(firstB.Body))
-	harness.PatchMockOpenAIFault(t, client, eps.MockOpenAIHTTP, mockopenai.FaultPatch{LatencyMs: &zero})
-	acctB1, okB1 := waitAccounting(client, eps.GatewayHTTP, adminKey, escrowID, g002bReq1, 20*time.Second)
-	secondB := postChat(eps.GatewayHTTP, adminKey, g002bReq2, g002bBody, client)
-	require.NoError(t, secondB.Err)
-	require.Contains(t, []int{http.StatusOK, http.StatusTooManyRequests}, secondB.Status, "G-002B retry status=%d body=%s", secondB.Status, string(secondB.Body))
-	acctB2, okB2 := waitAccounting(client, eps.GatewayHTTP, adminKey, escrowID, g002bReq2, 20*time.Second)
-	accountsB := make([]cgqaAccounting, 0, 2)
-	if okB1 {
-		accountsB = append(accountsB, acctB1)
-	}
-	if okB2 {
-		accountsB = append(accountsB, acctB2)
-	}
-	outcomeB2 := "success"
-	if secondB.Status == http.StatusTooManyRequests {
-		outcomeB2 = "rejected_429_in_flight"
-	} else if okB2 && acctB2.CachedFromRequestID != "" {
-		outcomeB2 = "cached_or_replayed"
-	}
-	g002b := buildEvidence("G-002B", runID+"-g002b", "g002b-fresh-transport-id", []string{g002bReq1, g002bReq2}, []cgqaTransportDisposition{
-		disposition("transport-1", firstB, "client_timeout_ambiguous", "first transport timed out after dispatch"),
-		disposition("transport-2", secondB, outcomeB2, "retry used a fresh X-Request-Id for the same semantic request body"),
-	}, accountsB)
-	if !okB1 && !okB2 {
-		g002b.Verdict = "INCONCLUSIVE"
-		g002b.Notes += "; neither transport request produced observable request accounting"
-	}
-	writeEvidence(t, "G-002B.json", g002b)
+	acctFinal, rawFinal, okFinal := waitAccounting(client, gatewayURL, adminKey, escrowID, requestID, 20*time.Second)
+	writeAccountingObservation(t, caseDir, "attempt-2.accounting.json", requestID, acctFinal, rawFinal, okFinal, "no final accounting observed")
+	writeRawJSONArtifact(t, caseDir, "gateway_status.after-attempt-2.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+	writeRawJSONArtifact(t, caseDir, "devshard_state.after.json", requireDevshardState(t, client, gatewayURL, adminKey, escrowID))
 
-	// Do not convert a reconciled multi-execution observation into a vulnerability
-	// claim here. The harness proves evidence quality; semantic triage happens in
-	// ContractGraph-QA after the bundle is collected.
+	accounts := []cgqaAccounting{}
+	if okFinal {
+		accounts = append(accounts, acctFinal)
+	}
+	evidence := buildEvidence(caseID, runID+"-g002a", logicalID, []string{requestID}, []cgqaTransportDisposition{firstDisposition, secondDisposition}, accounts)
+	if !okFinal {
+		markInconclusive(&evidence, "final request accounting was not observed after the ambiguity window")
+	}
+	writeJSONArtifact(t, caseDir, "reconciliation.json", evidence)
+	recordG002Verdict(t, evidence)
+}
+
+func runG002B(t *testing.T, client *http.Client, gatewayURL, mockOpenAIURL, adminKey, escrowID, model, runID, root string) {
+	t.Helper()
+	caseID := "G-002B"
+	logicalID := runID + "-logical-g002b"
+	requestID1 := runID + "-g002b-1"
+	requestID2 := runID + "-g002b-2"
+	caseDir := cgqaCaseDir(t, root, caseID)
+	body := chatBody(t, model, "CGQA G-002B timeout retry fresh transport id")
+
+	writeJSONArtifact(t, caseDir, "run_metadata.json", runMetadata(caseID, runID+"-g002b", logicalID, model, escrowID))
+	writeRawJSONArtifact(t, caseDir, "attempt-1.request.redacted.json", body)
+	writeRawJSONArtifact(t, caseDir, "attempt-2.request.redacted.json", body)
+	writeRawJSONArtifact(t, caseDir, "gateway_status.before.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+	writeRawJSONArtifact(t, caseDir, "devshard_state.before.json", requireDevshardState(t, client, gatewayURL, adminKey, escrowID))
+
+	latencyMs := 1800
+	harness.PatchMockOpenAIFault(t, client, mockOpenAIURL, mockopenai.FaultPatch{LatencyMs: &latencyMs})
+	shortClient := &http.Client{Timeout: 350 * time.Millisecond}
+	first := postChat(gatewayURL, adminKey, requestID1, body, shortClient)
+	require.True(t, isTimeout(first.Err), "G-002B expected client timeout, got status=%d err=%v body=%s", first.Status, first.Err, string(first.Body))
+	firstDisposition := disposition("transport-1", first, "client_timeout_ambiguous", "first transport timed out after dispatch")
+	writeJSONArtifact(t, caseDir, "attempt-1.transport-outcome.json", firstDisposition)
+
+	zero := 0
+	harness.PatchMockOpenAIFault(t, client, mockOpenAIURL, mockopenai.FaultPatch{LatencyMs: &zero})
+	acct1, raw1, ok1 := waitAccounting(client, gatewayURL, adminKey, escrowID, requestID1, 20*time.Second)
+	writeAccountingObservation(t, caseDir, "attempt-1.accounting.json", requestID1, acct1, raw1, ok1, "first ambiguous transport has no resolved accounting lineage")
+	writeRawJSONArtifact(t, caseDir, "gateway_status.after-attempt-1.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+
+	second := postChat(gatewayURL, adminKey, requestID2, body, client)
+	require.NoError(t, second.Err)
+	require.Contains(t, []int{http.StatusOK, http.StatusTooManyRequests}, second.Status, "G-002B retry status=%d body=%s", second.Status, string(second.Body))
+
+	acct2, raw2, ok2 := cgqaAccounting{}, []byte(nil), false
+	outcome2 := "success"
+	if second.Status == http.StatusTooManyRequests {
+		outcome2 = "rejected_429_in_flight"
+	} else {
+		acct2, raw2, ok2 = waitAccounting(client, gatewayURL, adminKey, escrowID, requestID2, 20*time.Second)
+		if ok2 && acct2.CachedFromRequestID != "" {
+			outcome2 = "cached_or_replayed"
+		}
+	}
+	secondDisposition := disposition("transport-2", second, outcome2, "retry used a fresh X-Request-Id for the same CGQA logical operation")
+	writeJSONArtifact(t, caseDir, "attempt-2.transport-outcome.json", secondDisposition)
+	if len(second.Body) > 0 {
+		writeRawJSONArtifact(t, caseDir, "attempt-2.response.redacted.json", second.Body)
+	}
+	if second.Status == http.StatusTooManyRequests {
+		writeAccountingObservation(t, caseDir, "attempt-2.accounting.json", requestID2, cgqaAccounting{}, nil, false, "explicit 429 rejection; no execution accounting expected for this retry boundary")
+	} else {
+		writeAccountingObservation(t, caseDir, "attempt-2.accounting.json", requestID2, acct2, raw2, ok2, "successful retry has no resolved accounting lineage")
+	}
+	writeRawJSONArtifact(t, caseDir, "gateway_status.after-attempt-2.json", requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/status"))
+	writeRawJSONArtifact(t, caseDir, "devshard_state.after.json", requireDevshardState(t, client, gatewayURL, adminKey, escrowID))
+
+	accounts := make([]cgqaAccounting, 0, 2)
+	if ok1 {
+		accounts = append(accounts, acct1)
+	}
+	if ok2 {
+		accounts = append(accounts, acct2)
+	}
+	evidence := buildEvidence(caseID, runID+"-g002b", logicalID, []string{requestID1, requestID2}, []cgqaTransportDisposition{firstDisposition, secondDisposition}, accounts)
+	if !ok1 {
+		markInconclusive(&evidence, "first ambiguous transport lacks resolved accounting lineage")
+	}
+	if second.Status == http.StatusOK && !ok2 {
+		markInconclusive(&evidence, "successful retry lacks resolved accounting lineage")
+	}
+	writeJSONArtifact(t, caseDir, "reconciliation.json", evidence)
+	recordG002Verdict(t, evidence)
+}
+
+func runMetadata(caseID, runID, logicalID, model, escrowID string) cgqaRunMetadata {
+	return cgqaRunMetadata{
+		CaseID:             caseID,
+		RunID:              runID,
+		LogicalOperationID: logicalID,
+		UpstreamRevision:   cgqaUpstreamRevision,
+		Environment:        "gonka-local-devshard-testenv",
+		Model:              model,
+		EscrowID:           escrowID,
+		StartedAt:          time.Now().UTC().Format(time.RFC3339Nano),
+	}
 }
 
 func chatBody(t *testing.T, model, content string) []byte {
@@ -283,20 +390,20 @@ func isTimeout(err error) bool {
 	return errors.As(err, &te) && te.Timeout()
 }
 
-func waitAccounting(client *http.Client, gatewayURL, adminKey, escrowID, requestID string, timeout time.Duration) (cgqaAccounting, bool) {
+func waitAccounting(client *http.Client, gatewayURL, adminKey, escrowID, requestID string, timeout time.Duration) (cgqaAccounting, []byte, bool) {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		if acct, ok := getAccounting(client, gatewayURL, adminKey, escrowID, requestID); ok {
+		if acct, raw, ok := getAccounting(client, gatewayURL, adminKey, escrowID, requestID); ok {
 			if acct.Outcome != "" || len(acct.Attempts) > 0 {
-				return acct, true
+				return acct, raw, true
 			}
 		}
 		time.Sleep(250 * time.Millisecond)
 	}
-	return cgqaAccounting{}, false
+	return cgqaAccounting{}, nil, false
 }
 
-func getAccounting(client *http.Client, gatewayURL, adminKey, escrowID, requestID string) (cgqaAccounting, bool) {
+func getAccounting(client *http.Client, gatewayURL, adminKey, escrowID, requestID string) (cgqaAccounting, []byte, bool) {
 	base := strings.TrimRight(gatewayURL, "/")
 	id := url.PathEscape(requestID)
 	paths := []string{
@@ -304,31 +411,59 @@ func getAccounting(client *http.Client, gatewayURL, adminKey, escrowID, requestI
 		base + "/devshard/" + url.PathEscape(escrowID) + "/v1/requests/" + id,
 	}
 	for _, endpoint := range paths {
-		req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-		if err != nil {
-			continue
-		}
-		if adminKey != "" {
-			req.Header.Set("Authorization", "Bearer "+adminKey)
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			continue
-		}
-		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if resp.StatusCode == http.StatusNotFound {
-			continue
-		}
-		if resp.StatusCode >= 300 {
+		raw, status, err := getBytes(client, endpoint, adminKey)
+		if err != nil || status == http.StatusNotFound || status >= 300 {
 			continue
 		}
 		var acct cgqaAccounting
-		if json.Unmarshal(body, &acct) == nil && acct.RequestID != "" {
-			return acct, true
+		if json.Unmarshal(raw, &acct) == nil && acct.RequestID != "" {
+			return acct, raw, true
 		}
 	}
-	return cgqaAccounting{}, false
+	return cgqaAccounting{}, nil, false
+}
+
+func requireGatewayJSON(t *testing.T, client *http.Client, gatewayURL, adminKey, path string) []byte {
+	t.Helper()
+	raw, status, err := getBytes(client, strings.TrimRight(gatewayURL, "/")+path, adminKey)
+	require.NoError(t, err)
+	require.Less(t, status, 300, "GET %s returned %d: %s", path, status, string(raw))
+	require.True(t, json.Valid(raw), "GET %s did not return JSON: %s", path, string(raw))
+	return raw
+}
+
+func requireDevshardState(t *testing.T, client *http.Client, gatewayURL, adminKey, escrowID string) []byte {
+	t.Helper()
+	base := strings.TrimRight(gatewayURL, "/")
+	paths := []string{
+		base + "/devshard/" + url.PathEscape(escrowID) + "/v1/state",
+		base + "/v1/state",
+	}
+	for _, endpoint := range paths {
+		raw, status, err := getBytes(client, endpoint, adminKey)
+		if err == nil && status < 300 && json.Valid(raw) {
+			return raw
+		}
+	}
+	t.Fatalf("unable to capture devshard state for escrow %s", escrowID)
+	return nil
+}
+
+func getBytes(client *http.Client, endpoint, adminKey string) ([]byte, int, error) {
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	if adminKey != "" {
+		req.Header.Set("Authorization", "Bearer "+adminKey)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer resp.Body.Close()
+	raw, readErr := io.ReadAll(resp.Body)
+	return raw, resp.StatusCode, readErr
 }
 
 func buildEvidence(caseID, runID, logicalOperationID string, requestIDs []string, dispositions []cgqaTransportDisposition, accounts []cgqaAccounting) cgqaEvidence {
@@ -344,11 +479,24 @@ func buildEvidence(caseID, runID, logicalOperationID string, requestIDs []string
 		SettlementRefs:        []string{},
 		UnexplainedEffects:    []string{},
 		Verdict:               "PASS",
-		Notes:                 "PASS means observed execution/accounting effects are structurally reconciled; it does not assert HTTP idempotency or declare multiple protocol-permitted executions a vulnerability.",
+		Notes:                 "PASS means transport, execution, and accounting evidence is structurally reconciled; it does not assert HTTP idempotency or automatically classify multiple protocol-permitted executions as a vulnerability.",
 	}
 
-	// Cached accounting aliases point at the same source lineage. Count each
-	// source once so a cache replay does not look like a second financial effect.
+	if len(dispositions) == 0 {
+		e.UnexplainedEffects = append(e.UnexplainedEffects, "no transport dispositions were recorded")
+	}
+	dispositionIDs := map[string]bool{}
+	for _, d := range dispositions {
+		if d.RequestID != "" {
+			dispositionIDs[d.RequestID] = true
+		}
+	}
+	for _, requestID := range e.TransportRequestIDs {
+		if !dispositionIDs[requestID] {
+			e.UnexplainedEffects = append(e.UnexplainedEffects, "transport request lacks disposition: "+requestID)
+		}
+	}
+
 	seenSources := map[string]bool{}
 	seenAttempts := map[string]bool{}
 	nonceSet := map[uint64]bool{}
@@ -370,9 +518,29 @@ func buildEvidence(caseID, runID, logicalOperationID string, requestIDs []string
 		if sourceEscrow != "" {
 			escrowSet[sourceEscrow] = true
 		}
-		if acct.Cost.WinnerActualCost+acct.Cost.OtherAttemptsActualCost != acct.Cost.AllAttemptsActualCost {
-			e.UnexplainedEffects = append(e.UnexplainedEffects, "accounting cost arithmetic does not reconcile for source "+sourceReq)
+
+		var derivedWinner, derivedOther uint64
+		for _, attempt := range acct.Attempts {
+			if attempt.Winner {
+				derivedWinner += attempt.ActualCost
+			} else {
+				derivedOther += attempt.ActualCost
+			}
 		}
+		derivedAll := derivedWinner + derivedOther
+		if derivedWinner != acct.Cost.WinnerActualCost {
+			e.UnexplainedEffects = append(e.UnexplainedEffects, fmt.Sprintf("winner attempt costs disagree with reported winner cost for source %s: derived=%d reported=%d", sourceReq, derivedWinner, acct.Cost.WinnerActualCost))
+		}
+		if derivedOther != acct.Cost.OtherAttemptsActualCost {
+			e.UnexplainedEffects = append(e.UnexplainedEffects, fmt.Sprintf("non-winner attempt costs disagree with reported other-attempt cost for source %s: derived=%d reported=%d", sourceReq, derivedOther, acct.Cost.OtherAttemptsActualCost))
+		}
+		if derivedAll != acct.Cost.AllAttemptsActualCost {
+			e.UnexplainedEffects = append(e.UnexplainedEffects, fmt.Sprintf("attempt-derived total disagrees with reported all-attempt cost for source %s: derived=%d reported=%d", sourceReq, derivedAll, acct.Cost.AllAttemptsActualCost))
+		}
+		if acct.Cost.WinnerActualCost+acct.Cost.OtherAttemptsActualCost != acct.Cost.AllAttemptsActualCost {
+			e.UnexplainedEffects = append(e.UnexplainedEffects, "reported accounting cost arithmetic does not reconcile for source "+sourceReq)
+		}
+
 		e.Cost.WinnerActualCost += acct.Cost.WinnerActualCost
 		e.Cost.OtherAttemptsActualCost += acct.Cost.OtherAttemptsActualCost
 		e.Cost.AllAttemptsActualCost += acct.Cost.AllAttemptsActualCost
@@ -389,30 +557,108 @@ func buildEvidence(caseID, runID, logicalOperationID string, requestIDs []string
 			}
 			seenAttempts[key] = true
 			e.Attempts = append(e.Attempts, attempt)
-			nonceSet[attempt.Nonce] = true
+			if attempt.Nonce != 0 {
+				nonceSet[attempt.Nonce] = true
+			}
 		}
 	}
+
 	e.Cost.ArithmeticReconciles = e.Cost.WinnerActualCost+e.Cost.OtherAttemptsActualCost == e.Cost.AllAttemptsActualCost
 	if !e.Cost.ArithmeticReconciles {
 		e.UnexplainedEffects = append(e.UnexplainedEffects, "aggregate accounting cost arithmetic does not reconcile")
 	}
 	for nonce := range nonceSet {
-		if nonce != 0 {
-			e.ObservedExecutionNonces = append(e.ObservedExecutionNonces, nonce)
-		}
+		e.ObservedExecutionNonces = append(e.ObservedExecutionNonces, nonce)
 	}
 	sort.Slice(e.ObservedExecutionNonces, func(i, j int) bool { return e.ObservedExecutionNonces[i] < e.ObservedExecutionNonces[j] })
 	for escrow := range escrowSet {
 		e.EscrowIDs = append(e.EscrowIDs, escrow)
 	}
 	sort.Strings(e.EscrowIDs)
+
 	if len(accounts) == 0 {
 		e.Verdict = "INCONCLUSIVE"
 	}
 	if len(e.UnexplainedEffects) > 0 {
 		e.Verdict = "FAIL"
+		hypothesis := "CGQA-GONKA-001"
+		e.PrivateHypothesisID = &hypothesis
 	}
 	return e
+}
+
+func markInconclusive(e *cgqaEvidence, reason string) {
+	if e == nil || e.Verdict == "FAIL" {
+		return
+	}
+	e.Verdict = "INCONCLUSIVE"
+	if e.Notes != "" {
+		e.Notes += "; "
+	}
+	e.Notes += reason
+}
+
+func recordG002Verdict(t *testing.T, evidence cgqaEvidence) {
+	t.Helper()
+	switch evidence.Verdict {
+	case "PASS":
+		t.Logf("%s reconciliation PASS", evidence.CaseID)
+	case "INCONCLUSIVE":
+		t.Logf("%s reconciliation INCONCLUSIVE: %s", evidence.CaseID, evidence.Notes)
+	case "FAIL":
+		t.Errorf("%s reconciliation FAIL: %+v", evidence.CaseID, evidence.UnexplainedEffects)
+	default:
+		t.Errorf("%s produced unknown verdict %q", evidence.CaseID, evidence.Verdict)
+	}
+}
+
+func writeAccountingObservation(t *testing.T, dir, name, requestID string, acct cgqaAccounting, raw []byte, observed bool, reason string) {
+	t.Helper()
+	if observed && len(raw) > 0 {
+		writeRawJSONArtifact(t, dir, name, raw)
+		return
+	}
+	obs := cgqaAccountingObservation{Observed: false, RequestID: requestID, Reason: reason}
+	if observed {
+		obs.Observed = true
+		obs.Accounting = &acct
+	}
+	writeJSONArtifact(t, dir, name, obs)
+}
+
+func cgqaEvidenceRoot(t *testing.T) string {
+	t.Helper()
+	root := strings.TrimSpace(os.Getenv("CGQA_EVIDENCE_DIR"))
+	if root == "" {
+		root = filepath.Join(t.TempDir(), "cgqa-evidence")
+	}
+	require.NoError(t, os.MkdirAll(root, 0o755))
+	return root
+}
+
+func cgqaCaseDir(t *testing.T, root, caseID string) string {
+	t.Helper()
+	dir := filepath.Join(root, caseID)
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	return dir
+}
+
+func writeJSONArtifact(t *testing.T, dir, name string, value any) {
+	t.Helper()
+	data, err := json.MarshalIndent(value, "", "  ")
+	require.NoError(t, err)
+	data = append(data, '\n')
+	path := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, data, 0o644))
+	t.Logf("CGQA evidence: %s", path)
+}
+
+func writeRawJSONArtifact(t *testing.T, dir, name string, raw []byte) {
+	t.Helper()
+	require.True(t, json.Valid(raw), "artifact %s is not valid JSON: %s", name, string(raw))
+	var value any
+	require.NoError(t, json.Unmarshal(raw, &value))
+	writeJSONArtifact(t, dir, name, value)
 }
 
 func uniqueStrings(in []string) []string {
@@ -426,18 +672,4 @@ func uniqueStrings(in []string) []string {
 		out = append(out, s)
 	}
 	return out
-}
-
-func writeEvidence(t *testing.T, name string, evidence cgqaEvidence) {
-	t.Helper()
-	dir := strings.TrimSpace(os.Getenv("CGQA_EVIDENCE_DIR"))
-	if dir == "" {
-		dir = filepath.Join(t.TempDir(), "cgqa-evidence")
-	}
-	require.NoError(t, os.MkdirAll(dir, 0o755))
-	data, err := json.MarshalIndent(evidence, "", "  ")
-	require.NoError(t, err)
-	data = append(data, '\n')
-	require.NoError(t, os.WriteFile(filepath.Join(dir, name), data, 0o644))
-	t.Logf("CGQA evidence: %s", filepath.Join(dir, name))
 }
