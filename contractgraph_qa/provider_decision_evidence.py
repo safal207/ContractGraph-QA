@@ -4,12 +4,15 @@ The pack is intentionally self-contained: it preserves the exact reviewed adapte
 profile, captured observations, explicit authority evidence, and derived provider
 payment decision. Verification recomputes canonical digests and replays the decision
 locally; it never performs network calls or treats provider state as actor authority.
+An optional verifier-supplied pack digest can bind that local consistency check to an
+external integrity anchor.
 """
 
 from __future__ import annotations
 
 import copy
 import hashlib
+import hmac
 import json
 from typing import Any
 
@@ -19,7 +22,7 @@ EVIDENCE_SCHEMA = "cgqa.provider-payment-decision-evidence.v0.1"
 
 
 class ProviderDecisionEvidenceError(ValueError):
-    """Raised when provider decision evidence cannot be built or independently verified."""
+    """Raised when provider decision evidence cannot be built or locally verified."""
 
 
 def _object(value: object, field: str) -> dict[str, Any]:
@@ -46,6 +49,19 @@ def canonical_json_bytes(value: object) -> bytes:
 def canonical_sha256(value: object) -> str:
     """Return a SHA-256 digest of canonical JSON bytes."""
     return hashlib.sha256(canonical_json_bytes(value)).hexdigest()
+
+
+def canonical_evidence_pack_sha256(pack: dict[str, Any]) -> str:
+    """Return the canonical SHA-256 digest that can be anchored outside the pack."""
+    return canonical_sha256(_object(pack, "evidencePack"))
+
+
+def _normalized_sha256(value: object, field: str) -> str:
+    if not isinstance(value, str) or len(value) != 64:
+        raise ProviderDecisionEvidenceError(f"{field} must be a 64-character SHA-256 hex digest")
+    if any(character not in "0123456789abcdefABCDEF" for character in value):
+        raise ProviderDecisionEvidenceError(f"{field} must be a 64-character SHA-256 hex digest")
+    return value.lower()
 
 
 def _replay(
@@ -80,7 +96,7 @@ def _validate_binding(
     provider_decision: dict[str, Any],
 ) -> None:
     expected = _replay(adapter, observations, authority, provider_decision)
-    if expected != provider_decision:
+    if canonical_json_bytes(expected) != canonical_json_bytes(provider_decision):
         raise ProviderDecisionEvidenceError(
             "providerDecision does not exactly match deterministic replay of embedded evidence"
         )
@@ -121,9 +137,20 @@ def build_provider_decision_evidence(
     }
 
 
-def verify_provider_decision_evidence(pack: dict[str, Any]) -> dict[str, Any]:
-    """Verify canonical hashes and independently replay the embedded monetary decision."""
+def verify_provider_decision_evidence(
+    pack: dict[str, Any],
+    *,
+    expected_pack_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Verify local consistency, replay, and an optional externally anchored pack digest."""
     pack = _object(pack, "evidencePack")
+
+    if expected_pack_sha256 is not None:
+        trusted_digest = _normalized_sha256(expected_pack_sha256, "expectedPackSha256")
+        actual_pack_digest = canonical_evidence_pack_sha256(pack)
+        if not hmac.compare_digest(actual_pack_digest, trusted_digest):
+            raise ProviderDecisionEvidenceError("evidence pack external digest mismatch")
+
     if pack.get("schema") != EVIDENCE_SCHEMA:
         raise ProviderDecisionEvidenceError(f"evidencePack.schema must be {EVIDENCE_SCHEMA}")
 
