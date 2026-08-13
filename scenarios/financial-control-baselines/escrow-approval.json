@@ -30,6 +30,6 @@
   ],
   "initialCapabilities": ["request-escrow-release"],
   "targetCapabilities": ["release-without-required-approval"],
-  "violatedAssumptions": [],
+  "violatedAssumptions": ["approval-threshold-enforced"],
   "maxDepth": 2
 }
