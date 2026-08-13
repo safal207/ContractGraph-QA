@@ -19,13 +19,15 @@
 
 - `cases/G-001-normal-inference.yaml` — control contract and evidence requirements.
 - `cases/G-002-timeout-retry.yaml` — ambiguous timeout/retry contract, causal IDs, pass/fail rules, and private finding classification.
-- `upstream-gap-map.md` — maps this profile against Gonka's own Docker-backed `devshard/testenv` coverage so CGQA focuses on missing cross-boundary guarantees rather than duplicating existing tests.
+- `upstream-gap-map.md` — maps this profile against Gonka's Docker-backed `devshard/testenv` coverage so CGQA focuses on missing cross-boundary guarantees rather than duplicating existing tests.
 
 ## Execution order
 
 Start with G-001 as the control. Then execute G-002, G-004, G-005, and G-006 because they exercise the highest-value cross-boundary state transitions without requiring adversarial mainnet behavior.
 
-The current first independent delta is **G-002**. Gonka already has strong local integration coverage for gateway chat, restart persistence, epoch switching, HA, and transport behavior; the CGQA layer adds semantic correlation between one logical user operation, multiple transport attempts, usage/accounting effects, and settlement evidence.
+The current first independent delta is **G-002**. Gonka already has strong local integration coverage for gateway chat, restart persistence, epoch switching, HA, validation lease races, rolling updates, escrow warmup, and gRPC transport. The CGQA layer adds semantic correlation between one logical user operation, multiple transport attempts, usage/accounting effects, and settlement evidence.
+
+Coverage was inspected against Gonka revision `f040d0a5b5ef207a0c431894c9f9e2608f9d3073`.
 
 ## Hypotheses, not findings
 
