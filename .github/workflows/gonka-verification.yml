@@ -27,6 +27,7 @@ jobs:
         shell: bash
         run: |
           python -m json.tool external-validation/gonka/evidence.schema.json >/dev/null
+          python -m json.tool external-validation/gonka/identity-boundary.schema.json >/dev/null
           ruby -e 'require "yaml"; %w[external-validation/gonka/graph.yaml external-validation/gonka/cases/G-001-normal-inference.yaml external-validation/gonka/cases/G-002-timeout-retry.yaml].each { |f| YAML.load_file(f) }'
 
       - name: Checkout pinned Gonka revision
@@ -41,10 +42,11 @@ jobs:
         shell: bash
         run: |
           grep -F 'mux.HandleFunc("GET /v1/requests/{request_id}"' upstream-gonka/devshard/cmd/devshardctl/gateway.go
-          grep -F 'const RequestIDHeader = "X-Request-Id"' upstream-gonka/devshard/observability/ctx.go
           grep -F 'request_accounting_attempts' upstream-gonka/devshard/cmd/devshardctl/request_accounting.go
           grep -F 'TestHandleRequestAccountingReturnsJoinedInferenceCosts' upstream-gonka/devshard/cmd/devshardctl/request_accounting_test.go
           grep -F 'TestHandleRequestAccountingResolvesCachedRequestAliasCosts' upstream-gonka/devshard/cmd/devshardctl/request_accounting_test.go
+          grep -F 'RunInference(context.Background(), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          grep -F 'e.recordAccountingRequestStart(ctx, params)' upstream-gonka/devshard/cmd/devshardctl/redundancy.go
           test -f upstream-gonka/devshard/testenv/README.md
           grep -F 'TestGatewayChat' upstream-gonka/devshard/testenv/README.md
           grep -F 'e.POST("/testenv/fault", s.handleFaultPatch)' upstream-gonka/devshard/testenv/mockopenai/server.go
@@ -56,11 +58,12 @@ jobs:
           go-version-file: upstream-gonka/devshard/go.mod
           cache: false
 
-      - name: Compile CGQA evidence harness against pinned Gonka
+      - name: Compile CGQA evidence harnesses against pinned Gonka
         shell: bash
         run: |
           cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
-          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
           cd upstream-gonka/devshard
           TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
 
@@ -80,14 +83,14 @@ jobs:
             echo "Pinned upstream: \`$GONKA_SHA\`"
             echo '- CGQA YAML/JSON artifacts parse successfully.'
             echo '- Funded escrow is a graph prerequisite before inference dispatch.'
-            echo '- X-Request-Id correlation and /v1/requests/{request_id} accounting are present upstream.'
-            echo '- Mock OpenAI deterministic latency fault hook is present upstream.'
-            echo '- CGQA G-001/G-002 harness compiles against the pinned Gonka testenv.'
+            echo '- Upstream request-accounting endpoint and accounting controls are present.'
+            echo '- The current proxy-to-runner background-context boundary is pinned as an identity-sensitive surface.'
+            echo '- CGQA identity and timeout/retry harnesses compile against the pinned Gonka testenv.'
             echo '- Upstream joined-cost and cached-alias accounting controls pass.'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  docker-evidence:
-    name: Gonka G-001 G-002 Docker evidence
+  identity-evidence:
+    name: Gonka G-001-ID Docker evidence
     needs: contract-guard
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -114,27 +117,28 @@ jobs:
           go-version-file: upstream-gonka/devshard/go.mod
           cache: false
 
-      - name: Install CGQA harness into upstream testenv
+      - name: Install CGQA harnesses into upstream testenv
         shell: bash
         run: |
           cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
-          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
           mkdir -p "$CGQA_EVIDENCE_DIR"
 
       - name: Build Gonka devshardd for local Docker testenv
         working-directory: upstream-gonka/devshard/testenv
         run: make build-devshardd
 
-      - name: Execute G-001 and G-002 evidence run
+      - name: Execute request-accounting identity boundary control
         working-directory: upstream-gonka/devshard
         env:
           TESTENV_CITEST: '1'
         run: >-
           go test -tags=testenvci ./testenv/citest
-          -run '^TestCGQAGonkaG001G002$'
+          -run '^TestCGQAGonkaIdentityBoundary$'
           -v -count=1 -timeout=30m
 
-      - name: Validate source artifact completeness
+      - name: Validate identity source artifact completeness
         if: always()
         shell: bash
         run: |
@@ -142,48 +146,33 @@ jobs:
           import os
           from pathlib import Path
 
-          root = Path(os.environ['CGQA_EVIDENCE_DIR'])
-          required = {
-              'G-001': [
-                  'run_metadata.json', 'request.redacted.json', 'response.redacted.json',
-                  'gateway_status.before.json', 'gateway_status.after.json',
-                  'devshard_state.before.json', 'devshard_state.after.json',
-                  'accounting.json', 'reconciliation.json',
-              ],
-              'G-002A': [
-                  'run_metadata.json', 'attempt-1.request.redacted.json',
-                  'attempt-1.transport-outcome.json', 'attempt-1.accounting.json',
-                  'attempt-2.request.redacted.json', 'attempt-2.transport-outcome.json',
-                  'attempt-2.accounting.json', 'gateway_status.before.json',
-                  'gateway_status.after-attempt-1.json', 'gateway_status.after-attempt-2.json',
-                  'devshard_state.before.json', 'devshard_state.after.json', 'reconciliation.json',
-              ],
-              'G-002B': [
-                  'run_metadata.json', 'attempt-1.request.redacted.json',
-                  'attempt-1.transport-outcome.json', 'attempt-1.accounting.json',
-                  'attempt-2.request.redacted.json', 'attempt-2.transport-outcome.json',
-                  'attempt-2.accounting.json', 'gateway_status.before.json',
-                  'gateway_status.after-attempt-1.json', 'gateway_status.after-attempt-2.json',
-                  'devshard_state.before.json', 'devshard_state.after.json', 'reconciliation.json',
-              ],
-          }
-          missing = []
-          for case, names in required.items():
-              for name in names:
-                  p = root / case / name
-                  if not p.is_file() or p.stat().st_size == 0:
-                      missing.append(str(p))
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID'
+          required = [
+              'run_metadata.json',
+              'request.redacted.json',
+              'response.redacted.json',
+              'transport.json',
+              'gateway_status.before.json',
+              'gateway_status.after.json',
+              'devshard_state.before.json',
+              'devshard_state.after.json',
+              'debug_perf.after.json',
+              'accounting.client-id.json',
+              'accounting.response-id.json',
+              'reconciliation.json',
+          ]
+          missing = [str(root / name) for name in required if not (root / name).is_file() or (root / name).stat().st_size == 0]
           if missing:
-              raise SystemExit('Missing required CGQA evidence artifacts:\n' + '\n'.join(missing))
-          print('Required source artifacts are complete.')
+              raise SystemExit('Missing required G-001-ID evidence artifacts:\n' + '\n'.join(missing))
+          print('G-001-ID source artifacts are complete.')
           PY
 
-      - name: Validate produced JSON and reconciliation schema
+      - name: Validate identity JSON and reconciliation schema
         if: always()
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
-          find "$CGQA_EVIDENCE_DIR" -type f -name '*.json' -print0 | while IFS= read -r -d '' f; do
+          find "$CGQA_EVIDENCE_DIR/G-001-ID" -type f -name '*.json' -print0 | while IFS= read -r -d '' f; do
             python -m json.tool "$f" >/dev/null
           done
           python - <<'PY'
@@ -192,24 +181,17 @@ jobs:
           from pathlib import Path
           from jsonschema import Draft202012Validator
 
-          root = Path(os.environ['CGQA_EVIDENCE_DIR'])
-          schema_path = Path('external-validation/gonka/evidence.schema.json')
-          schema = json.loads(schema_path.read_text(encoding='utf-8'))
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID'
+          schema = json.loads(Path('external-validation/gonka/identity-boundary.schema.json').read_text(encoding='utf-8'))
           Draft202012Validator.check_schema(schema)
-          validator = Draft202012Validator(schema)
-          files = sorted(root.glob('G-*/reconciliation.json'))
-          if len(files) != 3:
-              raise SystemExit(f'Expected 3 reconciliation files, found {len(files)}')
-          for path in files:
-              instance = json.loads(path.read_text(encoding='utf-8'))
-              errors = sorted(validator.iter_errors(instance), key=lambda e: list(e.path))
-              if errors:
-                  rendered = '\n'.join(f'{path}: {e.message}' for e in errors)
-                  raise SystemExit(rendered)
-              print(f'{path}: schema valid')
+          instance = json.loads((root / 'reconciliation.json').read_text(encoding='utf-8'))
+          errors = sorted(Draft202012Validator(schema).iter_errors(instance), key=lambda e: list(e.path))
+          if errors:
+              raise SystemExit('\n'.join(f'{e.json_path}: {e.message}' for e in errors))
+          print('G-001-ID reconciliation schema valid.')
           PY
 
-      - name: Summarize reconciliation verdicts
+      - name: Summarize identity boundary verdict
         if: always()
         shell: bash
         run: |
@@ -218,22 +200,28 @@ jobs:
           import os
           from pathlib import Path
 
-          root = Path(os.environ['CGQA_EVIDENCE_DIR'])
-          for p in sorted(root.glob('G-*/reconciliation.json')):
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID' / 'reconciliation.json'
+          if not p.is_file():
+              print('### G-001-ID')
+              print('- reconciliation evidence not produced')
+          else:
               d = json.loads(p.read_text(encoding='utf-8'))
-              print(f"### {d.get('case_id')}")
+              print('### G-001-ID')
               print(f"- verdict: `{d.get('verdict')}`")
-              print(f"- transport request ids: `{len(d.get('transport_request_ids', []))}`")
-              print(f"- execution nonces: `{d.get('observed_execution_nonces', [])}`")
-              print(f"- all-attempt cost: `{d.get('cost', {}).get('all_attempts_actual_cost')}`")
-              print(f"- unexplained effects: `{len(d.get('unexplained_effects', []))}`")
+              print(f"- request succeeded: `{d.get('request_succeeded')}`")
+              print(f"- client request id: `{d.get('client_request_id')}`")
+              print(f"- response request id: `{d.get('response_request_id')}`")
+              print(f"- accounting via client id: `{d.get('accounting_resolved_by_client_id')}`")
+              print(f"- accounting via response id: `{d.get('accounting_resolved_by_response_id')}`")
+              print(f"- state nonce before/after: `{d.get('state_nonce_before')}` → `{d.get('state_nonce_after')}`")
+              print(f"- classification: `{d.get('private_hypothesis_id')}`")
           PY
 
-      - name: Upload CGQA Gonka evidence
+      - name: Upload CGQA Gonka identity evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: gonka-cgqa-evidence
-          path: cgqa-evidence
+          name: gonka-cgqa-identity-evidence
+          path: cgqa-evidence/G-001-ID
           if-no-files-found: warn
           retention-days: 14
