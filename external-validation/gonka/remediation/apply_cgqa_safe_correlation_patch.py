@@ -23,8 +23,8 @@ START_NEW = '''e.perf.RecordAccountingRequestStart(requestID, e.devshardID, para
 \tif clientID := cgqaClientCorrelationIDFromContext(ctx); clientID != "" {
 \t\te.perf.recordCGQARequestCorrelation(clientID, requestID, e.devshardID, time.Now())
 \t}'''
-ROUTE_OLD = 'mux.HandleFunc("GET /v1/requests/{request_id}", p.handleRequestAccounting)'
-ROUTE_NEW = ROUTE_OLD + '\n\tmux.HandleFunc("GET /v1/request-correlations/{client_request_id}", p.handleCGQARequestCorrelation)'
+ROUTE_OLD = 'mux.HandleFunc("GET /v1/requests/{request_id}", proxy.handleRequestAccounting)'
+ROUTE_NEW = ROUTE_OLD + '\n\tmux.HandleFunc("GET /v1/request-correlations/{client_request_id}", proxy.handleCGQARequestCorrelation)'
 
 
 def replace_exact(path: Path, old: str, new: str, expected: int) -> None:
@@ -66,7 +66,7 @@ def apply(root: Path) -> None:
     replace_exact(proxy, RUN_OLD, RUN_NEW, 2)
     # Persist the relation only after canonical request accounting starts.
     replace_exact(redundancy, START_OLD, START_NEW, 1)
-    # Explicit namespace avoids conflating internal request IDs with caller IDs.
+    # RuntimeMux owns /v1/requests and the proof correlation lookup route.
     replace_exact(gateway, ROUTE_OLD, ROUTE_NEW, 1)
 
     print(
