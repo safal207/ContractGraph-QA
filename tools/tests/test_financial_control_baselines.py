@@ -127,6 +127,16 @@ class FinancialControlBaselineTest(unittest.TestCase):
             self.assertEqual(model.path, expected_paths[model.id])
             self.assertTrue((self.root / model.path).is_file(), model.path)
 
+    def test_repository_trusted_gate_registers_every_financial_baseline(self) -> None:
+        """Ensure the trusted repository gate protects the reviewed financial profile."""
+        financial = load_change_gate_config(self.root / "financial-control-gate.toml")
+        trusted = load_change_gate_config(self.root / "causal-security-gate.toml")
+        trusted_paths = {model.id: model.path for model in trusted.models}
+
+        for model in financial.models:
+            self.assertIn(model.id, trusted_paths)
+            self.assertEqual(trusted_paths[model.id], model.path)
+
 
 if __name__ == "__main__":
     unittest.main()

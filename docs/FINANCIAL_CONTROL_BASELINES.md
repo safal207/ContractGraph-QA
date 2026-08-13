@@ -36,9 +36,9 @@ Every baseline has an empty `violatedAssumptions` array. The corresponding failu
 
 ## Machine-readable profile
 
-`financial-control-gate.toml` is a strict Change Gate configuration listing the five baseline models. It can be inspected with the same parser used by the trusted gate.
+`financial-control-gate.toml` is a strict Change Gate configuration listing the five baseline models. The repository-wide `causal-security-gate.toml` now registers those same model IDs and exact paths after the baseline bytes have already landed in trusted `main` history.
 
-The profile is introduced before it is wired into the repository-wide trusted workflow. This ordering is intentional.
+The standalone financial profile remains useful as the compact product-facing control pack; the repository-wide profile is the actual trusted PR enforcement surface.
 
 ## Two-step onboarding is a security property
 
@@ -56,6 +56,8 @@ register those existing base paths in causal-security-gate.toml
 trusted pull_request_target judge compares base ↔ candidate
 ```
 
+Phase A and Phase B are intentionally separate changes. Once Phase B is merged, subsequent PRs that mutate any registered financial baseline are compared against trusted historical bytes from the base commit.
+
 That prevents a candidate PR from simultaneously inventing both a new security baseline and the historical state it claims to preserve.
 
 ## What `not_found_within_bound` means
@@ -66,7 +68,7 @@ The baseline pack is local, deterministic, synthetic, and repository-owned. It m
 
 ## Intended pilot story
 
-After Phase B registration, a financial-control pilot can demonstrate:
+With trusted-gate registration in place, a financial-control pilot can demonstrate:
 
 ```text
 reviewed safe baseline
