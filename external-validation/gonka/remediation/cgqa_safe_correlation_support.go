@@ -63,23 +63,59 @@ func (s *PerfStore) ensureCGQARequestCorrelationSchema() error {
 	return err
 }
 
-func (s *PerfStore) recordCGQARequestCorrelation(clientID, internalID, escrowID string, createdAt time.Time) error {
-	clientID = strings.TrimSpace(clientID)
-	internalID = strings.TrimSpace(internalID)
+// upsertCGQAAccountingRequestWithCorrelation preserves the upstream canonical
+// request_accounting key and persists the caller-controlled correlation in the
+// same SQLite transaction. The proof originally used two independent writes;
+// under the single-connection PerfStore that introduced an avoidable hot-path
+// interleaving/blocking surface. One transaction also gives the desired causal
+// invariant: a visible correlation mapping cannot exist without its canonical
+// request row, and the request row cannot commit without the mapping when a
+// correlation was supplied.
+func (s *PerfStore) upsertCGQAAccountingRequestWithCorrelation(requestID, escrowID, model, clientID string, startedAt time.Time) error {
+	requestID = strings.TrimSpace(requestID)
 	escrowID = strings.TrimSpace(escrowID)
-	if s == nil || clientID == "" || internalID == "" || escrowID == "" {
+	clientID = strings.TrimSpace(clientID)
+	if s == nil || s.db == nil || requestID == "" || escrowID == "" {
 		return nil
 	}
-	if createdAt.IsZero() {
-		createdAt = time.Now()
+	if startedAt.IsZero() {
+		startedAt = time.Now()
 	}
-	_, err := s.db.Exec(
-		`INSERT OR IGNORE INTO cgqa_request_correlations
-		 (client_correlation_id, internal_request_id, escrow_id, created_at)
-		 VALUES (?, ?, ?, ?)`,
-		clientID, internalID, escrowID, createdAt.Format(time.RFC3339Nano),
-	)
-	return err
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(
+		`INSERT INTO request_accounting (request_id, escrow_id, model, started_at)
+		 VALUES (?, ?, ?, ?)
+		 ON CONFLICT(request_id, escrow_id) DO UPDATE SET
+		   model = CASE WHEN excluded.model <> '' THEN excluded.model ELSE request_accounting.model END`,
+		requestID,
+		escrowID,
+		model,
+		startedAt.Format(time.RFC3339Nano),
+	); err != nil {
+		return err
+	}
+
+	if clientID != "" {
+		if _, err := tx.Exec(
+			`INSERT OR IGNORE INTO cgqa_request_correlations
+			 (client_correlation_id, internal_request_id, escrow_id, created_at)
+			 VALUES (?, ?, ?, ?)`,
+			clientID,
+			requestID,
+			escrowID,
+			startedAt.Format(time.RFC3339Nano),
+		); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (s *PerfStore) findCGQARequestCorrelations(clientID, escrowID string) ([]cgqaRequestCorrelation, error) {
@@ -110,12 +146,16 @@ func (s *PerfStore) findCGQARequestCorrelations(clientID, escrowID string) ([]cg
 	return out, rows.Err()
 }
 
-func (t *PerfTracker) recordCGQARequestCorrelation(clientID, internalID, escrowID string, createdAt time.Time) {
+func (t *PerfTracker) recordCGQAAccountingRequestStart(requestID, escrowID, model, clientID string, startedAt time.Time) {
 	if t == nil || t.store == nil {
 		return
 	}
-	if err := t.store.recordCGQARequestCorrelation(clientID, internalID, escrowID, createdAt); err != nil {
-		fmt.Printf("cgqa: persist request correlation: %v\n", err)
+	if strings.TrimSpace(clientID) == "" {
+		t.RecordAccountingRequestStart(requestID, escrowID, model, startedAt)
+		return
+	}
+	if err := t.store.upsertCGQAAccountingRequestWithCorrelation(requestID, escrowID, model, clientID, startedAt); err != nil {
+		fmt.Printf("cgqa: persist atomic request accounting correlation: %v\n", err)
 	}
 }
 
