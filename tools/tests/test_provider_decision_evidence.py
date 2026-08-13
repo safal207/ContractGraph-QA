@@ -62,31 +62,31 @@ class ProviderDecisionEvidenceTest(unittest.TestCase):
         right = {"a": {"x": 1, "y": 2}, "b": 2}
         self.assertEqual(canonical_sha256(left), canonical_sha256(right))
 
-    def test_adapter_tamper_fails_digest_verification(self) -> None:
+    def test_adapter_change_fails_digest_verification(self) -> None:
         pack = self._pack()
-        pack["payloads"]["adapter"]["profileVersion"] = "tampered"
+        pack["payloads"]["adapter"]["profileVersion"] = "changed"
         with self.assertRaisesRegex(ProviderDecisionEvidenceError, "adapter digest mismatch"):
             verify_provider_decision_evidence(pack)
 
-    def test_observation_tamper_fails_digest_verification(self) -> None:
+    def test_observation_change_fails_digest_verification(self) -> None:
         pack = self._pack()
         pack["payloads"]["observations"]["observations"][0]["providerState"] = "failed"
         with self.assertRaisesRegex(ProviderDecisionEvidenceError, "observations digest mismatch"):
             verify_provider_decision_evidence(pack)
 
-    def test_authority_tamper_fails_digest_verification(self) -> None:
+    def test_authority_change_fails_digest_verification(self) -> None:
         pack = self._pack()
         pack["payloads"]["authority"]["status"] = "revoked"
         with self.assertRaisesRegex(ProviderDecisionEvidenceError, "authority digest mismatch"):
             verify_provider_decision_evidence(pack)
 
-    def test_decision_tamper_fails_digest_verification(self) -> None:
+    def test_decision_change_fails_digest_verification(self) -> None:
         pack = self._pack()
         pack["payloads"]["providerDecision"]["decision"]["decision"] = "ALLOW"
         with self.assertRaisesRegex(ProviderDecisionEvidenceError, "providerDecision digest mismatch"):
             verify_provider_decision_evidence(pack)
 
-    def test_rehashed_semantic_tamper_still_fails_replay(self) -> None:
+    def test_rehashed_decision_change_still_fails_replay(self) -> None:
         pack = self._pack()
         pack["payloads"]["providerDecision"]["decision"]["decision"] = "ALLOW"
         pack["digests"]["providerDecision"] = canonical_sha256(
@@ -95,7 +95,16 @@ class ProviderDecisionEvidenceTest(unittest.TestCase):
         with self.assertRaisesRegex(ProviderDecisionEvidenceError, "does not exactly match"):
             verify_provider_decision_evidence(pack)
 
-    def test_build_rejects_pre_tampered_decision(self) -> None:
+    def test_false_to_zero_change_still_fails_replay(self) -> None:
+        pack = self._pack()
+        pack["payloads"]["providerDecision"]["decision"]["monetaryActionAllowed"] = 0
+        pack["digests"]["providerDecision"] = canonical_sha256(
+            pack["payloads"]["providerDecision"]
+        )
+        with self.assertRaisesRegex(ProviderDecisionEvidenceError, "does not exactly match"):
+            verify_provider_decision_evidence(pack)
+
+    def test_build_rejects_changed_decision(self) -> None:
         decision = self._decision()
         decision["decision"]["monetaryActionAllowed"] = True
         with self.assertRaisesRegex(ProviderDecisionEvidenceError, "does not exactly match"):
