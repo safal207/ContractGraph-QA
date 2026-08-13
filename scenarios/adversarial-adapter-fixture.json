@@ -1,6 +1,10 @@
 {
   "assumptions": [
     {
+      "id": "canary-payout-authorization-intact",
+      "description": "The canary payout authorization guard remains intact."
+    },
+    {
       "id": "terminal-transition-blocked",
       "description": "The modeled terminal-state transition remains unreachable."
     }
@@ -27,7 +31,7 @@
       "id": "canary-bypass-payout-authorization",
       "source": "advance-state-machine",
       "target": "canary-unauthorized-payout",
-      "requiresViolations": ["terminal-transition-blocked"],
+      "requiresViolations": ["canary-payout-authorization-intact"],
       "invariantId": "canary-payout-authorization",
       "boundary": "canary-payment-boundary",
       "impact": "canary unauthorized monetary payout becomes reachable"
