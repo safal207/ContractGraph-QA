@@ -81,6 +81,14 @@ jobs:
           -run '^TestCGQAGonkaTimeoutIdentityEvidence$'
           -v -count=1 -timeout=25m
 
+      - name: Pin executed v1 devshardctl image identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker image inspect devshard-runtime:latest --format '{{.Id}}' > "$PROOF_ROOT/meta/devshardctl-v1.image-id"
+          test -s "$PROOF_ROOT/meta/devshardctl-v1.image-id"
+          echo "v1 devshardctl image: $(cat "$PROOF_ROOT/meta/devshardctl-v1.image-id")"
+
       - name: Apply local client-known identity proof patch v2
         shell: bash
         run: |
@@ -102,7 +110,22 @@ jobs:
           go test ./cmd/devshardctl -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$' -count=1
           TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
 
-      - name: Rebuild v2 patched Gonka
+      - name: Rebuild v2 devshardctl image from patched source
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --file upstream-gonka/devshard/Dockerfile \
+            --target devshardctl-runtime \
+            --build-arg DEVSHARD_VERSION=v2 \
+            --tag devshard-runtime:latest \
+            upstream-gonka
+          docker image inspect devshard-runtime:latest --format '{{.Id}}' > "$PROOF_ROOT/meta/devshardctl-v2.image-id"
+          test -s "$PROOF_ROOT/meta/devshardctl-v2.image-id"
+          test "$(cat "$PROOF_ROOT/meta/devshardctl-v1.image-id")" != "$(cat "$PROOF_ROOT/meta/devshardctl-v2.image-id")"
+          echo "v2 devshardctl image: $(cat "$PROOF_ROOT/meta/devshardctl-v2.image-id")"
+
+      - name: Rebuild v2 patched Gonka devshardd
         working-directory: upstream-gonka/devshard/testenv
         run: make build-devshardd
 
@@ -166,9 +189,13 @@ jobs:
           proof = Path(os.environ['PROOF_ROOT'])
           baseline = json.loads((proof / 'baseline-v1/G-002-ID/reconciliation.json').read_text(encoding='utf-8'))
           patched = json.loads((proof / 'patched-v2/G-002-ID/reconciliation.json').read_text(encoding='utf-8'))
+          v1_image = (proof / 'meta/devshardctl-v1.image-id').read_text(encoding='utf-8').strip()
+          v2_image = (proof / 'meta/devshardctl-v2.image-id').read_text(encoding='utf-8').strip()
           checks = {
               'same_case': baseline.get('case_id') == patched.get('case_id') == 'G-002-ID',
               'same_upstream_revision': baseline.get('upstream_revision') == patched.get('upstream_revision') == os.environ['GONKA_SHA'],
+              'same_harness_criterion': (proof / 'meta/harness.sha256').is_file() and (proof / 'meta/schema.sha256').is_file(),
+              'runtime_image_changed': bool(v1_image) and bool(v2_image) and v1_image != v2_image,
               'baseline_timeout': baseline.get('client_timeout_observed') is True,
               'patched_timeout': patched.get('client_timeout_observed') is True,
               'baseline_completed_after_timeout': baseline.get('perf_record_added_after_timeout') is True,
@@ -186,6 +213,8 @@ jobs:
               'patched_verdict': patched.get('verdict'),
               'baseline_client_id_resolved': baseline.get('accounting_resolved_by_client_id'),
               'patched_client_id_resolved': patched.get('accounting_resolved_by_client_id'),
+              'v1_devshardctl_image': v1_image,
+              'v2_devshardctl_image': v2_image,
               'checks': checks,
               'verdict': 'PASS' if not failed else 'FAIL',
           }
@@ -213,6 +242,7 @@ jobs:
               print(f"- v1 baseline: `{d.get('baseline_verdict')}`")
               print(f"- v2 patched: `{d.get('patched_verdict')}`")
               print(f"- client-known accounting addressability: `{d.get('baseline_client_id_resolved')} -> {d.get('patched_client_id_resolved')}`")
+              print(f"- devshardctl image changed: `{d.get('v1_devshardctl_image') != d.get('v2_devshardctl_image')}`")
               print(f"- proof verdict: `{d.get('verdict')}`")
               print('- timeout fault, harness, schema and verdict criterion are unchanged between phases')
           PY
