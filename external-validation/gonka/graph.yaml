@@ -46,8 +46,17 @@ transitions:
     actor: gateway
     invariant: I2_escrow_precedes_billable_execution
 
-  - id: T3
+  - id: T2F
     from: devshard_open
+    to: escrow_funded
+    actor: chain
+    invariant: I2_escrow_precedes_billable_execution
+    evidence:
+      - escrow_or_devshard_id
+      - funded_balance_before_dispatch
+
+  - id: T3
+    from: escrow_funded
     to: inference_dispatched
     actor: gateway
     invariant: I3_logical_request_maps_to_single_billable_operation
@@ -55,6 +64,7 @@ transitions:
       - logical_operation_id
       - execution_attempt_id
       - request_digest
+      - escrow_or_devshard_id
 
   - id: T4
     from: inference_dispatched
