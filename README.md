@@ -301,4 +301,66 @@ docs/
   DISTRIBUTION.md
   RELEASE.md
   client-proof/
+
+.github/workflows/
+  ci.yml
+  reporting.yml
+  product.yml
+  distribution.yml
+  authorized-fork.yml
 ```
+
+## Development and release gates
+
+```bash
+forge fmt --check
+forge build --sizes
+forge test -vvv
+python -m unittest discover -s tools/tests -p 'test_*.py' -v
+python -m pip wheel . --no-deps --wheel-dir .product-wheel
+cgqa demo --output-dir /tmp/cgqa-demo
+cgqa verify-bundle /tmp/cgqa-demo/CGQA-005.evidence.zip
+```
+
+Release/version policy: [`CHANGELOG.md`](CHANGELOG.md) and [`docs/RELEASE.md`](docs/RELEASE.md).
+Distribution instructions: [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## What ContractGraph-QA proves — and what it does not
+
+ContractGraph-QA provides reproducible evidence **within an explicit bounded model**.
+
+It does not claim that:
+
+- bounded graph exploration proves an arbitrary protocol secure;
+- the chosen invariants are complete;
+- the state hash is automatically complete;
+- a finite parameter corpus covers every possible value;
+- `not_found_within_bound` means no vulnerability exists;
+- a QA engagement is equivalent to formal verification or an independent full security audit.
+
+Security conclusions remain limited to the modeled actors, actions, parameters, time assumptions, search depth, state-hash completeness, authorization scope, fork snapshot, adapter mapping, manifest correctness, capture mapping, and explicit invariants.
+
+## Product evolution
+
+- **v1.0** — installable runtime, deterministic evidence bundles, independent verification.
+- **v1.1** — schema/runtime contract parity gate.
+- **v1.2** — multi-invariant engagement engine.
+- **v1.3** — direct multi-invariant Foundry capture.
+- **v1.4** — one-command `engagement-run`.
+- **v1.5** — fail-closed client engagement scaffold.
+- **v1.6** — packaged self-serve demo and verified distribution artifact workflow.
+
+Earlier v0.x engine milestones remain documented in Git history and the changelog.
+
+## Safety
+
+Use ContractGraph-QA only on contracts you own, repository-local/open-source test fixtures, systems where you have explicit authorization, or public bug-bounty assets strictly within their published scope and rules.
+
+Never commit RPC secrets, private keys, seed phrases, or client credentials.
+
+See [`SECURITY.md`](SECURITY.md).
+
+## License
+
+Apache-2.0

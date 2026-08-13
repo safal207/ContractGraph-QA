@@ -246,7 +246,7 @@ def evaluate_payment_recovery_scenario(payload: dict[str, Any]) -> dict[str, Any
                 raise PaymentRecoveryError(
                     "reconcile.outcome must be committed, failed, pending, or unknown"
                 )
-            if not evidence_kind or not evidence_ref:
+            if not evidence_kind or not evidence_ref:  # defensive; _required_text already enforces
                 _violation(
                     violations,
                     "APR-005_RECONCILIATION_EVIDENCE_MISSING",
