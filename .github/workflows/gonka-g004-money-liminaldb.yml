@@ -60,6 +60,7 @@ jobs:
           cp external-validation/gonka/remediation/cgqa_safe_correlation_support.go upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
           cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
           cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
           cp external-validation/gonka/harness/cgqa_timeout_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_timeout_identity_evidence_test.go
           cp external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_safe_correlation_evidence_test.go
           cp external-validation/gonka/harness/cgqa_money_reconciliation_test.go upstream-gonka/devshard/testenv/citest/cgqa_money_reconciliation_test.go
