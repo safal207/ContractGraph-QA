@@ -1,0 +1,20 @@
+{
+  "schema": "cgqa.payment-fulfillment-scenario.v0.1",
+  "scenarioId": "x402-committed-delivered-stop",
+  "logicalOperationId": "x402-op-001",
+  "payment": {
+    "outcome": "committed",
+    "evidence": {
+      "kind": "payment-response-header",
+      "ref": "fixture://x402/payment-response/success"
+    }
+  },
+  "fulfillment": {
+    "outcome": "delivered",
+    "evidence": {
+      "kind": "client-http-response",
+      "ref": "fixture://x402/http/200-resource-received"
+    }
+  },
+  "nextAction": "stop"
+}
