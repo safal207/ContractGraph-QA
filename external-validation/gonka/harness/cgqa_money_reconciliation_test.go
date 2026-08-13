@@ -164,24 +164,64 @@ func TestCGQAGonkaMoneyReconciliation(t *testing.T) {
 		unexplained = append(unexplained, "timeout/retry did not retain two distinct canonical internal request IDs")
 	}
 
-	requests := make([]cgqaMoneyRequestEvidence, 0, len(internalIDs))
+	// Phase 1: discover every request-accounting attempt nonce. Do not trust cost
+	// fields yet because speculative attempts may still be draining after the
+	// client-visible winner completes.
 	allAttemptNonces := []uint64{}
-	accountingAttemptCost := uint64(0)
-	accountingReportedCost := uint64(0)
 	for _, internalID := range internalIDs {
 		acct, resolved := requireFullInternalAccounting(t, client, eps.GatewayHTTP, adminKey, escrowID, internalID, 8*time.Second)
 		if !resolved {
 			unexplained = append(unexplained, "request accounting unresolved for "+internalID)
 			continue
 		}
-		writeJSONArtifact(t, root, "accounting."+sanitizeMoneyName(internalID)+".json", acct)
+		writeJSONArtifact(t, root, "accounting.initial."+sanitizeMoneyName(internalID)+".json", acct)
+		for _, attempt := range acct.Attempts {
+			allAttemptNonces = append(allAttemptNonces, attempt.Nonce)
+		}
+	}
+
+	sort.Slice(allAttemptNonces, func(i, j int) bool { return allAttemptNonces[i] < allAttemptNonces[j] })
+	uniqueNonces := uniqueMoneyNonces(allAttemptNonces)
+	attemptNoncesUnique := len(uniqueNonces) == len(allAttemptNonces) && len(uniqueNonces) > 0
+	if !attemptNoncesUnique {
+		unexplained = append(unexplained, "an execution nonce appeared in more than one request-accounting lineage or no nonce was observed")
+	}
+
+	// Phase 2: wait until every discovered attempt has financially terminal state.
+	// v0.1 intentionally excludes challenge/invalidation semantics; timed_out is
+	// allowed because its reservation is fully refunded and ActualCost is zero.
+	afterInferences, terminalStatuses, inferenceActualCost, terminalOK := waitMoneyTerminalInferences(
+		t, client, eps.GatewayHTTP, adminKey, escrowID, uniqueNonces, 20*time.Second,
+	)
+	writeJSONArtifact(t, root, "inferences.after.json", afterInferences)
+	if !terminalOK {
+		unexplained = append(unexplained, "not every accounting attempt reached a v0.1 terminal state (finished or timed_out)")
+	}
+	for nonce, status := range terminalStatuses {
+		if status == "challenged" || status == "invalidated" {
+			unexplained = append(unexplained, fmt.Sprintf("nonce %s entered dispute semantics excluded from G-004 v0.1: %s", nonce, status))
+		}
+	}
+
+	// Phase 3: now re-read accounting and compute costs from terminal evidence.
+	requests := make([]cgqaMoneyRequestEvidence, 0, len(internalIDs))
+	accountingAttemptCost := uint64(0)
+	accountingReportedCost := uint64(0)
+	finalNonces := []uint64{}
+	for _, internalID := range internalIDs {
+		acct, resolved := requireFullInternalAccounting(t, client, eps.GatewayHTTP, adminKey, escrowID, internalID, 8*time.Second)
+		if !resolved {
+			unexplained = append(unexplained, "terminal request accounting unresolved for "+internalID)
+			continue
+		}
+		writeJSONArtifact(t, root, "accounting.final."+sanitizeMoneyName(internalID)+".json", acct)
 
 		attemptSum := uint64(0)
 		attemptNonces := make([]uint64, 0, len(acct.Attempts))
 		for _, attempt := range acct.Attempts {
 			attemptSum += attempt.ActualCost
 			attemptNonces = append(attemptNonces, attempt.Nonce)
-			allAttemptNonces = append(allAttemptNonces, attempt.Nonce)
+			finalNonces = append(finalNonces, attempt.Nonce)
 		}
 		sort.Slice(attemptNonces, func(i, j int) bool { return attemptNonces[i] < attemptNonces[j] })
 		arithmeticOK := attemptSum == acct.Cost.AllAttemptsActualCost &&
@@ -204,24 +244,9 @@ func TestCGQAGonkaMoneyReconciliation(t *testing.T) {
 		})
 	}
 
-	sort.Slice(allAttemptNonces, func(i, j int) bool { return allAttemptNonces[i] < allAttemptNonces[j] })
-	uniqueNonces := uniqueMoneyNonces(allAttemptNonces)
-	attemptNoncesUnique := len(uniqueNonces) == len(allAttemptNonces) && len(uniqueNonces) > 0
-	if !attemptNoncesUnique {
-		unexplained = append(unexplained, "an execution nonce appeared in more than one request-accounting lineage or no nonce was observed")
-	}
-
-	afterInferences, terminalStatuses, inferenceActualCost, terminalOK := waitMoneyTerminalInferences(
-		t, client, eps.GatewayHTTP, adminKey, escrowID, uniqueNonces, 20*time.Second,
-	)
-	writeJSONArtifact(t, root, "inferences.after.json", afterInferences)
-	if !terminalOK {
-		unexplained = append(unexplained, "not every accounting attempt reached a v0.1 terminal state (finished or timed_out)")
-	}
-	for nonce, status := range terminalStatuses {
-		if status == "challenged" || status == "invalidated" {
-			unexplained = append(unexplained, fmt.Sprintf("nonce %s entered dispute semantics excluded from G-004 v0.1: %s", nonce, status))
-		}
+	sort.Slice(finalNonces, func(i, j int) bool { return finalNonces[i] < finalNonces[j] })
+	if !sameMoneyNonces(uniqueNonces, uniqueMoneyNonces(finalNonces)) {
+		unexplained = append(unexplained, "request-accounting attempt set changed between discovery and terminal reconciliation")
 	}
 
 	afterStateRaw := requireDevshardState(t, client, eps.GatewayHTTP, adminKey, escrowID)
@@ -386,6 +411,18 @@ func uniqueMoneyNonces(values []uint64) []uint64 {
 		}
 	}
 	return out
+}
+
+func sameMoneyNonces(a, b []uint64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // moneyDecrease returns first-second when first >= second. Callers deliberately
