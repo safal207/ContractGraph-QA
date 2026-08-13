@@ -5,7 +5,7 @@ Proof-only transformation:
 - keep gateway-generated internal request IDs canonical;
 - bind caller X-Request-Id as a separate client correlation value;
 - propagate both identities through detached background inference;
-- persist one-to-many client -> internal request mappings;
+- persist canonical request accounting + client correlation atomically;
 - expose an explicit correlation lookup endpoint;
 - initialize proof-only correlation storage when PerfStore opens, never on the
   inference hot path.
@@ -21,10 +21,7 @@ ENTRY_NEW = 'ctx, _ := ensureRequestLogContext(r.Context())\n\tctx = withCGQACli
 RUN_OLD = 'RunInference(context.Background(), params,'
 RUN_NEW = 'RunInference(propagateCGQARequestContext(context.Background(), r.Context()), params,'
 START_OLD = 'e.perf.RecordAccountingRequestStart(requestID, e.devshardID, params.Model, time.Now())'
-START_NEW = '''e.perf.RecordAccountingRequestStart(requestID, e.devshardID, params.Model, time.Now())
-\tif clientID := cgqaClientCorrelationIDFromContext(ctx); clientID != "" {
-\t\te.perf.recordCGQARequestCorrelation(clientID, requestID, e.devshardID, time.Now())
-\t}'''
+START_NEW = 'e.perf.recordCGQAAccountingRequestStart(requestID, e.devshardID, params.Model, cgqaClientCorrelationIDFromContext(ctx), time.Now())'
 ROUTE_OLD = 'mux.HandleFunc("GET /v1/requests/{request_id}", proxy.handleRequestAccounting)'
 ROUTE_NEW = ROUTE_OLD + '\n\tmux.HandleFunc("GET /v1/request-correlations/{client_request_id}", proxy.handleCGQARequestCorrelation)'
 STORE_RETURN_OLD = 'return &PerfStore{db: db, path: dbPath}, nil'
@@ -47,12 +44,11 @@ def replace_exact(path: Path, old: str, new: str, expected: int) -> None:
     patched = text.replace(old, new)
 
     # Some proof transformations deliberately retain the original statement
-    # and append a second statement after it (for example canonical accounting
-    # start + correlation insert, or existing route + correlation route). In
-    # those cases `old` is a substring of `new`, so counting `old` after the
-    # replacement cannot distinguish a successful insertion from a leftover.
-    # We still fail closed on the exact pre-patch count and require the exact
-    # post-patch replacement count.
+    # as part of the replacement (for example existing route + correlation
+    # route). In those cases `old` is a substring of `new`, so counting `old`
+    # after replacement cannot distinguish a successful insertion from a
+    # leftover. We still fail closed on the exact pre-patch count and require
+    # the exact post-patch replacement count.
     if old not in new and patched.count(old) != 0:
         raise SystemExit(f"{path}: original patch anchor remains after replacement")
     if patched.count(new) != expected:
@@ -76,14 +72,16 @@ def apply(root: Path) -> None:
     # Streaming + non-streaming detached execution keep background cancellation
     # semantics but carry internal request ID and client correlation separately.
     replace_exact(proxy, RUN_OLD, RUN_NEW, 2)
-    # Persist the relation only after canonical request accounting starts.
+    # Preserve the upstream accounting-start semantics while writing the
+    # supplied correlation relation in the same SQLite transaction.
     replace_exact(redundancy, START_OLD, START_NEW, 1)
     # RuntimeMux owns /v1/requests and the proof correlation lookup route.
     replace_exact(gateway, ROUTE_OLD, ROUTE_NEW, 1)
 
     print(
         "CGQA safe correlation proof patch applied: internal request IDs remain canonical; "
-        "caller correlation is one-to-many, separately queryable, and schema DDL stays off the inference hot path"
+        "caller correlation is one-to-many, atomically persisted with accounting, separately queryable, "
+        "and schema DDL stays off the inference hot path"
     )
 
 
