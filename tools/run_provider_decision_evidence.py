@@ -5,11 +5,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from contractgraph_qa.provider_adapter import load_provider_adapter, load_provider_observations
 from contractgraph_qa.provider_decision_evidence import (
     build_provider_decision_evidence,
+    canonical_evidence_pack_sha256,
     verify_provider_decision_evidence,
 )
 from contractgraph_qa.provider_payment_decision import evaluate_provider_payment_decision
@@ -42,12 +48,16 @@ def _build(args: argparse.Namespace) -> int:
     )
     pack = build_provider_decision_evidence(adapter, observations, authority, decision)
     _write(args.output, pack)
+    print(f"evidencePackSha256={canonical_evidence_pack_sha256(pack)}")
     return 0
 
 
 def _verify(args: argparse.Namespace) -> int:
     pack = _load_object(args.evidence, "evidence")
-    decision = verify_provider_decision_evidence(pack)
+    decision = verify_provider_decision_evidence(
+        pack,
+        expected_pack_sha256=args.expected_pack_sha256,
+    )
     print(json.dumps(decision, indent=2, sort_keys=True))
     return 0
 
@@ -67,6 +77,10 @@ def main() -> int:
 
     verify = subparsers.add_parser("verify", help="verify hashes and replay embedded evidence")
     verify.add_argument("--evidence", required=True, type=Path)
+    verify.add_argument(
+        "--expected-pack-sha256",
+        help="trusted externally stored canonical SHA-256 for the complete evidence pack",
+    )
     verify.set_defaults(func=_verify)
 
     args = parser.parse_args()
