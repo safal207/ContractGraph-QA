@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import copy
 import json
 import unittest
 from pathlib import Path
 
-from contractgraph_qa.provider_payment_decision import evaluate_provider_payment_decision
+from contractgraph_qa.provider_payment_decision import (
+    ProviderPaymentDecisionError,
+    evaluate_provider_payment_decision,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 ADAPTERS = ROOT / "benchmarks" / "agent-payment-recovery-v0.1" / "provider-adapters"
@@ -19,6 +23,12 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
 
     def _observations(self, name: str) -> dict:
         return json.loads((ADAPTERS / name).read_text(encoding="utf-8"))
+
+    def _authority(self) -> dict[str, str]:
+        return {
+            "status": "authorized",
+            "evidenceRef": "fixture://authority/crossmint/test",
+        }
 
     def test_crossmint_webhook_only_stays_nonfinal_and_blocks_money(self) -> None:
         result = evaluate_provider_payment_decision(
@@ -101,6 +111,41 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
         self.assertEqual(result["decision"]["decision"], "STOP")
         self.assertEqual(result["decision"]["reason"], "authority_revoked")
         self.assertFalse(result["decision"]["monetaryActionAllowed"])
+
+    def test_rejects_retry_capable_v03_profile_before_decision(self) -> None:
+        adapter = copy.deepcopy(self.adapter)
+        adapter["schema"] = "cgqa.payment-provider-adapter.v0.3"
+        adapter["retrySemanticsStatus"] = "documented"
+        adapter["retryAllowedAfterProviderStates"] = ["failed"]
+
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "requires the reviewed Crossmint"):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("crossmint-observations-get-success.json"),
+                self._authority(),
+            )
+
+    def test_rejects_other_provider_using_v02_shape(self) -> None:
+        adapter = copy.deepcopy(self.adapter)
+        adapter["providerId"] = "unreviewed-provider"
+
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "requires providerId"):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("crossmint-observations-get-success.json"),
+                self._authority(),
+            )
+
+    def test_rejects_unreviewed_crossmint_profile_version(self) -> None:
+        adapter = copy.deepcopy(self.adapter)
+        adapter["profileVersion"] = "0.2"
+
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "requires profileVersion"):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("crossmint-observations-get-success.json"),
+                self._authority(),
+            )
 
 
 if __name__ == "__main__":
