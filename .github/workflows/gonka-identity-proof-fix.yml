@@ -1,0 +1,165 @@
+name: Gonka identity proof of fix
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/**'
+      - '.github/workflows/gonka-identity-proof-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof-fix:
+    name: CGQA-GONKA-001 proof of fix
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+      CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-proof-fix-evidence
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install unchanged G-001-ID evidence harness
+        shell: bash
+        run: |
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          mkdir -p "$CGQA_EVIDENCE_DIR"
+
+      - name: Apply CGQA-GONKA-001 proof-of-fix only
+        shell: bash
+        run: |
+          python external-validation/gonka/harness/apply_identity_proof_fix.py upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          gofmt -w upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          grep -F 'logging.PropagateRequestID(context.Background(), r.Context())' upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          if grep -F 'RunInference(context.Background(), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go; then
+            echo 'unpatched RunInference background identity boundary remains' >&2
+            exit 1
+          fi
+          git -C upstream-gonka diff --check
+          git -C upstream-gonka diff -- devshard/cmd/devshardctl/proxy.go
+
+      - name: Compile patched Gonka and unchanged verifier
+        working-directory: upstream-gonka/devshard
+        run: >-
+          TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest
+          -run '^$' -count=1
+
+      - name: Run upstream request-accounting controls after patch
+        working-directory: upstream-gonka/devshard
+        run: >-
+          go test ./cmd/devshardctl
+          -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$'
+          -count=1
+
+      - name: Build patched Gonka devshardd for local Docker testenv
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Collect patched G-001-ID evidence
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaIdentityBoundaryEvidence$'
+          -v -count=1 -timeout=30m
+
+      - name: Validate patched evidence completeness
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID'
+          required = [
+              'run_metadata.json', 'request.redacted.json', 'response.redacted.json',
+              'transport.json', 'gateway_status.before.json', 'gateway_status.after.json',
+              'devshard_state.before.json', 'devshard_state.after.json',
+              'debug_perf.after.json', 'accounting.client-id.json',
+              'accounting.response-id.json', 'reconciliation.json',
+          ]
+          missing = [str(root / n) for n in required if not (root / n).is_file() or (root / n).stat().st_size == 0]
+          if missing:
+              raise SystemExit('Missing proof-fix evidence artifacts:\n' + '\n'.join(missing))
+          print('Proof-fix evidence artifacts are complete.')
+          PY
+
+      - name: Validate patched evidence schema
+        if: always()
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          find "$CGQA_EVIDENCE_DIR/G-001-ID" -type f -name '*.json' -print0 | while IFS= read -r -d '' f; do
+            python -m json.tool "$f" >/dev/null
+          done
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID'
+          schema = json.loads(Path('external-validation/gonka/identity-boundary.schema.json').read_text(encoding='utf-8'))
+          Draft202012Validator.check_schema(schema)
+          instance = json.loads((root / 'reconciliation.json').read_text(encoding='utf-8'))
+          errors = sorted(Draft202012Validator(schema).iter_errors(instance), key=lambda e: list(e.path))
+          if errors:
+              raise SystemExit('\n'.join(f'{e.json_path}: {e.message}' for e in errors))
+          print('Proof-fix reconciliation schema valid.')
+          PY
+
+      - name: Upload proof-fix evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-cgqa-identity-proof-fix
+          path: cgqa-proof-fix-evidence/G-001-ID
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Summarize and enforce proof of fix
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          import os
+          from pathlib import Path
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID' / 'reconciliation.json'
+          print('### CGQA-GONKA-001 proof of fix')
+          print(f'- pinned upstream: `{os.environ["GONKA_SHA"]}`')
+          print('- verifier criterion: unchanged G-001-ID')
+          if not p.is_file():
+              print('- patched verdict: `INCONCLUSIVE`')
+              raise SystemExit('proof-fix evidence missing')
+          d = json.loads(p.read_text(encoding='utf-8'))
+          print(f"- patched verdict: `{d.get('verdict')}`")
+          print(f"- request succeeded: `{d.get('request_succeeded')}`")
+          print(f"- client id resolved: `{d.get('accounting_resolved_by_client_id')}`")
+          print(f"- response id resolved: `{d.get('accounting_resolved_by_response_id')}`")
+          print(f"- state nonce: `{d.get('state_nonce_before')}` → `{d.get('state_nonce_after')}`")
+          if d.get('verdict') != 'PASS':
+              raise SystemExit(f"proof-of-fix requires PASS, got {d.get('verdict')}")
+          PY
