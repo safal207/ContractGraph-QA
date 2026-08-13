@@ -55,33 +55,33 @@ type cgqaMoneyRequestEvidence struct {
 }
 
 type cgqaMoneyEvidence struct {
-	SchemaVersion                string                     `json:"schema_version"`
-	CaseID                       string                     `json:"case_id"`
-	LogicalOperationID           string                     `json:"logical_operation_id"`
-	UpstreamRevision             string                     `json:"upstream_revision"`
-	Environment                  string                     `json:"environment"`
-	ClientCorrelationID          string                     `json:"client_correlation_id"`
-	InternalRequestIDs           []string                   `json:"internal_request_ids"`
-	TimeoutObserved              bool                       `json:"timeout_observed"`
-	FirstCompletionObserved      bool                       `json:"first_completion_observed"`
-	RetryHTTPStatus              int                        `json:"retry_http_status"`
-	Requests                     []cgqaMoneyRequestEvidence `json:"requests"`
-	AttemptNonces                []uint64                   `json:"attempt_nonces"`
-	AttemptNoncesUnique          bool                       `json:"attempt_nonces_unique"`
-	TerminalInferenceStatuses    map[string]string          `json:"terminal_inference_statuses"`
-	AccountingAttemptCost        uint64                     `json:"accounting_attempt_cost"`
-	AccountingReportedCost       uint64                     `json:"accounting_reported_cost"`
-	InferenceActualCost          uint64                     `json:"inference_actual_cost"`
-	HostCostBefore               uint64                     `json:"host_cost_before"`
-	HostCostAfter                uint64                     `json:"host_cost_after"`
-	HostCostDelta                uint64                     `json:"host_cost_delta"`
-	BalanceBefore                uint64                     `json:"balance_before"`
-	BalanceAfter                 uint64                     `json:"balance_after"`
-	BalanceDebit                 uint64                     `json:"balance_debit"`
-	FourWayReconciles            bool                       `json:"four_way_reconciles"`
-	UnexplainedFinancialEffects  []string                   `json:"unexplained_financial_effects"`
-	Verdict                      string                     `json:"verdict"`
-	Notes                        string                     `json:"notes"`
+	SchemaVersion               string                     `json:"schema_version"`
+	CaseID                      string                     `json:"case_id"`
+	LogicalOperationID          string                     `json:"logical_operation_id"`
+	UpstreamRevision            string                     `json:"upstream_revision"`
+	Environment                 string                     `json:"environment"`
+	ClientCorrelationID         string                     `json:"client_correlation_id"`
+	InternalRequestIDs          []string                   `json:"internal_request_ids"`
+	TimeoutObserved             bool                       `json:"timeout_observed"`
+	FirstCompletionObserved     bool                       `json:"first_completion_observed"`
+	RetryHTTPStatus             int                        `json:"retry_http_status"`
+	Requests                    []cgqaMoneyRequestEvidence `json:"requests"`
+	AttemptNonces               []uint64                   `json:"attempt_nonces"`
+	AttemptNoncesUnique         bool                       `json:"attempt_nonces_unique"`
+	TerminalInferenceStatuses   map[string]string          `json:"terminal_inference_statuses"`
+	AccountingAttemptCost       uint64                     `json:"accounting_attempt_cost"`
+	AccountingReportedCost      uint64                     `json:"accounting_reported_cost"`
+	InferenceActualCost         uint64                     `json:"inference_actual_cost"`
+	HostCostBefore              uint64                     `json:"host_cost_before"`
+	HostCostAfter               uint64                     `json:"host_cost_after"`
+	HostCostDelta               uint64                     `json:"host_cost_delta"`
+	BalanceBefore               uint64                     `json:"balance_before"`
+	BalanceAfter                uint64                     `json:"balance_after"`
+	BalanceDebit                uint64                     `json:"balance_debit"`
+	FourWayReconciles           bool                       `json:"four_way_reconciles"`
+	UnexplainedFinancialEffects []string                   `json:"unexplained_financial_effects"`
+	Verdict                     string                     `json:"verdict"`
+	Notes                       string                     `json:"notes"`
 }
 
 func TestCGQAGonkaMoneyReconciliation(t *testing.T) {
@@ -125,9 +125,9 @@ func TestCGQAGonkaMoneyReconciliation(t *testing.T) {
 	timeoutObserved := isTimeout(first.Err)
 	writeJSONArtifact(t, root, "attempt-1.transport.json", map[string]any{
 		"client_correlation_id": clientCorrelationID,
-		"timeout_observed": timeoutObserved,
-		"response_request_id": first.ResponseRequestID,
-		"error": errorString(first.Err),
+		"timeout_observed":      timeoutObserved,
+		"response_request_id":   first.ResponseRequestID,
+		"error":                 errorString(first.Err),
 	})
 
 	_, _, firstCompletion := waitForPerfRequestAfter(client, eps.GatewayHTTP, adminKey, escrowID, beforePerfCount, 15*time.Second)
@@ -142,8 +142,8 @@ func TestCGQAGonkaMoneyReconciliation(t *testing.T) {
 	require.Less(t, second.Status, http.StatusMultipleChoices)
 	writeJSONArtifact(t, root, "attempt-2.transport.json", map[string]any{
 		"client_correlation_id": clientCorrelationID,
-		"http_status": second.Status,
-		"response_request_id": second.ResponseRequestID,
+		"http_status":           second.Status,
+		"response_request_id":   second.ResponseRequestID,
 	})
 
 	lookup := requireCorrelationLookup(t, client, eps.GatewayHTTP, adminKey, escrowID, clientCorrelationID, 2, 8*time.Second)
@@ -376,11 +376,11 @@ func requireFullInternalAccounting(t *testing.T, client *http.Client, gatewayURL
 func uniqueMoneyNonces(values []uint64) []uint64 {
 	out := make([]uint64, 0, len(values))
 	var last uint64
-	for i, value := range values {
+	for _, value := range values {
 		if value == 0 {
 			continue
 		}
-		if i == 0 || value != last {
+		if len(out) == 0 || value != last {
 			out = append(out, value)
 			last = value
 		}
@@ -388,11 +388,14 @@ func uniqueMoneyNonces(values []uint64) []uint64 {
 	return out
 }
 
-func moneyDecrease(before, after uint64) (uint64, bool) {
-	if after < before {
+// moneyDecrease returns first-second when first >= second. Callers deliberately
+// order arguments according to the expected direction: hostAfter-hostBefore for
+// monotonic host cost, and balanceBefore-balanceAfter for escrow debit.
+func moneyDecrease(first, second uint64) (uint64, bool) {
+	if first < second {
 		return 0, false
 	}
-	return after - before, true
+	return first - second, true
 }
 
 func sanitizeMoneyName(value string) string {
