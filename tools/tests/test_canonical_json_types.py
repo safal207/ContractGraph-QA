@@ -6,10 +6,10 @@ from contractgraph_qa.provider_decision_evidence import canonical_json_bytes
 
 
 class CanonicalJsonTypeTest(unittest.TestCase):
-    def test_boolean_false_is_distinct_from_numeric_zero(self) -> None:
+    def test_monetary_action_boolean_false_is_distinct_from_numeric_zero(self) -> None:
         self.assertNotEqual(
-            canonical_json_bytes({"value": False}),
-            canonical_json_bytes({"value": 0}),
+            canonical_json_bytes({"monetaryActionAllowed": False}),
+            canonical_json_bytes({"monetaryActionAllowed": 0}),
         )
 
 
