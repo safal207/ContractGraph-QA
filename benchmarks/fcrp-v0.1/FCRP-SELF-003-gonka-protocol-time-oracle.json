@@ -1,0 +1,133 @@
+{
+  "schema": "cgqa.fcrp-case.v0.1",
+  "caseId": "FCRP-SELF-003",
+  "scope": {
+    "nodeId": "G-004P-verification-oracle",
+    "scale": "verification-oracle/protocol-time",
+    "idea": "A causal verification must require a state transition only after an event that can cause that transition. Wall-clock waiting is not equivalent to advancing a nonce/diff-driven protocol state machine."
+  },
+  "evidence": [
+    {
+      "id": "E1",
+      "kind": "runtime",
+      "ref": "github-actions://safal207/ContractGraph-QA/runs/31706618802",
+      "claim": "G-004P reproduced timeout plus retry HTTP success, observed the retry winner as pending, and did not observe terminal state during a 120-second wait-only window."
+    },
+    {
+      "id": "E2",
+      "kind": "pinned-upstream-source",
+      "ref": "https://github.com/gonka-ai/gonka/blob/f040d0a5b5ef207a0c431894c9f9e2608f9d3073/devshard/host/host.go",
+      "claim": "After execution the host signs MsgFinishInference and adds the finish transaction to its mempool; publication is not itself application to the protocol state machine."
+    },
+    {
+      "id": "E3",
+      "kind": "pinned-upstream-source",
+      "ref": "https://github.com/gonka-ai/gonka/blob/f040d0a5b5ef207a0c431894c9f9e2608f9d3073/devshard/user/session.go",
+      "claim": "The user Session queues host mempool finish messages in pendingTxs explicitly for the next diff; composeDiffLocked is the state-advancing path that includes pendingTxs."
+    },
+    {
+      "id": "E4",
+      "kind": "pinned-upstream-source",
+      "ref": "https://github.com/gonka-ai/gonka/blob/f040d0a5b5ef207a0c431894c9f9e2608f9d3073/devshard/state/machine.go",
+      "claim": "When MsgFinishInference is actually applied, applyFinishInference releases ReservedCost minus actualCost, sets StatusFinished, and records ActualCost."
+    },
+    {
+      "id": "E5",
+      "kind": "local-test-contract",
+      "ref": "external-validation/gonka/cases/G-004P-post-success-pending-reserve-liveness.yaml",
+      "claim": "The current G-004P oracle requires a successful retry winner to become terminal inside a bounded wall-clock observation window without making the next-diff trigger part of the invariant."
+    }
+  ],
+  "timeline": {
+    "past": {
+      "summary": "G-004 observed matching request/HostStats cost surfaces but a larger escrow debit while a retry winner was still pending, motivating a liveness follow-up instead of a premature financial-defect claim.",
+      "evidenceRefs": ["E1"]
+    },
+    "present": {
+      "summary": "G-004P waits for up to 120 seconds after client-visible retry success, but the pinned protocol queues Finish for the next diff; waiting alone does not necessarily apply that Finish.",
+      "evidenceRefs": ["E1", "E2", "E3", "E5"]
+    },
+    "future": {
+      "summary": "The next proof must use protocol time: observe Finish publication, then drive or witness the next eligible state-advancing diff, and only then require terminal inference state and reserve-to-actual reconciliation.",
+      "evidenceRefs": ["E3", "E4"]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "transport",
+      "phase": "retry-response",
+      "statement": "The retry becomes client-visible HTTP success.",
+      "evidenceRefs": ["E1"]
+    },
+    {
+      "id": "N2",
+      "level": "host-execution",
+      "phase": "finish-publication",
+      "statement": "The executor signs MsgFinishInference and publishes it into the host mempool; this is a protocol input candidate, not yet committed inference state.",
+      "evidenceRefs": ["E2"]
+    },
+    {
+      "id": "N3",
+      "level": "verification-oracle",
+      "phase": "time-model",
+      "statement": "The G-004P oracle treats elapsed wall-clock time after HTTP success as sufficient cause for protocol terminalization, omitting the next-diff state-advance precondition.",
+      "evidenceRefs": ["E3", "E5"]
+    },
+    {
+      "id": "N4",
+      "level": "user-sequencer",
+      "phase": "pending-finish",
+      "statement": "The user Session retains host Finish transactions in pendingTxs for inclusion in the next diff.",
+      "evidenceRefs": ["E3"]
+    },
+    {
+      "id": "N5",
+      "level": "state-machine",
+      "phase": "no-advance",
+      "statement": "During a wait-only observation window no evidence proves that a subsequent diff applied the queued Finish to the state machine.",
+      "evidenceRefs": ["E1", "E3"]
+    },
+    {
+      "id": "N6",
+      "level": "financial-state",
+      "phase": "symptom",
+      "statement": "The inference remains pending and its reservation remains visible, producing an apparent post-success liveness/accounting mismatch.",
+      "evidenceRefs": ["E1"]
+    },
+    {
+      "id": "N7",
+      "level": "state-machine",
+      "phase": "intended-terminal-transition",
+      "statement": "Once Finish is applied, the state machine is the layer that marks the inference finished and releases reserved surplus.",
+      "evidenceRefs": ["E4"]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N6",
+    "firstMeaningfulDivergence": "N3",
+    "causePoint": "N3",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": ["E1", "E3", "E5"]
+  },
+  "navigation": {
+    "direction": "UP",
+    "reason": "The runtime symptom alone looked like protocol liveness failure; moving upward to the protocol sequencing contract shows that the verification oracle omitted a required state-advance event."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Replace the wait-only terminalization oracle with a protocol-clock oracle: Finish published -> next eligible diff applied -> inference terminal -> reserve/actual/balance/HostStats reconciliation. Keep any desired autonomous wall-clock finality as a separate product requirement rather than silently assuming it from the current protocol.",
+    "expectedEffect": "The follow-up test will distinguish an actual stuck Finish after a state-advance opportunity from an expected pending record that simply has not yet been sequenced into a diff."
+  },
+  "verification": {
+    "local": "FAIL",
+    "upward": "PASS",
+    "evidenceRefs": ["E1", "E2", "E3", "E4", "E5"],
+    "stopConditions": {
+      "parentInvariantsPreserved": false,
+      "crossBoundaryEffectsAbsent": false,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "BLOCK"
+}

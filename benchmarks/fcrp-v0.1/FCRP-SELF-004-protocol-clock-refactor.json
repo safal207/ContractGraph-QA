@@ -1,0 +1,112 @@
+{
+  "schema": "cgqa.fcrp-case.v0.1",
+  "caseId": "FCRP-SELF-004",
+  "scope": {
+    "nodeId": "G-004Q-verification-oracle-refactor",
+    "scale": "verification-oracle/protocol-clock/accounting",
+    "idea": "After FCRP identifies a verifier-model defect, the repair must replace the wrong causal trigger, prove the expected transition is actually ready before applying that trigger, and preserve whole-state accounting rather than merely changing a timeout constant."
+  },
+  "evidence": [
+    {
+      "id": "E1",
+      "kind": "prior-fcrp-proof",
+      "ref": "benchmarks/fcrp-v0.1/FCRP-SELF-003-gonka-protocol-time-oracle.json",
+      "claim": "SELF-003 identifies the first meaningful divergence in the wait-only G-004P oracle: wall-clock passage was treated as sufficient cause for a diff-driven protocol transition."
+    },
+    {
+      "id": "E2",
+      "kind": "pinned-upstream-source",
+      "ref": "https://github.com/gonka-ai/gonka/blob/f040d0a5b5ef207a0c431894c9f9e2608f9d3073/devshard/user/session.go",
+      "claim": "The pinned user Session queues host mempool Finish transactions in pendingTxs for the next diff, making both Finish readiness and a subsequent state-advancing diff causally relevant."
+    },
+    {
+      "id": "E3",
+      "kind": "pinned-upstream-source",
+      "ref": "https://github.com/gonka-ai/gonka/blob/f040d0a5b5ef207a0c431894c9f9e2608f9d3073/devshard/state/machine.go",
+      "claim": "Applying MsgFinishInference marks the inference finished, records ActualCost, and releases ReservedCost minus ActualCost back to session balance."
+    },
+    {
+      "id": "E4",
+      "kind": "local-test-contract",
+      "ref": "external-validation/gonka/cases/G-004Q-protocol-clock-reconciliation.yaml",
+      "claim": "G-004Q requires pending-before-advance, exact retry Finish readiness in Session.pendingTxs, an observable protocol state advance, post-advance terminalization, and state-level financial identities."
+    },
+    {
+      "id": "E5",
+      "kind": "local-executable-harness",
+      "ref": "external-validation/gonka/harness/cgqa_protocol_clock_reconciliation_test.go",
+      "claim": "The executable harness refuses to advance until the retry winner's exact Finish is visible in the pending protocol queue, then drives an independent next request and reconciles full inference liability plus fee delta against balance and ActualCost delta against HostStats.Cost."
+    }
+  ],
+  "timeline": {
+    "past": {
+      "summary": "G-004P used a wait-only terminalization oracle and SELF-003 blocked its interpretation because wall-clock time was not the protocol event that applies queued Finish transactions.",
+      "evidenceRefs": ["E1"]
+    },
+    "present": {
+      "summary": "G-004Q now proves the retry Finish is ready for sequencing before creating the next-diff opportunity, then verifies the resulting whole-state liability, fee, ActualCost, and HostStats transitions.",
+      "evidenceRefs": ["E2", "E3", "E4", "E5"]
+    },
+    "future": {
+      "summary": "Runtime evidence can distinguish precondition failure, convergence after a causally eligible protocol advance, and a genuine sequencing/state-application defect candidate without conflating any of them with autonomous wall-clock finality.",
+      "evidenceRefs": ["E4", "E5"]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "verification-oracle",
+      "phase": "wrong-trigger",
+      "statement": "The prior verifier used elapsed wall-clock time as the trigger for terminalization in a protocol whose Finish transition is sequenced through a later diff.",
+      "evidenceRefs": ["E1", "E2"]
+    },
+    {
+      "id": "N2",
+      "level": "verification-oracle",
+      "phase": "refactor",
+      "statement": "The repaired oracle requires the retry winner to be pending, proves its exact MsgFinishInference is already in Session.pendingTxs, and only then drives a separate eligible request that creates an observable protocol state advance.",
+      "evidenceRefs": ["E2", "E4", "E5"]
+    },
+    {
+      "id": "N3",
+      "level": "state-machine",
+      "phase": "expected-transition",
+      "statement": "Because the Finish was witnessed as available before diff composition, the state-advance opportunity is causally eligible to apply it and should move the retry inference to finished with ActualCost recorded.",
+      "evidenceRefs": ["E2", "E3", "E4", "E5"]
+    },
+    {
+      "id": "N4",
+      "level": "financial-state",
+      "phase": "whole-state-verification",
+      "statement": "The verifier checks balance through total inference-liability delta plus fee delta and independently checks HostStats.Cost through total inference ActualCost delta, so the advancing request cannot masquerade as retry surplus or vice versa.",
+      "evidenceRefs": ["E4", "E5"]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N4",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N2",
+    "evidenceRefs": ["E1", "E2", "E4", "E5"]
+  },
+  "navigation": {
+    "direction": "STOP",
+    "reason": "The verifier now binds both readiness and trigger: exact Finish availability is observed before the state-advance boundary, and whole-state accounting covers the side effects of the advancing request. Runtime outcome is therefore a separate experiment rather than a missing causal assumption."
+  },
+  "refactor": {
+    "point": "N2",
+    "change": "Replace wait-only liveness with pending -> exact Finish ready in Session.pendingTxs -> next eligible state-advancing request/diff -> terminalization, and reconcile the complete financial state delta using inference liabilities and fees rather than attributing raw balance movement to one request.",
+    "expectedEffect": "A green G-004Q classifies the earlier mismatch as a non-terminal protocol-time snapshot; a precondition failure stops before making an upstream claim; a red G-004Q after witnessed Finish readiness and proven state advance isolates a materially stronger upstream sequencing/state-application or financial-transition candidate."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "PASS",
+    "evidenceRefs": ["E1", "E2", "E3", "E4", "E5"],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}

@@ -1,0 +1,170 @@
+name: Gonka G-004P post-success reserve liveness
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/harness/cgqa_post_success_liveness_test.go'
+      - 'external-validation/gonka/harness/cgqa_money_reconciliation_test.go'
+      - 'external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go'
+      - 'external-validation/gonka/remediation/cgqa_safe_correlation_support.go'
+      - 'external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py'
+      - 'external-validation/gonka/cases/G-004P-post-success-pending-reserve-liveness.yaml'
+      - '.github/workflows/gonka-g004p-liveness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  post-success-liveness:
+    name: G-004P pending reserve terminalization
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+      CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-g004p-liveness
+
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install safe-correlation support and G-004P harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp external-validation/gonka/remediation/cgqa_safe_correlation_support.go upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_timeout_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_timeout_identity_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_safe_correlation_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_safe_correlation_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_money_reconciliation_test.go upstream-gonka/devshard/testenv/citest/cgqa_money_reconciliation_test.go
+          cp external-validation/gonka/harness/cgqa_post_success_liveness_test.go upstream-gonka/devshard/testenv/citest/cgqa_post_success_liveness_test.go
+          mkdir -p "$CGQA_EVIDENCE_DIR"
+
+      - name: Apply non-collapsing correlation proof patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python external-validation/gonka/remediation/apply_cgqa_safe_correlation_patch.py upstream-gonka
+          gofmt -w \
+            upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go \
+            upstream-gonka/devshard/cmd/devshardctl/perfstore.go \
+            upstream-gonka/devshard/cmd/devshardctl/gateway.go \
+            upstream-gonka/devshard/cmd/devshardctl/proxy.go \
+            upstream-gonka/devshard/cmd/devshardctl/redundancy.go \
+            upstream-gonka/devshard/testenv/citest/cgqa_*_test.go
+          test "$(grep -F -c 'RunInference(propagateCGQARequestContext(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
+          grep -F 'PRIMARY KEY (client_correlation_id, internal_request_id, escrow_id)' upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+          test "$(grep -F -c -- '-X devshard/types.buildStateRootProtocolVersion=v2' upstream-gonka/devshard/Dockerfile)" -eq 3
+
+      - name: Compile G-004P criterion against pinned Gonka
+        working-directory: upstream-gonka/devshard
+        run: TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
+
+      - name: Build patched devshardctl image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --file upstream-gonka/devshard/Dockerfile \
+            --target devshardctl-runtime \
+            --build-arg DEVSHARD_VERSION=cgqa-g004p-liveness \
+            --tag devshard-runtime:latest \
+            upstream-gonka
+          docker image inspect devshard-runtime:latest --format '{{.Id}}' > "$CGQA_EVIDENCE_DIR/devshardctl.image-id.txt"
+
+      - name: Build Gonka devshardd
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Execute G-004P post-success reserve liveness
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaPostSuccessReserveLiveness$'
+          -v -count=1 -timeout=35m
+
+      - name: Enforce G-004P evidence contract
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('cgqa-g004p-liveness/reconciliation.json')
+          if not p.is_file() or p.stat().st_size == 0:
+              raise SystemExit('G-004P reconciliation evidence missing')
+          d = json.loads(p.read_text())
+          print(json.dumps(d, indent=2))
+          if d.get('schema_version') != 'gonka-post-success-reserve-liveness-v0.1':
+              raise SystemExit('unexpected G-004P evidence schema')
+          if d.get('case_id') != 'G-004P':
+              raise SystemExit('unexpected G-004P case id')
+          if d.get('timeout_observed') is not True or d.get('first_completion_observed') is not True:
+              raise SystemExit('G-004P did not reproduce the timeout/retry precondition')
+          if d.get('retry_http_status', 0) < 200 or d.get('retry_http_status', 0) >= 300:
+              raise SystemExit(f"G-004P retry was not client-visible success: {d.get('retry_http_status')}")
+          if d.get('terminal_observed') is not True:
+              raise SystemExit(f"G-004P nonterminal winner after bounded window: classification={d.get('classification')} timeline_samples={len(d.get('timeline') or [])}")
+          if d.get('pending_observed') is True and d.get('release_reconciles') is not True:
+              raise SystemExit('G-004P observed pending reserve but release did not reconcile')
+          if d.get('verdict') != 'PASS':
+              raise SystemExit(f"G-004P verdict={d.get('verdict')} unexplained={d.get('unexplained_financial_effects')}")
+          PY
+
+      - name: Publish G-004P summary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+          print('### Gonka G-004P post-success reserve liveness')
+          p = Path('cgqa-g004p-liveness/reconciliation.json')
+          if not p.is_file():
+              print('- evidence missing')
+          else:
+              d = json.loads(p.read_text())
+              print(f"- verdict: `{d.get('verdict')}`")
+              print(f"- classification: `{d.get('classification')}`")
+              print(f"- retry HTTP status: `{d.get('retry_http_status')}`")
+              print(f"- winner nonce: `{d.get('retry_winner_nonce')}`")
+              print(f"- pending observed: `{d.get('pending_observed')}` at `{d.get('pending_first_observed_ms')}` ms")
+              print(f"- pending reserved cost: `{d.get('pending_reserved_cost')}`")
+              print(f"- terminal observed: `{d.get('terminal_observed')}` at `{d.get('terminal_observed_ms')}` ms; status=`{d.get('terminal_status')}`")
+              print(f"- expected surplus release: `{d.get('expected_surplus_release')}`")
+              print(f"- observed balance rebound: `{d.get('observed_balance_rebound')}`")
+              print(f"- observed HostStats delta: `{d.get('observed_host_cost_delta')}`")
+              print(f"- release reconciles: `{d.get('release_reconciles')}`")
+              print(f"- timeline samples: `{len(d.get('timeline') or [])}`")
+          PY
+
+      - name: Upload G-004P evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-g004p-post-success-liveness-evidence
+          path: cgqa-g004p-liveness
+          if-no-files-found: error
+          retention-days: 14

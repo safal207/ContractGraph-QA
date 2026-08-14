@@ -6,7 +6,7 @@ Proof-only transformation:
 - bind caller X-Request-Id as a separate client correlation value;
 - propagate both identities through detached background inference;
 - persist canonical request accounting + client correlation atomically;
-- expose an explicit correlation lookup endpoint;
+- expose explicit correlation and pending-protocol proof endpoints;
 - initialize proof-only correlation storage when PerfStore opens, never on the
   inference hot path;
 - preserve Gonka's v2 state-root protocol version even when proof images use a
@@ -25,7 +25,11 @@ RUN_NEW = 'RunInference(propagateCGQARequestContext(context.Background(), r.Cont
 START_OLD = 'e.perf.RecordAccountingRequestStart(requestID, e.devshardID, params.Model, time.Now())'
 START_NEW = 'e.perf.recordCGQAAccountingRequestStart(requestID, e.devshardID, params.Model, cgqaClientCorrelationIDFromContext(ctx), time.Now())'
 ROUTE_OLD = 'mux.HandleFunc("GET /v1/requests/{request_id}", proxy.handleRequestAccounting)'
-ROUTE_NEW = ROUTE_OLD + '\n\tmux.HandleFunc("GET /v1/request-correlations/{client_request_id}", proxy.handleCGQARequestCorrelation)'
+ROUTE_NEW = (
+    ROUTE_OLD
+    + '\n\tmux.HandleFunc("GET /v1/request-correlations/{client_request_id}", proxy.handleCGQARequestCorrelation)'
+    + '\n\tmux.HandleFunc("GET /v1/cgqa/pending-protocol-txs", proxy.handleCGQAPendingProtocolTxs)'
+)
 STORE_RETURN_OLD = 'return &PerfStore{db: db, path: dbPath}, nil'
 STORE_RETURN_NEW = '''store := &PerfStore{db: db, path: dbPath}
 \tif err := store.ensureCGQARequestCorrelationSchema(); err != nil {
@@ -48,11 +52,11 @@ def replace_exact(path: Path, old: str, new: str, expected: int) -> None:
     patched = text.replace(old, new)
 
     # Some proof transformations deliberately retain the original statement
-    # as part of the replacement (for example existing route + correlation
-    # route). In those cases `old` is a substring of `new`, so counting `old`
-    # after replacement cannot distinguish a successful insertion from a
-    # leftover. We still fail closed on the exact pre-patch count and require
-    # the exact post-patch replacement count.
+    # as part of the replacement (for example existing route + proof routes).
+    # In those cases `old` is a substring of `new`, so counting `old` after
+    # replacement cannot distinguish a successful insertion from a leftover.
+    # We still fail closed on the exact pre-patch count and require the exact
+    # post-patch replacement count.
     if old not in new and patched.count(old) != 0:
         raise SystemExit(f"{path}: original patch anchor remains after replacement")
     if patched.count(new) != expected:
@@ -80,7 +84,9 @@ def apply(root: Path) -> None:
     # Preserve the upstream accounting-start semantics while writing the
     # supplied correlation relation in the same SQLite transaction.
     replace_exact(redundancy, START_OLD, START_NEW, 1)
-    # RuntimeMux owns /v1/requests and the proof correlation lookup route.
+    # RuntimeMux owns /v1/requests plus proof-only correlation and pending-Finish
+    # observation routes. The pending route is read-only and does not advance
+    # the Session; G-004Q uses it to prove causally relevant readiness.
     replace_exact(gateway, ROUTE_OLD, ROUTE_NEW, 1)
     # DEVSHARD_VERSION is also wired into the state-root protocol ldflag in the
     # pinned Dockerfile. Proof workflows intentionally use CGQA-specific image
@@ -90,8 +96,9 @@ def apply(root: Path) -> None:
 
     print(
         "CGQA safe correlation proof patch applied: internal request IDs remain canonical; "
-        "caller correlation is one-to-many, atomically persisted with accounting, separately queryable, "
-        "schema DDL stays off the inference hot path, and state-root protocol remains v2"
+        "caller correlation is one-to-many and atomically persisted; correlation plus pending-Finish "
+        "metadata are separately queryable; schema DDL stays off the inference hot path; "
+        "and state-root protocol remains v2"
     )
 
 

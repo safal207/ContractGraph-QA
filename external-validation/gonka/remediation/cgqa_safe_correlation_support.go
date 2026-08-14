@@ -14,7 +14,6 @@ import (
 // workflows. It is not an upstream patch. It demonstrates a non-collapsing
 // correlation shape while leaving request_accounting.request_id canonical and
 // gateway-generated.
-
 type cgqaClientCorrelationContextKey struct{}
 
 func withCGQAClientCorrelationID(ctx context.Context, id string) context.Context {
@@ -203,5 +202,38 @@ func (p *Proxy) handleCGQARequestCorrelation(w http.ResponseWriter, r *http.Requ
 		"escrow_id":             p.escrowID,
 		"matches":               matches,
 		"match_count":           len(matches),
+	})
+}
+
+// handleCGQAPendingProtocolTxs exposes only proof-relevant metadata from the
+// user Session's pending protocol queue. It does not mutate or advance state.
+// G-004Q uses this to prove that a specific MsgFinishInference is actually
+// available for inclusion before it sends the request that advances the next
+// diff. This prevents a timing race from being misclassified as an upstream
+// sequencing defect.
+func (p *Proxy) handleCGQAPendingProtocolTxs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if p == nil || p.session == nil {
+		http.Error(w, `{"error":{"message":"pending protocol queue unavailable"}}`, http.StatusServiceUnavailable)
+		return
+	}
+
+	txs := p.session.PendingTxs()
+	finishInferenceIDs := make([]uint64, 0)
+	for _, tx := range txs {
+		if tx == nil {
+			continue
+		}
+		if finish := tx.GetFinishInference(); finish != nil {
+			finishInferenceIDs = append(finishInferenceIDs, finish.InferenceId)
+		}
+	}
+	writeJSON(w, map[string]any{
+		"escrow_id":             p.escrowID,
+		"pending_tx_count":      len(txs),
+		"finish_inference_ids": finishInferenceIDs,
 	})
 }
