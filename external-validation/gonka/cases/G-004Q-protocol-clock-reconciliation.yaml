@@ -1,0 +1,106 @@
+id: G-004Q
+name: protocol-clock reserve reconciliation
+status: executable-awaiting-runtime-evidence
+upstream:
+  repository: gonka-ai/gonka
+  revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+environment: gonka-local-devshard-testenv
+
+motivation: |
+  G-004 observed an apparent escrow mismatch while a retry winner was still
+  pending. G-004P then showed that a wait-only 120-second oracle can leave that
+  winner pending after client-visible success. FCRP-SELF-003 found that this
+  does not yet prove upstream liveness failure because the pinned Gonka user
+  Session queues host MsgFinishInference transactions for the next diff.
+
+  G-004Q therefore changes the causal trigger rather than extending wall-clock
+  waiting: it observes the retry winner pending, drives one subsequent eligible
+  state-advancing request/diff, and only then evaluates terminalization and the
+  resulting financial state delta.
+
+question: |
+  When a client-visible successful retry is pending because its Finish has not
+  yet been applied, does the next eligible protocol state advance cause that
+  retry winner to become terminal and make the resulting reservation release,
+  fees, escrow balance, inference ActualCost, and HostStats.Cost mutually
+  reconcilable?
+
+preconditions:
+  - first request uses deterministic mock-openai latency of 1800 ms
+  - first client timeout is 350 ms
+  - first timed-out request produces a completion witness before retry
+  - retry reuses the same client_correlation_id
+  - correlation mapping preserves two distinct internal request IDs
+  - retry returns HTTP 2xx
+  - retry accounting resolves a concrete winner nonce
+  - retry winner is observed as pending before the protocol-clock advance
+
+protocol_clock_trigger:
+  type: next_eligible_state_advancing_request
+  description: |
+    Send a new independent successful request after the retry winner is observed
+    pending. The request must produce an observable session fee increase, proving
+    that protocol state advanced rather than merely more wall-clock time passing.
+
+accounting_model:
+  inference_liability:
+    pending_or_started: ReservedCost
+    finished_or_validated_or_timed_out: ActualCost
+    challenged_or_invalidated: excluded_fail_closed
+  balance_identity: |
+    Balance_after = Balance_before
+                  - (InferenceLiability_after - InferenceLiability_before)
+                  - (Fees_after - Fees_before)
+  host_cost_identity: |
+    HostStatsCost_after - HostStatsCost_before
+      = InferenceActualCost_after - InferenceActualCost_before
+
+invariants:
+  - description: retry winner is pending immediately before the causal state-advance trigger
+  - description: the independent advance request returns HTTP 2xx and advances session protocol state
+  - description: retry winner becomes finished after the state-advance opportunity
+  - description: retry ActualCost does not exceed its previously reserved cost
+  - description: full inference-liability plus fee delta exactly reconciles escrow balance
+  - description: total inference ActualCost delta exactly reconciles aggregate HostStats.Cost delta
+  - description: caller correlation remains separate from canonical internal request identity
+
+classification:
+  converges_after_protocol_advance: |
+    PASS. The prior G-004/G-004P mismatch was a non-terminal snapshot governed
+    by protocol/nonce time rather than a durable financial discrepancy.
+  still_pending_after_protocol_advance: |
+    FAIL. A real state-advance opportunity occurred after the retry winner was
+    pending, but the expected Finish transition did not become terminal. This is
+    a materially stronger sequencing/state-application liveness defect candidate.
+  terminal_but_financial_delta_does_not_reconcile: |
+    FAIL. The retry terminalized, but the full state-level liability/fee/balance
+    or ActualCost/HostStats identities left an unexplained financial effect.
+  precondition_not_reproduced: |
+    FAIL for this proof only. Do not reinterpret as an upstream defect.
+
+safety:
+  - local testenv only
+  - deterministic mock-openai fault injection only
+  - no mainnet or public testnet fault injection
+  - no real funds
+  - no vulnerability claim from this case alone
+
+relationship_to_g004p: |
+  G-004P intentionally remains as evidence that wall-clock waiting is not a
+  sufficient oracle for a nonce/diff-driven protocol. G-004Q is the corrected
+  causal experiment: wait for the pending symptom, then supply the missing
+  protocol event and measure the state transition that event is supposed to
+  cause.
+
+evidence_outputs:
+  - attempt-1.transport.json
+  - attempt-2.transport.json
+  - correlation.lookup.json
+  - retry.accounting.json
+  - inferences.pending-before-advance.json
+  - devshard_state.pending-before-advance.json
+  - advance.transport.json
+  - advance.accounting.json
+  - inferences.after-advance.json
+  - devshard_state.after-advance.json
+  - reconciliation.json
