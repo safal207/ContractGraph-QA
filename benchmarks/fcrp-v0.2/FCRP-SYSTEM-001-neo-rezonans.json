@@ -1,0 +1,239 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-SYSTEM-001",
+  "title": "NEO REZONANS canonical cross-repository composition",
+  "scope": {
+    "nodeId": "neo-rezonans-trust-infrastructure",
+    "scale": "multi-repository system / trust-infrastructure galaxy",
+    "ideaContract": {
+      "purpose": "Make the NEO REZONANS repositories behave as one inspectable trust system while preserving distinct roles for intent, memory, causal navigation, authorization, verification, proof, persistence, and reinterpretation.",
+      "expectedOutcome": "Every system layer is pinned to canonical main and every cross-repository boundary declares what can be transferred and what must never be inferred.",
+      "invariants": [
+        "default dependencies are canonical rather than branch-only",
+        "evidence never silently becomes authority",
+        "FCRP PASS never silently becomes mutation permission",
+        "provenance and semantic compatibility remain separable",
+        "reinterpretation preserves source trace immutability"
+      ],
+      "forbiddenOutcomes": [
+        "ambient dependency on proposed or experimental branch state",
+        "implicit execution authority crossing a non-authority edge",
+        "repository drift silently preserving a stale whole-system claim"
+      ],
+      "dependencies": [
+        "safal207/RESONANCE",
+        "safal207/Causal-Memory-Layer",
+        "safal207/LiminalOSAI",
+        "safal207/ContractGraph-QA",
+        "safal207/ProofPath",
+        "safal207/LiminalDB",
+        "safal207/rinse"
+      ],
+      "parentContract": "Human-governed NEO REZONANS architecture: understand and verify broadly, but transfer execution authority only through an explicit authorization contract."
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-SYSTEM-SNAPSHOT",
+      "kind": "machine-readable-system-contract",
+      "ref": "governance/neo-rezonans-system-snapshot.v0.1.json",
+      "claim": "The system snapshot pins canonical layer revisions and declares allowed facts, forbidden inferences, one explicit authority edge, and one reflection feedback edge.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-RESONANCE",
+      "kind": "canonical-main-head",
+      "ref": "safal207/RESONANCE@adbc8e3b38f7b763dad4d36fa5bc1cd0bb74d362",
+      "claim": "RESONANCE canonical main contains the FCRP origin document and implementation update used as the intent/observatory layer for this snapshot.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-CML",
+      "kind": "canonical-main-head",
+      "ref": "safal207/Causal-Memory-Layer@2a649903693fc61a560ee056834127ada3120206",
+      "claim": "CML canonical main contains the current applicability/information-quality recovery boundary from SELF-006.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-LIMINALOSAI",
+      "kind": "canonical-main-head",
+      "ref": "safal207/LiminalOSAI@f84888a943c71041f7c31b41d70d592ad60b2157",
+      "claim": "LiminalOSAI canonical main contains SELF-009, making review evidence explicitly non-authorizing across repository boundaries.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-CGQA",
+      "kind": "canonical-main-head",
+      "ref": "safal207/ContractGraph-QA@505041cae23d0527f7d567e1a6bd6d1952dc4960",
+      "claim": "ContractGraph-QA canonical main contains FCRP v0.2 and the deterministic state-transition verification surfaces consumed by this system snapshot.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-PROOFPATH",
+      "kind": "canonical-main-head",
+      "ref": "safal207/ProofPath@4a05ee31d7497979c2505dd55bfef08823302e24",
+      "claim": "ProofPath canonical main contains SELF-005 capability canonicality governance and canonical SCIG v0.1.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-LIMINALDB",
+      "kind": "canonical-main-head",
+      "ref": "safal207/LiminalDB@797a97cacb341798e1e308c368e465246bbf0a15",
+      "claim": "LiminalDB canonical main contains the reconciled provenance/compatibility contract and Pythia verified-negative child validation layer.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-RINSE",
+      "kind": "canonical-main-head",
+      "ref": "safal207/rinse@6992c97290d3a1b58cd9a2ae506fd259babbb38e",
+      "claim": "RINSE canonical main contains one shared reflection semantics plus the SELF-008 Career domain projection boundary.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "REPOSITORY_HISTORY",
+      "CAUSAL_SEQUENCE"
+    ],
+    "primaryDomain": "REPOSITORY_HISTORY",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": [
+      "E-CML",
+      "E-LIMINALOSAI",
+      "E-CGQA",
+      "E-PROOFPATH",
+      "E-LIMINALDB",
+      "E-RINSE"
+    ]
+  },
+  "timeline": {
+    "past": {
+      "summary": "The architecture existed conceptually while individual capabilities were split across canonical main, stacked branches, historical contracts, and domain-specific semantic surfaces.",
+      "evidenceRefs": [
+        "E-CML",
+        "E-PROOFPATH",
+        "E-LIMINALDB",
+        "E-RINSE"
+      ]
+    },
+    "present": {
+      "summary": "SELF-005 through SELF-009 and FCRP v0.2 are promoted, and the participating repositories now expose canonical revisions that can be pinned into one bounded system snapshot.",
+      "evidenceRefs": [
+        "E-RESONANCE",
+        "E-CML",
+        "E-LIMINALOSAI",
+        "E-CGQA",
+        "E-PROOFPATH",
+        "E-LIMINALDB",
+        "E-RINSE"
+      ]
+    },
+    "future": {
+      "summary": "Any canonical main drift triggers an explicit system-snapshot revalidation instead of silently inheriting new semantics across repository boundaries.",
+      "evidenceRefs": ["E-SYSTEM-SNAPSHOT"]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "system-topology",
+      "phase": "first-divergence",
+      "statement": "The repositories had strong local contracts but no shared machine-readable statement of exact canonical revisions and cross-repository transfer semantics.",
+      "evidenceRefs": [
+        "E-CML",
+        "E-LIMINALOSAI",
+        "E-CGQA",
+        "E-PROOFPATH",
+        "E-LIMINALDB",
+        "E-RINSE"
+      ]
+    },
+    {
+      "id": "N2",
+      "level": "cross-repository-boundary",
+      "phase": "symptom",
+      "statement": "A consumer could correctly identify a local capability yet still infer stale canonicality, authority, compatibility, or semantic meaning when composing repositories.",
+      "evidenceRefs": [
+        "E-CML",
+        "E-LIMINALOSAI",
+        "E-PROOFPATH",
+        "E-LIMINALDB",
+        "E-RINSE"
+      ]
+    },
+    {
+      "id": "N3",
+      "level": "system-contract",
+      "phase": "refactor",
+      "statement": "Pin one canonical system snapshot and declare allowed facts, forbidden inferences, explicit authority mode, and feedback semantics on every repository edge.",
+      "evidenceRefs": ["E-SYSTEM-SNAPSHOT"]
+    },
+    {
+      "id": "N4",
+      "level": "system-verification",
+      "phase": "verified-state",
+      "statement": "The bounded snapshot can be structurally validated and its pinned revisions checked against the actual repository main heads before acceptance.",
+      "evidenceRefs": ["E-SYSTEM-SNAPSHOT"]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N2",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": [
+      "E-SYSTEM-SNAPSHOT",
+      "E-RESONANCE",
+      "E-CML",
+      "E-LIMINALOSAI",
+      "E-CGQA",
+      "E-PROOFPATH",
+      "E-LIMINALDB",
+      "E-RINSE"
+    ]
+  },
+  "navigation": {
+    "direction": "UP",
+    "reason": "The remaining ambiguity was above every individual repository: the missing contract belonged to the system composition layer."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Introduce a canonical point-in-time NEO REZONANS system snapshot with exact repository identities and explicit transfer/non-transfer semantics.",
+    "expectedEffect": "Cross-repository composition becomes inspectable and fail-closed against branch drift, authority inference, provenance/compatibility conflation, and parallel semantic authority."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": [
+      "children",
+      "dependencies",
+      "future"
+    ],
+    "evidenceRefs": ["E-SYSTEM-SNAPSHOT"]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "FCRP-SYSTEM-001 validates a system composition snapshot only. It does not authorize repository writes, deployments, financial actions, or external-system mutations."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "NOT_REQUIRED",
+    "evidenceRefs": ["E-SYSTEM-SNAPSHOT"],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}
