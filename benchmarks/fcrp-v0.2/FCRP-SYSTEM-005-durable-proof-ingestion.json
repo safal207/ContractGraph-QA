@@ -1,0 +1,243 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-SYSTEM-005",
+  "title": "Durable ProofPath ingestion crosses the LiminalDB persistence frontier without authority escalation",
+  "scope": {
+    "nodeId": "neo-rezonans-proofpath-liminaldb-durable-ingestion",
+    "scale": "cross-repository native segment / persistence frontier",
+    "ideaContract": {
+      "purpose": "Independently verify that canonical ProofPath evidence accepted at the SYSTEM-004 boundary can cross into durable local/test LiminalDB storage, survive restart, deduplicate ambiguous retries, preserve bi-temporal identity and remain non-authorizing for execution or external effects.",
+      "expectedOutcome": "The same native SYSTEM-004 logical operation is accepted by the canonical artifact validator, granted a separate local/test storage admission, written through the canonical ProofPathDurableLedger, reproduced byte-for-byte after process restart, retried without a second durable effect, rejected when evidence changes under the same operation, and accepted by native LTP strict trace replay.",
+      "invariants": [
+        "the SYSTEM-004 logical_operation_id is inherited unchanged through durable ingestion",
+        "artifact validation remains distinct from storage admission",
+        "the exact ProofPath capability identity remains bound to the persisted evidence",
+        "LiminalDB artifact-contract provenance remains distinct from current AuditEvent semantic compatibility identity",
+        "valid_time and first durable transaction_time remain separately replayable",
+        "the exact accepted AuditEvent and admission-report bytes survive process restart",
+        "same operation plus same semantic artifact produces no second durable record",
+        "same operation plus changed semantic artifact fails closed",
+        "post-sync acknowledgement ambiguity cannot produce a duplicate durable effect after reopen and retry",
+        "local/test persistence grants no execution, mutation or external-effect authority",
+        "the agent trajectory through persistence is independently inspectable and replayable"
+      ],
+      "forbiddenOutcomes": [
+        "treating the SYSTEM-004 dry-run artifact PASS as ambient persistence authority",
+        "renaming the upstream logical operation for the durable stage",
+        "deriving the durable idempotency key from payload bytes so changed evidence silently becomes a new operation",
+        "creating a second durable record after a synced-but-unacknowledged append",
+        "rewriting the first transaction_time on an idempotent retry",
+        "accepting changed evidence under the same operation key",
+        "allowing persistence metadata to grant execution or external-effect authority",
+        "claiming durable verification from a final object whose LTP trajectory is invalid"
+      ],
+      "dependencies": [
+        "FCRP-SYSTEM-004",
+        "safal207/ContractGraph-QA@be860d7a6ca089a4514d12a8108d27873b04dfb9",
+        "proofpath.scig.v0.1@685d50e256a5125a21f4c4584b326411caaa64ad",
+        "safal207/LiminalDB@61b02fc81e0cb5cf1f1ed4658ecff58f683cb728",
+        "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-@fc58072d301a487c09227ea09004dc8e99676370"
+      ],
+      "parentContract": "NEO REZONANS heartbeat / ProofPath -> LiminalDB durable evidence persistence with local_test_only storage authority and zero execution authority"
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-SYSTEM-004",
+      "kind": "canonical-upstream-boundary",
+      "ref": "safal207/ContractGraph-QA@be860d7a6ca089a4514d12a8108d27873b04dfb9:FCRP-SYSTEM-004",
+      "claim": "SYSTEM-004 supplies the native ProofPath VALID receipt and dedicated LiminalDB AuditEvent while explicitly stopping before persistence.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-DURABLE-CONSUMER",
+      "kind": "native-consumer-capability",
+      "ref": "safal207/LiminalDB@61b02fc81e0cb5cf1f1ed4658ecff58f683cb728:ProofPathDurableLedger",
+      "claim": "The canonical LiminalDB durable consumer stores exact accepted event and admission bytes in a local/test WAL namespace with replay-enforced provenance, temporal, idempotency and authority invariants.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-RESTART",
+      "kind": "restart-replay-proof",
+      "ref": "FCRP-SYSTEM-005 workflow / separate-process inspect and byte comparison",
+      "claim": "A new process reopens the WAL and reproduces the exact original AuditEvent and admission report bytes with the original valid_time and first transaction_time.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-IDEMPOTENCY",
+      "kind": "negative-and-recovery-proof",
+      "ref": "FCRP-SYSTEM-005 workflow / retry, conflict and AfterSyncBeforeAck tests",
+      "claim": "Same semantic retry returns ALREADY_PRESENT, changed evidence under the same operation returns IDEMPOTENCY_CONFLICT, and post-sync acknowledgement ambiguity recovers to one durable record after reopen.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-LTP",
+      "kind": "native-path-inspection",
+      "ref": "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-@fc58072d301a487c09227ea09004dc8e99676370:ltp:inspect",
+      "claim": "The durable-ingestion trajectory is accepted by the pinned native LTP strict inspector and deterministic replay.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "CAUSAL_SEQUENCE",
+      "VALID_TIME",
+      "TRANSACTION_TIME",
+      "REPOSITORY_HISTORY"
+    ],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": [
+      "E-SYSTEM-004",
+      "E-DURABLE-CONSUMER",
+      "E-RESTART",
+      "E-IDEMPOTENCY",
+      "E-LTP"
+    ]
+  },
+  "timeline": {
+    "past": {
+      "summary": "SYSTEM-004 proved native ProofPath to LiminalDB artifact compatibility and explicitly stopped at the persistence frontier because no dedicated durable ProofPath consumer was canonical.",
+      "evidenceRefs": [
+        "E-SYSTEM-004"
+      ]
+    },
+    "present": {
+      "summary": "LiminalDB now exposes a canonical local/test ProofPathDurableLedger. SYSTEM-005 independently consumes that exact capability and tests durable append, restart replay, idempotent recovery, conflict rejection, temporal preservation and path admissibility.",
+      "evidenceRefs": [
+        "E-DURABLE-CONSUMER",
+        "E-RESTART",
+        "E-IDEMPOTENCY",
+        "E-LTP"
+      ]
+    },
+    "future": {
+      "summary": "Production ingestion, distributed replication, rollback resistance against mutually consistent history replacement, retention/compaction and tenant authorization remain separate gates and cannot be inferred from local/test durability.",
+      "evidenceRefs": [
+        "E-DURABLE-CONSUMER",
+        "E-IDEMPOTENCY"
+      ]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "system-model",
+      "phase": "first-divergence",
+      "statement": "SYSTEM-004 correctly stops at a persistence frontier: artifact acceptance is verified, but no durable state transition has yet been independently exercised by the system verifier.",
+      "evidenceRefs": [
+        "E-SYSTEM-004"
+      ]
+    },
+    {
+      "id": "N2",
+      "level": "authority-boundary",
+      "phase": "diagnosis",
+      "statement": "Persistence cannot be inferred from evidence acceptance; a distinct local/test storage admission must authorize only the storage write while execution and external-effect authority remain false.",
+      "evidenceRefs": [
+        "E-DURABLE-CONSUMER"
+      ]
+    },
+    {
+      "id": "N3",
+      "level": "consumer-capability",
+      "phase": "refactor",
+      "statement": "The canonical ProofPathDurableLedger is used as the narrow durable boundary, keyed by namespace plus inherited logical operation and backed by the existing LiminalDB WAL durability primitive.",
+      "evidenceRefs": [
+        "E-DURABLE-CONSUMER",
+        "E-IDEMPOTENCY"
+      ]
+    },
+    {
+      "id": "N4",
+      "level": "durable-state",
+      "phase": "restart-verification",
+      "statement": "After a real local WAL append and process restart, exact accepted event/admission bytes, valid_time and first transaction_time are replayed from durable state.",
+      "evidenceRefs": [
+        "E-RESTART"
+      ]
+    },
+    {
+      "id": "N5",
+      "level": "recovery",
+      "phase": "idempotency-verification",
+      "statement": "A same-semantic retry is deduplicated, changed evidence under the same operation is rejected, and a synced-but-unacknowledged append recovers to one durable effect after reopen.",
+      "evidenceRefs": [
+        "E-IDEMPOTENCY"
+      ]
+    },
+    {
+      "id": "N6",
+      "level": "agent-trajectory",
+      "phase": "path-verification",
+      "statement": "The independent durable-ingestion path is accepted by native LTP strict inspection and replay without widening authority beyond local/test storage.",
+      "evidenceRefs": [
+        "E-LTP"
+      ]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N1",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N2",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": [
+      "E-SYSTEM-004",
+      "E-DURABLE-CONSUMER",
+      "E-IDEMPOTENCY"
+    ]
+  },
+  "navigation": {
+    "direction": "SIDEWAYS",
+    "reason": "The missing guarantee is a cross-repository consumer transition from verified evidence into durable local/test storage, plus the recovery and trajectory contracts around that transition."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Consume the canonical LiminalDB ProofPathDurableLedger only after separate local/test storage admission, preserving the SYSTEM-004 operation identity and zero execution/external-effect authority.",
+    "expectedEffect": "The persistence frontier becomes a real, independently replayed local/test durable transition rather than a diagrammatic claim, while production persistence and execution authority remain unproven and unauthorized."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": [
+      "children",
+      "siblings",
+      "parent",
+      "dependencies",
+      "future"
+    ],
+    "evidenceRefs": [
+      "E-DURABLE-CONSUMER",
+      "E-IDEMPOTENCY",
+      "E-LTP"
+    ]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "SYSTEM-005 may exercise only an ephemeral local/test LiminalDB storage write under an explicit test-harness admission. It grants no production database write, repository mutation, deployment, financial action, external effect or execution authority."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "NOT_REQUIRED",
+    "evidenceRefs": [
+      "E-SYSTEM-004",
+      "E-DURABLE-CONSUMER",
+      "E-RESTART",
+      "E-IDEMPOTENCY",
+      "E-LTP"
+    ],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}
