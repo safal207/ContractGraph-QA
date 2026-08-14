@@ -1,0 +1,32 @@
+{
+  "schema": "cgqa.fcrp-benchmark-public.v0.1",
+  "benchmarkId": "FCRP-CORE-001",
+  "profile": "CORE",
+  "title": "Timeout retry creates a duplicate charge",
+  "scopeHint": "payment execution and retry/provider boundary",
+  "facts": [
+    "One logical order is expected to produce at most one economic charge.",
+    "A payment attempt succeeds, but the caller times out before receiving the response.",
+    "An automatic retry follows the timeout.",
+    "Two successful charges and two receipt events appear for the same order.",
+    "The receipt team proposes suppressing duplicate emails by order ID.",
+    "Logs show a different idempotency key on each attempt.",
+    "The provider treats different idempotency keys as different operations."
+  ],
+  "availableProbes": [
+    "trace the key derivation for both attempts",
+    "compare provider operation identities",
+    "replay the timeout and retry in a local simulator",
+    "verify order, ledger, provider, and receipt invariants after the proposed repair"
+  ],
+  "constraints": [
+    "The agent may propose a change and tests but may not alter production state.",
+    "Email deduplication may contain notification noise but must not be called a payment repair.",
+    "The solver must separate facts, inferences, and unknowns."
+  ],
+  "counterfactual": {
+    "id": "FCRP-CORE-001-CF",
+    "changedFact": "Both attempts use the same stable order-scoped key, but two provider charges still appear.",
+    "instruction": "Re-run the causal navigation. The causal location must move toward provider enforcement or integration misuse; do not reuse the original B-point without new evidence."
+  }
+}
