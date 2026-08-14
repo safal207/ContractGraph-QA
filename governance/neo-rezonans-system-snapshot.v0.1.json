@@ -1,0 +1,271 @@
+{
+  "schema": "cgqa.neo-rezonans-system-snapshot.v0.1",
+  "snapshotId": "NEO-REZONANS-SYSTEM-001",
+  "observedAt": "2026-08-14",
+  "ideaContract": {
+    "purpose": "Compose the NEO REZONANS trust-infrastructure repositories as one inspectable causal system without collapsing their distinct authority, evidence, memory, proof, persistence, and reinterpretation roles.",
+    "expectedOutcome": "A consumer can identify exact canonical revisions for every layer and determine which facts may cross each boundary without inferring permissions or truth that the source layer did not grant.",
+    "invariants": [
+      "every default system dependency is pinned to a canonical main revision",
+      "evidence never becomes authority by omission or maturity",
+      "causal analysis and verification do not themselves grant mutation authority",
+      "historical provenance remains distinct from current semantic compatibility",
+      "reinterpretation may supersede meaning without mutating source evidence",
+      "every cross-repository edge declares allowed facts and forbidden inferences"
+    ],
+    "forbiddenOutcomes": [
+      "branch-only capability treated as canonical system behavior",
+      "evidence or review maturity treated as execution authority",
+      "local verification treated as whole-system truth without boundary checks",
+      "reinterpretation silently mutating historical evidence",
+      "repository drift silently preserving an obsolete system snapshot"
+    ]
+  },
+  "snapshotPolicy": {
+    "mainHeadMustMatchAtAcceptance": true,
+    "onHeadDrift": "REVALIDATE_SYSTEM_SNAPSHOT",
+    "branchOnlyDefaultDependenciesAllowed": false
+  },
+  "fcrpEngine": {
+    "repository": "safal207/ContractGraph-QA",
+    "canonicalCommit": "505041cae23d0527f7d567e1a6bd6d1952dc4960",
+    "protocolSchema": "cgqa.fcrp-case.v0.2"
+  },
+  "layers": [
+    {
+      "id": "resonance",
+      "role": "INTENT_OBSERVATORY",
+      "repository": "safal207/RESONANCE",
+      "canonicalCommit": "adbc8e3b38f7b763dad4d36fa5bc1cd0bb74d362",
+      "capability": "Idea, public claims, research questions, uncertainty, and market-learning observatory",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    },
+    {
+      "id": "cml",
+      "role": "CAUSAL_MEMORY",
+      "repository": "safal207/Causal-Memory-Layer",
+      "canonicalCommit": "2a649903693fc61a560ee056834127ada3120206",
+      "capability": "Causal history, memory applicability, lineage, and information-quality boundaries",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    },
+    {
+      "id": "fcrp",
+      "role": "CAUSAL_NAVIGATION",
+      "repository": "safal207/ContractGraph-QA",
+      "canonicalCommit": "505041cae23d0527f7d567e1a6bd6d1952dc4960",
+      "capability": "FCRP v0.2 Idea/Time/Evidence/Authority causal-refactoring contract",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    },
+    {
+      "id": "liminalosai",
+      "role": "AUTHORIZATION_GOVERNANCE",
+      "repository": "safal207/LiminalOSAI",
+      "canonicalCommit": "f84888a943c71041f7c31b41d70d592ad60b2157",
+      "capability": "Explicit authorization, objective integrity, runtime/effect governance, and non-authorizing evidence boundary",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    },
+    {
+      "id": "contractgraph-qa",
+      "role": "STATE_TRANSITION_VERIFICATION",
+      "repository": "safal207/ContractGraph-QA",
+      "canonicalCommit": "505041cae23d0527f7d567e1a6bd6d1952dc4960",
+      "capability": "Deterministic state-transition, invariant, causal-path, replay, and evidence verification",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    },
+    {
+      "id": "proofpath",
+      "role": "PROOF_PROVENANCE",
+      "repository": "safal207/ProofPath",
+      "canonicalCommit": "4a05ee31d7497979c2505dd55bfef08823302e24",
+      "capability": "Canonical proof/provenance layer with explicit capability lifecycle and SCIG v0.1",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    },
+    {
+      "id": "liminaldb",
+      "role": "DURABLE_VERIFIED_STATE",
+      "repository": "safal207/LiminalDB",
+      "canonicalCommit": "797a97cacb341798e1e308c368e465246bbf0a15",
+      "capability": "Durable verified-state persistence with provenance/compatibility separation and dry-run external import contracts",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    },
+    {
+      "id": "rinse",
+      "role": "REINTERPRETATION",
+      "repository": "safal207/rinse",
+      "canonicalCommit": "6992c97290d3a1b58cd9a2ae506fd259babbb38e",
+      "capability": "Versioned reflection/reinterpretation over immutable source traces with non-executable handoff",
+      "status": "CANONICAL",
+      "defaultConsumerAllowed": true
+    }
+  ],
+  "primaryChain": [
+    "resonance",
+    "cml",
+    "fcrp",
+    "liminalosai",
+    "contractgraph-qa",
+    "proofpath",
+    "liminaldb",
+    "rinse"
+  ],
+  "edges": [
+    {
+      "from": "resonance",
+      "to": "cml",
+      "allowedFacts": [
+        "intent",
+        "claims",
+        "questions",
+        "source_refs",
+        "uncertainty"
+      ],
+      "forbiddenInferences": [
+        "execution_authority",
+        "verified_fact_without_evidence",
+        "canonical_memory_acceptance"
+      ],
+      "authorityMode": "NONE",
+      "feedback": false
+    },
+    {
+      "from": "cml",
+      "to": "fcrp",
+      "allowedFacts": [
+        "memory_record_ref",
+        "causal_history",
+        "applicability",
+        "information_quality",
+        "evidence_refs"
+      ],
+      "forbiddenInferences": [
+        "execution_authority",
+        "root_cause_truth",
+        "current_applicability_from_historical_verification"
+      ],
+      "authorityMode": "NONE",
+      "feedback": false
+    },
+    {
+      "from": "fcrp",
+      "to": "liminalosai",
+      "allowedFacts": [
+        "idea_contract",
+        "causal_case_ref",
+        "first_meaningful_divergence",
+        "refactor_point",
+        "simulation_result",
+        "evidence_refs"
+      ],
+      "forbiddenInferences": [
+        "execution_authority",
+        "mutation_authority",
+        "permission_from_fcrp_pass"
+      ],
+      "authorityMode": "NONE",
+      "feedback": false
+    },
+    {
+      "from": "liminalosai",
+      "to": "contractgraph-qa",
+      "allowedFacts": [
+        "authorization_ref",
+        "authorized_scope",
+        "constraints",
+        "runtime_context",
+        "expiry_or_epoch"
+      ],
+      "forbiddenInferences": [
+        "evidence_as_authority",
+        "implicit_capability",
+        "authority_beyond_explicit_scope"
+      ],
+      "authorityMode": "EXPLICIT_CONTRACT_ONLY",
+      "feedback": false
+    },
+    {
+      "from": "contractgraph-qa",
+      "to": "proofpath",
+      "allowedFacts": [
+        "state_transition_evidence",
+        "invariant_result",
+        "execution_outcome",
+        "causal_path",
+        "evidence_digest"
+      ],
+      "forbiddenInferences": [
+        "execution_authority",
+        "truth_certificate",
+        "capability_grant"
+      ],
+      "authorityMode": "NONE",
+      "feedback": false
+    },
+    {
+      "from": "proofpath",
+      "to": "liminaldb",
+      "allowedFacts": [
+        "proof_receipt",
+        "provenance",
+        "artifact_digest",
+        "observer_identity",
+        "verification_refs"
+      ],
+      "forbiddenInferences": [
+        "execution_authority",
+        "durable_memory_authority_from_proof_alone",
+        "semantic_truth_from_signature_alone"
+      ],
+      "authorityMode": "NONE",
+      "feedback": false
+    },
+    {
+      "from": "liminaldb",
+      "to": "rinse",
+      "allowedFacts": [
+        "durable_evidence_ref",
+        "historical_state",
+        "provenance",
+        "compatibility_ref",
+        "recorded_time"
+      ],
+      "forbiddenInferences": [
+        "execution_authority",
+        "source_mutation_authority",
+        "historical_provenance_as_current_compatibility"
+      ],
+      "authorityMode": "NONE",
+      "feedback": false
+    },
+    {
+      "from": "rinse",
+      "to": "resonance",
+      "allowedFacts": [
+        "reinterpretation_candidate",
+        "uncertainty",
+        "supersession_relation",
+        "missing_evidence",
+        "evidence_refs"
+      ],
+      "forbiddenInferences": [
+        "execution_authority",
+        "source_mutation",
+        "scientific_or_market_truth",
+        "accepted_action_from_reflection_only"
+      ],
+      "authorityMode": "NONE",
+      "feedback": true
+    }
+  ],
+  "authorityBoundary": {
+    "snapshotGrantsMutationAuthority": false,
+    "evidenceMayGrantAuthority": false,
+    "statement": "This system snapshot proves composition semantics and canonical identities only. It grants no repository mutation, production execution, financial action, deployment, or external-system authority."
+  }
+}
