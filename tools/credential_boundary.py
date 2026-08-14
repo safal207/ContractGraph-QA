@@ -5,7 +5,9 @@ The scanner intentionally enforces a narrow, high-signal contract:
 * runtime ``.env`` variants must not be tracked;
 * provider/private-key token shapes must not be present in tracked text;
 * non-empty literal values assigned to credential-shaped keys must be supplied
-  through an environment/secret reference or an explicit placeholder.
+  through an environment/secret reference or an explicit placeholder;
+* an explicitly marked deterministic test fixture may be retained, but token shapes
+  remain blocked even on fixture lines.
 
 It is a boundary guard, not a replacement for provider-side revocation or a
 full historical secret-remediation tool.  It never prints matched values.
@@ -75,6 +77,7 @@ _PY_ASSIGNMENT_PATTERN = re.compile(
 _CONFIG_ASSIGNMENT_PATTERN = re.compile(
     rf"^\s*(?:[-]\s*)?(?P<key>{_CREDENTIAL_KEY})\s*:\s*(?P<value>.+?)\s*$",
 )
+_FIXTURE_MARKER = "fcrp: fixture"
 _PLACEHOLDER_PATTERNS = (
     re.compile(r"^$"),
     re.compile(r"^<[^>]+>$"),
@@ -147,6 +150,9 @@ def _iter_violation(path: Path, line_number: int, line: str) -> Iterable[dict[st
     for rule, pattern in _TOKEN_PATTERNS:
         if pattern.search(line):
             yield {"path": str(path), "line": line_number, "rule": rule}
+
+    if _FIXTURE_MARKER in line.lower():
+        return
 
     parts = {part.lower() for part in path.parts}
     if path.suffix.lower() == ".md" or path.name.lower().startswith("test_") or parts.intersection(
