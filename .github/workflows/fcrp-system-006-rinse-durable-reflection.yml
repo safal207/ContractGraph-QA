@@ -1,0 +1,452 @@
+name: FCRP SYSTEM-006 Durable State to RINSE Reflection
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - benchmarks/fcrp-v0.2/FCRP-SYSTEM-006-rinse-durable-reflection.json
+      - docs/NEO_REZONANS_RINSE_DURABLE_REFLECTION_V0_1.md
+      - .github/workflows/fcrp-system-006-rinse-durable-reflection.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-system-006-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      EXPECTED_PR_BASE: efe3efe637372815bef55ec3862c49cc69244b88
+      SYSTEM_005_ANCESTOR: efe3efe637372815bef55ec3862c49cc69244b88
+      PROOFPATH_SCIG_CAPABILITY_COMMIT: 685d50e256a5125a21f4c4584b326411caaa64ad
+      LIMINALDB_ARTIFACT_CONTRACT_COMMIT: 00580ff097dee61b45ad3c8a3c36ae5f548f572d
+      LIMINALDB_AUDIT_EVENT_BLOB: fd733971aaae089df770062bcf7f2c2d6d19ca1d
+      LIMINALDB_DURABLE_COMMIT: 61b02fc81e0cb5cf1f1ed4658ecff58f683cb728
+      RINSE_DURABLE_CONSUMER_COMMIT: 3be0d2ceb1440641b141cdb80c82ed118e4186dd
+      LTP_COMMIT: fc58072d301a487c09227ea09004dc8e99676370
+      LOGICAL_OPERATION_ID: crossmint-public-example-001
+      NAMESPACE: system-006-independent
+
+    steps:
+      - name: Checkout exact SYSTEM-006 subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact head, current base and SYSTEM-005 ancestry
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$SYSTEM_005_ANCESTOR" "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Rebuild real CGQA provider evidence and ProofPath SCIG
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-006
+          python3 - <<'PY'
+          import copy, json, os
+          from pathlib import Path
+          from contractgraph_qa.proofpath_scig_adapter import build_proofpath_scig_from_provider_evidence
+          from contractgraph_qa.provider_decision_evidence import build_provider_decision_evidence, verify_provider_decision_evidence
+          from contractgraph_qa.provider_payment_decision import evaluate_provider_payment_decision
+
+          root=Path('.')
+          source_case=json.loads((root/'benchmarks/system-native/CGQA-PROOFPATH-001.json').read_text())
+          system4=json.loads((root/'benchmarks/system-native/PROOFPATH-LIMINALDB-001.json').read_text())
+          adapters=root/'benchmarks/agent-payment-recovery-v0.1/provider-adapters'
+          adapter=json.loads((adapters/'crossmint-public-contract.v0.1.json').read_text())
+          observations=json.loads((adapters/'crossmint-observations-get-success.json').read_text())
+          authority=copy.deepcopy(source_case['source']['authority'])
+          decision=evaluate_provider_payment_decision(adapter, observations, authority, decision_id=source_case['source']['decisionId'])
+          assert decision['logicalOperationId'] == source_case['logicalOperationId'] == system4['logicalOperationId'] == os.environ['LOGICAL_OPERATION_ID']
+          assert decision['decision']['decision'] == 'STOP'
+          assert decision['decision']['monetaryActionAllowed'] is False
+          pack=build_provider_decision_evidence(adapter, observations, authority, decision)
+          assert verify_provider_decision_evidence(pack) == decision
+          scig=build_proofpath_scig_from_provider_evidence(pack, observed_at=source_case['bridge']['observedAt'])
+          assert scig['logical_operation_id'] == os.environ['LOGICAL_OPERATION_ID']
+          out=Path('evidence/system-006')
+          (out/'provider-evidence-pack.json').write_text(json.dumps(pack,indent=2,sort_keys=True)+'\n')
+          (out/'proofpath-scig.json').write_text(json.dumps(scig,indent=2,sort_keys=True)+'\n')
+          print('CGQA_SOURCE_REPLAY_VALID', decision['logicalOperationId'])
+          PY
+
+      - name: Resolve exact canonical ProofPath capability and run native verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOFPATH_MAIN="$(git ls-remote https://github.com/safal207/ProofPath.git refs/heads/main | awk '{print $1}')"
+          test -n "$PROOFPATH_MAIN"
+          rm -rf "$RUNNER_TEMP/proofpath-system-006"
+          git clone --quiet https://github.com/safal207/ProofPath.git "$RUNNER_TEMP/proofpath-system-006"
+          git -C "$RUNNER_TEMP/proofpath-system-006" checkout --quiet --detach "$PROOFPATH_MAIN"
+          PROOFPATH_MAIN="$PROOFPATH_MAIN" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          repo=Path(os.environ['RUNNER_TEMP'])/'proofpath-system-006'
+          manifest=json.loads((repo/'governance/capability-manifest.v0.1.json').read_text())
+          target=next(item for item in manifest['capabilities'] if item['id']=='proofpath.scig.v0.1')
+          assert target['status']=='CANONICAL'
+          assert target['consumer_default_allowed'] is True
+          assert target['canonical_commit']==os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT']
+          Path('evidence/system-006/proofpath-capability.json').write_text(json.dumps({
+              'observedMainSha':os.environ['PROOFPATH_MAIN'],
+              'canonicalCommit':target['canonical_commit'],
+              'status':target['status'],
+          },indent=2,sort_keys=True)+'\n')
+          PY
+          git -C "$RUNNER_TEMP/proofpath-system-006" merge-base --is-ancestor "$PROOFPATH_SCIG_CAPABILITY_COMMIT" "$PROOFPATH_MAIN"
+          git -C "$RUNNER_TEMP/proofpath-system-006" checkout --quiet --detach "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
+          cd "$RUNNER_TEMP/proofpath-system-006"
+          test ! -f Cargo.lock
+          cargo generate-lockfile
+          sha256sum Cargo.lock > "$GITHUB_WORKSPACE/evidence/system-006/proofpath-cargo-lock.sha256"
+          cargo test --locked -p proofpath-verifier --bin proofpath-scig
+          cargo run --quiet --locked -p proofpath-verifier --bin proofpath-scig -- \
+            "$GITHUB_WORKSPACE/evidence/system-006/proofpath-scig.json" \
+            | tee "$GITHUB_WORKSPACE/evidence/system-006/proofpath-scig.stdout.txt"
+          grep -Eq '^RESULT[[:space:]]+VALID$' "$GITHUB_WORKSPACE/evidence/system-006/proofpath-scig.stdout.txt"
+          grep -Eq '^VERIFICATION[[:space:]]+PASSED$' "$GITHUB_WORKSPACE/evidence/system-006/proofpath-scig.stdout.txt"
+
+      - name: Rebuild SYSTEM-004 AuditEvent
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          from contractgraph_qa.proofpath_scig_adapter import finalize_native_proofpath_receipt
+          from contractgraph_qa.liminaldb_proofpath_adapter import build_liminaldb_proofpath_audit_event
+
+          out=Path('evidence/system-006')
+          scig=json.loads((out/'proofpath-scig.json').read_text())
+          stdout=(out/'proofpath-scig.stdout.txt').read_text()
+          case=json.loads(Path('benchmarks/system-native/PROOFPATH-LIMINALDB-001.json').read_text())
+          receipt=finalize_native_proofpath_receipt(scig, stdout, proofpath_capability_commit=os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT'])
+          event=build_liminaldb_proofpath_audit_event(
+              scig,
+              receipt,
+              observed_at=case['observedAt'],
+              liminaldb_commit=os.environ['LIMINALDB_ARTIFACT_CONTRACT_COMMIT'],
+              liminaldb_contract_blob_sha=os.environ['LIMINALDB_AUDIT_EVENT_BLOB'],
+          )
+          assert receipt['logicalOperationId']==event['correlationId']==os.environ['LOGICAL_OPERATION_ID']
+          assert event['details']['persistence']['durable_memory'] is False
+          assert event['details']['authority']['execution'] is False
+          (out/'native-proofpath-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          (out/'liminaldb-proofpath-event.jsonl').write_text(json.dumps(event,sort_keys=True)+'\n')
+          PY
+
+      - name: Resolve exact canonical LiminalDB durable consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIMINALDB_MAIN="$(git ls-remote https://github.com/safal207/LiminalDB.git refs/heads/main | awk '{print $1}')"
+          test -n "$LIMINALDB_MAIN"
+          rm -rf "$RUNNER_TEMP/liminaldb-system-006"
+          git clone --quiet https://github.com/safal207/LiminalDB.git "$RUNNER_TEMP/liminaldb-system-006"
+          git -C "$RUNNER_TEMP/liminaldb-system-006" cat-file -e "$LIMINALDB_DURABLE_COMMIT^{commit}"
+          git -C "$RUNNER_TEMP/liminaldb-system-006" merge-base --is-ancestor "$LIMINALDB_DURABLE_COMMIT" "$LIMINALDB_MAIN"
+          git -C "$RUNNER_TEMP/liminaldb-system-006" checkout --quiet --detach "$LIMINALDB_DURABLE_COMMIT"
+          test "$(git -C "$RUNNER_TEMP/liminaldb-system-006" rev-parse HEAD)" = "$LIMINALDB_DURABLE_COMMIT"
+          test "$(git -C "$RUNNER_TEMP/liminaldb-system-006" hash-object sdk/ts/src/protocol-types.ts)" = "$LIMINALDB_AUDIT_EVENT_BLOB"
+          printf '%s\n' "$LIMINALDB_MAIN" > evidence/system-006/liminaldb-observed-main.txt
+
+      - name: Re-run canonical artifact-only admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$RUNNER_TEMP/liminaldb-system-006/scripts/validate_proofpath_audit_import.py" \
+            --events evidence/system-006/liminaldb-proofpath-event.jsonl \
+            --contract-file "$RUNNER_TEMP/liminaldb-system-006/sdk/ts/src/protocol-types.ts" \
+            --consumer-commit "$LIMINALDB_ARTIFACT_CONTRACT_COMMIT" \
+            --output evidence/system-006/liminaldb-artifact-admission.json
+          jq -e '
+            .mode == "dry_run" and
+            .write_performed == false and
+            .event_count == 1 and
+            .logical_operation_ids == ["crossmint-public-example-001"] and
+            .authority.execution_authorized == false and
+            .authority.mutation_authorized == false and
+            .authority.durable_memory_accepted == false and
+            .authority.live_ingestion_performed == false
+          ' evidence/system-006/liminaldb-artifact-admission.json >/dev/null
+
+      - name: Derive separate local-test storage admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_RECEIPT_REF="sha256:$(sha256sum evidence/system-006/native-proofpath-receipt.json | awk '{print $1}')"
+          STORAGE_ADMISSION_REF="sha256:$(printf 'FCRP-SYSTEM-006|local_test_only|%s|%s' "$EXACT_HEAD" "$LIMINALDB_DURABLE_COMMIT" | sha256sum | awk '{print $1}')"
+          VALID_TIME_MS="$(python3 - <<'PY'
+          import json
+          from datetime import datetime
+          event=json.loads(open('evidence/system-006/liminaldb-proofpath-event.jsonl').read())
+          value=event['ts']
+          parsed=datetime.fromisoformat(value[:-1]+'+00:00' if value.endswith('Z') else value)
+          print(int(parsed.timestamp()*1000))
+          PY
+          )"
+          TRANSACTION_TIME_MS="$((VALID_TIME_MS + 60000))"
+          REVIEW_TIME_MS="$((TRANSACTION_TIME_MS + 60000))"
+          REVIEWED_TIME="$(REVIEW_TIME_MS="$REVIEW_TIME_MS" python3 - <<'PY'
+          import os
+          from datetime import datetime, timezone
+          value=int(os.environ['REVIEW_TIME_MS'])
+          print(datetime.fromtimestamp(value/1000,tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00','Z'))
+          PY
+          )"
+          {
+            echo "SOURCE_RECEIPT_REF=$SOURCE_RECEIPT_REF"
+            echo "STORAGE_ADMISSION_REF=$STORAGE_ADMISSION_REF"
+            echo "VALID_TIME_MS=$VALID_TIME_MS"
+            echo "TRANSACTION_TIME_MS=$TRANSACTION_TIME_MS"
+            echo "REVIEWED_TIME=$REVIEWED_TIME"
+          } >> "$GITHUB_ENV"
+
+      - name: Persist and reopen exact durable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          STORE_ROOT="$RUNNER_TEMP/system-006-durable-store"
+          rm -rf "$STORE_ROOT"
+          echo "STORE_ROOT=$STORE_ROOT" >> "$GITHUB_ENV"
+          cd "$RUNNER_TEMP/liminaldb-system-006"
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            ingest "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-006/liminaldb-proofpath-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-006/liminaldb-artifact-admission.json" \
+            "$SOURCE_RECEIPT_REF" "$VALID_TIME_MS" "$TRANSACTION_TIME_MS" "$STORAGE_ADMISSION_REF" \
+            > "$GITHUB_WORKSPACE/evidence/system-006/ingest-first.json"
+          jq -e '.status == "INSERTED" and .event_count == 1 and .execution_authorized == false' \
+            "$GITHUB_WORKSPACE/evidence/system-006/ingest-first.json" >/dev/null
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            inspect "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-006/recovered-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-006/recovered-admission.json" \
+            "$GITHUB_WORKSPACE/evidence/system-006/recovered-summary.json" \
+            > "$GITHUB_WORKSPACE/evidence/system-006/reopen.stdout.txt"
+          cmp "$GITHUB_WORKSPACE/evidence/system-006/liminaldb-proofpath-event.jsonl" "$GITHUB_WORKSPACE/evidence/system-006/recovered-event.jsonl"
+          cmp "$GITHUB_WORKSPACE/evidence/system-006/liminaldb-artifact-admission.json" "$GITHUB_WORKSPACE/evidence/system-006/recovered-admission.json"
+
+      - name: Resolve exact canonical RINSE durable-source consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          RINSE_MAIN="$(git ls-remote https://github.com/safal207/rinse.git refs/heads/main | awk '{print $1}')"
+          test -n "$RINSE_MAIN"
+          rm -rf "$RUNNER_TEMP/rinse-system-006"
+          git clone --quiet https://github.com/safal207/rinse.git "$RUNNER_TEMP/rinse-system-006"
+          git -C "$RUNNER_TEMP/rinse-system-006" cat-file -e "$RINSE_DURABLE_CONSUMER_COMMIT^{commit}"
+          git -C "$RUNNER_TEMP/rinse-system-006" merge-base --is-ancestor "$RINSE_DURABLE_CONSUMER_COMMIT" "$RINSE_MAIN"
+          git -C "$RUNNER_TEMP/rinse-system-006" checkout --quiet --detach "$RINSE_DURABLE_CONSUMER_COMMIT"
+          test -f "$RUNNER_TEMP/rinse-system-006/rinse/adapters/liminaldb_durable_proof.py"
+          printf '%s\n' "$RINSE_MAIN" > evidence/system-006/rinse-observed-main.txt
+          PYTHONPATH="$RUNNER_TEMP/rinse-system-006" python3 -m unittest \
+            tests.test_liminaldb_durable_proof_adapter \
+            tests.test_reflection_graph -v \
+            --locals 2>/dev/null || \
+          (cd "$RUNNER_TEMP/rinse-system-006" && python3 -m unittest \
+            tests.test_liminaldb_durable_proof_adapter \
+            tests.test_reflection_graph -v)
+
+      - name: Derive canonical RINSE source trace and reflection
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum evidence/system-006/recovered-event.jsonl evidence/system-006/recovered-admission.json \
+            > evidence/system-006/source-before.sha256
+          PYTHONPATH="$RUNNER_TEMP/rinse-system-006" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          from rinse.adapters.liminaldb_durable_proof import derive_durable_proof_reflection
+
+          out=Path('evidence/system-006')
+          summary=json.loads((out/'recovered-summary.json').read_text())
+          event=(out/'recovered-event.jsonl').read_bytes()
+          admission=(out/'recovered-admission.json').read_bytes()
+          loop=derive_durable_proof_reflection(
+              summary,
+              event,
+              admission,
+              reviewed_time=os.environ['REVIEWED_TIME'],
+              liminaldb_durable_commit=os.environ['LIMINALDB_DURABLE_COMMIT'],
+          )
+          expected_trace_id='liminaldb-proof-durable:'+summary['record_hash']
+          assert loop['source_trace']['id']==expected_trace_id
+          assert loop['source_trace']['context']['logical_operation_id']==os.environ['LOGICAL_OPERATION_ID']
+          assert loop['reflection']['source_trace_ids']==[expected_trace_id]
+          assert loop['reflection']['authority']['classification']=='REFLECTION_ONLY'
+          assert loop['reflection']['authority']['truth_authorized'] is False
+          assert loop['reflection']['authority']['execution_authorized'] is False
+          assert loop['graph']['verdict']=='ACCEPT_WITH_LIMITS'
+          assert all(item['execution_allowed'] is False for item in loop['graph']['candidate_handoffs'])
+          assert loop['source_mutated'] is False
+          assert loop['write_back_performed'] is False
+          first=json.dumps(loop,sort_keys=True,separators=(',',':'))
+          second=json.dumps(derive_durable_proof_reflection(
+              summary,event,admission,
+              reviewed_time=os.environ['REVIEWED_TIME'],
+              liminaldb_durable_commit=os.environ['LIMINALDB_DURABLE_COMMIT'],
+          ),sort_keys=True,separators=(',',':'))
+          assert first==second
+          (out/'rinse-durable-reflection.json').write_text(json.dumps(loop,indent=2,sort_keys=True)+'\n')
+          print('RINSE_REFLECTION_ONLY_PASS',loop['reflection']['digest'])
+          PY
+          sha256sum evidence/system-006/recovered-event.jsonl evidence/system-006/recovered-admission.json \
+            > evidence/system-006/source-after.sha256
+          cmp evidence/system-006/source-before.sha256 evidence/system-006/source-after.sha256
+
+      - name: Reject semantic source escalation even with recomputed event digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RUNNER_TEMP/rinse-system-006" python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          from rinse.adapters.liminaldb_durable_proof import DurableProofSourceError, build_durable_source_trace
+
+          out=Path('evidence/system-006')
+          summary=json.loads((out/'recovered-summary.json').read_text())
+          event=json.loads((out/'recovered-event.jsonl').read_text())
+          admission=(out/'recovered-admission.json').read_bytes()
+          event['details']['persistence']['durable_memory']=True
+          tampered=(json.dumps(event,sort_keys=True)+'\n').encode()
+          summary['source_event_sha256']='sha256:'+hashlib.sha256(tampered).hexdigest()
+          try:
+              build_durable_source_trace(
+                  summary,
+                  tampered,
+                  admission,
+                  liminaldb_durable_commit=os.environ['LIMINALDB_DURABLE_COMMIT'],
+              )
+          except DurableProofSourceError as exc:
+              assert 'durable_memory' in str(exc)
+              (out/'semantic-negative.txt').write_text('REJECTED '+str(exc)+'\n')
+              print('RINSE_SEMANTIC_ESCALATION_REJECTED')
+          else:
+              raise AssertionError('semantic durable_memory escalation was accepted')
+          PY
+
+      - name: Build SYSTEM-006 agent trajectory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          logical=os.environ['LOGICAL_OPERATION_ID']
+          token='neo-rezonans-system-006:'+hashlib.sha256(logical.encode()).hexdigest()[:16]
+          frames=[
+              {'v':'0.1','id':'system-006-0','ts':1,'type':'orientation','payload':{'identity':'neo-rezonans-system-006','logical_operation_id':logical,'stage':'durable-source-replayed'},'continuity_token':token},
+              {'v':'0.1','id':'system-006-1','ts':2,'type':'focus_snapshot','payload':{'drift':0.0,'logical_operation_id':logical,'stage':'rinse-immutable-source-trace'},'continuity_token':token},
+              {'v':'0.1','id':'system-006-2','ts':3,'type':'focus_snapshot','payload':{'drift':0.0,'logical_operation_id':logical,'stage':'canonical-reflection-derived'},'continuity_token':token},
+              {'v':'0.1','id':'system-006-3','ts':4,'type':'focus_snapshot','payload':{'drift':0.0,'logical_operation_id':logical,'stage':'reflection-only-confirmed'},'continuity_token':token},
+              {'v':'0.1','id':'system-006-4','ts':5,'type':'route_response','payload':{'logical_operation_id':logical,'stage':'rinse-boundary-verified','branches':[{'id':'durable-to-reflection','confidence':1.0,'status':'admissible'}]},'continuity_token':token},
+          ]
+          Path('evidence/system-006/system-006.trace.jsonl').write_text(''.join(json.dumps(frame,sort_keys=True)+'\n' for frame in frames))
+          PY
+
+      - name: Run native LTP strict inspection and replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          LTP_MAIN="$(git ls-remote https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git refs/heads/main | awk '{print $1}')"
+          test -n "$LTP_MAIN"
+          rm -rf "$RUNNER_TEMP/ltp-system-006"
+          git clone --quiet https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git "$RUNNER_TEMP/ltp-system-006"
+          git -C "$RUNNER_TEMP/ltp-system-006" cat-file -e "$LTP_COMMIT^{commit}"
+          git -C "$RUNNER_TEMP/ltp-system-006" merge-base --is-ancestor "$LTP_COMMIT" "$LTP_MAIN"
+          git -C "$RUNNER_TEMP/ltp-system-006" checkout --quiet --detach "$LTP_COMMIT"
+          cd "$RUNNER_TEMP/ltp-system-006"
+          corepack enable
+          corepack prepare pnpm@9.15.0 --activate
+          pnpm install --frozen-lockfile
+          LTP_INSPECT_FREEZE_CLOCK=1 pnpm -w ltp:inspect trace --strict --quiet --format json --color never \
+            --input "$GITHUB_WORKSPACE/evidence/system-006/system-006.trace.jsonl" \
+            --output "$GITHUB_WORKSPACE/evidence/system-006/ltp-inspect.json"
+          pnpm -w ltp:inspect replay \
+            --input "$GITHUB_WORKSPACE/evidence/system-006/system-006.trace.jsonl" \
+            > "$GITHUB_WORKSPACE/evidence/system-006/ltp-replay.txt"
+          jq -e '.contract.name == "ltp-inspect" and .input.frames == 5' \
+            "$GITHUB_WORKSPACE/evidence/system-006/ltp-inspect.json" >/dev/null
+          test -s "$GITHUB_WORKSPACE/evidence/system-006/ltp-replay.txt"
+
+      - name: Evaluate FCRP-SYSTEM-006 and finalize evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          from contractgraph_qa.fcrp_v02 import evaluate_fcrp_v02_case
+
+          out=Path('evidence/system-006')
+          case=json.loads(Path('benchmarks/fcrp-v0.2/FCRP-SYSTEM-006-rinse-durable-reflection.json').read_text())
+          result=evaluate_fcrp_v02_case(case)
+          assert result['caseId']=='FCRP-SYSTEM-006'
+          assert result['decision']=='PASS'
+          assert result['navigationDirection']=='SIDEWAYS'
+          assert result['mutationAuthorized'] is False
+          assert result['causalPropagationStopped'] is True
+          summary=json.loads((out/'recovered-summary.json').read_text())
+          reflection=json.loads((out/'rinse-durable-reflection.json').read_text())
+          envelope={
+              'schema':'cgqa.system-006-independent-evidence.v0.1',
+              'caseId':'FCRP-SYSTEM-006',
+              'subjectHead':os.environ['EXACT_HEAD'],
+              'system005Ancestor':os.environ['SYSTEM_005_ANCESTOR'],
+              'logicalOperationId':os.environ['LOGICAL_OPERATION_ID'],
+              'liminaldbDurableCommit':os.environ['LIMINALDB_DURABLE_COMMIT'],
+              'durableRecordHash':summary['record_hash'],
+              'rinseConsumerCommit':os.environ['RINSE_DURABLE_CONSUMER_COMMIT'],
+              'sourceTraceId':reflection['source_trace']['id'],
+              'reflectionId':reflection['reflection']['id'],
+              'reflectionDigest':reflection['reflection']['digest'],
+              'graphVerdict':reflection['graph']['verdict'],
+              'authorityClass':reflection['reflection']['authority']['classification'],
+              'truthAuthorized':False,
+              'executionAuthorized':False,
+              'sourceMutated':False,
+              'writeBackPerformed':False,
+              'semanticEscalationRejected':True,
+              'pathVerdict':'LTP_STRICT_ACCEPTED',
+              'fcrpDecision':result['decision'],
+          }
+          assert envelope['sourceTraceId']=='liminaldb-proof-durable:'+envelope['durableRecordHash']
+          encoded=json.dumps(envelope,sort_keys=True,separators=(',',':')).encode()
+          envelope['evidenceDigest']='sha256:'+hashlib.sha256(encoded).hexdigest()
+          (out/'fcrp-system-006-result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          (out/'system-006-independent-evidence.json').write_text(json.dumps(envelope,indent=2,sort_keys=True)+'\n')
+          print('FCRP_SYSTEM_006_PASS',envelope['evidenceDigest'])
+          PY
+
+      - name: Build immutable evidence digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/system-006
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload SYSTEM-006 independent evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-system-006-${{ github.event.pull_request.number || github.run_number }}
+          path: evidence/system-006/
+          if-no-files-found: error
+          retention-days: 30
