@@ -1,0 +1,39 @@
+{
+  "schema": "cgqa.system-native-segment.v0.1",
+  "caseId": "PROOFPATH-LIMINALDB-001",
+  "logicalOperationId": "crossmint-public-example-001",
+  "observedAt": "2026-08-14T08:00:00Z",
+  "proofpath": {
+    "repository": "safal207/ProofPath",
+    "capabilityId": "proofpath.scig.v0.1",
+    "canonicalCapabilityCommit": "685d50e256a5125a21f4c4584b326411caaa64ad",
+    "nativeVerifier": "proofpath-scig",
+    "expectedResult": "VALID"
+  },
+  "liminaldb": {
+    "repository": "safal207/LiminalDB",
+    "canonicalImportContractCommit": "00580ff097dee61b45ad3c8a3c36ae5f548f572d",
+    "contractPath": "sdk/ts/src/protocol-types.ts",
+    "contractBlobSha": "fd733971aaae089df770062bcf7f2c2d6d19ca1d",
+    "validatorPath": "scripts/validate_proofpath_audit_import.py",
+    "expectedMode": "dry_run",
+    "writePerformed": false,
+    "durableMemoryAccepted": false,
+    "liveIngestionPerformed": false
+  },
+  "ltp": {
+    "repository": "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-",
+    "commit": "fc58072d301a487c09227ea09004dc8e99676370",
+    "nativeInspector": "pnpm -w ltp:inspect",
+    "mode": "trace --strict",
+    "expectedExitCode": 0
+  },
+  "boundary": {
+    "authorityTransfer": "NONE",
+    "executionAuthorized": false,
+    "mutationAuthorized": false,
+    "persistenceAuthorized": false,
+    "externalEffectsPerformed": false,
+    "claim": "native handoff validated up to, but not across, the LiminalDB durable-persistence frontier"
+  }
+}

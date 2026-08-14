@@ -1,0 +1,175 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-SYSTEM-004",
+  "title": "Native ProofPath to LiminalDB handoff stops at the persistence frontier",
+  "scope": {
+    "nodeId": "neo-rezonans-native-proofpath-liminaldb",
+    "scale": "cross-repository native segment / evidence-to-memory boundary",
+    "ideaContract": {
+      "purpose": "Replace the synthetic ProofPath to LiminalDB heartbeat edge with native producer and consumer contracts while refusing to describe artifact compatibility as durable persistence.",
+      "expectedOutcome": "A native ProofPath VALID receipt is projected into the dedicated canonical LiminalDB ProofPath AuditEvent profile, accepted by LiminalDB's exact artifact-only validator, and represented as an admissible LTP trajectory that explicitly stops before persistence.",
+      "invariants": [
+        "the same logical_operation_id survives ProofPath receipt, LiminalDB AuditEvent and path trace",
+        "ProofPath producer provenance remains distinct from LiminalDB contract compatibility identity",
+        "the exact canonical ProofPath capability commit remains bound to the source evidence",
+        "the exact canonical LiminalDB ProofPath import contract and AuditEvent blob remain bound to consumption",
+        "artifact validation performs no durable write or live ingestion",
+        "evidence validation transfers no execution, mutation or persistence authority",
+        "the agent path reaches a stop-before-persistence state rather than silently crossing the unproven boundary"
+      ],
+      "forbiddenOutcomes": [
+        "relabeling ProofPath verification as a Lotus finding to reuse an unrelated validator",
+        "claiming durable memory from a dry-run compatibility PASS",
+        "treating historical repository commit as semantic contract identity",
+        "allowing persisted-evidence language to imply execution authority",
+        "skipping native ProofPath verification before LiminalDB projection",
+        "producing a correct final event through a path that omits the consumer validation stage"
+      ],
+      "dependencies": [
+        "FCRP-SYSTEM-003",
+        "proofpath.scig.v0.1@685d50e256a5125a21f4c4584b326411caaa64ad",
+        "safal207/LiminalDB@00580ff097dee61b45ad3c8a3c36ae5f548f572d",
+        "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-@fc58072d301a487c09227ea09004dc8e99676370"
+      ],
+      "parentContract": "NEO REZONANS heartbeat / ProofPath -> LiminalDB evidence transfer with authorityMode=NONE"
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-PROOFPATH-NATIVE",
+      "kind": "native-producer-verification",
+      "ref": "FCRP-SYSTEM-003 / proofpath-scig",
+      "claim": "The upstream segment supplies a native ProofPath VALID receipt bound to exact SCIG bytes and canonical capability identity.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-LIMINALDB-CONTRACT",
+      "kind": "native-consumer-contract",
+      "ref": "safal207/LiminalDB@00580ff097dee61b45ad3c8a3c36ae5f548f572d:scripts/validate_proofpath_audit_import.py",
+      "claim": "LiminalDB defines a dedicated ProofPath AuditEvent profile that is artifact-only and explicitly rejects durable/live persistence claims.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-LTP-PATH",
+      "kind": "native-path-inspection",
+      "ref": "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-@fc58072d301a487c09227ea09004dc8e99676370:ltp:inspect",
+      "claim": "The generated SYSTEM-004 trace is inspected in strict mode with stable identity and continuity through the stop-before-persistence route.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-BRIDGE",
+      "kind": "cross-repository-adapter",
+      "ref": "contractgraph_qa/liminaldb_proofpath_adapter.py",
+      "claim": "The bridge separates ProofPath provenance, evidence digests, LiminalDB contract compatibility and consumer snapshot identity while carrying zero authority.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-REGRESSIONS",
+      "kind": "negative-regression-suite",
+      "ref": "tools/tests/test_liminaldb_proofpath_adapter.py",
+      "claim": "Negative controls reject logical-operation drift, receipt tamper, authority transfer, wrong consumer capability identity and false durable-memory claims.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": ["CAUSAL_SEQUENCE", "REPOSITORY_HISTORY"],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": ["E-PROOFPATH-NATIVE", "E-LIMINALDB-CONTRACT", "E-LTP-PATH"]
+  },
+  "timeline": {
+    "past": {
+      "summary": "SYSTEM-002 represented ProofPath to LiminalDB as a synthetic heartbeat transition toward durable verified state; SYSTEM-003 made the upstream CGQA to ProofPath segment native.",
+      "evidenceRefs": ["E-PROOFPATH-NATIVE"]
+    },
+    "present": {
+      "summary": "Canonical LiminalDB exposes a dedicated ProofPath artifact-only AuditEvent validator, not a durable ProofPath ingestion path. SYSTEM-004 makes that narrower boundary explicit and native.",
+      "evidenceRefs": ["E-LIMINALDB-CONTRACT", "E-BRIDGE", "E-LTP-PATH", "E-REGRESSIONS"]
+    },
+    "future": {
+      "summary": "Durable ingestion is a separate falsifiable stage requiring namespace isolation, idempotency, transaction semantics, bi-temporal preservation, restart replay, rejection and rollback proof before the system map may call this edge persistent.",
+      "evidenceRefs": ["E-LIMINALDB-CONTRACT", "E-REGRESSIONS"]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "system-model",
+      "phase": "first-divergence",
+      "statement": "The whole-system shorthand labels ProofPath to LiminalDB as durable verified state even though the canonical consumer currently proves only artifact compatibility and explicitly performs no live ingestion.",
+      "evidenceRefs": ["E-LIMINALDB-CONTRACT"]
+    },
+    {
+      "id": "N2",
+      "level": "consumer-contract",
+      "phase": "diagnosis",
+      "statement": "The existing Lotus validator is semantically specific to LiminalQA Lotus findings and cannot honestly be reused for ProofPath SCIG verification.",
+      "evidenceRefs": ["E-LIMINALDB-CONTRACT"]
+    },
+    {
+      "id": "N3",
+      "level": "cross-repository-boundary",
+      "phase": "refactor",
+      "statement": "A dedicated ProofPath AuditEvent profile binds native ProofPath evidence to the current LiminalDB AuditEvent contract while hard-coding artifact-only, zero-authority semantics.",
+      "evidenceRefs": ["E-BRIDGE", "E-LIMINALDB-CONTRACT", "E-REGRESSIONS"]
+    },
+    {
+      "id": "N4",
+      "level": "consumer-execution",
+      "phase": "native-consumption",
+      "statement": "The exact canonical LiminalDB validator consumes the generated event and produces a dry-run compatibility report with write_performed=false and durable_memory_accepted=false.",
+      "evidenceRefs": ["E-LIMINALDB-CONTRACT"]
+    },
+    {
+      "id": "N5",
+      "level": "agent-trajectory",
+      "phase": "path-verification",
+      "statement": "A native LTP strict trace audit verifies identity and continuity across ProofPath verification, projection, LiminalDB validation and explicit stop-before-persistence.",
+      "evidenceRefs": ["E-LTP-PATH"]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N1",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": ["E-LIMINALDB-CONTRACT", "E-BRIDGE", "E-LTP-PATH"]
+  },
+  "navigation": {
+    "direction": "SIDEWAYS",
+    "reason": "The missing guarantee sits at a sibling repository transfer boundary and in the trajectory that reaches it, not inside ProofPath or LiminalDB core semantics alone."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Introduce a dedicated ProofPath-to-LiminalDB artifact bridge and validate it with the canonical LiminalDB consumer plus an LTP strict trajectory, while explicitly stopping before durable persistence.",
+    "expectedEffect": "The next heartbeat segment becomes native without fabricating persistence, reusing an unrelated Lotus identity, or widening authority."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": ["siblings", "parent", "dependencies", "future"],
+    "evidenceRefs": ["E-LIMINALDB-CONTRACT", "E-LTP-PATH", "E-REGRESSIONS"]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "SYSTEM-004 proves a native evidence handoff only up to the LiminalDB persistence frontier. No durable write, runtime mutation, deployment, merge, financial action or external effect is authorized."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "NOT_REQUIRED",
+    "evidenceRefs": ["E-PROOFPATH-NATIVE", "E-LIMINALDB-CONTRACT", "E-LTP-PATH", "E-REGRESSIONS"],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}
