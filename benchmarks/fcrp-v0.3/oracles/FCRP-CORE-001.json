@@ -1,0 +1,21 @@
+{
+  "schema": "cgqa.fcrp-benchmark-oracle.v0.1",
+  "benchmarkId": "FCRP-CORE-001",
+  "expected": {
+    "scopeNodeId": "payment-execution-retry-provider-boundary",
+    "symptomLocation": "D1",
+    "fmd": "B1",
+    "causalLocation": "B1",
+    "refactorLocation": "C1",
+    "refactorPoint": "stable-order-scoped-idempotency-key-before-provider-call"
+  },
+  "causalMap": {
+    "A1": "The order contract permits at most one economic charge and one auditable receipt per logical order.",
+    "B1": "Retry construction derives a new attempt-scoped idempotency key after a caller timeout.",
+    "C1": "The integration boundary before the provider call can restore one stable order-scoped key.",
+    "D1": "The provider and ledger show two charges and two receipt events for one order."
+  },
+  "requiredNavigation": ["UP", "DOWN"],
+  "requiredSimulationSurfaces": ["children", "siblings", "parent", "dependencies", "future"],
+  "verificationBoundary": "stable key → one provider operation → one ledger charge → one receipt → parent order invariant"
+}
