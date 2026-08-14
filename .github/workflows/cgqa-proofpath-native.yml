@@ -1,0 +1,262 @@
+name: NEO REZONANS Native CGQA ProofPath Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - contractgraph_qa/proofpath_scig_adapter.py
+      - benchmarks/system-native/CGQA-PROOFPATH-001.json
+      - benchmarks/fcrp-v0.2/FCRP-SYSTEM-003-cgqa-proofpath-native.json
+      - tools/tests/test_proofpath_scig_adapter.py
+      - docs/NEO_REZONANS_CGQA_PROOFPATH_NATIVE_V0_1.md
+      - .github/workflows/cgqa-proofpath-native.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cgqa-proofpath-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      SYSTEM_002_BASE: bfa675bff4261af671a9353106d8ffbc155e23a4
+      PROOFPATH_SCIG_CAPABILITY_COMMIT: 685d50e256a5125a21f4c4584b326411caaa64ad
+    steps:
+      - name: Checkout exact native-segment head
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact head and SYSTEM-002 ancestry
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$SYSTEM_002_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then
+            test "$PR_BASE_SHA" = "$SYSTEM_002_BASE"
+          fi
+
+      - name: Compile bridge and FCRP validators
+        run: |
+          python -m py_compile \
+            contractgraph_qa/provider_decision_evidence.py \
+            contractgraph_qa/provider_payment_decision.py \
+            contractgraph_qa/proofpath_scig_adapter.py \
+            contractgraph_qa/fcrp_v02.py \
+            tools/tests/test_proofpath_scig_adapter.py
+
+      - name: Run dependency-free bridge regressions
+        run: python -m unittest tools.tests.test_proofpath_scig_adapter -v
+
+      - name: Build native ContractGraph-QA evidence and SCIG projection
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/native-segment
+          python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+
+          from contractgraph_qa.proofpath_scig_adapter import build_proofpath_scig_from_provider_evidence
+          from contractgraph_qa.provider_decision_evidence import (
+              build_provider_decision_evidence,
+              canonical_evidence_pack_sha256,
+              verify_provider_decision_evidence,
+          )
+          from contractgraph_qa.provider_payment_decision import evaluate_provider_payment_decision
+
+          root = Path('.')
+          case = json.loads((root / 'benchmarks/system-native/CGQA-PROOFPATH-001.json').read_text())
+          adapters = root / 'benchmarks/agent-payment-recovery-v0.1/provider-adapters'
+          adapter = json.loads((adapters / 'crossmint-public-contract.v0.1.json').read_text())
+          observations = json.loads((adapters / 'crossmint-observations-get-success.json').read_text())
+          authority = copy.deepcopy(case['source']['authority'])
+          decision = evaluate_provider_payment_decision(
+              adapter,
+              observations,
+              authority,
+              decision_id=case['source']['decisionId'],
+          )
+          assert decision['logicalOperationId'] == case['logicalOperationId']
+          assert decision['decision']['decision'] == case['source']['expectedDecision'] == 'STOP'
+          assert decision['decision']['monetaryActionAllowed'] is case['source']['expectedMonetaryActionAllowed'] is False
+
+          pack = build_provider_decision_evidence(adapter, observations, authority, decision)
+          replayed = verify_provider_decision_evidence(pack)
+          assert replayed == decision
+          pack_digest = canonical_evidence_pack_sha256(pack)
+
+          scig = build_proofpath_scig_from_provider_evidence(
+              pack,
+              observed_at=case['bridge']['observedAt'],
+          )
+          assert scig['logical_operation_id'] == case['logicalOperationId']
+          assert scig['bridge_contract']['source_evidence_pack_sha256'] == pack_digest
+          assert scig['bridge_contract']['authority_transfer'] == 'NONE'
+          assert scig['bridge_contract']['consumer_capability_commit'] == case['proofpath']['canonicalCapabilityCommit']
+
+          out = root / 'evidence/native-segment'
+          (out / 'cgqa-provider-evidence-pack.json').write_text(
+              json.dumps(pack, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (out / 'proofpath-scig.json').write_text(
+              json.dumps(scig, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (out / 'source-identity.json').write_text(
+              json.dumps(
+                  {
+                      'logicalOperationId': case['logicalOperationId'],
+                      'sourceEvidencePackSha256': pack_digest,
+                      'cgqaHead': '${{ env.EXACT_HEAD }}',
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + '\n',
+              encoding='utf-8',
+          )
+          print('CGQA_NATIVE_SOURCE_VALID', pack_digest)
+          PY
+
+      - name: Resolve current ProofPath manifest and exact canonical SCIG capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOFPATH_MAIN="$(git ls-remote https://github.com/safal207/ProofPath.git refs/heads/main | awk '{print $1}')"
+          test -n "$PROOFPATH_MAIN"
+          rm -rf "$RUNNER_TEMP/proofpath-native"
+          git clone --quiet https://github.com/safal207/ProofPath.git "$RUNNER_TEMP/proofpath-native"
+          git -C "$RUNNER_TEMP/proofpath-native" checkout --quiet --detach "$PROOFPATH_MAIN"
+
+          PROOFPATH_MAIN="$PROOFPATH_MAIN" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          repo = Path(os.environ['RUNNER_TEMP']) / 'proofpath-native'
+          manifest = json.loads((repo / 'governance/capability-manifest.v0.1.json').read_text())
+          target = next(item for item in manifest['capabilities'] if item['id'] == 'proofpath.scig.v0.1')
+          expected = os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT']
+          assert target['status'] == 'CANONICAL'
+          assert target['consumer_default_allowed'] is True
+          assert target['canonical_commit'] == expected
+          assert target['head_sha'] is None
+          evidence = {
+              'repository': 'safal207/ProofPath',
+              'observedMainSha': os.environ['PROOFPATH_MAIN'],
+              'manifestSchema': manifest['schema_version'],
+              'capabilityId': target['id'],
+              'capabilityStatus': target['status'],
+              'consumerDefaultAllowed': target['consumer_default_allowed'],
+              'canonicalCapabilityCommit': target['canonical_commit'],
+          }
+          Path('evidence/native-segment/proofpath-capability-identity.json').write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print('PROOFPATH_CAPABILITY_CANONICAL', expected)
+          PY
+
+          git -C "$RUNNER_TEMP/proofpath-native" cat-file -e "$PROOFPATH_SCIG_CAPABILITY_COMMIT^{commit}"
+          git -C "$RUNNER_TEMP/proofpath-native" merge-base --is-ancestor "$PROOFPATH_SCIG_CAPABILITY_COMMIT" "$PROOFPATH_MAIN"
+          git -C "$RUNNER_TEMP/proofpath-native" checkout --quiet --detach "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
+          test "$(git -C "$RUNNER_TEMP/proofpath-native" rev-parse HEAD)" = "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
+
+      - name: Run canonical native ProofPath SCIG tests
+        working-directory: ${{ runner.temp }}/proofpath-native
+        run: |
+          set -euo pipefail
+          rustc --version
+          cargo --version
+          cargo test --locked -p proofpath-verifier --bin proofpath-scig
+
+      - name: Consume generated SCIG with canonical native ProofPath verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$RUNNER_TEMP/proofpath-native"
+            cargo run --quiet --locked -p proofpath-verifier --bin proofpath-scig -- \
+              "$GITHUB_WORKSPACE/evidence/native-segment/proofpath-scig.json"
+          ) | tee evidence/native-segment/proofpath-scig.stdout.txt
+          grep -Eq '^RESULT[[:space:]]+VALID$' evidence/native-segment/proofpath-scig.stdout.txt
+          grep -Eq '^VERIFICATION[[:space:]]+PASSED$' evidence/native-segment/proofpath-scig.stdout.txt
+
+      - name: Finalize native bridge receipt and FCRP-SYSTEM-003
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from contractgraph_qa.fcrp_v02 import evaluate_fcrp_v02_case
+          from contractgraph_qa.proofpath_scig_adapter import finalize_native_proofpath_receipt
+
+          root = Path('.')
+          out = root / 'evidence/native-segment'
+          case = json.loads((root / 'benchmarks/system-native/CGQA-PROOFPATH-001.json').read_text())
+          scig = json.loads((out / 'proofpath-scig.json').read_text())
+          stdout = (out / 'proofpath-scig.stdout.txt').read_text()
+          receipt = finalize_native_proofpath_receipt(
+              scig,
+              stdout,
+              proofpath_capability_commit=case['proofpath']['canonicalCapabilityCommit'],
+          )
+          assert receipt['logicalOperationId'] == case['logicalOperationId']
+          assert receipt['proofpath']['result'] == 'VALID'
+          assert receipt['proofpath']['capabilityCommit'] == case['proofpath']['canonicalCapabilityCommit']
+          assert receipt['authorityTransfer'] == 'NONE'
+          assert receipt['executionAuthorized'] is False
+          assert receipt['mutationAuthorized'] is False
+          assert receipt['externalEffectsPerformed'] is False
+
+          fcrp_case = json.loads(
+              (root / 'benchmarks/fcrp-v0.2/FCRP-SYSTEM-003-cgqa-proofpath-native.json').read_text()
+          )
+          fcrp = evaluate_fcrp_v02_case(fcrp_case)
+          assert fcrp['caseId'] == 'FCRP-SYSTEM-003'
+          assert fcrp['decision'] == 'PASS'
+          assert fcrp['navigationDirection'] == 'SIDEWAYS'
+          assert fcrp['primaryTimeDomain'] == 'CAUSAL_SEQUENCE'
+          assert fcrp['mutationAuthorized'] is False
+          assert fcrp['causalPropagationStopped'] is True
+
+          (out / 'native-bridge-receipt.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          (out / 'fcrp-system-003-result.json').write_text(
+              json.dumps(fcrp, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print('NATIVE_SEGMENT_PASS', receipt['receiptDigest'])
+          PY
+
+      - name: Build evidence digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/native-segment
+          sha256sum *.json *.txt > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload native segment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: neo-rezonans-native-cgqa-proofpath-${{ github.event.pull_request.number || github.run_number }}
+          path: evidence/native-segment/
+          if-no-files-found: error
+          retention-days: 30
