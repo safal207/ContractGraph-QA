@@ -1,7 +1,7 @@
 {
   "schema": "cgqa.system-native-segment.v0.1",
   "caseId": "PROOFPATH-LIMINALDB-001",
-  "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+  "logicalOperationId": "crossmint-public-example-001",
   "observedAt": "2026-08-14T08:00:00Z",
   "proofpath": {
     "repository": "safal207/ProofPath",
