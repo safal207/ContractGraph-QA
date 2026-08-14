@@ -125,20 +125,21 @@
   "causalPath": [
     {
       "id": "N1",
-      "level": "system-model",
+      "level": "authority-boundary",
       "phase": "first-divergence",
-      "statement": "SYSTEM-004 correctly stops at a persistence frontier: artifact acceptance is verified, but no durable state transition has yet been independently exercised by the system verifier.",
+      "statement": "Artifact acceptance cannot itself grant persistence; a distinct local/test storage admission must authorize only the storage write while execution and external-effect authority remain false.",
       "evidenceRefs": [
-        "E-SYSTEM-004"
+        "E-SYSTEM-004",
+        "E-DURABLE-CONSUMER"
       ]
     },
     {
       "id": "N2",
-      "level": "authority-boundary",
-      "phase": "diagnosis",
-      "statement": "Persistence cannot be inferred from evidence acceptance; a distinct local/test storage admission must authorize only the storage write while execution and external-effect authority remain false.",
+      "level": "system-model",
+      "phase": "symptom",
+      "statement": "SYSTEM-004 therefore correctly stops at a persistence frontier: artifact acceptance is verified, but no durable state transition has yet been independently exercised by the system verifier.",
       "evidenceRefs": [
-        "E-DURABLE-CONSUMER"
+        "E-SYSTEM-004"
       ]
     },
     {
@@ -180,9 +181,9 @@
     }
   ],
   "divergence": {
-    "symptomPoint": "N1",
+    "symptomPoint": "N2",
     "firstMeaningfulDivergence": "N1",
-    "causePoint": "N2",
+    "causePoint": "N1",
     "selectedRefactorPoint": "N3",
     "evidenceRefs": [
       "E-SYSTEM-004",
