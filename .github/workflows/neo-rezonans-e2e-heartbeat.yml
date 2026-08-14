@@ -1,0 +1,123 @@
+name: NEO REZONANS E2E Heartbeat Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - contractgraph_qa/system_receipt.py
+      - benchmarks/system-e2e/**
+      - benchmarks/fcrp-v0.2/FCRP-SYSTEM-002-e2e-heartbeat.json
+      - tools/tests/test_system_receipt.py
+      - docs/NEO_REZONANS_E2E_RECEIPT_V0_1.md
+      - .github/workflows/neo-rezonans-e2e-heartbeat.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: neo-rezonans-e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      EXPECTED_SYSTEM_BASE: 89ff73ae55f153497a7b4c2a3bc6bc66ad31c422
+    steps:
+      - name: Checkout exact heartbeat head
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact head and canonical system-contract base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_SYSTEM_BASE" "$EXACT_HEAD"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            test "${{ github.event.pull_request.base.sha }}" = "$EXPECTED_SYSTEM_BASE"
+          fi
+
+      - name: Compile system receipt and FCRP validators
+        run: |
+          python -m py_compile \
+            contractgraph_qa/system_snapshot.py \
+            contractgraph_qa/system_receipt.py \
+            contractgraph_qa/fcrp_v02.py \
+            tools/tests/test_system_receipt.py
+
+      - name: Run dependency-free heartbeat regressions
+        run: python -m unittest tools.tests.test_system_receipt -v
+
+      - name: Build deterministic system receipt and FCRP result
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/neo-rezonans-e2e
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from contractgraph_qa.fcrp_v02 import evaluate_fcrp_v02_case
+          from contractgraph_qa.system_receipt import build_system_receipt
+
+          snapshot = json.loads(Path('governance/neo-rezonans-system-snapshot.v0.1.json').read_text(encoding='utf-8'))
+          trace = json.loads(Path('benchmarks/system-e2e/NEO-REZONANS-E2E-001.json').read_text(encoding='utf-8'))
+          case = json.loads(Path('benchmarks/fcrp-v0.2/FCRP-SYSTEM-002-e2e-heartbeat.json').read_text(encoding='utf-8'))
+
+          receipt = build_system_receipt(trace, snapshot)
+          fcrp = evaluate_fcrp_v02_case(case)
+
+          assert receipt['decision'] == 'PASS'
+          assert receipt['stageCount'] == 8
+          assert receipt['transferCount'] == 8
+          assert receipt['identityPreserved'] is True
+          assert receipt['causalLineagePreserved'] is True
+          assert receipt['evidenceLineagePreserved'] is True
+          assert receipt['authorityTransferCount'] == 1
+          assert receipt['authorityLeakCount'] == 0
+          assert receipt['feedbackCount'] == 1
+          assert receipt['sourceMutationObserved'] is False
+          assert receipt['externalEffectObserved'] is False
+          assert receipt['finalStatus'] == 'REFLECTED_WITH_EVIDENCE'
+
+          assert fcrp['decision'] == 'PASS'
+          assert fcrp['mutationAuthorized'] is False
+          assert fcrp['causalPropagationStopped'] is True
+
+          out = Path('artifacts/neo-rezonans-e2e')
+          out.joinpath('system-receipt.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          out.joinpath('fcrp-system-002.json').write_text(
+              json.dumps(fcrp, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Build evidence digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts/neo-rezonans-e2e
+          sha256sum system-receipt.json fcrp-system-002.json > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload heartbeat evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: neo-rezonans-e2e-heartbeat-${{ github.event.pull_request.number || github.run_number }}
+          path: artifacts/neo-rezonans-e2e/
+          if-no-files-found: error
+          retention-days: 30
