@@ -3,6 +3,11 @@
 The snapshot binds exact canonical repository revisions and, more importantly,
 what facts may and may not cross each repository boundary. It is a point-in-time
 system contract, not a claim that pinned `main` heads remain current forever.
+
+Because the snapshot is hosted inside one of its own component repositories,
+the host is bound to the exact pre-acceptance capability base. The governance
+merge that introduces the snapshot is explicitly not treated as semantic layer
+drift; later host changes still require revalidation.
 """
 
 from __future__ import annotations
@@ -102,9 +107,36 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         policy.get("mainHeadMustMatchAtAcceptance"),
         "snapshot.snapshotPolicy.mainHeadMustMatchAtAcceptance",
     ):
-        raise SystemSnapshotError("system acceptance must verify every pinned main head")
-    if _text(policy.get("onHeadDrift"), "snapshot.snapshotPolicy.onHeadDrift") != "REVALIDATE_SYSTEM_SNAPSHOT":
-        raise SystemSnapshotError("snapshotPolicy.onHeadDrift must be REVALIDATE_SYSTEM_SNAPSHOT")
+        raise SystemSnapshotError(
+            "system acceptance must verify external main heads and the host pre-acceptance base"
+        )
+    host_repo = _text(policy.get("hostRepository"), "snapshot.snapshotPolicy.hostRepository")
+    host_base = _text(policy.get("hostBaseCommit"), "snapshot.snapshotPolicy.hostBaseCommit")
+    if not _REPOSITORY.fullmatch(host_repo):
+        raise SystemSnapshotError("snapshotPolicy.hostRepository has invalid format")
+    if not _SHA40.fullmatch(host_base):
+        raise SystemSnapshotError("snapshotPolicy.hostBaseCommit must be a full lowercase SHA")
+    if _text(
+        policy.get("hostAcceptanceMode"),
+        "snapshot.snapshotPolicy.hostAcceptanceMode",
+    ) != "BASE_PLUS_GOVERNANCE_SNAPSHOT":
+        raise SystemSnapshotError(
+            "snapshotPolicy.hostAcceptanceMode must be BASE_PLUS_GOVERNANCE_SNAPSHOT"
+        )
+    if not _bool(
+        policy.get("hostAcceptanceDoesNotCountAsDrift"),
+        "snapshot.snapshotPolicy.hostAcceptanceDoesNotCountAsDrift",
+    ):
+        raise SystemSnapshotError(
+            "the declared host acceptance commit must be distinguished from later semantic drift"
+        )
+    if _text(
+        policy.get("onHeadDrift"),
+        "snapshot.snapshotPolicy.onHeadDrift",
+    ) != "REVALIDATE_SYSTEM_SNAPSHOT":
+        raise SystemSnapshotError(
+            "snapshotPolicy.onHeadDrift must be REVALIDATE_SYSTEM_SNAPSHOT"
+        )
     if _bool(
         policy.get("branchOnlyDefaultDependenciesAllowed"),
         "snapshot.snapshotPolicy.branchOnlyDefaultDependenciesAllowed",
@@ -120,6 +152,10 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         raise SystemSnapshotError("snapshot.fcrpEngine.repository has invalid format")
     if not _SHA40.fullmatch(engine_commit):
         raise SystemSnapshotError("snapshot.fcrpEngine.canonicalCommit must be a full lowercase SHA")
+    if host_repo != engine_repo or host_base != engine_commit:
+        raise SystemSnapshotError(
+            "self-hosted snapshot must bind the host base to the canonical FCRP engine revision"
+        )
 
     layers_raw = _list(snapshot.get("layers"), "snapshot.layers")
     if not layers_raw:
@@ -128,6 +164,7 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     layers: dict[str, dict[str, Any]] = {}
     roles: set[str] = set()
     repositories_and_commits: set[tuple[str, str]] = set()
+    host_layers = 0
     for index, item in enumerate(layers_raw):
         layer = _object(item, f"snapshot.layers[{index}]")
         layer_id = _text(layer.get("id"), f"snapshot.layers[{index}].id")
@@ -145,9 +182,18 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             raise SystemSnapshotError(f"layer {layer_id} must be CANONICAL")
         if not _bool(layer.get("defaultConsumerAllowed"), f"snapshot.layers[{index}].defaultConsumerAllowed"):
             raise SystemSnapshotError(f"layer {layer_id} must be default-consumer eligible")
+        if repository == host_repo:
+            host_layers += 1
+            if commit != host_base:
+                raise SystemSnapshotError(
+                    f"host layer {layer_id} must bind the exact pre-acceptance host base"
+                )
         layers[layer_id] = layer
         roles.add(role)
         repositories_and_commits.add((repository, commit))
+
+    if host_layers < 1:
+        raise SystemSnapshotError("system snapshot must contain at least one host-repository layer")
 
     missing_roles = sorted(_REQUIRED_ROLES - roles)
     if missing_roles:
@@ -254,4 +300,7 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         "authorityTransferEdges": explicit_authority_edges,
         "feedbackEdges": feedback_edges,
         "fcrpEngineCommit": engine_commit,
+        "hostRepository": host_repo,
+        "hostBaseCommit": host_base,
+        "hostAcceptanceMode": "BASE_PLUS_GOVERNANCE_SNAPSHOT",
     }
