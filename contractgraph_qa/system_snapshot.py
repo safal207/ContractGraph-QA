@@ -163,6 +163,7 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
 
     layers: dict[str, dict[str, Any]] = {}
     roles: set[str] = set()
+    repository_commits: dict[str, str] = {}
     repositories_and_commits: set[tuple[str, str]] = set()
     host_layers = 0
     for index, item in enumerate(layers_raw):
@@ -178,6 +179,12 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             raise SystemSnapshotError(f"layer {layer_id} repository has invalid format")
         if not _SHA40.fullmatch(commit):
             raise SystemSnapshotError(f"layer {layer_id} canonicalCommit must be a full lowercase SHA")
+        prior_commit = repository_commits.get(repository)
+        if prior_commit is not None and prior_commit != commit:
+            raise SystemSnapshotError(
+                f"repository {repository} cannot be bound to multiple commits in one system snapshot"
+            )
+        repository_commits[repository] = commit
         if layer.get("status") != "CANONICAL":
             raise SystemSnapshotError(f"layer {layer_id} must be CANONICAL")
         if not _bool(layer.get("defaultConsumerAllowed"), f"snapshot.layers[{index}].defaultConsumerAllowed"):
@@ -218,6 +225,7 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     edge_pairs: set[tuple[str, str]] = set()
     explicit_authority_edges = 0
     feedback_edges = 0
+    expected_feedback_pair = (chain[-1], chain[0])
     for index, item in enumerate(edges_raw):
         edge = _object(item, f"snapshot.edges[{index}]")
         source = _text(edge.get("from"), f"snapshot.edges[{index}].from")
@@ -248,6 +256,10 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             raise SystemSnapshotError(f"edge {source}->{target} has unsupported authorityMode")
         if authority_mode == "EXPLICIT_CONTRACT_ONLY":
             explicit_authority_edges += 1
+            if layers[source]["role"] != "AUTHORIZATION_GOVERNANCE" or layers[target]["role"] != "STATE_TRANSITION_VERIFICATION":
+                raise SystemSnapshotError(
+                    "explicit authority may flow only from AUTHORIZATION_GOVERNANCE to STATE_TRANSITION_VERIFICATION"
+                )
             if "authorization_ref" not in allowed:
                 raise SystemSnapshotError(
                     f"authority edge {source}->{target} must transfer authorization_ref explicitly"
@@ -257,6 +269,10 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                     f"authority edge {source}->{target} must forbid evidence_as_authority"
                 )
         else:
+            if "authorization_ref" in allowed:
+                raise SystemSnapshotError(
+                    f"non-authority edge {source}->{target} may not transfer authorization_ref"
+                )
             if "execution_authority" not in forbidden:
                 raise SystemSnapshotError(
                     f"non-authority edge {source}->{target} must explicitly forbid execution_authority"
@@ -264,13 +280,20 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         feedback = _bool(edge.get("feedback"), f"snapshot.edges[{index}].feedback")
         if feedback:
             feedback_edges += 1
+            if pair != expected_feedback_pair:
+                raise SystemSnapshotError(
+                    "feedback may close only the REINTERPRETATION to INTENT_OBSERVATORY system edge"
+                )
+            if layers[source]["role"] != "REINTERPRETATION" or layers[target]["role"] != "INTENT_OBSERVATORY":
+                raise SystemSnapshotError(
+                    "feedback edge roles must be REINTERPRETATION to INTENT_OBSERVATORY"
+                )
 
     expected_primary_pairs = set(zip(chain, chain[1:]))
     missing_primary = sorted(expected_primary_pairs - edge_pairs)
     if missing_primary:
         raise SystemSnapshotError(f"missing primary-chain edges: {missing_primary}")
-    feedback_pair = (chain[-1], chain[0])
-    if feedback_pair not in edge_pairs:
+    if expected_feedback_pair not in edge_pairs:
         raise SystemSnapshotError("system snapshot must close the RINSE-to-RESONANCE feedback loop")
     if explicit_authority_edges != 1:
         raise SystemSnapshotError("system snapshot must contain exactly one authority-transfer edge")
@@ -296,6 +319,7 @@ def validate_system_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         "decision": "PASS",
         "snapshotDigest": snapshot_digest(snapshot),
         "layerCount": len(layers),
+        "repositoryCount": len(repository_commits),
         "edgeCount": len(edge_pairs),
         "authorityTransferEdges": explicit_authority_edges,
         "feedbackEdges": feedback_edges,
