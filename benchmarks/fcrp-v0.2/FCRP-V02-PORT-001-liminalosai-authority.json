@@ -1,0 +1,138 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-V02-PORT-001",
+  "title": "Maximum evidence maturity does not transfer execution authority",
+  "scope": {
+    "nodeId": "liminalosai-external-validation-export-authority-boundary",
+    "scale": "cross-repository evidence export / authorization boundary",
+    "ideaContract": {
+      "purpose": "Export independently inspectable review evidence without transferring or implying execution authority.",
+      "expectedOutcome": "Downstream ProofPath/CML consumers receive evidence state plus an explicit negative authority contract.",
+      "invariants": [
+        "evidence may inform a separate authorization decision but never grants authority by itself",
+        "maximum review maturity does not grant execution capability",
+        "downstream consumers must not infer authority from omitted fields"
+      ],
+      "forbiddenOutcomes": [
+        "execution authority inferred from review maturity",
+        "capability grant inferred from EEW or VALIDATED status"
+      ],
+      "dependencies": [
+        "safal207/LiminalOSAI",
+        "ProofPath external evidence consumer",
+        "CML evidence-state consumer"
+      ],
+      "parentContract": "LiminalOSAI AUTHORIZATION remains a distinct causal contract from external review evidence."
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-LIMINAL-SELF009",
+      "kind": "canonical-merge",
+      "ref": "safal207/LiminalOSAI@f84888a943c71041f7c31b41d70d592ad60b2157",
+      "claim": "FCRP-SELF-009 was promoted after exact-head Core CI, Governance Required Gate, and External Validation Graph Gate passed.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-LIMINAL-PR193",
+      "kind": "reviewed-causal-case",
+      "ref": "https://github.com/safal207/LiminalOSAI/pull/193",
+      "claim": "The export requires EVIDENCE_ONLY classification, zero authority transfer, and a separate authorization contract even when EEW is 100/100.",
+      "strength": "OBSERVED",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "REPOSITORY_HISTORY",
+      "CAUSAL_SEQUENCE"
+    ],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": false,
+    "causalAdvanceEvidenceRefs": []
+  },
+  "timeline": {
+    "past": {
+      "summary": "Historical cross-repository mappings carried review state and evidence without a mandatory machine-readable negative authorization fact.",
+      "evidenceRefs": ["E-LIMINAL-PR193"]
+    },
+    "present": {
+      "summary": "LiminalOSAI main exports explicit non-authorizing evidence semantics after FCRP-SELF-009.",
+      "evidenceRefs": ["E-LIMINAL-SELF009"]
+    },
+    "future": {
+      "summary": "Every downstream system consumes evidence and authority as separate contracts rather than inferring capability from evidence maturity.",
+      "evidenceRefs": ["E-LIMINAL-SELF009"]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "cross-repository-schema",
+      "phase": "first-divergence",
+      "statement": "The historical export shape omitted a mandatory negative authorization contract.",
+      "evidenceRefs": ["E-LIMINAL-PR193"]
+    },
+    {
+      "id": "N2",
+      "level": "downstream-consumer",
+      "phase": "ambiguity",
+      "statement": "A downstream consumer could be forced to infer whether mature evidence had authority implications.",
+      "evidenceRefs": ["E-LIMINAL-PR193"]
+    },
+    {
+      "id": "N3",
+      "level": "authority-boundary",
+      "phase": "refactor",
+      "statement": "Export explicit EVIDENCE_ONLY semantics, zero authority transfer, and require a separate authorization contract.",
+      "evidenceRefs": ["E-LIMINAL-SELF009"]
+    },
+    {
+      "id": "N4",
+      "level": "system-contract",
+      "phase": "verified-state",
+      "statement": "Maximum review maturity remains non-authorizing and portable across repository boundaries.",
+      "evidenceRefs": ["E-LIMINAL-SELF009"]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N2",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": ["E-LIMINAL-PR193", "E-LIMINAL-SELF009"]
+  },
+  "navigation": {
+    "direction": "UP",
+    "reason": "The local evidence graph was conservative; the missing guarantee existed at the parent cross-repository authority contract."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Make the negative authority boundary machine-readable at the evidence export boundary.",
+    "expectedEffect": "Evidence strength can increase without silently increasing execution authority."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": ["parent", "dependencies", "future"],
+    "evidenceRefs": ["E-LIMINAL-SELF009"]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "This portability case evaluates a contract only; it grants no permission to mutate LiminalOSAI, ProofPath, CML, or any external system."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "PASS",
+    "evidenceRefs": ["E-LIMINAL-SELF009"],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}
