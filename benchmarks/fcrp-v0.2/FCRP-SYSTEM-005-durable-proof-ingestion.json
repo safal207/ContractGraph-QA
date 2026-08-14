@@ -86,8 +86,6 @@
   "timeModel": {
     "domains": [
       "CAUSAL_SEQUENCE",
-      "VALID_TIME",
-      "TRANSACTION_TIME",
       "REPOSITORY_HISTORY"
     ],
     "primaryDomain": "CAUSAL_SEQUENCE",
@@ -108,7 +106,7 @@
       ]
     },
     "present": {
-      "summary": "LiminalDB now exposes a canonical local/test ProofPathDurableLedger. SYSTEM-005 independently consumes that exact capability and tests durable append, restart replay, idempotent recovery, conflict rejection, temporal preservation and path admissibility.",
+      "summary": "LiminalDB now exposes a canonical local/test ProofPathDurableLedger. SYSTEM-005 independently consumes that exact capability and tests durable append, restart replay, idempotent recovery, conflict rejection, temporal preservation and path admissibility. valid_time and transaction_time are verified as evidence fields inside the causal sequence; FCRP v0.2 does not elevate them to protocol time domains.",
       "evidenceRefs": [
         "E-DURABLE-CONSUMER",
         "E-RESTART",
