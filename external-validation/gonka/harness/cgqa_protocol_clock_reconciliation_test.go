@@ -30,45 +30,54 @@ type cgqaProtocolClockState struct {
 	} `json:"host_stats"`
 }
 
+type cgqaPendingProtocolTxs struct {
+	EscrowID           string   `json:"escrow_id"`
+	PendingTxCount     int      `json:"pending_tx_count"`
+	FinishInferenceIDs []uint64 `json:"finish_inference_ids"`
+}
+
 type cgqaProtocolClockEvidence struct {
-	SchemaVersion              string `json:"schema_version"`
-	CaseID                     string `json:"case_id"`
-	LogicalOperationID         string `json:"logical_operation_id"`
-	UpstreamRevision           string `json:"upstream_revision"`
-	Environment                string `json:"environment"`
-	ClientCorrelationID        string `json:"client_correlation_id"`
-	RetryInternalRequestID     string `json:"retry_internal_request_id"`
-	RetryWinnerNonce           uint64 `json:"retry_winner_nonce"`
-	TimeoutObserved            bool   `json:"timeout_observed"`
-	FirstCompletionObserved    bool   `json:"first_completion_observed"`
-	RetryHTTPStatus            int    `json:"retry_http_status"`
-	PendingBeforeAdvance       bool   `json:"pending_before_advance"`
-	PendingReservedCost        uint64 `json:"pending_reserved_cost"`
-	AdvanceCorrelationID       string `json:"advance_correlation_id"`
-	AdvanceInternalRequestID   string `json:"advance_internal_request_id"`
-	AdvanceWinnerNonce         uint64 `json:"advance_winner_nonce"`
-	AdvanceHTTPStatus          int    `json:"advance_http_status"`
-	ProtocolAdvanceObserved    bool   `json:"protocol_advance_observed"`
-	RetryTerminalAfterAdvance  bool   `json:"retry_terminal_after_advance"`
-	RetryTerminalStatus        string `json:"retry_terminal_status"`
-	RetryActualCost            uint64 `json:"retry_actual_cost"`
-	RetrySurplusRelease        uint64 `json:"retry_surplus_release"`
-	LiabilityBefore            uint64 `json:"liability_before"`
-	LiabilityAfter             uint64 `json:"liability_after"`
-	FeesBefore                 uint64 `json:"fees_before"`
-	FeesAfter                  uint64 `json:"fees_after"`
-	BalanceBefore              uint64 `json:"balance_before"`
-	BalanceAfter               uint64 `json:"balance_after"`
-	ExpectedBalanceAfter       int64  `json:"expected_balance_after"`
-	BalanceReconciles          bool   `json:"balance_reconciles"`
-	ActualCostBefore           uint64 `json:"actual_cost_before"`
-	ActualCostAfter            uint64 `json:"actual_cost_after"`
-	HostCostBefore             uint64 `json:"host_cost_before"`
-	HostCostAfter              uint64 `json:"host_cost_after"`
-	HostCostReconciles         bool   `json:"host_cost_reconciles"`
-	UnexplainedEffects         []string `json:"unexplained_effects"`
-	Verdict                    string `json:"verdict"`
-	Notes                      string `json:"notes"`
+	SchemaVersion             string   `json:"schema_version"`
+	CaseID                    string   `json:"case_id"`
+	LogicalOperationID        string   `json:"logical_operation_id"`
+	UpstreamRevision          string   `json:"upstream_revision"`
+	Environment               string   `json:"environment"`
+	ClientCorrelationID       string   `json:"client_correlation_id"`
+	RetryInternalRequestID    string   `json:"retry_internal_request_id"`
+	RetryWinnerNonce          uint64   `json:"retry_winner_nonce"`
+	TimeoutObserved           bool     `json:"timeout_observed"`
+	FirstCompletionObserved   bool     `json:"first_completion_observed"`
+	RetryHTTPStatus           int      `json:"retry_http_status"`
+	PendingBeforeAdvance      bool     `json:"pending_before_advance"`
+	PendingReservedCost       uint64   `json:"pending_reserved_cost"`
+	FinishReadyBeforeAdvance  bool     `json:"finish_ready_before_advance"`
+	PendingProtocolTxCount    int      `json:"pending_protocol_tx_count"`
+	PendingFinishInferenceIDs []uint64 `json:"pending_finish_inference_ids"`
+	AdvanceCorrelationID      string   `json:"advance_correlation_id"`
+	AdvanceInternalRequestID  string   `json:"advance_internal_request_id"`
+	AdvanceWinnerNonce        uint64   `json:"advance_winner_nonce"`
+	AdvanceHTTPStatus         int      `json:"advance_http_status"`
+	ProtocolAdvanceObserved   bool     `json:"protocol_advance_observed"`
+	RetryTerminalAfterAdvance bool     `json:"retry_terminal_after_advance"`
+	RetryTerminalStatus       string   `json:"retry_terminal_status"`
+	RetryActualCost           uint64   `json:"retry_actual_cost"`
+	RetrySurplusRelease       uint64   `json:"retry_surplus_release"`
+	LiabilityBefore           uint64   `json:"liability_before"`
+	LiabilityAfter            uint64   `json:"liability_after"`
+	FeesBefore                uint64   `json:"fees_before"`
+	FeesAfter                 uint64   `json:"fees_after"`
+	BalanceBefore             uint64   `json:"balance_before"`
+	BalanceAfter              uint64   `json:"balance_after"`
+	ExpectedBalanceAfter      int64    `json:"expected_balance_after"`
+	BalanceReconciles         bool     `json:"balance_reconciles"`
+	ActualCostBefore          uint64   `json:"actual_cost_before"`
+	ActualCostAfter           uint64   `json:"actual_cost_after"`
+	HostCostBefore            uint64   `json:"host_cost_before"`
+	HostCostAfter             uint64   `json:"host_cost_after"`
+	HostCostReconciles        bool     `json:"host_cost_reconciles"`
+	UnexplainedEffects        []string `json:"unexplained_effects"`
+	Verdict                   string   `json:"verdict"`
+	Notes                     string   `json:"notes"`
 }
 
 func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
@@ -105,9 +114,9 @@ func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
 	timeoutObserved := isTimeout(first.Err)
 	writeJSONArtifact(t, root, "attempt-1.transport.json", map[string]any{
 		"client_correlation_id": correlationID,
-		"timeout_observed": timeoutObserved,
-		"response_request_id": first.ResponseRequestID,
-		"error": errorString(first.Err),
+		"timeout_observed":      timeoutObserved,
+		"response_request_id":   first.ResponseRequestID,
+		"error":                 errorString(first.Err),
 	})
 
 	_, _, firstCompletionObserved := waitForPerfRequestAfter(client, eps.GatewayHTTP, adminKey, escrowID, beforePerfCount, 15*time.Second)
@@ -124,8 +133,8 @@ func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
 	require.NotEmpty(t, second.ResponseRequestID)
 	writeJSONArtifact(t, root, "attempt-2.transport.json", map[string]any{
 		"client_correlation_id": correlationID,
-		"http_status": second.Status,
-		"response_request_id": second.ResponseRequestID,
+		"http_status":           second.Status,
+		"response_request_id":   second.ResponseRequestID,
 	})
 
 	lookup := requireCorrelationLookup(t, client, eps.GatewayHTTP, adminKey, escrowID, correlationID, 2, 8*time.Second)
@@ -141,12 +150,17 @@ func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
 
 	pendingDump, pendingRetry, pendingBeforeAdvance := waitG004QStatus(t, client, eps.GatewayHTTP, adminKey, escrowID, retryWinnerNonce, "pending", 8*time.Second)
 	writeJSONArtifact(t, root, "inferences.pending-before-advance.json", pendingDump)
+
+	pendingProtocol, pendingProtocolRaw, finishReadyBeforeAdvance := waitG004QPendingFinish(t, client, eps.GatewayHTTP, adminKey, retryWinnerNonce, 15*time.Second)
+	writeRawJSONArtifact(t, root, "pending-protocol-txs.before-advance.json", pendingProtocolRaw)
+	require.True(t, finishReadyBeforeAdvance, "G-004Q causal precondition failed: retry Finish for nonce=%d was not present in Session.pendingTxs before advance; pending_finish_ids=%v", retryWinnerNonce, pendingProtocol.FinishInferenceIDs)
+
 	pendingStateRaw := requireDevshardState(t, client, eps.GatewayHTTP, adminKey, escrowID)
 	pendingState := decodeG004QState(t, pendingStateRaw)
 	writeRawJSONArtifact(t, root, "devshard_state.pending-before-advance.json", pendingStateRaw)
 
 	advanceCorrelationID := fmt.Sprintf("cgqa-g004q-advance-%d", stamp)
-	advanceBody := chatBody(t, model, "CGQA G-004Q advance protocol clock by one eligible diff")
+	advanceBody := chatBody(t, model, "CGQA G-004Q advance protocol clock after witnessed pending Finish")
 	advance := postIdentityChat(eps.GatewayHTTP, adminKey, advanceCorrelationID, advanceBody, client)
 	require.NoError(t, advance.Err)
 	require.GreaterOrEqual(t, advance.Status, http.StatusOK)
@@ -154,8 +168,8 @@ func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
 	require.NotEmpty(t, advance.ResponseRequestID)
 	writeJSONArtifact(t, root, "advance.transport.json", map[string]any{
 		"client_correlation_id": advanceCorrelationID,
-		"http_status": advance.Status,
-		"response_request_id": advance.ResponseRequestID,
+		"http_status":           advance.Status,
+		"response_request_id":   advance.ResponseRequestID,
 	})
 
 	advanceAccounting, advanceAccountingResolved := requireInternalAccounting(t, client, eps.GatewayHTTP, adminKey, escrowID, advance.ResponseRequestID, 8*time.Second)
@@ -180,16 +194,19 @@ func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
 	if !pendingBeforeAdvance {
 		unexplained = append(unexplained, "retry winner was not observed pending before the protocol-clock advance")
 	}
+	if !finishReadyBeforeAdvance {
+		unexplained = append(unexplained, "retry Finish was not witnessed in Session.pendingTxs before the protocol-clock advance")
+	}
 	if !advanceAccountingResolved || advanceAccounting.WinnerNonce == 0 {
 		unexplained = append(unexplained, "advance request accounting did not resolve a winner nonce")
 	}
 
-	protocolAdvanceObserved := advance.Status >= http.StatusOK && advance.Status < http.StatusMultipleChoices && afterState.Session.Fees > pendingState.Session.Fees
+	protocolAdvanceObserved := finishReadyBeforeAdvance && advance.Status >= http.StatusOK && advance.Status < http.StatusMultipleChoices && afterState.Session.Fees > pendingState.Session.Fees
 	if !protocolAdvanceObserved {
-		unexplained = append(unexplained, "no state-advancing fee/nonce effect was observed after the advance request")
+		unexplained = append(unexplained, "no causally valid state-advancing fee/nonce effect was observed after a witnessed pending Finish")
 	}
 	if !retryTerminalAfterAdvance {
-		unexplained = append(unexplained, "retry winner remained non-terminal after an actual state-advance opportunity")
+		unexplained = append(unexplained, "retry winner remained non-terminal after a witnessed Finish and an actual state-advance opportunity")
 	}
 	if retryTerminalAfterAdvance && terminalRetry.Status != "finished" {
 		unexplained = append(unexplained, "client-visible successful retry terminalized to "+terminalRetry.Status+" instead of finished")
@@ -254,6 +271,9 @@ func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
 		RetryHTTPStatus:           second.Status,
 		PendingBeforeAdvance:      pendingBeforeAdvance,
 		PendingReservedCost:       pendingRetry.ReservedCost,
+		FinishReadyBeforeAdvance:  finishReadyBeforeAdvance,
+		PendingProtocolTxCount:    pendingProtocol.PendingTxCount,
+		PendingFinishInferenceIDs: pendingProtocol.FinishInferenceIDs,
 		AdvanceCorrelationID:      advanceCorrelationID,
 		AdvanceInternalRequestID:  advance.ResponseRequestID,
 		AdvanceWinnerNonce:        advanceAccounting.WinnerNonce,
@@ -278,10 +298,10 @@ func TestCGQAGonkaProtocolClockReconciliation(t *testing.T) {
 		HostCostReconciles:        hostCostReconciles,
 		UnexplainedEffects:        unexplained,
 		Verdict:                   verdict,
-		Notes:                     "PASS means the retry was pending before a real protocol-clock advance, then became finished after the next eligible state-advancing request, while the full inference-liability + fee delta reconciled escrow balance and inference ActualCost delta reconciled HostStats.Cost. It does not assert autonomous wall-clock finality without a subsequent diff.",
+		Notes:                     "PASS means the retry was pending and its exact MsgFinishInference was witnessed in Session.pendingTxs before a real protocol-clock advance; the retry then became finished and the full inference-liability + fee delta reconciled escrow balance while inference ActualCost delta reconciled HostStats.Cost. It does not assert autonomous wall-clock finality without a subsequent diff.",
 	}
 	writeJSONArtifact(t, root, "reconciliation.json", evidence)
-	t.Logf("G-004Q verdict=%s retry_nonce=%d pending_before=%v terminal_after=%v terminal_status=%s release=%d balance_reconciles=%v host_reconciles=%v", verdict, retryWinnerNonce, pendingBeforeAdvance, retryTerminalAfterAdvance, terminalRetry.Status, retryRelease, balanceReconciles, hostCostReconciles)
+	t.Logf("G-004Q verdict=%s retry_nonce=%d pending_before=%v finish_ready=%v terminal_after=%v terminal_status=%s release=%d balance_reconciles=%v host_reconciles=%v", verdict, retryWinnerNonce, pendingBeforeAdvance, finishReadyBeforeAdvance, retryTerminalAfterAdvance, terminalRetry.Status, retryRelease, balanceReconciles, hostCostReconciles)
 	if verdict != "PASS" {
 		t.Errorf("G-004Q protocol-clock reconciliation FAIL: %v", unexplained)
 	}
@@ -300,6 +320,24 @@ func waitG004QStatus(t *testing.T, client *http.Client, gatewayURL, adminKey, es
 		time.Sleep(200 * time.Millisecond)
 	}
 	return last, last.Inferences[key], false
+}
+
+func waitG004QPendingFinish(t *testing.T, client *http.Client, gatewayURL, adminKey string, nonce uint64, timeout time.Duration) (cgqaPendingProtocolTxs, []byte, bool) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var last cgqaPendingProtocolTxs
+	var lastRaw []byte
+	for time.Now().Before(deadline) {
+		lastRaw = requireGatewayJSON(t, client, gatewayURL, adminKey, "/v1/cgqa/pending-protocol-txs")
+		require.NoError(t, json.Unmarshal(lastRaw, &last))
+		for _, finishID := range last.FinishInferenceIDs {
+			if finishID == nonce {
+				return last, lastRaw, true
+			}
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return last, lastRaw, false
 }
 
 func waitG004QTerminal(t *testing.T, client *http.Client, gatewayURL, adminKey, escrowID string, nonce uint64, timeout time.Duration) (cgqaMoneyInferenceDump, cgqaMoneyInference, bool) {
