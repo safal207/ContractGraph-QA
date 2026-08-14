@@ -1,0 +1,113 @@
+{
+  "schema": "cgqa.fcrp-case.v0.1",
+  "caseId": "FCRP-SELF-001",
+  "scope": {
+    "nodeId": "provider-evidence-external-digest-test",
+    "scale": "test/invariant",
+    "parent": "provider-decision-evidence",
+    "idea": "A regression test for external digest anchoring must fail specifically because a schema-valid evidence pack disagrees with the separately supplied trusted digest."
+  },
+  "evidence": [
+    {
+      "id": "E-REVIEW",
+      "kind": "review",
+      "ref": "https://github.com/safal207/ContractGraph-QA/pull/49#discussion_r",
+      "claim": "Review identified that the digest-mismatch test used an invalid evidence schema and therefore did not isolate the external-anchor invariant."
+    },
+    {
+      "id": "E-TEST",
+      "kind": "code",
+      "ref": "tools/tests/test_canonical_json_types.py",
+      "claim": "The corrected test builds a valid provider evidence pack, supplies a different external digest, and requires the external digest mismatch reason."
+    },
+    {
+      "id": "E-VERIFIER",
+      "kind": "code",
+      "ref": "contractgraph_qa/provider_decision_evidence.py",
+      "claim": "The verifier checks an externally supplied canonical pack digest before local schema, payload digest, and semantic replay validation."
+    },
+    {
+      "id": "E-FCRP",
+      "kind": "protocol",
+      "ref": "contractgraph_qa/fcrp.py",
+      "claim": "FCRP v0.1 validates the case's causal path, first meaningful divergence, refactor point, and verification boundary."
+    }
+  ],
+  "timeline": {
+    "past": {
+      "summary": "The external-digest regression test passed an invalid placeholder pack and asserted only that some ProviderDecisionEvidenceError occurred.",
+      "evidenceRefs": ["E-REVIEW"]
+    },
+    "present": {
+      "summary": "The production verifier contains the external digest guard, but the old test could remain green even if that guard were removed because later schema validation also failed.",
+      "evidenceRefs": ["E-REVIEW", "E-VERIFIER"]
+    },
+    "future": {
+      "summary": "A valid pack plus an intentionally wrong external digest must fail for the exact external digest mismatch reason, preventing a false-green regression test.",
+      "evidenceRefs": ["E-TEST", "E-VERIFIER"]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "intent",
+      "phase": "expected",
+      "statement": "Test the trusted external digest boundary independently from all later evidence-pack checks.",
+      "evidenceRefs": ["E-VERIFIER"]
+    },
+    {
+      "id": "N2",
+      "level": "fixture",
+      "phase": "construction",
+      "statement": "Use an invalid placeholder evidence pack rather than a schema-valid pack.",
+      "evidenceRefs": ["E-REVIEW"]
+    },
+    {
+      "id": "N3",
+      "level": "verifier",
+      "phase": "execution",
+      "statement": "Invoke verification with an incorrect expected pack digest.",
+      "evidenceRefs": ["E-VERIFIER"]
+    },
+    {
+      "id": "N4",
+      "level": "test assertion",
+      "phase": "observation",
+      "statement": "Accept any ProviderDecisionEvidenceError, regardless of whether it came from the digest guard or schema validation.",
+      "evidenceRefs": ["E-REVIEW"]
+    },
+    {
+      "id": "N5",
+      "level": "verification claim",
+      "phase": "symptom",
+      "statement": "The regression test can appear green without proving that removal of the external digest guard would be detected.",
+      "evidenceRefs": ["E-REVIEW"]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N5",
+    "firstMeaningfulDivergence": "N2",
+    "causePoint": "N2",
+    "selectedRefactorPoint": "N2",
+    "evidenceRefs": ["E-REVIEW", "E-TEST"]
+  },
+  "navigation": {
+    "direction": "UP",
+    "reason": "The visible symptom is a green unit test; the causal defect is one level above the thrown exception, in whether the fixture and assertion actually encode the intended test contract."
+  },
+  "refactor": {
+    "point": "N2",
+    "change": "Construct a schema-valid provider evidence pack, choose a guaranteed-different external digest, and assert the exact external digest mismatch error.",
+    "expectedEffect": "The test fails if the external digest guard disappears, while remaining independent of downstream schema or replay failures."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "PASS",
+    "evidenceRefs": ["E-TEST", "E-VERIFIER", "E-FCRP"],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalExplanationComplete": true
+    }
+  }
+}
