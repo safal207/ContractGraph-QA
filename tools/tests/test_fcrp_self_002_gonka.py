@@ -35,7 +35,7 @@ class FCRPSelf002GonkaTest(unittest.TestCase):
         self.assertIn("REJECTED_AS_PRODUCTION_FIX", collision_guard)
         self.assertIn("LogicalOperationsSimulated:       2", collision_guard)
         self.assertIn("CanonicalRequestRows:             requestRows", collision_guard)
-        self.assertIn("Attempts from both operations", collision_guard.replace("attempts", "Attempts", 1))
+        self.assertIn("attempts from both operations", collision_guard)
         self.assertIn("MUST NOT be used directly as the canonical", contract)
         self.assertIn("request_correlations", contract)
         self.assertIn("one-to-many", contract)
