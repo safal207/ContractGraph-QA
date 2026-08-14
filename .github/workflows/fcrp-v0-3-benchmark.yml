@@ -1,0 +1,48 @@
+name: FCRP Core Benchmark v0.1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/fcrp_benchmark.py
+      - tools/credential_boundary.py
+      - tools/tests/test_fcrp_benchmark.py
+      - tools/tests/test_credential_boundary.py
+      - benchmarks/fcrp-v0.3/**
+      - .github/workflows/fcrp-v0-3-benchmark.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-v0-3-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact subject revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact head
+        run: test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+
+      - name: Compile benchmark and scanner
+        run: python -m py_compile tools/fcrp_benchmark.py tools/credential_boundary.py
+
+      - name: Run dependency-free benchmark contract tests
+        run: python -m unittest tools.tests.test_fcrp_benchmark tools.tests.test_credential_boundary -v

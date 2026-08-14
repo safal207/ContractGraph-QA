@@ -1,0 +1,21 @@
+{
+  "schema": "cgqa.fcrp-benchmark-oracle.v0.1",
+  "benchmarkId": "FCRP-CORE-001-CF",
+  "expected": {
+    "scopeNodeId": "payment-execution-retry-provider-boundary",
+    "symptomLocation": "D1",
+    "fmd": "B2",
+    "causalLocation": "B2",
+    "refactorLocation": "C2",
+    "refactorPoint": "provider-operation-identity-enforcement-or-integration-request-shaping"
+  },
+  "causalMap": {
+    "A1": "The order contract permits at most one economic charge and one auditable receipt per logical order.",
+    "B2": "The deployed provider or integration maps equal client keys to distinct provider operations.",
+    "C2": "The provider contract or request-shaping boundary must enforce operation identity before charge settlement.",
+    "D1": "The provider and ledger show two charges and two receipt events for one order."
+  },
+  "requiredNavigation": ["UP", "SIDEWAYS", "DOWN"],
+  "requiredSimulationSurfaces": ["children", "siblings", "parent", "dependencies", "future"],
+  "verificationBoundary": "provider operation identity → one settlement → one ledger charge → one receipt → parent order invariant"
+}
