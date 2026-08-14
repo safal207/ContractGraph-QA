@@ -1,0 +1,255 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-SYSTEM-006",
+  "title": "Durable LiminalDB proof state becomes a bounded RINSE reflection without creating semantic authority",
+  "scope": {
+    "nodeId": "neo-rezonans-liminaldb-rinse-durable-reflection",
+    "scale": "cross-repository native segment / durable evidence to interpretation boundary",
+    "ideaContract": {
+      "purpose": "Independently verify that the exact SYSTEM-005 durable ProofPath record can be consumed by canonical RINSE as an immutable source trace and reinterpreted only through the existing reflection graph, without rewriting source history, creating a second interpretation authority or granting execution authority.",
+      "expectedOutcome": "A fresh canonical SYSTEM-005 durable record is replayed from LiminalDB, validated by the exact canonical RINSE durable-source adapter, projected into a source trace whose identity preserves the durable record hash, interpreted deterministically by the existing reflection_graph v0.2 core, bounded as REFLECTION_ONLY / ACCEPT_WITH_LIMITS, and accepted by native LTP strict replay.",
+      "invariants": [
+        "the SYSTEM-005 logical_operation_id survives durable replay and RINSE projection unchanged",
+        "the durable record hash remains the RINSE source-trace identity rather than being replaced by a new source authority",
+        "exact durable event and admission bytes remain unchanged during RINSE derivation",
+        "the RINSE adapter validates semantic authority fields in addition to byte digests",
+        "reflection identity and digest are created only by the existing canonical RINSE reflection core",
+        "the durable source trace is referenced by the reflection but never mutated or overwritten",
+        "recorded durable state does not become underlying real-world truth authority",
+        "all reflection and candidate handoff authority remains REFLECTION_ONLY and non-executable",
+        "valid time, durable recorded time and review time remain separate coordinates",
+        "the agent trajectory through durable replay and reinterpretation is independently inspectable and replayable"
+      ],
+      "forbiddenOutcomes": [
+        "creating a ProofPath-specific RINSE interpretation engine or second reflection identity scheme",
+        "treating the durable record as proof that the underlying real-world claim is true",
+        "rewriting the durable source event or admission report during interpretation",
+        "changing source-trace identity from the durable record hash to an interpretation-generated identity",
+        "allowing persisted storage authority to become reflection execution authority",
+        "accepting a semantic durable_memory escalation merely because its source digest was recomputed",
+        "emitting an executable RINSE candidate handoff",
+        "claiming a correct final reflection when the LTP trajectory is inadmissible"
+      ],
+      "dependencies": [
+        "FCRP-SYSTEM-005",
+        "safal207/ContractGraph-QA@efe3efe637372815bef55ec3862c49cc69244b88",
+        "safal207/LiminalDB@61b02fc81e0cb5cf1f1ed4658ecff58f683cb728",
+        "safal207/rinse@3be0d2ceb1440641b141cdb80c82ed118e4186dd",
+        "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-@fc58072d301a487c09227ea09004dc8e99676370"
+      ],
+      "parentContract": "NEO REZONANS heartbeat / LiminalDB durable evidence -> RINSE immutable source trace -> REFLECTION_ONLY interpretation"
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-SYSTEM-005",
+      "kind": "canonical-upstream-durable-boundary",
+      "ref": "safal207/ContractGraph-QA@efe3efe637372815bef55ec3862c49cc69244b88:FCRP-SYSTEM-005",
+      "claim": "SYSTEM-005 supplies a canonical local/test durable ProofPath record that survives restart, preserves first durable transaction time and reconciles retry ambiguity without duplicate effects.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-RINSE-CONSUMER",
+      "kind": "native-consumer-capability",
+      "ref": "safal207/rinse@3be0d2ceb1440641b141cdb80c82ed118e4186dd:rinse.adapters.liminaldb_durable_proof",
+      "claim": "The canonical RINSE read-only adapter validates the SYSTEM-005 source boundary and delegates interpretation identity and authority to the existing reflection graph core.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-IMMUTABLE-TRACE",
+      "kind": "source-trace-preservation-proof",
+      "ref": "FCRP-SYSTEM-006 workflow / byte digests before and after RINSE derivation",
+      "claim": "The durable event and admission bytes are unchanged, and the normalized RINSE trace identity contains the exact durable record hash.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-REFLECTION",
+      "kind": "canonical-reflection-proof",
+      "ref": "safal207/rinse@3be0d2ceb1440641b141cdb80c82ed118e4186dd:rinse.reflection_graph",
+      "claim": "The existing canonical RINSE core deterministically produces ACCEPT_WITH_LIMITS, REFLECTION_ONLY authority and non-executable candidate handoff from the durable source trace.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-SEMANTIC-NEGATIVE",
+      "kind": "negative-semantic-regression",
+      "ref": "FCRP-SYSTEM-006 workflow / durable_memory semantic escalation with recomputed source digest",
+      "claim": "RINSE rejects semantic authority escalation even when source bytes and durable digest are internally consistent.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-LTP",
+      "kind": "native-path-inspection",
+      "ref": "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-@fc58072d301a487c09227ea09004dc8e99676370:ltp:inspect",
+      "claim": "The durable-replay to bounded-reflection trajectory is accepted by the pinned native LTP strict inspector and deterministic replay.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "CAUSAL_SEQUENCE",
+      "REPOSITORY_HISTORY"
+    ],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": [
+      "E-SYSTEM-005",
+      "E-RINSE-CONSUMER",
+      "E-IMMUTABLE-TRACE",
+      "E-REFLECTION",
+      "E-SEMANTIC-NEGATIVE",
+      "E-LTP"
+    ]
+  },
+  "timeline": {
+    "past": {
+      "summary": "SYSTEM-005 crossed the local/test persistence frontier and produced restart-replayable durable ProofPath evidence, but the downstream RINSE stage was not yet independently exercised against that exact durable source.",
+      "evidenceRefs": [
+        "E-SYSTEM-005"
+      ]
+    },
+    "present": {
+      "summary": "RINSE now exposes a canonical read-only durable ProofPath source adapter that projects the exact durable record into the existing reflection graph while preserving source identity and REFLECTION_ONLY authority. SYSTEM-006 independently re-exercises that exact capability.",
+      "evidenceRefs": [
+        "E-RINSE-CONSUMER",
+        "E-IMMUTABLE-TRACE",
+        "E-REFLECTION",
+        "E-SEMANTIC-NEGATIVE",
+        "E-LTP"
+      ]
+    },
+    "future": {
+      "summary": "A later gate may carry the bounded RINSE reinterpretation back into RESONANCE or another consumer, but no current result authorizes production persistence, executable handoff, source rewrite or truth promotion.",
+      "evidenceRefs": [
+        "E-REFLECTION",
+        "E-LTP"
+      ]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "interpretation-authority-boundary",
+      "phase": "first-divergence",
+      "statement": "Durable evidence availability is not semantic truth or interpretation authority; the downstream consumer must preserve the source record while deriving only a bounded non-executable interpretation.",
+      "evidenceRefs": [
+        "E-SYSTEM-005",
+        "E-RINSE-CONSUMER"
+      ]
+    },
+    {
+      "id": "N2",
+      "level": "system-heartbeat",
+      "phase": "symptom",
+      "statement": "The NEO REZONANS architecture names LiminalDB -> RINSE, but before SYSTEM-006 the durable SYSTEM-005 record had not been independently consumed through a native RINSE source adapter and canonical reflection core.",
+      "evidenceRefs": [
+        "E-SYSTEM-005"
+      ]
+    },
+    {
+      "id": "N3",
+      "level": "cross-repository-boundary",
+      "phase": "refactor",
+      "statement": "Consume the exact durable record through the canonical RINSE read-only adapter, retain the durable record hash as source-trace identity, and invoke only the existing reflection_graph v0.2 core.",
+      "evidenceRefs": [
+        "E-RINSE-CONSUMER",
+        "E-IMMUTABLE-TRACE",
+        "E-SEMANTIC-NEGATIVE"
+      ]
+    },
+    {
+      "id": "N4",
+      "level": "source-trace",
+      "phase": "immutability-verification",
+      "statement": "Exact durable event/admission bytes remain unchanged and the normalized source trace points back to the durable record hash rather than replacing it.",
+      "evidenceRefs": [
+        "E-IMMUTABLE-TRACE"
+      ]
+    },
+    {
+      "id": "N5",
+      "level": "interpretation",
+      "phase": "bounded-reflection-verification",
+      "statement": "The canonical RINSE core deterministically derives a SUPPORTED_WITH_LIMITS reflection, ACCEPT_WITH_LIMITS graph verdict, REFLECTION_ONLY authority and non-executable candidate handoff.",
+      "evidenceRefs": [
+        "E-REFLECTION"
+      ]
+    },
+    {
+      "id": "N6",
+      "level": "agent-trajectory",
+      "phase": "path-verification",
+      "statement": "The independent trajectory from durable replay through immutable source projection and bounded RINSE reinterpretation is accepted by native LTP strict inspection and replay.",
+      "evidenceRefs": [
+        "E-LTP"
+      ]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N2",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": [
+      "E-SYSTEM-005",
+      "E-RINSE-CONSUMER",
+      "E-SEMANTIC-NEGATIVE"
+    ]
+  },
+  "navigation": {
+    "direction": "SIDEWAYS",
+    "reason": "The missing guarantee is a sibling repository transfer from durable evidence storage into interpretation semantics, with source immutability and authority separation preserved across the boundary."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Use the exact canonical RINSE durable-source adapter as a read-only projection and the existing reflection graph as the sole interpretation authority for the SYSTEM-005 durable record.",
+    "expectedEffect": "The LiminalDB -> RINSE heartbeat becomes native and independently replayable while durable source identity stays immutable and reinterpretation remains REFLECTION_ONLY."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": [
+      "children",
+      "siblings",
+      "parent",
+      "dependencies",
+      "future"
+    ],
+    "evidenceRefs": [
+      "E-RINSE-CONSUMER",
+      "E-IMMUTABLE-TRACE",
+      "E-REFLECTION",
+      "E-SEMANTIC-NEGATIVE",
+      "E-LTP"
+    ]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "SYSTEM-006 performs only ephemeral local/test durable replay and read-only RINSE interpretation. It grants no source mutation, production persistence, truth authorization, executable handoff, deployment, financial action or external effect."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "NOT_REQUIRED",
+    "evidenceRefs": [
+      "E-SYSTEM-005",
+      "E-RINSE-CONSUMER",
+      "E-IMMUTABLE-TRACE",
+      "E-REFLECTION",
+      "E-SEMANTIC-NEGATIVE",
+      "E-LTP"
+    ],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}
