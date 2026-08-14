@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import json
 import re
 import unittest
@@ -32,6 +31,7 @@ class NeoRezonansSystemSnapshotTest(unittest.TestCase):
         self.assertEqual(result["decision"], "PASS")
         self.assertEqual(result["snapshotId"], "NEO-REZONANS-SYSTEM-001")
         self.assertEqual(result["layerCount"], 8)
+        self.assertEqual(result["repositoryCount"], 7)
         self.assertEqual(result["edgeCount"], 8)
         self.assertEqual(result["authorityTransferEdges"], 1)
         self.assertEqual(result["feedbackEdges"], 1)
@@ -83,12 +83,26 @@ class NeoRezonansSystemSnapshotTest(unittest.TestCase):
         with self.assertRaisesRegex(SystemSnapshotError, "must be CANONICAL"):
             validate_system_snapshot(snapshot)
 
+    def test_one_repository_cannot_be_two_versions_in_one_snapshot(self) -> None:
+        snapshot = load_snapshot()
+        snapshot["layers"][5]["repository"] = snapshot["layers"][1]["repository"]
+
+        with self.assertRaisesRegex(SystemSnapshotError, "cannot be bound to multiple commits"):
+            validate_system_snapshot(snapshot)
+
     def test_non_authority_edge_must_forbid_execution_authority(self) -> None:
         snapshot = load_snapshot()
         edge = snapshot["edges"][0]
         edge["forbiddenInferences"].remove("execution_authority")
 
         with self.assertRaisesRegex(SystemSnapshotError, "explicitly forbid execution_authority"):
+            validate_system_snapshot(snapshot)
+
+    def test_non_authority_edge_cannot_carry_authorization_reference(self) -> None:
+        snapshot = load_snapshot()
+        snapshot["edges"][0]["allowedFacts"].append("authorization_ref")
+
+        with self.assertRaisesRegex(SystemSnapshotError, "may not transfer authorization_ref"):
             validate_system_snapshot(snapshot)
 
     def test_authority_edge_must_transfer_explicit_reference(self) -> None:
@@ -99,21 +113,28 @@ class NeoRezonansSystemSnapshotTest(unittest.TestCase):
         with self.assertRaisesRegex(SystemSnapshotError, "authorization_ref explicitly"):
             validate_system_snapshot(snapshot)
 
-    def test_second_authority_edge_is_rejected(self) -> None:
+    def test_explicit_authority_cannot_move_to_the_wrong_system_roles(self) -> None:
         snapshot = load_snapshot()
-        edge = snapshot["edges"][0]
-        edge["authorityMode"] = "EXPLICIT_CONTRACT_ONLY"
-        edge["allowedFacts"].append("authorization_ref")
-        edge["forbiddenInferences"].append("evidence_as_authority")
+        original = next(item for item in snapshot["edges"] if item["authorityMode"] == "EXPLICIT_CONTRACT_ONLY")
+        original["authorityMode"] = "NONE"
+        original["allowedFacts"].remove("authorization_ref")
+        original["forbiddenInferences"].append("execution_authority")
 
-        with self.assertRaisesRegex(SystemSnapshotError, "exactly one authority-transfer edge"):
+        wrong = snapshot["edges"][0]
+        wrong["authorityMode"] = "EXPLICIT_CONTRACT_ONLY"
+        wrong["allowedFacts"].append("authorization_ref")
+        wrong["forbiddenInferences"].append("evidence_as_authority")
+
+        with self.assertRaisesRegex(SystemSnapshotError, "explicit authority may flow only"):
             validate_system_snapshot(snapshot)
 
-    def test_feedback_loop_cannot_be_duplicated(self) -> None:
+    def test_feedback_flag_cannot_move_to_another_edge(self) -> None:
         snapshot = load_snapshot()
+        feedback = next(item for item in snapshot["edges"] if item["feedback"])
+        feedback["feedback"] = False
         snapshot["edges"][0]["feedback"] = True
 
-        with self.assertRaisesRegex(SystemSnapshotError, "exactly one declared feedback edge"):
+        with self.assertRaisesRegex(SystemSnapshotError, "feedback may close only"):
             validate_system_snapshot(snapshot)
 
     def test_host_capability_base_cannot_drift_inside_self_hosted_snapshot(self) -> None:
