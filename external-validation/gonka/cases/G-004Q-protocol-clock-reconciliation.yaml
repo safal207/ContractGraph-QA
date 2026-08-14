@@ -14,16 +14,17 @@ motivation: |
   Session queues host MsgFinishInference transactions for the next diff.
 
   G-004Q therefore changes the causal trigger rather than extending wall-clock
-  waiting: it observes the retry winner pending, drives one subsequent eligible
-  state-advancing request/diff, and only then evaluates terminalization and the
-  resulting financial state delta.
+  waiting. It first proves that the retry winner is pending AND that its exact
+  MsgFinishInference is already present in Session.pendingTxs, then drives one
+  subsequent eligible state-advancing request/diff. Only after that witnessed
+  readiness + advance pair does it evaluate terminalization and financial state.
 
 question: |
-  When a client-visible successful retry is pending because its Finish has not
-  yet been applied, does the next eligible protocol state advance cause that
-  retry winner to become terminal and make the resulting reservation release,
-  fees, escrow balance, inference ActualCost, and HostStats.Cost mutually
-  reconcilable?
+  Once a client-visible successful retry is pending and its exact Finish is
+  already queued for sequencing, does the next eligible protocol state advance
+  cause that retry winner to become terminal and make the resulting reservation
+  release, fees, escrow balance, inference ActualCost, and HostStats.Cost
+  mutually reconcilable?
 
 preconditions:
   - first request uses deterministic mock-openai latency of 1800 ms
@@ -34,13 +35,25 @@ preconditions:
   - retry returns HTTP 2xx
   - retry accounting resolves a concrete winner nonce
   - retry winner is observed as pending before the protocol-clock advance
+  - exact retry winner nonce is observed as MsgFinishInference in Session.pendingTxs before the advance
+
+finish_readiness_witness:
+  endpoint: /v1/cgqa/pending-protocol-txs
+  mode: proof-only-read-only
+  required_relation: retry_winner_nonce in finish_inference_ids
+  rationale: |
+    Merely observing pending is insufficient. The next diff can only be treated
+    as a causal opportunity for this retry if its Finish was already available
+    to the user Session before that diff was composed. The proof endpoint reads
+    Session.PendingTxs without mutating or advancing protocol state.
 
 protocol_clock_trigger:
   type: next_eligible_state_advancing_request
   description: |
-    Send a new independent successful request after the retry winner is observed
-    pending. The request must produce an observable session fee increase, proving
-    that protocol state advanced rather than merely more wall-clock time passing.
+    Send a new independent successful request only after the retry winner is
+    pending and its Finish is witnessed in Session.pendingTxs. The request must
+    produce an observable session fee increase, proving that protocol state
+    advanced rather than merely more wall-clock time passing.
 
 accounting_model:
   inference_liability:
@@ -57,6 +70,7 @@ accounting_model:
 
 invariants:
   - description: retry winner is pending immediately before the causal state-advance trigger
+  - description: exact retry MsgFinishInference is witnessed in Session.pendingTxs before the trigger
   - description: the independent advance request returns HTTP 2xx and advances session protocol state
   - description: retry winner becomes finished after the state-advance opportunity
   - description: retry ActualCost does not exceed its previously reserved cost
@@ -68,10 +82,15 @@ classification:
   converges_after_protocol_advance: |
     PASS. The prior G-004/G-004P mismatch was a non-terminal snapshot governed
     by protocol/nonce time rather than a durable financial discrepancy.
+  finish_not_ready_before_advance: |
+    PRECONDITION FAIL only. Do not execute or interpret the advance as an
+    upstream sequencing test, because the expected transition was not yet
+    causally eligible for inclusion.
   still_pending_after_protocol_advance: |
-    FAIL. A real state-advance opportunity occurred after the retry winner was
-    pending, but the expected Finish transition did not become terminal. This is
-    a materially stronger sequencing/state-application liveness defect candidate.
+    FAIL. The exact retry Finish was witnessed as ready before a real
+    state-advance opportunity, but the expected transition did not become
+    terminal. This is a materially stronger sequencing/state-application
+    liveness defect candidate.
   terminal_but_financial_delta_does_not_reconcile: |
     FAIL. The retry terminalized, but the full state-level liability/fee/balance
     or ActualCost/HostStats identities left an unexplained financial effect.
@@ -81,6 +100,7 @@ classification:
 safety:
   - local testenv only
   - deterministic mock-openai fault injection only
+  - proof-only pending queue endpoint is read-only
   - no mainnet or public testnet fault injection
   - no real funds
   - no vulnerability claim from this case alone
@@ -88,9 +108,9 @@ safety:
 relationship_to_g004p: |
   G-004P intentionally remains as evidence that wall-clock waiting is not a
   sufficient oracle for a nonce/diff-driven protocol. G-004Q is the corrected
-  causal experiment: wait for the pending symptom, then supply the missing
-  protocol event and measure the state transition that event is supposed to
-  cause.
+  causal experiment: observe the pending symptom, prove the exact Finish is
+  ready for sequencing, then supply the missing protocol event and measure the
+  state transition that event is supposed to cause.
 
 evidence_outputs:
   - attempt-1.transport.json
@@ -98,6 +118,7 @@ evidence_outputs:
   - correlation.lookup.json
   - retry.accounting.json
   - inferences.pending-before-advance.json
+  - pending-protocol-txs.before-advance.json
   - devshard_state.pending-before-advance.json
   - advance.transport.json
   - advance.accounting.json
