@@ -264,11 +264,13 @@ jobs:
 
           PYTHONPATH="$GITHUB_WORKSPACE" python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
-          path = Path("evidence/system-007/liminaldb-proofpath-event.jsonl")
+          evidence = Path(os.environ["GITHUB_WORKSPACE"]) / "evidence/system-007"
+          path = evidence / "liminaldb-proofpath-event.jsonl"
           event = json.loads(path.read_text(encoding="utf-8"))
           event["details"]["authority"]["execution"] = True
-          Path("evidence/system-007/tampered-event.jsonl").write_text(
+          (evidence / "tampered-event.jsonl").write_text(
               json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",
               encoding="utf-8",
           )
