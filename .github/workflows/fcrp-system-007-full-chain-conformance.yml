@@ -1,0 +1,344 @@
+name: FCRP SYSTEM-007 Full-Chain Conformance
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - benchmarks/fcrp-v0.2/FCRP-SYSTEM-007-full-chain-conformance.json
+      - benchmarks/system-native/FCRP-SYSTEM-007-intent.json
+      - tools/run_fcrp_system_007.py
+      - tools/tests/test_fcrp_system_007.py
+      - docs/NEO_REZONANS_FCRP_SYSTEM_007_V0_1.md
+      - .github/workflows/fcrp-system-007-full-chain-conformance.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-system-007-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      EXPECTED_PR_BASE: b54173530c675083426137176cde0aed0b90853a
+      PROOFPATH_HEAD: 4a05ee31d7497979c2505dd55bfef08823302e24
+      CML_HEAD: 2a649903693fc61a560ee056834127ada3120206
+      LIMINALDB_HEAD: 61b02fc81e0cb5cf1f1ed4658ecff58f683cb728
+      RINSE_HEAD: 3be0d2ceb1440641b141cdb80c82ed118e4186dd
+      LIMINALDB_IMPORT_COMMIT: 00580ff097dee61b45ad3c8a3c36ae5f548f572d
+      LIMINALDB_AUDIT_EVENT_BLOB: fd733971aaae089df770062bcf7f2c2d6d19ca1d
+      LIMINALDB_DURABLE_COMMIT: 61b02fc81e0cb5cf1f1ed4658ecff58f683cb728
+      LOGICAL_OPERATION_ID: neo-resonance-system-007-001
+      NAMESPACE: system-007-independent
+      VALID_TIME_MS: "1786694400000"
+      TRANSACTION_TIME_MS: "1786694460000"
+      RETRY_TIME_MS: "1786694520000"
+
+    steps:
+      - name: Checkout exact SYSTEM-007 subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact subject head and PR base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then
+            test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"
+          fi
+          echo "SYSTEM_007_SUBJECT_HEAD_PASS $EXACT_HEAD"
+
+      - name: Compile runner and execute fail-closed unit negatives
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m py_compile \
+            tools/run_fcrp_system_007.py \
+            tools/tests/test_fcrp_system_007.py
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m unittest \
+            tools.tests.test_fcrp_system_007 -v
+
+      - name: Resolve and checkout exact external subjects
+        shell: bash
+        run: |
+          set -euo pipefail
+          clone_exact() {
+            local repository="$1"
+            local expected="$2"
+            local destination="$3"
+            local observed
+            observed="$(git ls-remote "https://github.com/$repository.git" refs/heads/main | awk '{print $1}')"
+            test -n "$observed"
+            test "$observed" = "$expected"
+            git clone --quiet "https://github.com/$repository.git" "$destination"
+            git -C "$destination" checkout --quiet --detach "$expected"
+            test "$(git -C "$destination" rev-parse HEAD)" = "$expected"
+          }
+
+          clone_exact "safal207/ProofPath" "$PROOFPATH_HEAD" "$RUNNER_TEMP/proofpath-system-007"
+          clone_exact "safal207/Causal-Memory-Layer" "$CML_HEAD" "$RUNNER_TEMP/cml-system-007"
+          clone_exact "safal207/LiminalDB" "$LIMINALDB_HEAD" "$RUNNER_TEMP/liminaldb-system-007"
+          clone_exact "safal207/rinse" "$RINSE_HEAD" "$RUNNER_TEMP/rinse-system-007"
+
+          {
+            echo "PROOFPATH_ROOT=$RUNNER_TEMP/proofpath-system-007"
+            echo "CML_ROOT=$RUNNER_TEMP/cml-system-007"
+            echo "LIMINALDB_ROOT=$RUNNER_TEMP/liminaldb-system-007"
+            echo "RINSE_ROOT=$RUNNER_TEMP/rinse-system-007"
+          } >> "$GITHUB_ENV"
+          echo "EXTERNAL_EXACT_HEADS_PASS"
+
+      - name: Build intent, native ProofPath projection, and CML causal chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-007
+          PYTHONPATH="$GITHUB_WORKSPACE:$CML_ROOT" python tools/run_fcrp_system_007.py prepare \
+            --cgqa-root "$GITHUB_WORKSPACE" \
+            --subject-head "$EXACT_HEAD" \
+            --proofpath-root "$PROOFPATH_ROOT" \
+            --proofpath-head "$PROOFPATH_HEAD" \
+            --cml-root "$CML_ROOT" \
+            --cml-head "$CML_HEAD" \
+            --liminaldb-root "$LIMINALDB_ROOT" \
+            --liminaldb-head "$LIMINALDB_HEAD" \
+            --rinse-root "$RINSE_ROOT" \
+            --rinse-head "$RINSE_HEAD" \
+            --intent benchmarks/system-native/FCRP-SYSTEM-007-intent.json \
+            --source-case benchmarks/system-native/CGQA-PROOFPATH-001.json \
+            --adapter benchmarks/agent-payment-recovery-v0.1/provider-adapters/crossmint-public-contract.v0.1.json \
+            --observations benchmarks/agent-payment-recovery-v0.1/provider-adapters/crossmint-observations-get-success.json \
+            --output-dir evidence/system-007
+
+      - name: Run the pinned native ProofPath verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROOFPATH_ROOT"
+          test "$(git rev-parse HEAD)" = "$PROOFPATH_HEAD"
+          test ! -f Cargo.lock
+          cargo generate-lockfile
+          cp Cargo.lock "$GITHUB_WORKSPACE/evidence/system-007/proofpath-Cargo.lock"
+          sha256sum Cargo.lock | awk '{print $1}' > "$GITHUB_WORKSPACE/evidence/system-007/proofpath-cargo-lock.sha256"
+          cargo test --locked -p proofpath-verifier --bin proofpath-scig
+          cargo run --quiet --locked -p proofpath-verifier --bin proofpath-scig -- \
+            "$GITHUB_WORKSPACE/evidence/system-007/scig.json" \
+            | tee "$GITHUB_WORKSPACE/evidence/system-007/proofpath.stdout.txt"
+          grep -Eq '^SCIG[[:space:]]+' "$GITHUB_WORKSPACE/evidence/system-007/proofpath.stdout.txt"
+          grep -Eq '^RESULT[[:space:]]+VALID$' "$GITHUB_WORKSPACE/evidence/system-007/proofpath.stdout.txt"
+          grep -Eq '^VERIFICATION[[:space:]]+PASSED$' "$GITHUB_WORKSPACE/evidence/system-007/proofpath.stdout.txt"
+
+      - name: Bind native ProofPath receipt and LiminalDB artifact event
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE:$CML_ROOT" python tools/run_fcrp_system_007.py finalize \
+            --cgqa-root "$GITHUB_WORKSPACE" \
+            --subject-head "$EXACT_HEAD" \
+            --proofpath-root "$PROOFPATH_ROOT" \
+            --proofpath-head "$PROOFPATH_HEAD" \
+            --cml-root "$CML_ROOT" \
+            --cml-head "$CML_HEAD" \
+            --liminaldb-root "$LIMINALDB_ROOT" \
+            --liminaldb-head "$LIMINALDB_HEAD" \
+            --rinse-root "$RINSE_ROOT" \
+            --rinse-head "$RINSE_HEAD" \
+            --native-stdout evidence/system-007/proofpath.stdout.txt \
+            --output-dir evidence/system-007
+
+      - name: Validate the exact LiminalDB artifact contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$LIMINALDB_ROOT"
+          test "$(git rev-parse HEAD)" = "$LIMINALDB_HEAD"
+          test "$(git hash-object sdk/ts/src/protocol-types.ts)" = "$LIMINALDB_AUDIT_EVENT_BLOB"
+          python3 scripts/validate_proofpath_audit_import.py \
+            --events "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-proofpath-event.jsonl" \
+            --contract-file "$LIMINALDB_ROOT/sdk/ts/src/protocol-types.ts" \
+            --consumer-commit "$LIMINALDB_IMPORT_COMMIT" \
+            --output "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-artifact-admission.json"
+          jq -e '
+            .mode == "dry_run" and
+            .write_performed == false and
+            .event_count == 1 and
+            .logical_operation_ids == ["neo-resonance-system-007-001"] and
+            .authority.execution_authorized == false and
+            .authority.mutation_authorized == false and
+            .authority.durable_memory_accepted == false and
+            .authority.live_ingestion_performed == false and
+            .compatibility.current_contract_blob_sha == "fd733971aaae089df770062bcf7f2c2d6d19ca1d"
+          ' "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-artifact-admission.json" >/dev/null
+
+      - name: Write and reopen the exact LiminalDB durable record
+        shell: bash
+        run: |
+          set -euo pipefail
+          STORE_ROOT="$RUNNER_TEMP/system-007-independent-store"
+          rm -rf "$STORE_ROOT"
+          echo "STORE_ROOT=$STORE_ROOT" >> "$GITHUB_ENV"
+          SOURCE_RECEIPT_REF="sha256:$(sha256sum evidence/system-007/native-proofpath-receipt.json | awk '{print $1}')"
+          STORAGE_ADMISSION_REF="sha256:$(printf 'FCRP-SYSTEM-007|local_test_only|%s|%s' "$EXACT_HEAD" "$LIMINALDB_HEAD" | sha256sum | awk '{print $1}')"
+          {
+            echo "SOURCE_RECEIPT_REF=$SOURCE_RECEIPT_REF"
+            echo "STORAGE_ADMISSION_REF=$STORAGE_ADMISSION_REF"
+          } >> "$GITHUB_ENV"
+
+          cd "$LIMINALDB_ROOT"
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            ingest "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-proofpath-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-artifact-admission.json" \
+            "$SOURCE_RECEIPT_REF" "$VALID_TIME_MS" "$TRANSACTION_TIME_MS" "$STORAGE_ADMISSION_REF" \
+            > "$GITHUB_WORKSPACE/evidence/system-007/ingest-first.json"
+
+          jq -e '
+            .status == "INSERTED" and
+            .event_count == 1 and
+            .logical_operation_id == "neo-resonance-system-007-001" and
+            .persistence_scope == "local_test_only" and
+            .storage_write_authorized == true and
+            .execution_authorized == false and
+            .mutation_authorized == false and
+            .external_effects_authorized == false
+          ' "$GITHUB_WORKSPACE/evidence/system-007/ingest-first.json" >/dev/null
+          test -s "$STORE_ROOT/proofpath-durable-v0.1/$NAMESPACE/data/00000001.wal"
+
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            inspect "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-007/recovered-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-007/recovered-admission.json" \
+            "$GITHUB_WORKSPACE/evidence/system-007/recovered-summary.json" \
+            > "$GITHUB_WORKSPACE/evidence/system-007/reopen.stdout.txt"
+
+          cmp \
+            "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-proofpath-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-007/recovered-event.jsonl"
+          cmp \
+            "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-artifact-admission.json" \
+            "$GITHUB_WORKSPACE/evidence/system-007/recovered-admission.json"
+          jq -e '
+            .event_count == 1 and
+            .logical_operation_id == "neo-resonance-system-007-001" and
+            .producer_capability_commit == "685d50e256a5125a21f4c4584b326411caaa64ad" and
+            .consumer_import_commit == "00580ff097dee61b45ad3c8a3c36ae5f548f572d" and
+            .consumer_contract_blob_sha == "fd733971aaae089df770062bcf7f2c2d6d19ca1d" and
+            .execution_authorized == false and
+            .mutation_authorized == false and
+            .external_effects_authorized == false
+          ' "$GITHUB_WORKSPACE/evidence/system-007/recovered-summary.json" >/dev/null
+      - name: Verify durable retry idempotency and conflict rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$LIMINALDB_ROOT"
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            ingest "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-proofpath-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-artifact-admission.json" \
+            "$SOURCE_RECEIPT_REF" "$VALID_TIME_MS" "$RETRY_TIME_MS" "$STORAGE_ADMISSION_REF" \
+            > "$GITHUB_WORKSPACE/evidence/system-007/ingest-retry.json"
+          jq -e '
+            .status == "ALREADY_PRESENT" and
+            .event_count == 1 and
+            .transaction_time_ms == 1786694460000
+          ' "$GITHUB_WORKSPACE/evidence/system-007/ingest-retry.json" >/dev/null
+
+          PYTHONPATH="$GITHUB_WORKSPACE" python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("evidence/system-007/liminaldb-proofpath-event.jsonl")
+          event = json.loads(path.read_text(encoding="utf-8"))
+          event["details"]["authority"]["execution"] = True
+          Path("evidence/system-007/tampered-event.jsonl").write_text(
+              json.dumps(event, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          set +e
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            ingest "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-007/tampered-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-007/liminaldb-artifact-admission.json" \
+            "$SOURCE_RECEIPT_REF" "$VALID_TIME_MS" "$RETRY_TIME_MS" "$STORAGE_ADMISSION_REF" \
+            > "$GITHUB_WORKSPACE/evidence/system-007/conflict.stdout.txt" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F "ERROR_CODE IDEMPOTENCY_CONFLICT" \
+            "$GITHUB_WORKSPACE/evidence/system-007/conflict.stdout.txt"
+          cargo test --locked -p liminal-store --test proofpath_durable_ingestion --no-fail-fast
+
+      - name: Derive bounded RINSE reflection from recovered durable bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE:$RINSE_ROOT" python tools/run_fcrp_system_007.py reflect \
+            --cgqa-root "$GITHUB_WORKSPACE" \
+            --subject-head "$EXACT_HEAD" \
+            --proofpath-root "$PROOFPATH_ROOT" \
+            --proofpath-head "$PROOFPATH_HEAD" \
+            --cml-root "$CML_ROOT" \
+            --cml-head "$CML_HEAD" \
+            --liminaldb-root "$LIMINALDB_ROOT" \
+            --liminaldb-head "$LIMINALDB_HEAD" \
+            --rinse-root "$RINSE_ROOT" \
+            --rinse-head "$RINSE_HEAD" \
+            --summary evidence/system-007/recovered-summary.json \
+            --event evidence/system-007/recovered-event.jsonl \
+            --admission evidence/system-007/recovered-admission.json \
+            --output-dir evidence/system-007
+
+      - name: Independently replay the complete chain and all negative cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE:$CML_ROOT:$RINSE_ROOT" python tools/run_fcrp_system_007.py verify \
+            --cgqa-root "$GITHUB_WORKSPACE" \
+            --subject-head "$EXACT_HEAD" \
+            --proofpath-root "$PROOFPATH_ROOT" \
+            --proofpath-head "$PROOFPATH_HEAD" \
+            --cml-root "$CML_ROOT" \
+            --cml-head "$CML_HEAD" \
+            --liminaldb-root "$LIMINALDB_ROOT" \
+            --liminaldb-head "$LIMINALDB_HEAD" \
+            --rinse-root "$RINSE_ROOT" \
+            --rinse-head "$RINSE_HEAD" \
+            --case benchmarks/fcrp-v0.2/FCRP-SYSTEM-007-full-chain-conformance.json \
+            --native-stdout evidence/system-007/proofpath.stdout.txt \
+            --summary evidence/system-007/recovered-summary.json \
+            --event evidence/system-007/recovered-event.jsonl \
+            --admission evidence/system-007/recovered-admission.json \
+            --output-dir evidence/system-007
+
+      - name: Build immutable SYSTEM-007 evidence manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/system-007
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload SYSTEM-007 evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-system-007-${{ github.event.pull_request.number || github.run_number }}
+          path: evidence/system-007/
+          if-no-files-found: error
+          retention-days: 30
