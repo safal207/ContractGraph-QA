@@ -53,6 +53,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install CML runtime dependency
+        run: python -m pip install --quiet "pyyaml>=6.0"
+
       - name: Verify exact subject head and PR base
         shell: bash
         run: |
