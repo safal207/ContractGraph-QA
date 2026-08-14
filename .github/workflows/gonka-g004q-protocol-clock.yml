@@ -72,6 +72,8 @@ jobs:
             upstream-gonka/devshard/testenv/citest/cgqa_*_test.go
           test "$(grep -F -c 'RunInference(propagateCGQARequestContext(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
           grep -F 'PRIMARY KEY (client_correlation_id, internal_request_id, escrow_id)' upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
+          grep -F 'GET /v1/cgqa/pending-protocol-txs' upstream-gonka/devshard/cmd/devshardctl/gateway.go
+          grep -F 'handleCGQAPendingProtocolTxs' upstream-gonka/devshard/cmd/devshardctl/cgqa_safe_correlation_support.go
           test "$(grep -F -c -- '-X devshard/types.buildStateRootProtocolVersion=v2' upstream-gonka/devshard/Dockerfile)" -eq 3
 
       - name: Compile G-004Q criterion against pinned Gonka
@@ -125,8 +127,12 @@ jobs:
               raise SystemExit('G-004Q did not reproduce the timeout/retry precondition')
           if d.get('pending_before_advance') is not True:
               raise SystemExit('G-004Q did not observe pending state before protocol advance')
+          if d.get('finish_ready_before_advance') is not True:
+              raise SystemExit(f"G-004Q did not witness retry Finish ready before advance: {d.get('pending_finish_inference_ids')}")
+          if d.get('retry_winner_nonce') not in (d.get('pending_finish_inference_ids') or []):
+              raise SystemExit('G-004Q Finish readiness witness is not bound to retry winner nonce')
           if d.get('protocol_advance_observed') is not True:
-              raise SystemExit('G-004Q did not prove a protocol-clock advance')
+              raise SystemExit('G-004Q did not prove a protocol-clock advance after witnessed Finish readiness')
           if d.get('retry_terminal_after_advance') is not True or d.get('retry_terminal_status') != 'finished':
               raise SystemExit(f"G-004Q retry did not finish after advance: {d.get('retry_terminal_status')}")
           if d.get('balance_reconciles') is not True:
@@ -153,6 +159,7 @@ jobs:
               print(f"- verdict: `{d.get('verdict')}`")
               print(f"- retry nonce: `{d.get('retry_winner_nonce')}`")
               print(f"- pending before advance: `{d.get('pending_before_advance')}`")
+              print(f"- Finish ready before advance: `{d.get('finish_ready_before_advance')}` ids=`{d.get('pending_finish_inference_ids')}`")
               print(f"- protocol advance observed: `{d.get('protocol_advance_observed')}`")
               print(f"- terminal after advance: `{d.get('retry_terminal_after_advance')}` status=`{d.get('retry_terminal_status')}`")
               print(f"- retry surplus release: `{d.get('retry_surplus_release')}`")
