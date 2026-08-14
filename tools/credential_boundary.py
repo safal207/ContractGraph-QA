@@ -97,10 +97,10 @@ def _is_binary(path: Path, raw: bytes) -> bool:
 
 def _clean_assignment_value(value: str) -> str:
     value = value.strip().rstrip(",")
-    if value.startswith(("\"", "'")) and value.endswith(value[0]):
-        value = value[1:-1].strip()
     if " #" in value:
         value = value.split(" #", 1)[0].rstrip()
+    if value.startswith(("\"", "'")) and value.endswith(value[0]):
+        value = value[1:-1].strip()
     return value
 
 
@@ -125,6 +125,7 @@ def _scan_assignment(path: Path, line_number: int, line: str) -> Iterable[dict[s
             "os.environ",
             "secrets.",
             "env(",
+            "$",
             "${",
             "$env:",
         )
