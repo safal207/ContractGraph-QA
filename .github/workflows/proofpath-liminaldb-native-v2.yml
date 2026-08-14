@@ -1,0 +1,226 @@
+name: NEO REZONANS Native ProofPath LiminalDB Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - contractgraph_qa/liminaldb_proofpath_adapter.py
+      - benchmarks/system-native/PROOFPATH-LIMINALDB-001.json
+      - benchmarks/fcrp-v0.2/FCRP-SYSTEM-004-proofpath-liminaldb-native.json
+      - tools/tests/test_liminaldb_proofpath_adapter.py
+      - docs/NEO_REZONANS_PROOFPATH_LIMINALDB_NATIVE_V0_1.md
+      - .github/workflows/proofpath-liminaldb-native-v2.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: proofpath-liminaldb-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      EXPECTED_PR_BASE: 6baf9e8396ad216556a4e932356b2aab080aaffe
+      SYSTEM_003_ANCHOR: 0219a22cb403f3d1fc621f2a1a0a2b508355d4ea
+      PROOFPATH_SCIG_CAPABILITY_COMMIT: 685d50e256a5125a21f4c4584b326411caaa64ad
+      LIMINALDB_IMPORT_COMMIT: 00580ff097dee61b45ad3c8a3c36ae5f548f572d
+      LTP_COMMIT: fc58072d301a487c09227ea09004dc8e99676370
+
+    steps:
+      - name: Checkout exact SYSTEM-004 head
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify current base and SYSTEM-003 ancestry
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$SYSTEM_003_ANCHOR" "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Run local SYSTEM-004 regressions
+        run: |
+          set -euo pipefail
+          python3 -m py_compile contractgraph_qa/liminaldb_proofpath_adapter.py contractgraph_qa/proofpath_scig_adapter.py contractgraph_qa/fcrp_v02.py tools/tests/test_liminaldb_proofpath_adapter.py
+          python3 -m unittest tools.tests.test_liminaldb_proofpath_adapter -v
+
+      - name: Rebuild verified CGQA source and ProofPath SCIG
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-004
+          python3 - <<'PY'
+          import copy, json
+          from pathlib import Path
+          from contractgraph_qa.proofpath_scig_adapter import build_proofpath_scig_from_provider_evidence
+          from contractgraph_qa.provider_decision_evidence import build_provider_decision_evidence, verify_provider_decision_evidence
+          from contractgraph_qa.provider_payment_decision import evaluate_provider_payment_decision
+          root = Path('.')
+          source_case = json.loads((root/'benchmarks/system-native/CGQA-PROOFPATH-001.json').read_text())
+          system4 = json.loads((root/'benchmarks/system-native/PROOFPATH-LIMINALDB-001.json').read_text())
+          adapters = root/'benchmarks/agent-payment-recovery-v0.1/provider-adapters'
+          adapter = json.loads((adapters/'crossmint-public-contract.v0.1.json').read_text())
+          observations = json.loads((adapters/'crossmint-observations-get-success.json').read_text())
+          authority = copy.deepcopy(source_case['source']['authority'])
+          decision = evaluate_provider_payment_decision(adapter, observations, authority, decision_id=source_case['source']['decisionId'])
+          assert decision['logicalOperationId'] == system4['logicalOperationId']
+          assert decision['decision']['decision'] == 'STOP'
+          assert decision['decision']['monetaryActionAllowed'] is False
+          pack = build_provider_decision_evidence(adapter, observations, authority, decision)
+          assert verify_provider_decision_evidence(pack) == decision
+          scig = build_proofpath_scig_from_provider_evidence(pack, observed_at=source_case['bridge']['observedAt'])
+          assert scig['logical_operation_id'] == system4['logicalOperationId']
+          Path('evidence/system-004/proofpath-scig.json').write_text(json.dumps(scig, indent=2, sort_keys=True)+'\n')
+          PY
+
+      - name: Resolve canonical ProofPath capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOFPATH_MAIN="$(git ls-remote https://github.com/safal207/ProofPath.git refs/heads/main | awk '{print $1}')"
+          test -n "$PROOFPATH_MAIN"
+          rm -rf "$RUNNER_TEMP/proofpath-native"
+          git clone --quiet https://github.com/safal207/ProofPath.git "$RUNNER_TEMP/proofpath-native"
+          git -C "$RUNNER_TEMP/proofpath-native" checkout --quiet --detach "$PROOFPATH_MAIN"
+          PROOFPATH_MAIN="$PROOFPATH_MAIN" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          repo = Path(os.environ['RUNNER_TEMP'])/'proofpath-native'
+          manifest = json.loads((repo/'governance/capability-manifest.v0.1.json').read_text())
+          target = next(x for x in manifest['capabilities'] if x['id']=='proofpath.scig.v0.1')
+          assert target['status']=='CANONICAL' and target['consumer_default_allowed'] is True
+          assert target['canonical_commit']==os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT']
+          Path('evidence/system-004/proofpath-capability.json').write_text(json.dumps({'observedMainSha':os.environ['PROOFPATH_MAIN'],'capabilityId':target['id'],'status':target['status'],'canonicalCommit':target['canonical_commit']}, indent=2, sort_keys=True)+'\n')
+          PY
+          git -C "$RUNNER_TEMP/proofpath-native" merge-base --is-ancestor "$PROOFPATH_SCIG_CAPABILITY_COMMIT" "$PROOFPATH_MAIN"
+          git -C "$RUNNER_TEMP/proofpath-native" checkout --quiet --detach "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
+
+      - name: Bind ProofPath dependency resolution and run native verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/proofpath-native"
+          test ! -f Cargo.lock
+          cargo generate-lockfile
+          sha256sum Cargo.lock | tee "$GITHUB_WORKSPACE/evidence/system-004/proofpath-cargo-lock.sha256"
+          cp Cargo.lock "$GITHUB_WORKSPACE/evidence/system-004/proofpath-Cargo.lock"
+          cargo test --locked -p proofpath-verifier --bin proofpath-scig
+          cargo run --quiet --locked -p proofpath-verifier --bin proofpath-scig -- "$GITHUB_WORKSPACE/evidence/system-004/proofpath-scig.json" | tee "$GITHUB_WORKSPACE/evidence/system-004/proofpath-scig.stdout.txt"
+          grep -Eq '^RESULT[[:space:]]+VALID$' "$GITHUB_WORKSPACE/evidence/system-004/proofpath-scig.stdout.txt"
+          grep -Eq '^VERIFICATION[[:space:]]+PASSED$' "$GITHUB_WORKSPACE/evidence/system-004/proofpath-scig.stdout.txt"
+
+      - name: Project native ProofPath receipt into LiminalDB AuditEvent
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from contractgraph_qa.proofpath_scig_adapter import finalize_native_proofpath_receipt
+          from contractgraph_qa.liminaldb_proofpath_adapter import build_liminaldb_proofpath_audit_event
+          out=Path('evidence/system-004')
+          scig=json.loads((out/'proofpath-scig.json').read_text())
+          stdout=(out/'proofpath-scig.stdout.txt').read_text()
+          case=json.loads(Path('benchmarks/system-native/PROOFPATH-LIMINALDB-001.json').read_text())
+          receipt=finalize_native_proofpath_receipt(scig, stdout, proofpath_capability_commit=case['proofpath']['canonicalCapabilityCommit'])
+          event=build_liminaldb_proofpath_audit_event(scig, receipt, observed_at=case['observedAt'], liminaldb_commit=case['liminaldb']['canonicalImportContractCommit'], liminaldb_contract_blob_sha=case['liminaldb']['contractBlobSha'])
+          assert receipt['logicalOperationId']==event['correlationId']==case['logicalOperationId']
+          assert event['details']['persistence']['durable_memory'] is False
+          (out/'native-proofpath-receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True)+'\n')
+          (out/'liminaldb-proofpath-event.jsonl').write_text(json.dumps(event, sort_keys=True)+'\n')
+          PY
+
+      - name: Run canonical LiminalDB ProofPath consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIMINALDB_MAIN="$(git ls-remote https://github.com/safal207/LiminalDB.git refs/heads/main | awk '{print $1}')"
+          test "$LIMINALDB_MAIN" = "$LIMINALDB_IMPORT_COMMIT"
+          rm -rf "$RUNNER_TEMP/liminaldb-native"
+          git clone --quiet https://github.com/safal207/LiminalDB.git "$RUNNER_TEMP/liminaldb-native"
+          git -C "$RUNNER_TEMP/liminaldb-native" checkout --quiet --detach "$LIMINALDB_IMPORT_COMMIT"
+          test "$(git -C "$RUNNER_TEMP/liminaldb-native" hash-object sdk/ts/src/protocol-types.ts)" = fd733971aaae089df770062bcf7f2c2d6d19ca1d
+          python3 "$RUNNER_TEMP/liminaldb-native/scripts/validate_proofpath_audit_import.py" --events evidence/system-004/liminaldb-proofpath-event.jsonl --contract-file "$RUNNER_TEMP/liminaldb-native/sdk/ts/src/protocol-types.ts" --consumer-commit "$LIMINALDB_IMPORT_COMMIT" --output evidence/system-004/liminaldb-import-check.json
+          jq -e '.mode=="dry_run" and .write_performed==false and .event_count==1 and .authority.execution_authorized==false and .authority.mutation_authorized==false and .authority.durable_memory_accepted==false and .authority.live_ingestion_performed==false and .compatibility.contract_blob_matches_current_checkout==true and .compatibility.historical_snapshot_is_semantic_key==false' evidence/system-004/liminaldb-import-check.json >/dev/null
+
+      - name: Build SYSTEM-004 LTP trace
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from contractgraph_qa.liminaldb_proofpath_adapter import build_system_004_path_trace
+          out=Path('evidence/system-004')
+          event=json.loads((out/'liminaldb-proofpath-event.jsonl').read_text())
+          summary=json.loads((out/'liminaldb-import-check.json').read_text())
+          trace=build_system_004_path_trace(event, summary)
+          assert [f['payload']['stage'] for f in trace]==['proofpath-native-verified','liminaldb-audit-event-projected','liminaldb-dry-run-validated','stop-before-persistence']
+          assert len({f['continuity_token'] for f in trace})==1
+          assert len({f['payload']['logical_operation_id'] for f in trace})==1
+          (out/'system-004.trace.jsonl').write_text(''.join(json.dumps(f, sort_keys=True)+'\n' for f in trace))
+          PY
+
+      - name: Run native LTP strict inspector and replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          LTP_MAIN="$(git ls-remote https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git refs/heads/main | awk '{print $1}')"
+          test "$LTP_MAIN" = "$LTP_COMMIT"
+          rm -rf "$RUNNER_TEMP/ltp-native"
+          git clone --quiet https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git "$RUNNER_TEMP/ltp-native"
+          git -C "$RUNNER_TEMP/ltp-native" checkout --quiet --detach "$LTP_COMMIT"
+          cd "$RUNNER_TEMP/ltp-native"
+          test -f pnpm-lock.yaml
+          sha256sum pnpm-lock.yaml | tee "$GITHUB_WORKSPACE/evidence/system-004/ltp-pnpm-lock.sha256"
+          corepack enable
+          corepack prepare pnpm@9.15.0 --activate
+          pnpm install --frozen-lockfile
+          LTP_INSPECT_FREEZE_CLOCK=1 pnpm -w ltp:inspect -- trace --strict --quiet --format json --color never --input "$GITHUB_WORKSPACE/evidence/system-004/system-004.trace.jsonl" --output "$GITHUB_WORKSPACE/evidence/system-004/ltp-inspect.json"
+          pnpm -w ltp:inspect -- replay --input "$GITHUB_WORKSPACE/evidence/system-004/system-004.trace.jsonl" > "$GITHUB_WORKSPACE/evidence/system-004/ltp-replay.txt"
+          jq -e '.contract.name=="ltp-inspect" and .input.frames==4' "$GITHUB_WORKSPACE/evidence/system-004/ltp-inspect.json" >/dev/null
+          test -s "$GITHUB_WORKSPACE/evidence/system-004/ltp-replay.txt"
+
+      - name: Evaluate FCRP-SYSTEM-004 and finalize evidence
+        run: |
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from contractgraph_qa.fcrp_v02 import evaluate_fcrp_v02_case
+          out=Path('evidence/system-004')
+          result=evaluate_fcrp_v02_case(json.loads(Path('benchmarks/fcrp-v0.2/FCRP-SYSTEM-004-proofpath-liminaldb-native.json').read_text()))
+          assert result['caseId']=='FCRP-SYSTEM-004' and result['decision']=='PASS'
+          assert result['navigationDirection']=='SIDEWAYS' and result['mutationAuthorized'] is False and result['causalPropagationStopped'] is True
+          summary=json.loads((out/'liminaldb-import-check.json').read_text())
+          envelope={'schema':'cgqa.system-004-evidence.v0.1','caseId':'FCRP-SYSTEM-004','logicalOperationId':summary['logical_operation_ids'][0],'proofpathCapabilityCommit':'685d50e256a5125a21f4c4584b326411caaa64ad','liminaldbImportCommit':'00580ff097dee61b45ad3c8a3c36ae5f548f572d','ltpCommit':'fc58072d301a487c09227ea09004dc8e99676370','liminaldbMode':'dry_run','writePerformed':False,'durableMemoryAccepted':False,'liveIngestionPerformed':False,'authorityTransfer':'NONE','fcrpDecision':'PASS','pathVerdict':'LTP_STRICT_ACCEPTED','persistenceFrontierCrossed':False}
+          envelope['evidenceDigest']='sha256:'+hashlib.sha256(json.dumps(envelope,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+          (out/'fcrp-system-004-result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          (out/'system-004-evidence.json').write_text(json.dumps(envelope,indent=2,sort_keys=True)+'\n')
+          print('SYSTEM_004_PASS',envelope['evidenceDigest'])
+          PY
+
+      - name: Build immutable evidence digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/system-004
+          sha256sum *.json *.jsonl *.txt *.sha256 proofpath-Cargo.lock > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload SYSTEM-004 evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: neo-rezonans-system-004-${{ github.event.pull_request.number || github.run_number }}
+          path: evidence/system-004/
+          if-no-files-found: error
+          retention-days: 30
