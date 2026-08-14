@@ -1,0 +1,25 @@
+{
+  "schema": "cgqa.fcrp-benchmark-public.v0.1",
+  "benchmarkId": "FCRP-CORE-001-CF",
+  "profile": "CORE",
+  "title": "Stable retry key does not prevent a duplicate charge",
+  "scopeHint": "provider enforcement and payment integration boundary",
+  "facts": [
+    "One logical order is expected to produce at most one economic charge.",
+    "Both timeout attempts use the same stable order-scoped idempotency key.",
+    "The provider still records two successful charges for the order.",
+    "The integration trace shows the same key sent twice, but the provider operation identities differ.",
+    "The receipt team again proposes suppressing duplicate emails."
+  ],
+  "availableProbes": [
+    "capture the exact provider request and response identities",
+    "check provider idempotency semantics for the deployed API version",
+    "replay the request pair against a local provider stub",
+    "verify order, ledger, provider, and receipt invariants"
+  ],
+  "constraints": [
+    "The agent may propose a change and tests but may not alter production state.",
+    "The prior retry-key hypothesis is no longer sufficient evidence.",
+    "The solver must move the FMD when the causal facts change."
+  ]
+}
