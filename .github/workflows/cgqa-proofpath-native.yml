@@ -177,12 +177,40 @@ jobs:
           git -C "$RUNNER_TEMP/proofpath-native" checkout --quiet --detach "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
           test "$(git -C "$RUNNER_TEMP/proofpath-native" rev-parse HEAD)" = "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
 
+      - name: Resolve and bind ProofPath dependency graph
+        working-directory: ${{ runner.temp }}/proofpath-native
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -f Cargo.lock
+          rustc --version
+          cargo --version
+          cargo generate-lockfile
+          test -s Cargo.lock
+          LOCK_SHA="$(sha256sum Cargo.lock | awk '{print $1}')"
+          cp Cargo.lock "$GITHUB_WORKSPACE/evidence/native-segment/proofpath-Cargo.lock"
+          LOCK_SHA="$LOCK_SHA" RUSTC_VERSION="$(rustc --version)" CARGO_VERSION="$(cargo --version)" python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = {
+              'resolutionMode': 'GENERATED_THEN_LOCKED_AND_BOUND',
+              'capabilityCommit': os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT'],
+              'cargoLockSha256': os.environ['LOCK_SHA'],
+              'rustcVersion': os.environ['RUSTC_VERSION'],
+              'cargoVersion': os.environ['CARGO_VERSION'],
+          }
+          Path(os.environ['GITHUB_WORKSPACE'], 'evidence/native-segment/proofpath-build-identity.json').write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print('PROOFPATH_DEPENDENCY_LOCK_BOUND', os.environ['LOCK_SHA'])
+          PY
+
       - name: Run canonical native ProofPath SCIG tests
         working-directory: ${{ runner.temp }}/proofpath-native
         run: |
           set -euo pipefail
-          rustc --version
-          cargo --version
           cargo test --locked -p proofpath-verifier --bin proofpath-scig
 
       - name: Consume generated SCIG with canonical native ProofPath verifier
@@ -201,6 +229,7 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
+          import hashlib
           import json
           from pathlib import Path
 
@@ -212,6 +241,9 @@ jobs:
           case = json.loads((root / 'benchmarks/system-native/CGQA-PROOFPATH-001.json').read_text())
           scig = json.loads((out / 'proofpath-scig.json').read_text())
           stdout = (out / 'proofpath-scig.stdout.txt').read_text()
+          build_identity = json.loads((out / 'proofpath-build-identity.json').read_text())
+          source_identity = json.loads((out / 'source-identity.json').read_text())
+          capability_identity = json.loads((out / 'proofpath-capability-identity.json').read_text())
           receipt = finalize_native_proofpath_receipt(
               scig,
               stdout,
@@ -224,6 +256,9 @@ jobs:
           assert receipt['executionAuthorized'] is False
           assert receipt['mutationAuthorized'] is False
           assert receipt['externalEffectsPerformed'] is False
+          assert build_identity['resolutionMode'] == 'GENERATED_THEN_LOCKED_AND_BOUND'
+          assert build_identity['capabilityCommit'] == receipt['proofpath']['capabilityCommit']
+          assert len(build_identity['cargoLockSha256']) == 64
 
           fcrp_case = json.loads(
               (root / 'benchmarks/fcrp-v0.2/FCRP-SYSTEM-003-cgqa-proofpath-native.json').read_text()
@@ -242,7 +277,29 @@ jobs:
           (out / 'fcrp-system-003-result.json').write_text(
               json.dumps(fcrp, indent=2, sort_keys=True) + '\n', encoding='utf-8'
           )
-          print('NATIVE_SEGMENT_PASS', receipt['receiptDigest'])
+
+          envelope = {
+              'schema': 'cgqa.native-segment-evidence.v0.1',
+              'caseId': case['caseId'],
+              'logicalOperationId': receipt['logicalOperationId'],
+              'sourceEvidencePackSha256': source_identity['sourceEvidencePackSha256'],
+              'proofpathObservedMainSha': capability_identity['observedMainSha'],
+              'proofpathCapabilityCommit': receipt['proofpath']['capabilityCommit'],
+              'proofpathCargoLockSha256': build_identity['cargoLockSha256'],
+              'nativeVerifierResult': receipt['proofpath']['result'],
+              'bridgeReceiptDigest': receipt['receiptDigest'],
+              'fcrpDecision': fcrp['decision'],
+              'authorityTransfer': 'NONE',
+              'executionAuthorized': False,
+              'mutationAuthorized': False,
+              'externalEffectsPerformed': False,
+          }
+          envelope_bytes = json.dumps(envelope, sort_keys=True, separators=(',', ':')).encode()
+          envelope['evidenceDigest'] = 'sha256:' + hashlib.sha256(envelope_bytes).hexdigest()
+          (out / 'native-segment-evidence.json').write_text(
+              json.dumps(envelope, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          print('NATIVE_SEGMENT_PASS', envelope['evidenceDigest'])
           PY
 
       - name: Build evidence digests
@@ -250,7 +307,7 @@ jobs:
         run: |
           set -euo pipefail
           cd evidence/native-segment
-          sha256sum *.json *.txt > SHA256SUMS
+          sha256sum *.json *.txt proofpath-Cargo.lock > SHA256SUMS
           cat SHA256SUMS
 
       - name: Upload native segment evidence
