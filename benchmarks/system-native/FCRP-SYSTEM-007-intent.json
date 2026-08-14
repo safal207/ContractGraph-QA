@@ -1,0 +1,35 @@
+{
+  "schema": "cgqa.system-007-intent.v0.1",
+  "case_id": "FCRP-SYSTEM-007",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "nonce": "system-007-nonce-0001",
+  "observed_at": "2026-08-14T08:00:00Z",
+  "reviewed_at": "2026-08-14T08:02:00Z",
+  "intent": {
+    "kind": "cross_repository_conformance",
+    "purpose": "Verify one declared logical operation across ProofPath, CML, LiminalDB, RINSE and ContractGraph-QA.",
+    "expected_outcome": "bounded_reflection_without_execution_authority"
+  },
+  "arguments": {
+    "expected_decision": "STOP",
+    "expected_outcome": "bounded_reflection_without_execution_authority",
+    "negative_cases": [
+      "missing_intent",
+      "replayed_nonce",
+      "changed_argument_digest",
+      "stale_dependency_head",
+      "tampered_durable_record",
+      "reflection_execution_escalation"
+    ],
+    "persistence_scope": "local_test_only",
+    "source_case": "CGQA-PROOFPATH-001"
+  },
+  "argument_digest": "sha256:71db70a65b447db62ef8b8289edfedba66035df70d45a20a267c37082c3dbbd1",
+  "authority": {
+    "evidence_ref": "fixture://neo-rezonans/system-007/intent",
+    "execution_authorized": false,
+    "mutation_authorized": false,
+    "external_effects_authorized": false
+  },
+  "parents": []
+}
