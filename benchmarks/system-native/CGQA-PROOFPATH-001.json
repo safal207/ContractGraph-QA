@@ -30,12 +30,18 @@
     "capabilityStatus": "CANONICAL",
     "consumerDefaultAllowed": true,
     "canonicalCapabilityCommit": "685d50e256a5125a21f4c4584b326411caaa64ad",
-    "nativeVerifier": "proofpath-scig"
+    "nativeVerifier": "proofpath-scig",
+    "dependencyResolution": {
+      "repositoryProvidesCargoLock": false,
+      "mode": "GENERATED_THEN_LOCKED_AND_BOUND",
+      "lockDigestRequiredInEvidence": true
+    }
   },
   "expected": {
     "scigResult": "VALID",
     "logicalOperationPreserved": true,
     "sourceEvidenceDigestBound": true,
+    "dependencyResolutionBound": true,
     "authorityTransfer": "NONE",
     "externalEffectsPerformed": false
   }
