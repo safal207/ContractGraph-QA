@@ -1,0 +1,42 @@
+{
+  "schema": "cgqa.native-segment-case.v0.1",
+  "caseId": "CGQA-PROOFPATH-001",
+  "logicalOperationId": "crossmint-public-example-001",
+  "source": {
+    "repository": "safal207/ContractGraph-QA",
+    "producer": "provider_decision_evidence.v0.1",
+    "adapter": "benchmarks/agent-payment-recovery-v0.1/provider-adapters/crossmint-public-contract.v0.1.json",
+    "observations": "benchmarks/agent-payment-recovery-v0.1/provider-adapters/crossmint-observations-get-success.json",
+    "authority": {
+      "status": "authorized",
+      "evidenceRef": "fixture://authority/crossmint/evidence-pack"
+    },
+    "decisionId": "crossmint-evidence-pack-example",
+    "expectedDecision": "STOP",
+    "expectedMonetaryActionAllowed": false
+  },
+  "bridge": {
+    "observedAt": "2026-08-14T06:30:00Z",
+    "authorityTransfer": "NONE",
+    "authorizationRef": null,
+    "executionAuthorized": false,
+    "mutationAuthorized": false,
+    "externalEffectsPerformed": false
+  },
+  "proofpath": {
+    "repository": "safal207/ProofPath",
+    "manifestRef": "main:governance/capability-manifest.v0.1.json",
+    "capabilityId": "proofpath.scig.v0.1",
+    "capabilityStatus": "CANONICAL",
+    "consumerDefaultAllowed": true,
+    "canonicalCapabilityCommit": "685d50e256a5125a21f4c4584b326411caaa64ad",
+    "nativeVerifier": "proofpath-scig"
+  },
+  "expected": {
+    "scigResult": "VALID",
+    "logicalOperationPreserved": true,
+    "sourceEvidenceDigestBound": true,
+    "authorityTransfer": "NONE",
+    "externalEffectsPerformed": false
+  }
+}
