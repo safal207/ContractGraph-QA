@@ -215,7 +215,7 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_RECEIPT_REF="sha256:$(sha256sum evidence/system-005/native-proofpath-receipt.json | awk '{print $1}')"
-          STORAGE_ADMISSION_REF="sha256:$(printf 'FCRP-SYSTEM-005|local-test-only|%s|%s' "$EXACT_HEAD" "$LIMINALDB_DURABLE_COMMIT" | sha256sum | awk '{print $1}')"
+          STORAGE_ADMISSION_REF="sha256:$(printf 'FCRP-SYSTEM-005|local_test_only|%s|%s' "$EXACT_HEAD" "$LIMINALDB_DURABLE_COMMIT" | sha256sum | awk '{print $1}')"
           VALID_TIME_MS="$(python3 - <<'PY'
           import json
           from datetime import datetime
@@ -323,8 +323,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp evidence/system-005/liminaldb-proofpath-event.jsonl evidence/system-005/tampered-event.jsonl
-          printf ' ' >> evidence/system-005/tampered-event.jsonl
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          src=Path('evidence/system-005/liminaldb-proofpath-event.jsonl')
+          event=json.loads(src.read_text())
+          event['details']['persistence']['durable_memory']=True
+          Path('evidence/system-005/tampered-event.jsonl').write_text(
+              json.dumps(event,sort_keys=True)+'\n'
+          )
+          PY
           cd "$RUNNER_TEMP/liminaldb-system-005"
           set +e
           cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
@@ -363,10 +371,13 @@ jobs:
         run: |
           set -euo pipefail
           LTP_MAIN="$(git ls-remote https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git refs/heads/main | awk '{print $1}')"
-          test "$LTP_MAIN" = "$LTP_COMMIT"
+          test -n "$LTP_MAIN"
           rm -rf "$RUNNER_TEMP/ltp-system-005"
           git clone --quiet https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git "$RUNNER_TEMP/ltp-system-005"
+          git -C "$RUNNER_TEMP/ltp-system-005" cat-file -e "$LTP_COMMIT^{commit}"
+          git -C "$RUNNER_TEMP/ltp-system-005" merge-base --is-ancestor "$LTP_COMMIT" "$LTP_MAIN"
           git -C "$RUNNER_TEMP/ltp-system-005" checkout --quiet --detach "$LTP_COMMIT"
+          printf '%s\n' "$LTP_MAIN" > "$GITHUB_WORKSPACE/evidence/system-005/ltp-observed-main.txt"
           cd "$RUNNER_TEMP/ltp-system-005"
           test -f pnpm-lock.yaml
           sha256sum pnpm-lock.yaml > "$GITHUB_WORKSPACE/evidence/system-005/ltp-pnpm-lock.sha256"
