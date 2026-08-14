@@ -37,6 +37,22 @@ class CredentialBoundaryTest(unittest.TestCase):
 
         self.assertEqual(result["decision"], "PASS")
 
+    def test_explicit_fixture_marker_is_narrow_and_token_safe(self) -> None:
+        directory = self._repo()
+        fake_token = "sk-" + "123456789012345678901234"
+        (directory / "fixture.yml").write_text(
+            "POSTGRES_PASSWORD: ci-only # fcrp: fixture\n"
+            f"fixture_token: {fake_token} # fcrp: fixture\n",
+            encoding="utf-8",
+        )
+        self._track(directory, "fixture.yml")
+
+        result = scan_repository(directory)
+
+        self.assertEqual(result["decision"], "BLOCK")
+        self.assertEqual(result["violations"][0]["rule"], "openai-token-shape")
+        self.assertEqual(len(result["violations"]), 1)
+
     def test_provider_token_shape_is_blocked_without_printing_value(self) -> None:
         directory = self._repo()
         fake_token = "sk-" + "123456789012345678901234"
