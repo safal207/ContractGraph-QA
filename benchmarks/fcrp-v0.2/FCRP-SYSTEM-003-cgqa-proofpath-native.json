@@ -1,0 +1,222 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-SYSTEM-003",
+  "title": "Native ContractGraph-QA to canonical ProofPath SCIG segment",
+  "scope": {
+    "nodeId": "neo-rezonans-native-cgqa-proofpath",
+    "scale": "cross-repository native segment / evidence portability",
+    "ideaContract": {
+      "purpose": "Replace the synthetic ContractGraph-QA to ProofPath heartbeat edge with a native producer and native canonical consumer while preserving one logical operation, exact evidence identity, and zero authority transfer.",
+      "expectedOutcome": "A real ContractGraph-QA provider-decision evidence pack is replay-verified, projected into canonical ProofPath SCIG v0.1, accepted by the native Rust proofpath-scig verifier at the manifest-declared capability commit, and bound into a deterministic non-authorizing bridge receipt.",
+      "invariants": [
+        "the source ContractGraph-QA evidence pack passes exact deterministic replay before projection",
+        "the same logical_operation_id survives the CGQA to ProofPath boundary",
+        "the canonical CGQA evidence-pack digest is preserved in the ProofPath projection and receipt",
+        "ProofPath consumption uses only manifest-declared CANONICAL proofpath.scig.v0.1 bytes",
+        "the ContractGraph-QA to ProofPath edge transfers no execution or mutation authority",
+        "native ProofPath verification is evidence validation and never a capability grant"
+      ],
+      "forbiddenOutcomes": [
+        "consuming a PROPOSED or EXPERIMENTAL ProofPath capability as ambient system behavior",
+        "treating current ProofPath repository head as interchangeable with exact SCIG capability identity",
+        "projecting a tampered CGQA evidence pack",
+        "allowing claim-boundary metadata to invent production or financial authority",
+        "carrying an authorization_ref from ContractGraph-QA into ProofPath",
+        "describing the CGQA bridge receipt as a native ProofPath signed receipt"
+      ],
+      "dependencies": [
+        "NEO-REZONANS-SYSTEM-001",
+        "FCRP-SYSTEM-002",
+        "proofpath.scig.v0.1@685d50e256a5125a21f4c4584b326411caaa64ad"
+      ],
+      "parentContract": "NEO REZONANS System Contract v0.1 / ContractGraph-QA -> ProofPath authorityMode=NONE"
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-CGQA-PACK",
+      "kind": "native-recomputable-source",
+      "ref": "contractgraph_qa/provider_decision_evidence.py",
+      "claim": "ContractGraph-QA builds and exact-replay verifies the provider decision evidence pack before any cross-repository projection.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-PROOFPATH-MANIFEST",
+      "kind": "canonical-capability-contract",
+      "ref": "safal207/ProofPath:governance/capability-manifest.v0.1.json",
+      "claim": "The current ProofPath manifest identifies proofpath.scig.v0.1 as CANONICAL, default-consumable, with canonical capability commit 685d50e256a5125a21f4c4584b326411caaa64ad.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-BRIDGE",
+      "kind": "cross-repository-adapter",
+      "ref": "contractgraph_qa/proofpath_scig_adapter.py",
+      "claim": "The bridge binds logical operation identity, CGQA pack digest, canonical ProofPath capability identity, and an explicit NONE authority transfer into SCIG v0.1 extensions.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-NATIVE-SCIG",
+      "kind": "native-consumer-verifier",
+      "ref": "safal207/ProofPath@685d50e256a5125a21f4c4584b326411caaa64ad:proofpath-scig",
+      "claim": "The native Rust proofpath-scig verifier validates the generated SCIG document at the exact manifest-declared canonical capability commit.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-REGRESSIONS",
+      "kind": "negative-regression-suite",
+      "ref": "tools/tests/test_proofpath_scig_adapter.py",
+      "claim": "Negative controls reject pack tamper, authority-claim mutation, wrong ProofPath capability identity, invalid native verifier output, and reintroduced authority.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "CAUSAL_SEQUENCE",
+      "REPOSITORY_HISTORY"
+    ],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": [
+      "E-CGQA-PACK",
+      "E-NATIVE-SCIG"
+    ]
+  },
+  "timeline": {
+    "past": {
+      "summary": "FCRP-SYSTEM-002 proved the complete system heartbeat using synthetic stage producers, including a synthetic ContractGraph-QA to ProofPath stage.",
+      "evidenceRefs": [
+        "E-BRIDGE"
+      ]
+    },
+    "present": {
+      "summary": "The first native segment replaces that synthetic boundary with actual ContractGraph-QA evidence replay plus the canonical native ProofPath SCIG verifier while keeping the system authority boundary unchanged.",
+      "evidenceRefs": [
+        "E-CGQA-PACK",
+        "E-PROOFPATH-MANIFEST",
+        "E-BRIDGE",
+        "E-NATIVE-SCIG",
+        "E-REGRESSIONS"
+      ]
+    },
+    "future": {
+      "summary": "Additional synthetic stages may be replaced one by one only when native capability identity and non-transfer semantics are machine-verifiable without depending on branch-only architecture.",
+      "evidenceRefs": [
+        "E-PROOFPATH-MANIFEST",
+        "E-REGRESSIONS"
+      ]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "system-heartbeat",
+      "phase": "first-divergence",
+      "statement": "SYSTEM-002 proves continuity at the CGQA to ProofPath edge synthetically but does not execute either repository's native evidence/verifier contract for that transfer.",
+      "evidenceRefs": [
+        "E-BRIDGE"
+      ]
+    },
+    {
+      "id": "N2",
+      "level": "source-repository",
+      "phase": "native-producer",
+      "statement": "ContractGraph-QA produces a provider decision evidence pack and exact-replays the embedded adapter, observations, authority evidence, and derived payment decision.",
+      "evidenceRefs": [
+        "E-CGQA-PACK"
+      ]
+    },
+    {
+      "id": "N3",
+      "level": "cross-repository-boundary",
+      "phase": "refactor",
+      "statement": "A narrow adapter projects only verified CGQA evidence and explicit non-authority metadata into the additive extension surface of SCIG v0.1.",
+      "evidenceRefs": [
+        "E-BRIDGE",
+        "E-REGRESSIONS"
+      ]
+    },
+    {
+      "id": "N4",
+      "level": "consumer-capability",
+      "phase": "native-consumption",
+      "statement": "The current ProofPath manifest is consulted for lifecycle state, then the exact canonical proofpath.scig.v0.1 capability commit is checked out and its native Rust verifier consumes the projected SCIG.",
+      "evidenceRefs": [
+        "E-PROOFPATH-MANIFEST",
+        "E-NATIVE-SCIG"
+      ]
+    },
+    {
+      "id": "N5",
+      "level": "system-evidence",
+      "phase": "verification",
+      "statement": "A deterministic bridge receipt binds CGQA pack digest, logical operation identity, exact ProofPath capability commit and native VALID result while authorityTransfer remains NONE.",
+      "evidenceRefs": [
+        "E-BRIDGE",
+        "E-NATIVE-SCIG",
+        "E-REGRESSIONS"
+      ]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N1",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": [
+      "E-CGQA-PACK",
+      "E-PROOFPATH-MANIFEST",
+      "E-BRIDGE",
+      "E-NATIVE-SCIG"
+    ]
+  },
+  "navigation": {
+    "direction": "SIDEWAYS",
+    "reason": "The missing proof is a sibling repository transfer boundary: the whole-system topology is already canonical, but this exact CGQA-to-ProofPath edge still uses synthetic producers in SYSTEM-002."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Introduce a minimal native bridge from replay-verified ContractGraph-QA provider evidence to canonical ProofPath SCIG v0.1, bind exact capability identity, and retain authorityMode=NONE.",
+    "expectedEffect": "The first heartbeat segment becomes native on both sides without importing branch-only ProofPath capabilities or widening authority semantics."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": [
+      "siblings",
+      "parent",
+      "dependencies",
+      "future"
+    ],
+    "evidenceRefs": [
+      "E-PROOFPATH-MANIFEST",
+      "E-REGRESSIONS"
+    ]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "SYSTEM-003 proves evidence portability and native SCIG validation only. The ContractGraph-QA to ProofPath system edge remains authorityMode=NONE, and PASS grants no repository, runtime, payment, deployment, or external-effect authority."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "NOT_REQUIRED",
+    "evidenceRefs": [
+      "E-CGQA-PACK",
+      "E-PROOFPATH-MANIFEST",
+      "E-NATIVE-SCIG",
+      "E-REGRESSIONS"
+    ],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}
