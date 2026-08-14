@@ -1,0 +1,468 @@
+name: FCRP SYSTEM-005 Durable Proof Ingestion
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - benchmarks/fcrp-v0.2/FCRP-SYSTEM-005-durable-proof-ingestion.json
+      - docs/NEO_REZONANS_DURABLE_PROOF_INGESTION_V0_1.md
+      - .github/workflows/fcrp-system-005-durable-proof-ingestion.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-system-005-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      EXPECTED_PR_BASE: cc1d1e227bbb1a25776819e6f2829bfb7a66ee58
+      SYSTEM_004_ANCESTOR: be860d7a6ca089a4514d12a8108d27873b04dfb9
+      PROOFPATH_SCIG_CAPABILITY_COMMIT: 685d50e256a5125a21f4c4584b326411caaa64ad
+      LIMINALDB_ARTIFACT_CONTRACT_COMMIT: 00580ff097dee61b45ad3c8a3c36ae5f548f572d
+      LIMINALDB_AUDIT_EVENT_BLOB: fd733971aaae089df770062bcf7f2c2d6d19ca1d
+      LIMINALDB_DURABLE_COMMIT: 61b02fc81e0cb5cf1f1ed4658ecff58f683cb728
+      LTP_COMMIT: fc58072d301a487c09227ea09004dc8e99676370
+      LOGICAL_OPERATION_ID: crossmint-public-example-001
+      NAMESPACE: system-005-independent
+
+    steps:
+      - name: Checkout exact SYSTEM-005 subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify current integration base and SYSTEM-004 causal ancestry
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$SYSTEM_004_ANCESTOR" "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Rebuild real ContractGraph-QA evidence and SCIG
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-005
+          python3 - <<'PY'
+          import copy, json, os
+          from pathlib import Path
+          from contractgraph_qa.proofpath_scig_adapter import build_proofpath_scig_from_provider_evidence
+          from contractgraph_qa.provider_decision_evidence import build_provider_decision_evidence, verify_provider_decision_evidence
+          from contractgraph_qa.provider_payment_decision import evaluate_provider_payment_decision
+
+          root=Path('.')
+          source_case=json.loads((root/'benchmarks/system-native/CGQA-PROOFPATH-001.json').read_text())
+          system4=json.loads((root/'benchmarks/system-native/PROOFPATH-LIMINALDB-001.json').read_text())
+          adapters=root/'benchmarks/agent-payment-recovery-v0.1/provider-adapters'
+          adapter=json.loads((adapters/'crossmint-public-contract.v0.1.json').read_text())
+          observations=json.loads((adapters/'crossmint-observations-get-success.json').read_text())
+          authority=copy.deepcopy(source_case['source']['authority'])
+          decision=evaluate_provider_payment_decision(adapter, observations, authority, decision_id=source_case['source']['decisionId'])
+          assert decision['logicalOperationId'] == source_case['logicalOperationId'] == system4['logicalOperationId'] == os.environ['LOGICAL_OPERATION_ID']
+          assert decision['decision']['decision'] == 'STOP'
+          assert decision['decision']['monetaryActionAllowed'] is False
+          pack=build_provider_decision_evidence(adapter, observations, authority, decision)
+          assert verify_provider_decision_evidence(pack) == decision
+          scig=build_proofpath_scig_from_provider_evidence(pack, observed_at=source_case['bridge']['observedAt'])
+          assert scig['logical_operation_id'] == os.environ['LOGICAL_OPERATION_ID']
+          out=Path('evidence/system-005')
+          (out/'provider-evidence-pack.json').write_text(json.dumps(pack,indent=2,sort_keys=True)+'\n')
+          (out/'proofpath-scig.json').write_text(json.dumps(scig,indent=2,sort_keys=True)+'\n')
+          print('CGQA_SOURCE_REPLAY_VALID', decision['logicalOperationId'])
+          PY
+
+      - name: Resolve current ProofPath manifest and exact canonical capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOFPATH_MAIN="$(git ls-remote https://github.com/safal207/ProofPath.git refs/heads/main | awk '{print $1}')"
+          test -n "$PROOFPATH_MAIN"
+          rm -rf "$RUNNER_TEMP/proofpath-system-005"
+          git clone --quiet https://github.com/safal207/ProofPath.git "$RUNNER_TEMP/proofpath-system-005"
+          git -C "$RUNNER_TEMP/proofpath-system-005" checkout --quiet --detach "$PROOFPATH_MAIN"
+          PROOFPATH_MAIN="$PROOFPATH_MAIN" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          repo=Path(os.environ['RUNNER_TEMP'])/'proofpath-system-005'
+          manifest=json.loads((repo/'governance/capability-manifest.v0.1.json').read_text())
+          target=next(item for item in manifest['capabilities'] if item['id']=='proofpath.scig.v0.1')
+          assert target['status']=='CANONICAL'
+          assert target['consumer_default_allowed'] is True
+          assert target['canonical_commit']==os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT']
+          Path('evidence/system-005/proofpath-capability.json').write_text(json.dumps({
+              'observedMainSha':os.environ['PROOFPATH_MAIN'],
+              'capabilityId':target['id'],
+              'status':target['status'],
+              'canonicalCommit':target['canonical_commit'],
+          },indent=2,sort_keys=True)+'\n')
+          PY
+          git -C "$RUNNER_TEMP/proofpath-system-005" merge-base --is-ancestor "$PROOFPATH_SCIG_CAPABILITY_COMMIT" "$PROOFPATH_MAIN"
+          git -C "$RUNNER_TEMP/proofpath-system-005" checkout --quiet --detach "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
+
+      - name: Bind ProofPath dependency resolution and run native verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/proofpath-system-005"
+          test ! -f Cargo.lock
+          cargo generate-lockfile
+          LOCK_SHA="$(sha256sum Cargo.lock | awk '{print $1}')"
+          cp Cargo.lock "$GITHUB_WORKSPACE/evidence/system-005/proofpath-Cargo.lock"
+          printf '%s\n' "$LOCK_SHA" > "$GITHUB_WORKSPACE/evidence/system-005/proofpath-cargo-lock.sha256"
+          cargo test --locked -p proofpath-verifier --bin proofpath-scig
+          cargo run --quiet --locked -p proofpath-verifier --bin proofpath-scig -- \
+            "$GITHUB_WORKSPACE/evidence/system-005/proofpath-scig.json" \
+            | tee "$GITHUB_WORKSPACE/evidence/system-005/proofpath-scig.stdout.txt"
+          grep -Eq '^RESULT[[:space:]]+VALID$' "$GITHUB_WORKSPACE/evidence/system-005/proofpath-scig.stdout.txt"
+          grep -Eq '^VERIFICATION[[:space:]]+PASSED$' "$GITHUB_WORKSPACE/evidence/system-005/proofpath-scig.stdout.txt"
+
+      - name: Project native ProofPath receipt into SYSTEM-004 AuditEvent
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          from contractgraph_qa.proofpath_scig_adapter import finalize_native_proofpath_receipt
+          from contractgraph_qa.liminaldb_proofpath_adapter import build_liminaldb_proofpath_audit_event
+
+          out=Path('evidence/system-005')
+          scig=json.loads((out/'proofpath-scig.json').read_text())
+          stdout=(out/'proofpath-scig.stdout.txt').read_text()
+          case=json.loads(Path('benchmarks/system-native/PROOFPATH-LIMINALDB-001.json').read_text())
+          receipt=finalize_native_proofpath_receipt(scig, stdout, proofpath_capability_commit=os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT'])
+          event=build_liminaldb_proofpath_audit_event(
+              scig,
+              receipt,
+              observed_at=case['observedAt'],
+              liminaldb_commit=os.environ['LIMINALDB_ARTIFACT_CONTRACT_COMMIT'],
+              liminaldb_contract_blob_sha=os.environ['LIMINALDB_AUDIT_EVENT_BLOB'],
+          )
+          assert receipt['logicalOperationId']==event['correlationId']==os.environ['LOGICAL_OPERATION_ID']
+          assert receipt['authorityTransfer']=='NONE'
+          assert receipt['executionAuthorized'] is False
+          assert receipt['mutationAuthorized'] is False
+          assert event['details']['persistence']['durable_memory'] is False
+          assert event['details']['authority']['execution'] is False
+          (out/'native-proofpath-receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          (out/'liminaldb-proofpath-event.jsonl').write_text(json.dumps(event,sort_keys=True)+'\n')
+          PY
+
+      - name: Resolve exact canonical LiminalDB durable consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIMINALDB_MAIN="$(git ls-remote https://github.com/safal207/LiminalDB.git refs/heads/main | awk '{print $1}')"
+          test -n "$LIMINALDB_MAIN"
+          rm -rf "$RUNNER_TEMP/liminaldb-system-005"
+          git clone --quiet https://github.com/safal207/LiminalDB.git "$RUNNER_TEMP/liminaldb-system-005"
+          git -C "$RUNNER_TEMP/liminaldb-system-005" cat-file -e "$LIMINALDB_DURABLE_COMMIT^{commit}"
+          git -C "$RUNNER_TEMP/liminaldb-system-005" merge-base --is-ancestor "$LIMINALDB_DURABLE_COMMIT" "$LIMINALDB_MAIN"
+          git -C "$RUNNER_TEMP/liminaldb-system-005" checkout --quiet --detach "$LIMINALDB_DURABLE_COMMIT"
+          test "$(git -C "$RUNNER_TEMP/liminaldb-system-005" rev-parse HEAD)" = "$LIMINALDB_DURABLE_COMMIT"
+          test -f "$RUNNER_TEMP/liminaldb-system-005/liminal-db/crates/liminal-store/src/proofpath_durable.rs"
+          test -f "$RUNNER_TEMP/liminaldb-system-005/liminal-db/crates/liminal-store/examples/proofpath_durable_ingestion.rs"
+          test "$(git -C "$RUNNER_TEMP/liminaldb-system-005" hash-object sdk/ts/src/protocol-types.ts)" = "$LIMINALDB_AUDIT_EVENT_BLOB"
+          printf '%s\n' "$LIMINALDB_MAIN" > evidence/system-005/liminaldb-observed-main.txt
+
+      - name: Re-run canonical artifact-only consumer before storage admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$RUNNER_TEMP/liminaldb-system-005/scripts/validate_proofpath_audit_import.py" \
+            --events evidence/system-005/liminaldb-proofpath-event.jsonl \
+            --contract-file "$RUNNER_TEMP/liminaldb-system-005/sdk/ts/src/protocol-types.ts" \
+            --consumer-commit "$LIMINALDB_ARTIFACT_CONTRACT_COMMIT" \
+            --output evidence/system-005/liminaldb-artifact-admission.json
+          jq -e '
+            .mode == "dry_run" and
+            .write_performed == false and
+            .event_count == 1 and
+            .logical_operation_ids == ["crossmint-public-example-001"] and
+            .authority.execution_authorized == false and
+            .authority.mutation_authorized == false and
+            .authority.durable_memory_accepted == false and
+            .authority.live_ingestion_performed == false and
+            .compatibility.current_contract_blob_sha == "fd733971aaae089df770062bcf7f2c2d6d19ca1d"
+          ' evidence/system-005/liminaldb-artifact-admission.json >/dev/null
+
+      - name: Re-run canonical LiminalDB durability and ambiguous-ack regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/liminaldb-system-005"
+          cargo test --locked -p liminal-store --test proofpath_durable_ingestion --no-fail-fast
+          cargo test --locked -p liminal-store --features durability-test-hooks \
+            --test proofpath_durable_fault_injection \
+            synced_but_unacknowledged_append_recovers_and_retry_deduplicates -- --exact
+          printf '%s\n' 'AFTER_SYNC_BEFORE_ACK_RECOVERY=PASS' > "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-fault-proof.txt"
+
+      - name: Derive separate local-test storage admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_RECEIPT_REF="sha256:$(sha256sum evidence/system-005/native-proofpath-receipt.json | awk '{print $1}')"
+          STORAGE_ADMISSION_REF="sha256:$(printf 'FCRP-SYSTEM-005|local_test_only|%s|%s' "$EXACT_HEAD" "$LIMINALDB_DURABLE_COMMIT" | sha256sum | awk '{print $1}')"
+          VALID_TIME_MS="$(python3 - <<'PY'
+          import json
+          from datetime import datetime
+          event=json.loads(open('evidence/system-005/liminaldb-proofpath-event.jsonl').read())
+          value=event['ts']
+          parsed=datetime.fromisoformat(value[:-1]+'+00:00' if value.endswith('Z') else value)
+          print(int(parsed.timestamp()*1000))
+          PY
+          )"
+          TRANSACTION_TIME_MS="$((VALID_TIME_MS + 60000))"
+          RETRY_TIME_MS="$((TRANSACTION_TIME_MS + 60000))"
+          {
+            echo "SOURCE_RECEIPT_REF=$SOURCE_RECEIPT_REF"
+            echo "STORAGE_ADMISSION_REF=$STORAGE_ADMISSION_REF"
+            echo "VALID_TIME_MS=$VALID_TIME_MS"
+            echo "TRANSACTION_TIME_MS=$TRANSACTION_TIME_MS"
+            echo "RETRY_TIME_MS=$RETRY_TIME_MS"
+          } >> "$GITHUB_ENV"
+          python3 - <<PY
+          import json
+          from pathlib import Path
+          Path('evidence/system-005/storage-admission.json').write_text(json.dumps({
+              'schema':'cgqa.system-005-storage-admission.v0.1',
+              'scope':'local_test_only',
+              'grantRef':'$STORAGE_ADMISSION_REF',
+              'subjectHead':'$EXACT_HEAD',
+              'liminaldbDurableCommit':'$LIMINALDB_DURABLE_COMMIT',
+              'derivedFromEvidence':False,
+              'executionAuthorized':False,
+              'mutationAuthorized':False,
+              'externalEffectsAuthorized':False,
+          },indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Cross the durable frontier with exact SYSTEM-004 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          STORE_ROOT="$RUNNER_TEMP/system-005-independent-store"
+          rm -rf "$STORE_ROOT"
+          echo "STORE_ROOT=$STORE_ROOT" >> "$GITHUB_ENV"
+          cd "$RUNNER_TEMP/liminaldb-system-005"
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            ingest "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-proofpath-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-artifact-admission.json" \
+            "$SOURCE_RECEIPT_REF" "$VALID_TIME_MS" "$TRANSACTION_TIME_MS" "$STORAGE_ADMISSION_REF" \
+            > "$GITHUB_WORKSPACE/evidence/system-005/ingest-first.json"
+          jq -e '
+            .status == "INSERTED" and
+            .event_count == 1 and
+            .logical_operation_id == "crossmint-public-example-001" and
+            .persistence_scope == "local_test_only" and
+            .storage_write_authorized == true and
+            .execution_authorized == false and
+            .mutation_authorized == false and
+            .external_effects_authorized == false
+          ' "$GITHUB_WORKSPACE/evidence/system-005/ingest-first.json" >/dev/null
+          test -s "$STORE_ROOT/proofpath-durable-v0.1/$NAMESPACE/data/00000001.wal"
+
+      - name: Reopen as a new consumer process and reproduce exact durable bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/liminaldb-system-005"
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            inspect "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-005/recovered-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-005/recovered-admission.json" \
+            "$GITHUB_WORKSPACE/evidence/system-005/recovered-summary.json" \
+            > "$GITHUB_WORKSPACE/evidence/system-005/reopen.stdout.txt"
+          cmp "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-proofpath-event.jsonl" "$GITHUB_WORKSPACE/evidence/system-005/recovered-event.jsonl"
+          cmp "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-artifact-admission.json" "$GITHUB_WORKSPACE/evidence/system-005/recovered-admission.json"
+          jq -e --argjson valid "$VALID_TIME_MS" --argjson tx "$TRANSACTION_TIME_MS" '
+            .event_count == 1 and
+            .logical_operation_id == "crossmint-public-example-001" and
+            .valid_time_ms == $valid and
+            .transaction_time_ms == $tx and
+            .producer_capability_commit == "685d50e256a5125a21f4c4584b326411caaa64ad" and
+            .consumer_import_commit == "00580ff097dee61b45ad3c8a3c36ae5f548f572d" and
+            .consumer_contract_blob_sha == "fd733971aaae089df770062bcf7f2c2d6d19ca1d" and
+            .execution_authorized == false and
+            .mutation_authorized == false and
+            .external_effects_authorized == false
+          ' "$GITHUB_WORKSPACE/evidence/system-005/recovered-summary.json" >/dev/null
+
+      - name: Verify retry idempotency after restart
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/liminaldb-system-005"
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            ingest "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-proofpath-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-artifact-admission.json" \
+            "$SOURCE_RECEIPT_REF" "$VALID_TIME_MS" "$RETRY_TIME_MS" "$STORAGE_ADMISSION_REF" \
+            > "$GITHUB_WORKSPACE/evidence/system-005/ingest-retry.json"
+          jq -e --argjson tx "$TRANSACTION_TIME_MS" '
+            .status == "ALREADY_PRESENT" and
+            .event_count == 1 and
+            .transaction_time_ms == $tx
+          ' "$GITHUB_WORKSPACE/evidence/system-005/ingest-retry.json" >/dev/null
+
+      - name: Verify changed evidence is the expected conflict class
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          src=Path('evidence/system-005/liminaldb-proofpath-event.jsonl')
+          event=json.loads(src.read_text())
+          event['details']['persistence']['durable_memory']=True
+          Path('evidence/system-005/tampered-event.jsonl').write_text(
+              json.dumps(event,sort_keys=True)+'\n'
+          )
+          PY
+          cd "$RUNNER_TEMP/liminaldb-system-005"
+          set +e
+          cargo run -q --locked -p liminal-store --example proofpath_durable_ingestion -- \
+            ingest "$STORE_ROOT" "$NAMESPACE" "$LOGICAL_OPERATION_ID" \
+            "$GITHUB_WORKSPACE/evidence/system-005/tampered-event.jsonl" \
+            "$GITHUB_WORKSPACE/evidence/system-005/liminaldb-artifact-admission.json" \
+            "$SOURCE_RECEIPT_REF" "$VALID_TIME_MS" "$RETRY_TIME_MS" "$STORAGE_ADMISSION_REF" \
+            > "$GITHUB_WORKSPACE/evidence/system-005/conflict.stdout.txt" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -F 'ERROR_CODE IDEMPOTENCY_CONFLICT' "$GITHUB_WORKSPACE/evidence/system-005/conflict.stdout.txt"
+          grep -F 'same durable ingestion key was reused for different semantic evidence' "$GITHUB_WORKSPACE/evidence/system-005/conflict.stdout.txt"
+
+      - name: Build durable-ingestion agent trajectory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          logical=os.environ['LOGICAL_OPERATION_ID']
+          token='neo-rezonans-system-005:'+hashlib.sha256(logical.encode()).hexdigest()[:16]
+          frames=[
+              {'v':'0.1','id':'system-005-0','ts':1,'type':'orientation','payload':{'identity':'neo-rezonans-system-005','logical_operation_id':logical,'stage':'artifact-validated'},'continuity_token':token},
+              {'v':'0.1','id':'system-005-1','ts':2,'type':'focus_snapshot','payload':{'drift':0.0,'logical_operation_id':logical,'stage':'storage-admission-separated'},'continuity_token':token},
+              {'v':'0.1','id':'system-005-2','ts':3,'type':'focus_snapshot','payload':{'drift':0.0,'logical_operation_id':logical,'stage':'durable-wal-appended'},'continuity_token':token},
+              {'v':'0.1','id':'system-005-3','ts':4,'type':'focus_snapshot','payload':{'drift':0.0,'logical_operation_id':logical,'stage':'restart-replayed-byte-exact'},'continuity_token':token},
+              {'v':'0.1','id':'system-005-4','ts':5,'type':'route_response','payload':{'logical_operation_id':logical,'stage':'durable-boundary-verified','branches':[{'id':'durable-proof-ingestion','confidence':1.0,'status':'admissible'}]},'continuity_token':token},
+          ]
+          Path('evidence/system-005/system-005.trace.jsonl').write_text(''.join(json.dumps(frame,sort_keys=True)+'\n' for frame in frames))
+          PY
+
+      - name: Run native LTP strict trace inspection and replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          LTP_MAIN="$(git ls-remote https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git refs/heads/main | awk '{print $1}')"
+          test -n "$LTP_MAIN"
+          rm -rf "$RUNNER_TEMP/ltp-system-005"
+          git clone --quiet https://github.com/safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-.git "$RUNNER_TEMP/ltp-system-005"
+          git -C "$RUNNER_TEMP/ltp-system-005" cat-file -e "$LTP_COMMIT^{commit}"
+          git -C "$RUNNER_TEMP/ltp-system-005" merge-base --is-ancestor "$LTP_COMMIT" "$LTP_MAIN"
+          git -C "$RUNNER_TEMP/ltp-system-005" checkout --quiet --detach "$LTP_COMMIT"
+          printf '%s\n' "$LTP_MAIN" > "$GITHUB_WORKSPACE/evidence/system-005/ltp-observed-main.txt"
+          cd "$RUNNER_TEMP/ltp-system-005"
+          test -f pnpm-lock.yaml
+          sha256sum pnpm-lock.yaml > "$GITHUB_WORKSPACE/evidence/system-005/ltp-pnpm-lock.sha256"
+          corepack enable
+          corepack prepare pnpm@9.15.0 --activate
+          pnpm install --frozen-lockfile
+          LTP_INSPECT_FREEZE_CLOCK=1 pnpm -w ltp:inspect trace --strict --quiet --format json --color never \
+            --input "$GITHUB_WORKSPACE/evidence/system-005/system-005.trace.jsonl" \
+            --output "$GITHUB_WORKSPACE/evidence/system-005/ltp-inspect.json"
+          pnpm -w ltp:inspect replay \
+            --input "$GITHUB_WORKSPACE/evidence/system-005/system-005.trace.jsonl" \
+            > "$GITHUB_WORKSPACE/evidence/system-005/ltp-replay.txt"
+          jq -e '.contract.name == "ltp-inspect" and .input.frames == 5' "$GITHUB_WORKSPACE/evidence/system-005/ltp-inspect.json" >/dev/null
+          test -s "$GITHUB_WORKSPACE/evidence/system-005/ltp-replay.txt"
+
+      - name: Evaluate FCRP-SYSTEM-005 and finalize independent evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          from contractgraph_qa.fcrp_v02 import evaluate_fcrp_v02_case
+
+          out=Path('evidence/system-005')
+          case=json.loads(Path('benchmarks/fcrp-v0.2/FCRP-SYSTEM-005-durable-proof-ingestion.json').read_text())
+          result=evaluate_fcrp_v02_case(case)
+          assert result['caseId']=='FCRP-SYSTEM-005'
+          assert result['decision']=='PASS'
+          assert result['navigationDirection']=='SIDEWAYS'
+          assert result['primaryTimeDomain']=='CAUSAL_SEQUENCE'
+          assert result['mutationAuthorized'] is False
+          assert result['causalPropagationStopped'] is True
+          first=json.loads((out/'ingest-first.json').read_text())
+          retry=json.loads((out/'ingest-retry.json').read_text())
+          recovered=json.loads((out/'recovered-summary.json').read_text())
+          envelope={
+              'schema':'cgqa.system-005-independent-evidence.v0.1',
+              'caseId':'FCRP-SYSTEM-005',
+              'subjectHead':os.environ['EXACT_HEAD'],
+              'system004CausalAncestor':os.environ['SYSTEM_004_ANCESTOR'],
+              'logicalOperationId':os.environ['LOGICAL_OPERATION_ID'],
+              'proofpathCapabilityCommit':os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT'],
+              'liminaldbArtifactContractCommit':os.environ['LIMINALDB_ARTIFACT_CONTRACT_COMMIT'],
+              'liminaldbContractBlob':os.environ['LIMINALDB_AUDIT_EVENT_BLOB'],
+              'liminaldbDurableCommit':os.environ['LIMINALDB_DURABLE_COMMIT'],
+              'ltpCommit':os.environ['LTP_COMMIT'],
+              'firstAppendStatus':first['status'],
+              'retryStatus':retry['status'],
+              'eventCountAfterRetry':retry['event_count'],
+              'recordHash':recovered['record_hash'],
+              'sourceEventSha256':recovered['source_event_sha256'],
+              'admissionReportSha256':recovered['admission_report_sha256'],
+              'validTimeMs':recovered['valid_time_ms'],
+              'transactionTimeMs':recovered['transaction_time_ms'],
+              'byteExactRestartReplay':True,
+              'ambiguousAckRecoveryVerified':True,
+              'conflictingRewriteErrorCode':'IDEMPOTENCY_CONFLICT',
+              'pathVerdict':'LTP_STRICT_ACCEPTED',
+              'fcrpDecision':result['decision'],
+              'persistenceScope':'local_test_only',
+              'storageWriteAuthorized':True,
+              'executionAuthorized':False,
+              'mutationAuthorized':False,
+              'externalEffectsAuthorized':False,
+          }
+          encoded=json.dumps(envelope,sort_keys=True,separators=(',',':')).encode()
+          envelope['evidenceDigest']='sha256:'+hashlib.sha256(encoded).hexdigest()
+          (out/'fcrp-system-005-result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          (out/'system-005-independent-evidence.json').write_text(json.dumps(envelope,indent=2,sort_keys=True)+'\n')
+          print('FCRP_SYSTEM_005_PASS',envelope['evidenceDigest'])
+          PY
+
+      - name: Build immutable evidence digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/system-005
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload SYSTEM-005 independent evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-system-005-${{ github.event.pull_request.number || github.run_number }}
+          path: evidence/system-005/
+          if-no-files-found: error
+          retention-days: 30
