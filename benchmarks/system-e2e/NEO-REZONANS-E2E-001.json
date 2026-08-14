@@ -1,0 +1,284 @@
+{
+  "schema": "cgqa.neo-rezonans-system-trace.v0.1",
+  "traceId": "NEO-REZONANS-E2E-001",
+  "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+  "snapshotId": "NEO-REZONANS-SYSTEM-001",
+  "authorityBoundary": {
+    "syntheticOnly": true,
+    "externalEffectsAllowed": false,
+    "evidenceMayGrantAuthority": false,
+    "receiptGrantsMutationAuthority": false
+  },
+  "stages": [
+    {
+      "stageId": "S1-RESONANCE-INTENT",
+      "layerId": "resonance",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": null,
+      "eventType": "INTENT_CAPTURED",
+      "inputEvidenceRefs": [],
+      "outputEvidenceRef": "evidence:e2e001:intent",
+      "factsProduced": [
+        "synthetic intent exists",
+        "uncertainty is explicit",
+        "no execution authority is implied"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    },
+    {
+      "stageId": "S2-CML-MEMORY",
+      "layerId": "cml",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": "S1-RESONANCE-INTENT",
+      "eventType": "CAUSAL_MEMORY_BOUND",
+      "inputEvidenceRefs": [
+        "evidence:e2e001:intent"
+      ],
+      "outputEvidenceRef": "evidence:e2e001:memory",
+      "factsProduced": [
+        "causal history is bounded",
+        "applicability is synthetic",
+        "information quality is declared"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    },
+    {
+      "stageId": "S3-FCRP-CASE",
+      "layerId": "fcrp",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": "S2-CML-MEMORY",
+      "eventType": "CAUSAL_CASE_EVALUATED",
+      "inputEvidenceRefs": [
+        "evidence:e2e001:memory"
+      ],
+      "outputEvidenceRef": "evidence:e2e001:fcrp",
+      "factsProduced": [
+        "idea contract is explicit",
+        "first meaningful divergence is identified",
+        "simulation is non-authorizing"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    },
+    {
+      "stageId": "S4-LIMINAL-AUTH",
+      "layerId": "liminalosai",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": "S3-FCRP-CASE",
+      "eventType": "SYNTHETIC_AUTHORIZATION_ISSUED",
+      "inputEvidenceRefs": [
+        "evidence:e2e001:fcrp"
+      ],
+      "outputEvidenceRef": "evidence:e2e001:authorization",
+      "factsProduced": [
+        "authorization is a separate contract",
+        "scope is synthetic-only",
+        "evidence did not create authority"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    },
+    {
+      "stageId": "S5-CGQA-VERIFY",
+      "layerId": "contractgraph-qa",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": "S4-LIMINAL-AUTH",
+      "eventType": "SYNTHETIC_STATE_TRANSITION_VERIFIED",
+      "inputEvidenceRefs": [
+        "evidence:e2e001:authorization"
+      ],
+      "outputEvidenceRef": "evidence:e2e001:state-transition",
+      "factsProduced": [
+        "synthetic state transition is bound",
+        "invariant result is explicit",
+        "authorization is consumed only at the governed boundary"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    },
+    {
+      "stageId": "S6-PROOFPATH-PROOF",
+      "layerId": "proofpath",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": "S5-CGQA-VERIFY",
+      "eventType": "PROOF_RECEIPT_BOUND",
+      "inputEvidenceRefs": [
+        "evidence:e2e001:state-transition"
+      ],
+      "outputEvidenceRef": "evidence:e2e001:proof",
+      "factsProduced": [
+        "proof binds exact synthetic outcome",
+        "provenance remains distinct from authority",
+        "observer identity is evidence"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    },
+    {
+      "stageId": "S7-LIMINALDB-DURABLE",
+      "layerId": "liminaldb",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": "S6-PROOFPATH-PROOF",
+      "eventType": "DURABLE_SYNTHETIC_STATE_RECORDED",
+      "inputEvidenceRefs": [
+        "evidence:e2e001:proof"
+      ],
+      "outputEvidenceRef": "evidence:e2e001:durable",
+      "factsProduced": [
+        "durable identity preserves provenance",
+        "historical identity is not compatibility",
+        "recording grants no execution authority"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    },
+    {
+      "stageId": "S8-RINSE-REFLECT",
+      "layerId": "rinse",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "parentStageId": "S7-LIMINALDB-DURABLE",
+      "eventType": "REFLECTION_CANDIDATE_CREATED",
+      "inputEvidenceRefs": [
+        "evidence:e2e001:durable"
+      ],
+      "outputEvidenceRef": "evidence:e2e001:reflection",
+      "factsProduced": [
+        "reinterpretation is evidence-bound",
+        "missing evidence remains visible",
+        "source trace remains immutable"
+      ],
+      "sourceMutation": false,
+      "externalEffect": false
+    }
+  ],
+  "transfers": [
+    {
+      "from": "resonance",
+      "to": "cml",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "intent",
+        "uncertainty",
+        "source_refs"
+      ],
+      "authorityTransferred": false,
+      "authorizationRef": null,
+      "feedback": false
+    },
+    {
+      "from": "cml",
+      "to": "fcrp",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "memory_record_ref",
+        "causal_history",
+        "applicability",
+        "information_quality",
+        "evidence_refs"
+      ],
+      "authorityTransferred": false,
+      "authorizationRef": null,
+      "feedback": false
+    },
+    {
+      "from": "fcrp",
+      "to": "liminalosai",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "idea_contract",
+        "causal_case_ref",
+        "first_meaningful_divergence",
+        "refactor_point",
+        "simulation_result",
+        "evidence_refs"
+      ],
+      "authorityTransferred": false,
+      "authorizationRef": null,
+      "feedback": false
+    },
+    {
+      "from": "liminalosai",
+      "to": "contractgraph-qa",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "authorization_ref",
+        "authorized_scope",
+        "constraints",
+        "runtime_context",
+        "expiry_or_epoch"
+      ],
+      "authorityTransferred": true,
+      "authorizationRef": "auth:synthetic:e2e001",
+      "feedback": false
+    },
+    {
+      "from": "contractgraph-qa",
+      "to": "proofpath",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "state_transition_evidence",
+        "invariant_result",
+        "execution_outcome",
+        "causal_path",
+        "evidence_digest"
+      ],
+      "authorityTransferred": false,
+      "authorizationRef": null,
+      "feedback": false
+    },
+    {
+      "from": "proofpath",
+      "to": "liminaldb",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "proof_receipt",
+        "provenance",
+        "artifact_digest",
+        "observer_identity",
+        "verification_refs"
+      ],
+      "authorityTransferred": false,
+      "authorizationRef": null,
+      "feedback": false
+    },
+    {
+      "from": "liminaldb",
+      "to": "rinse",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "durable_evidence_ref",
+        "historical_state",
+        "provenance",
+        "compatibility_ref",
+        "recorded_time"
+      ],
+      "authorityTransferred": false,
+      "authorizationRef": null,
+      "feedback": false
+    },
+    {
+      "from": "rinse",
+      "to": "resonance",
+      "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+      "facts": [
+        "reinterpretation_candidate",
+        "uncertainty",
+        "supersession_relation",
+        "missing_evidence",
+        "evidence_refs"
+      ],
+      "authorityTransferred": false,
+      "authorizationRef": null,
+      "feedback": true
+    }
+  ],
+  "final": {
+    "logicalOperationId": "lop:neo-rezonans:heartbeat:001",
+    "status": "REFLECTED_WITH_EVIDENCE",
+    "evidenceRef": "evidence:e2e001:reflection",
+    "executionAuthorized": false,
+    "sourceMutated": false
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-SYSTEM-002",
+  "title": "NEO REZONANS end-to-end logical-operation heartbeat",
+  "scope": {
+    "nodeId": "neo-rezonans-e2e-heartbeat",
+    "scale": "multi-repository system / synthetic logical operation",
+    "ideaContract": {
+      "purpose": "Prove that one logical operation can traverse the canonical NEO REZONANS system without losing identity, causal lineage, evidence lineage, or leaking execution authority.",
+      "expectedOutcome": "A deterministic synthetic receipt binds all eight stages and all eight transfers to one logical_operation_id and the canonical system snapshot while preserving the single explicit authority boundary.",
+      "invariants": [
+        "one logical_operation_id survives every stage and transfer",
+        "each stage names the immediately preceding stage as causal parent",
+        "each stage after the first inherits the previous stage evidence reference",
+        "only the LiminalOSAI to ContractGraph-QA edge may transfer explicit authorization",
+        "no stage performs an external effect or mutates source history",
+        "RINSE feedback returns an evidence-bound reflection rather than executable authority"
+      ],
+      "forbiddenOutcomes": [
+        "logical operation identity drift",
+        "broken causal parent lineage",
+        "broken evidence lineage",
+        "authority transfer on a non-authority edge",
+        "external side effect during the synthetic proof",
+        "reinterpretation mutating historical source evidence"
+      ],
+      "dependencies": [
+        "NEO-REZONANS-SYSTEM-001",
+        "NEO-REZONANS-E2E-001"
+      ],
+      "parentContract": "NEO REZONANS System Contract v0.1"
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-SYSTEM-SNAPSHOT",
+      "kind": "system-snapshot",
+      "ref": "governance/neo-rezonans-system-snapshot.v0.1.json",
+      "claim": "The canonical system snapshot defines the exact layer order, transfer facts, authority mode, and feedback boundary consumed by the receipt validator.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-E2E-TRACE",
+      "kind": "synthetic-system-trace",
+      "ref": "benchmarks/system-e2e/NEO-REZONANS-E2E-001.json",
+      "claim": "The synthetic trace carries one logical operation through every canonical layer and transfer without external effects.",
+      "strength": "SYNTHETIC",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-RECEIPT-VALIDATOR",
+      "kind": "recomputable-validator",
+      "ref": "contractgraph_qa/system_receipt.py",
+      "claim": "The validator recomputes identity, causal/evidence lineage, edge semantics, authority transfer count, feedback count, and deterministic receipt digests.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "CAUSAL_SEQUENCE",
+      "REPOSITORY_HISTORY"
+    ],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": [
+      "E-E2E-TRACE",
+      "E-RECEIPT-VALIDATOR"
+    ]
+  },
+  "timeline": {
+    "past": {
+      "summary": "FCRP-SYSTEM-001 proved the canonical cross-repository topology and transfer boundaries, but it did not prove that one concrete logical operation could traverse the complete loop.",
+      "evidenceRefs": [
+        "E-SYSTEM-SNAPSHOT"
+      ]
+    },
+    "present": {
+      "summary": "NEO-REZONANS-E2E-001 exercises all eight stages and transfers under one synthetic logical operation and produces a deterministic system receipt.",
+      "evidenceRefs": [
+        "E-E2E-TRACE",
+        "E-RECEIPT-VALIDATOR"
+      ]
+    },
+    "future": {
+      "summary": "A later runtime integration may replace synthetic stage producers, but it must preserve the same identity, lineage, authority, and non-mutation invariants or version the contract explicitly.",
+      "evidenceRefs": [
+        "E-SYSTEM-SNAPSHOT",
+        "E-RECEIPT-VALIDATOR"
+      ]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "system-contract",
+      "phase": "past",
+      "statement": "The system had a machine-readable canonical topology and transfer contract but no dynamic proof that one operation could traverse it end to end.",
+      "evidenceRefs": [
+        "E-SYSTEM-SNAPSHOT"
+      ]
+    },
+    {
+      "id": "N2",
+      "level": "system-trace",
+      "phase": "present",
+      "statement": "A synthetic trace introduces one logical_operation_id across all eight canonical layers and the closing feedback transfer.",
+      "evidenceRefs": [
+        "E-E2E-TRACE"
+      ]
+    },
+    {
+      "id": "N3",
+      "level": "identity-lineage",
+      "phase": "present",
+      "statement": "The receipt requires contiguous parent-stage lineage and inherited evidence lineage while rejecting logical-operation identity drift.",
+      "evidenceRefs": [
+        "E-RECEIPT-VALIDATOR"
+      ]
+    },
+    {
+      "id": "N4",
+      "level": "authority-boundary",
+      "phase": "present",
+      "statement": "Exactly one explicit authority transfer is permitted at LiminalOSAI to ContractGraph-QA and every non-authority edge fails closed on leaked authority.",
+      "evidenceRefs": [
+        "E-SYSTEM-SNAPSHOT",
+        "E-RECEIPT-VALIDATOR"
+      ]
+    },
+    {
+      "id": "N5",
+      "level": "proof-persistence-reflection",
+      "phase": "present",
+      "statement": "Proof, durable state, and reinterpretation preserve evidence lineage while external effects and source mutation remain forbidden in the synthetic traversal.",
+      "evidenceRefs": [
+        "E-E2E-TRACE",
+        "E-RECEIPT-VALIDATOR"
+      ]
+    },
+    {
+      "id": "N6",
+      "level": "system-receipt",
+      "phase": "present",
+      "statement": "The deterministic receipt closes the loop with REFLECTED_WITH_EVIDENCE, zero authority leaks, zero external effects, and zero source mutation.",
+      "evidenceRefs": [
+        "E-RECEIPT-VALIDATOR"
+      ]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N1",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N2",
+    "evidenceRefs": [
+      "E-SYSTEM-SNAPSHOT",
+      "E-E2E-TRACE"
+    ]
+  },
+  "navigation": {
+    "direction": "UP",
+    "reason": "The missing guarantee existed above individual repositories: topology was proven, but whole-operation continuity across the composed system was not."
+  },
+  "refactor": {
+    "point": "N2",
+    "change": "Introduce a canonical synthetic end-to-end trace plus deterministic system receipt validator bound to the canonical system snapshot.",
+    "expectedEffect": "A single logical operation becomes machine-verifiable across identity, causal/evidence lineage, authority transfer, proof, persistence, reflection, and feedback boundaries."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": [
+      "children",
+      "siblings",
+      "parent",
+      "dependencies",
+      "future"
+    ],
+    "evidenceRefs": [
+      "E-E2E-TRACE",
+      "E-RECEIPT-VALIDATOR"
+    ]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "FCRP-SYSTEM-002 validates a synthetic composition proof only; PASS does not authorize repository mutation, provider calls, deployment, financial action, or any external effect."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "NOT_REQUIRED",
+    "evidenceRefs": [
+      "E-SYSTEM-SNAPSHOT",
+      "E-E2E-TRACE",
+      "E-RECEIPT-VALIDATOR"
+    ],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}
