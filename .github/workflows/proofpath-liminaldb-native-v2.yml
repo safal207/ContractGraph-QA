@@ -186,8 +186,8 @@ jobs:
           corepack enable
           corepack prepare pnpm@9.15.0 --activate
           pnpm install --frozen-lockfile
-          LTP_INSPECT_FREEZE_CLOCK=1 pnpm -w ltp:inspect -- trace --strict --quiet --format json --color never --input "$GITHUB_WORKSPACE/evidence/system-004/system-004.trace.jsonl" --output "$GITHUB_WORKSPACE/evidence/system-004/ltp-inspect.json"
-          pnpm -w ltp:inspect -- replay --input "$GITHUB_WORKSPACE/evidence/system-004/system-004.trace.jsonl" > "$GITHUB_WORKSPACE/evidence/system-004/ltp-replay.txt"
+          LTP_INSPECT_FREEZE_CLOCK=1 pnpm -w ltp:inspect trace --strict --quiet --format json --color never --input "$GITHUB_WORKSPACE/evidence/system-004/system-004.trace.jsonl" --output "$GITHUB_WORKSPACE/evidence/system-004/ltp-inspect.json"
+          pnpm -w ltp:inspect replay --input "$GITHUB_WORKSPACE/evidence/system-004/system-004.trace.jsonl" > "$GITHUB_WORKSPACE/evidence/system-004/ltp-replay.txt"
           jq -e '.contract.name=="ltp-inspect" and .input.frames==4' "$GITHUB_WORKSPACE/evidence/system-004/ltp-inspect.json" >/dev/null
           test -s "$GITHUB_WORKSPACE/evidence/system-004/ltp-replay.txt"
 
