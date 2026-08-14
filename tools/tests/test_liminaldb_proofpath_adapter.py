@@ -12,12 +12,14 @@ from contractgraph_qa.liminaldb_proofpath_adapter import (
     build_system_004_path_trace,
 )
 
+LOGICAL_OPERATION_ID = "crossmint-public-example-001"
+
 
 def sample_scig() -> dict:
     return {
         "schema_version": "0.1",
         "incident_id": "CGQA-PROOFPATH-0123456789abcdef",
-        "logical_operation_id": "lop:neo-rezonans:heartbeat:001",
+        "logical_operation_id": LOGICAL_OPERATION_ID,
         "evidence": [{"id": "e1", "sha256": "1" * 64}],
     }
 
@@ -46,7 +48,7 @@ def sample_receipt(scig: dict | None = None) -> dict:
     return receipt
 
 
-def sample_import_summary(logical_operation_id: str = "lop:neo-rezonans:heartbeat:001") -> dict:
+def sample_import_summary(logical_operation_id: str = LOGICAL_OPERATION_ID) -> dict:
     return {
         "schema_version": "liminaldb-proofpath-import-check-v0.1",
         "mode": "dry_run",
@@ -124,6 +126,7 @@ class LiminalDBProofPathAdapterTests(unittest.TestCase):
             "stop-before-persistence",
         ])
         self.assertEqual(len({frame["continuity_token"] for frame in trace}), 1)
+        self.assertEqual({frame["payload"]["logical_operation_id"] for frame in trace}, {LOGICAL_OPERATION_ID})
 
     def test_path_trace_rejects_false_durable_claim(self) -> None:
         event = build_liminaldb_proofpath_audit_event(
