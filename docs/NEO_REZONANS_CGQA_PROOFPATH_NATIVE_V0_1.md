@@ -9,11 +9,13 @@ ContractGraph-QA native deterministic provider evidence
         ↓ exact local replay
 CGQA → ProofPath SCIG adapter
         ↓ authority_transfer = NONE
-ProofPath canonical SCIG v0.1 bytes
-        ↓ native Rust proofpath-scig verifier
+ProofPath canonical SCIG v0.1 source bytes
+        ↓ generated dependency lock is captured and bound
+ProofPath native Rust proofpath-scig verifier under --locked
 VALID
         ↓
-CGQA deterministic bridge receipt over native verifier output
+CGQA deterministic bridge receipt
+        + native-segment evidence envelope
 ```
 
 This is the first native segment of the NEO REZONANS heartbeat. It is **not** yet full runtime interoperability.
@@ -33,7 +35,7 @@ current ProofPath repository main
     = where the capability manifest is read
 
 proofpath.scig.v0.1 canonical capability commit
-    = exact bytes consumed as the native verifier
+    = exact source bytes consumed as the native verifier
 ```
 
 The current capability manifest declares:
@@ -45,7 +47,44 @@ consumer_default_allowed = true
 canonical_commit         = 685d50e256a5125a21f4c4584b326411caaa64ad
 ```
 
-SYSTEM-003 checks the current manifest first and then executes `proofpath-scig` at that exact capability commit. Repository head and capability identity are intentionally not treated as interchangeable facts.
+SYSTEM-003 checks the current manifest first and then executes `proofpath-scig` from that exact capability commit. Repository head and capability identity are intentionally not treated as interchangeable facts.
+
+## Dependency-resolution identity
+
+The first native run exposed another identity boundary: **ProofPath does not commit a workspace `Cargo.lock`**, including at the canonical SCIG capability commit and at current `main`.
+
+Therefore:
+
+```text
+exact source commit
+!=
+exact dependency resolution
+```
+
+SYSTEM-003 does not solve this by silently removing `--locked`.
+
+Instead the gate executes:
+
+```text
+exact SCIG capability checkout
+        ↓
+cargo generate-lockfile
+        ↓
+copy generated Cargo.lock into evidence
+        ↓
+compute Cargo.lock SHA-256
+        ↓
+record Rust/Cargo versions
+        ↓
+cargo test --locked
+cargo run  --locked
+```
+
+The generated lock is a **run-specific dependency-resolution identity**. It is stored beside the native verifier output and bound into `cgqa.native-segment-evidence.v0.1` together with the bridge receipt digest and exact capability commit.
+
+This means a later dependency-resolution change cannot masquerade as the same proof. It must produce a different evidence identity.
+
+It does **not** mean the generated lock was authored or endorsed by ProofPath.
 
 ## Native ContractGraph-QA producer
 
@@ -108,9 +147,10 @@ The native SCIG contract still validates its own state transition, invariant, ca
 
 ## Native verifier
 
-The exact ProofPath capability is executed with:
+After generating and recording the run-specific lock, the exact ProofPath capability is executed with:
 
 ```bash
+cargo generate-lockfile
 cargo test --locked -p proofpath-verifier --bin proofpath-scig
 cargo run --locked -p proofpath-verifier --bin proofpath-scig -- <generated-scig.json>
 ```
@@ -122,13 +162,13 @@ VERIFICATION PASSED
 RESULT       VALID
 ```
 
-## Receipt boundary
+## Receipt and evidence boundary
 
 The deterministic `cgqa.proofpath-scig-native-bridge-receipt.v0.1` receipt is produced by ContractGraph-QA **around the native ProofPath verifier output**.
 
 It is not represented as a native ProofPath signed/provenance receipt. That stronger product surface would require a separately promoted ProofPath capability.
 
-The receipt binds:
+The bridge receipt binds:
 
 ```text
 logicalOperationId
@@ -142,6 +182,18 @@ executionAuthorized = false
 mutationAuthorized = false
 externalEffectsPerformed = false
 ```
+
+The surrounding `cgqa.native-segment-evidence.v0.1` envelope additionally binds:
+
+```text
+current ProofPath main observed by the gate
+ProofPath capability commit
+ProofPath generated Cargo.lock SHA-256
+bridge receipt digest
+FCRP-SYSTEM-003 decision
+```
+
+The uploaded evidence directory also includes the generated `proofpath-Cargo.lock` and a `SHA256SUMS` file covering the complete evidence set.
 
 ## Fail-closed regressions
 
@@ -164,6 +216,7 @@ SYSTEM-003 performs no provider call, wallet action, payment, deployment, reposi
 native evidence producer != live provider execution
 native verifier           != external endorsement
 VALID                      != execution authority
+generated Cargo.lock       != ProofPath-authored lock
 bridge receipt             != ProofPath signed receipt
 ```
 
