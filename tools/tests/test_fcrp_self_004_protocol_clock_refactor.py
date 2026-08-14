@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CASE = ROOT / "benchmarks" / "fcrp-v0.1" / "FCRP-SELF-004-protocol-clock-refactor.json"
 G004Q_CASE = ROOT / "external-validation" / "gonka" / "cases" / "G-004Q-protocol-clock-reconciliation.yaml"
 G004Q_HARNESS = ROOT / "external-validation" / "gonka" / "harness" / "cgqa_protocol_clock_reconciliation_test.go"
+CGQA_SUPPORT = ROOT / "external-validation" / "gonka" / "remediation" / "cgqa_safe_correlation_support.go"
 
 
 class FCRPSelf004ProtocolClockRefactorTest(unittest.TestCase):
@@ -28,15 +29,18 @@ class FCRPSelf004ProtocolClockRefactorTest(unittest.TestCase):
         self.assertTrue(result["stopConditionsSatisfied"])
         self.assertEqual(case["expectedProtocolDecision"], result["decision"])
 
-    def test_g004q_uses_protocol_event_not_longer_wait(self) -> None:
+    def test_g004q_binds_readiness_before_protocol_event(self) -> None:
         contract = G004Q_CASE.read_text(encoding="utf-8")
         harness = G004Q_HARNESS.read_text(encoding="utf-8")
+        support = CGQA_SUPPORT.read_text(encoding="utf-8")
 
         self.assertIn("next_eligible_state_advancing_request", contract)
-        self.assertIn("protocol-clock advance", contract)
-        self.assertIn("advanceCorrelationID", harness)
-        self.assertIn("ProtocolAdvanceObserved", harness)
-        self.assertIn("retry winner remained non-terminal after an actual state-advance opportunity", harness)
+        self.assertIn("retry_winner_nonce in finish_inference_ids", contract)
+        self.assertIn("waitG004QPendingFinish", harness)
+        self.assertIn("FinishReadyBeforeAdvance", harness)
+        self.assertIn("retry winner remained non-terminal after a witnessed Finish and an actual state-advance opportunity", harness)
+        self.assertIn("handleCGQAPendingProtocolTxs", support)
+        self.assertIn("p.session.PendingTxs()", support)
 
     def test_financial_oracle_uses_whole_state_delta(self) -> None:
         contract = G004Q_CASE.read_text(encoding="utf-8")
