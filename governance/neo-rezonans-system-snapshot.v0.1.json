@@ -6,7 +6,8 @@
     "purpose": "Compose the NEO REZONANS trust-infrastructure repositories as one inspectable causal system without collapsing their distinct authority, evidence, memory, proof, persistence, and reinterpretation roles.",
     "expectedOutcome": "A consumer can identify exact canonical revisions for every layer and determine which facts may cross each boundary without inferring permissions or truth that the source layer did not grant.",
     "invariants": [
-      "every default system dependency is pinned to a canonical main revision",
+      "every default system dependency is pinned to a canonical main revision at observation time",
+      "the host repository pins its pre-acceptance capability base so the snapshot cannot self-reference its own future merge commit",
       "evidence never becomes authority by omission or maturity",
       "causal analysis and verification do not themselves grant mutation authority",
       "historical provenance remains distinct from current semantic compatibility",
@@ -18,11 +19,16 @@
       "evidence or review maturity treated as execution authority",
       "local verification treated as whole-system truth without boundary checks",
       "reinterpretation silently mutating historical evidence",
-      "repository drift silently preserving an obsolete system snapshot"
+      "repository drift silently preserving an obsolete system snapshot",
+      "self-referential snapshot commit identity"
     ]
   },
   "snapshotPolicy": {
     "mainHeadMustMatchAtAcceptance": true,
+    "hostRepository": "safal207/ContractGraph-QA",
+    "hostBaseCommit": "505041cae23d0527f7d567e1a6bd6d1952dc4960",
+    "hostAcceptanceMode": "BASE_PLUS_GOVERNANCE_SNAPSHOT",
+    "hostAcceptanceDoesNotCountAsDrift": true,
     "onHeadDrift": "REVALIDATE_SYSTEM_SNAPSHOT",
     "branchOnlyDefaultDependenciesAllowed": false
   },
@@ -119,146 +125,64 @@
     {
       "from": "resonance",
       "to": "cml",
-      "allowedFacts": [
-        "intent",
-        "claims",
-        "questions",
-        "source_refs",
-        "uncertainty"
-      ],
-      "forbiddenInferences": [
-        "execution_authority",
-        "verified_fact_without_evidence",
-        "canonical_memory_acceptance"
-      ],
+      "allowedFacts": ["intent", "claims", "questions", "source_refs", "uncertainty"],
+      "forbiddenInferences": ["execution_authority", "verified_fact_without_evidence", "canonical_memory_acceptance"],
       "authorityMode": "NONE",
       "feedback": false
     },
     {
       "from": "cml",
       "to": "fcrp",
-      "allowedFacts": [
-        "memory_record_ref",
-        "causal_history",
-        "applicability",
-        "information_quality",
-        "evidence_refs"
-      ],
-      "forbiddenInferences": [
-        "execution_authority",
-        "root_cause_truth",
-        "current_applicability_from_historical_verification"
-      ],
+      "allowedFacts": ["memory_record_ref", "causal_history", "applicability", "information_quality", "evidence_refs"],
+      "forbiddenInferences": ["execution_authority", "root_cause_truth", "current_applicability_from_historical_verification"],
       "authorityMode": "NONE",
       "feedback": false
     },
     {
       "from": "fcrp",
       "to": "liminalosai",
-      "allowedFacts": [
-        "idea_contract",
-        "causal_case_ref",
-        "first_meaningful_divergence",
-        "refactor_point",
-        "simulation_result",
-        "evidence_refs"
-      ],
-      "forbiddenInferences": [
-        "execution_authority",
-        "mutation_authority",
-        "permission_from_fcrp_pass"
-      ],
+      "allowedFacts": ["idea_contract", "causal_case_ref", "first_meaningful_divergence", "refactor_point", "simulation_result", "evidence_refs"],
+      "forbiddenInferences": ["execution_authority", "mutation_authority", "permission_from_fcrp_pass"],
       "authorityMode": "NONE",
       "feedback": false
     },
     {
       "from": "liminalosai",
       "to": "contractgraph-qa",
-      "allowedFacts": [
-        "authorization_ref",
-        "authorized_scope",
-        "constraints",
-        "runtime_context",
-        "expiry_or_epoch"
-      ],
-      "forbiddenInferences": [
-        "evidence_as_authority",
-        "implicit_capability",
-        "authority_beyond_explicit_scope"
-      ],
+      "allowedFacts": ["authorization_ref", "authorized_scope", "constraints", "runtime_context", "expiry_or_epoch"],
+      "forbiddenInferences": ["evidence_as_authority", "implicit_capability", "authority_beyond_explicit_scope"],
       "authorityMode": "EXPLICIT_CONTRACT_ONLY",
       "feedback": false
     },
     {
       "from": "contractgraph-qa",
       "to": "proofpath",
-      "allowedFacts": [
-        "state_transition_evidence",
-        "invariant_result",
-        "execution_outcome",
-        "causal_path",
-        "evidence_digest"
-      ],
-      "forbiddenInferences": [
-        "execution_authority",
-        "truth_certificate",
-        "capability_grant"
-      ],
+      "allowedFacts": ["state_transition_evidence", "invariant_result", "execution_outcome", "causal_path", "evidence_digest"],
+      "forbiddenInferences": ["execution_authority", "truth_certificate", "capability_grant"],
       "authorityMode": "NONE",
       "feedback": false
     },
     {
       "from": "proofpath",
       "to": "liminaldb",
-      "allowedFacts": [
-        "proof_receipt",
-        "provenance",
-        "artifact_digest",
-        "observer_identity",
-        "verification_refs"
-      ],
-      "forbiddenInferences": [
-        "execution_authority",
-        "durable_memory_authority_from_proof_alone",
-        "semantic_truth_from_signature_alone"
-      ],
+      "allowedFacts": ["proof_receipt", "provenance", "artifact_digest", "observer_identity", "verification_refs"],
+      "forbiddenInferences": ["execution_authority", "durable_memory_authority_from_proof_alone", "semantic_truth_from_signature_alone"],
       "authorityMode": "NONE",
       "feedback": false
     },
     {
       "from": "liminaldb",
       "to": "rinse",
-      "allowedFacts": [
-        "durable_evidence_ref",
-        "historical_state",
-        "provenance",
-        "compatibility_ref",
-        "recorded_time"
-      ],
-      "forbiddenInferences": [
-        "execution_authority",
-        "source_mutation_authority",
-        "historical_provenance_as_current_compatibility"
-      ],
+      "allowedFacts": ["durable_evidence_ref", "historical_state", "provenance", "compatibility_ref", "recorded_time"],
+      "forbiddenInferences": ["execution_authority", "source_mutation_authority", "historical_provenance_as_current_compatibility"],
       "authorityMode": "NONE",
       "feedback": false
     },
     {
       "from": "rinse",
       "to": "resonance",
-      "allowedFacts": [
-        "reinterpretation_candidate",
-        "uncertainty",
-        "supersession_relation",
-        "missing_evidence",
-        "evidence_refs"
-      ],
-      "forbiddenInferences": [
-        "execution_authority",
-        "source_mutation",
-        "scientific_or_market_truth",
-        "accepted_action_from_reflection_only"
-      ],
+      "allowedFacts": ["reinterpretation_candidate", "uncertainty", "supersession_relation", "missing_evidence", "evidence_refs"],
+      "forbiddenInferences": ["execution_authority", "source_mutation", "scientific_or_market_truth", "accepted_action_from_reflection_only"],
       "authorityMode": "NONE",
       "feedback": true
     }
