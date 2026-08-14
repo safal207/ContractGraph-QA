@@ -1,0 +1,141 @@
+name: FCRP P1-2 — Evidence-Bundle and Replay Manifest
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - schemas/evidence-bundle-replay-manifest.v0.1.schema.json
+      - fixtures/p1-2/**
+      - tools/evidence_bundle_replay_manifest.py
+      - tools/tests/test_evidence_bundle_replay_manifest.py
+      - docs/NEO_REZONANS_P1_2_EVIDENCE_BUNDLE_REPLAY_MANIFEST_V0_1.md
+      - .github/workflows/fcrp-p1-2-evidence-bundle-replay-manifest.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-p1-2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      EXPECTED_PR_BASE: b54173530c675083426137176cde0aed0b90853a
+      EXPECTED_BUNDLE_CGQA_HEAD: fcd5e88655eedd3e4e4d3944bb133a8e2c8b0d8e
+
+    steps:
+      - name: Checkout exact P1-2 verifier subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact verifier subject and PR base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Validate schema syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq empty schemas/evidence-bundle-replay-manifest.v0.1.schema.json
+          jq empty fixtures/p1-2/evidence-bundle-replay-manifest.v0.1.json
+
+      - name: Run focused P1-2 tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m py_compile \
+            tools/evidence_bundle_replay_manifest.py \
+            tools/tests/test_evidence_bundle_replay_manifest.py
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m unittest \
+            tools.tests.test_evidence_bundle_replay_manifest -v
+
+      - name: Build and independently replay the evidence bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p1-2/bundle
+          cp fixtures/p1-2/evidence-bundle-replay-manifest.v0.1.json evidence/p1-2/manifest.json
+          cp fixtures/p1-2/bundle/*.json evidence/p1-2/bundle/
+          PYTHONPATH="$GITHUB_WORKSPACE" python tools/evidence_bundle_replay_manifest.py verify \
+            --manifest evidence/p1-2/manifest.json \
+            --root evidence/p1-2/bundle \
+            --checked-subject "$EXACT_HEAD" \
+            --expected-bundle-subject "$EXPECTED_BUNDLE_CGQA_HEAD" \
+            --output evidence/p1-2/result.json
+          PYTHONPATH="$GITHUB_WORKSPACE" python tools/evidence_bundle_replay_manifest.py verify \
+            --manifest evidence/p1-2/manifest.json \
+            --root evidence/p1-2/bundle \
+            --checked-subject "$EXACT_HEAD" \
+            --expected-bundle-subject "$EXPECTED_BUNDLE_CGQA_HEAD" \
+            --output /tmp/p1-2-replay-result.json
+          cmp evidence/p1-2/result.json /tmp/p1-2-replay-result.json
+          jq -e '
+            .decision == "PASS" and
+            .subject_count == 4 and
+            .artifact_count == 6 and
+            .member_count == 6 and
+            .replay_step_count == 6 and
+            .replayable == true and
+            .replay_stable == true and
+            .side_effects_executed == false and
+            (.authority.execution_authorized == false) and
+            (.authority.external_effects_authorized == false) and
+            (.authority.mutation_authorized == false)
+          ' evidence/p1-2/result.json >/dev/null
+
+      - name: Capture exact run context
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("evidence/p1-2/run-context.json").write_text(json.dumps({
+              "schema": "cgqa.p1-2-run-context.v0.1",
+              "checked_subject": os.environ["EXACT_HEAD"],
+              "expected_subject": os.environ["EXACT_HEAD"],
+              "bundle_contractgraph_qa_subject": os.environ["EXPECTED_BUNDLE_CGQA_HEAD"],
+              "reported_sha": os.environ.get("GITHUB_SHA"),
+              "workflow": os.environ.get("GITHUB_WORKFLOW"),
+              "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "authority": "advisory only; byte-integrity and replay-reference verification; no executor or external effect",
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+
+      - name: Build immutable P1-2 SHA-256 manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/p1-2
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          sha256sum -c <(sed 's#^  *./#  #' SHA256SUMS)
+
+      - name: Upload P1-2 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-p1-2-evidence-bundle-replay-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/p1-2/
+          if-no-files-found: error
+          retention-days: 90

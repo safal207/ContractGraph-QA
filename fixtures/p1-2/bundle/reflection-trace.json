@@ -1,0 +1,8 @@
+{
+  "artifact_role": "reflection",
+  "component": "rinse",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "reflection_only": true,
+  "schema": "cgqa.p1-2-fixture-reflection-trace.v0.1",
+  "source_mutated": false
+}

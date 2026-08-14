@@ -1,0 +1,7 @@
+{
+  "artifact_role": "replay",
+  "expected_result": "SAME_RESULT",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "schema": "cgqa.p1-2-fixture-replay-trace.v0.1",
+  "side_effects_executed": false
+}

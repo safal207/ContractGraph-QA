@@ -1,0 +1,8 @@
+{
+  "artifact_role": "verification",
+  "decision": "PASS",
+  "evidence_integrity": "RECOMPUTABLE",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "schema": "cgqa.p1-2-fixture-verification-result.v0.1",
+  "source_mutated": false
+}
