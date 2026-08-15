@@ -1,0 +1,43 @@
+{
+  "schema": "cgqa.payment-provider-adapter.v0.3",
+  "providerId": "coinbase-x402-v2-public",
+  "profileVersion": "0.1",
+  "create": {
+    "supportsIdempotencyKey": false,
+    "sameKeyReplayDocumented": false
+  },
+  "stateMap": {
+    "verify-valid": "pending",
+    "verify-invalid": "failed",
+    "settle-success": "committed",
+    "settle-failed": "failed"
+  },
+  "evidenceSources": [
+    {
+      "kind": "facilitator-settle",
+      "authoritativeForFinality": true
+    },
+    {
+      "kind": "facilitator-verify",
+      "authoritativeForFinality": false
+    }
+  ],
+  "evidencePrecedenceStatus": "unresolved",
+  "evidencePrecedence": [],
+  "retrySemanticsStatus": "unresolved",
+  "retryAllowedAfterProviderStates": [],
+  "publicContractRefs": [
+    "https://docs.cdp.coinbase.com/x402/core-concepts/how-it-works",
+    "https://docs.cdp.coinbase.com/x402/core-concepts/facilitator",
+    "https://docs.cdp.coinbase.com/api-reference/v2/rest-api/x402-facilitator/verify-payment",
+    "https://docs.cdp.coinbase.com/api-reference/v2/rest-api/x402-facilitator/settle-payment",
+    "https://docs.cdp.coinbase.com/x402/support/faq",
+    "https://github.com/x402-foundation/x402/blob/main/specs/x402-specification-v2.md"
+  ],
+  "openQuestions": [
+    "If settlement succeeds but the client loses the HTTP resource response and PAYMENT-RESPONSE header, what public read-after-settle discovery mechanism should the client use before authorizing another economic action?",
+    "The Payment Identifier extension is documented as an idempotency extension for duplicate calls, but it is optional; what recovery guarantees apply when the extension is absent?",
+    "How should an autonomous client bind the x402 authorization nonce, protected-resource intent, settlement transaction and any Payment Identifier into one stable logical-operation lineage?",
+    "Does a facilitator settle failure always prove that no later onchain effect can appear, or must specific error classes remain ambiguous?"
+  ]
+}
