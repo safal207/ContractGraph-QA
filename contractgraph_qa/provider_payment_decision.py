@@ -1,8 +1,8 @@
-"""Bridge the reviewed Crossmint public adapter into the Unified Payment Gate.
+"""Bridge reviewed public provider profiles into the Unified Payment Gate.
 
-The pilot never calls a provider and never infers financial authority. It composes
-already-captured Crossmint observations with explicit authority evidence, then applies
-a fail-closed retry-authority mapping before delegating the final decision to the
+The bridge never calls a provider and never infers financial authority. It composes
+already-captured provider observations with explicit authority evidence, applies
+fail-closed retry-authority semantics, and delegates the final decision to the
 repository's Unified Agent Payment Decision Gate.
 """
 
@@ -19,11 +19,31 @@ from contractgraph_qa.provider_adapter import (
 
 RESULT_SCHEMA = "cgqa.provider-payment-decision.v0.1"
 _AUTHORITY = {"authorized", "revoked", "expired", "unknown"}
-_REVIEWED_PROVIDER_ID = "crossmint-wallet-transactions-public"
-_REVIEWED_PROFILE_VERSION = "0.2"
-_REVIEWED_EVIDENCE_ROLES = {
-    "get-transaction": True,
-    "wallet-transfer-webhook": False,
+_REVIEWED_PROFILES: dict[str, dict[str, Any]] = {
+    "crossmint-wallet-transactions-public": {
+        "label": "Crossmint",
+        "profileVersion": "0.2",
+        "evidenceRoles": {
+            "get-transaction": True,
+            "wallet-transfer-webhook": False,
+        },
+        "evidenceRoleError": (
+            "reviewed Crossmint profile requires GET transaction as finality authority "
+            "and webhook as notification evidence"
+        ),
+    },
+    "stripe-payment-intents-public": {
+        "label": "Stripe PaymentIntents",
+        "profileVersion": "0.1",
+        "evidenceRoles": {
+            "get-payment-intent": True,
+            "payment-intent-webhook": False,
+        },
+        "evidenceRoleError": (
+            "reviewed Stripe PaymentIntents profile requires GET PaymentIntent as "
+            "finality authority and webhook as notification evidence"
+        ),
+    },
 }
 
 
@@ -50,60 +70,64 @@ def _authority_payload(authority: dict[str, Any]) -> dict[str, str]:
 
 
 def _validate_reviewed_profile(adapter: dict[str, Any]) -> None:
-    """Accept only the reviewed Crossmint v0.2 public-contract semantics."""
+    """Accept only exact reviewed AFSP public-contract profiles."""
     validate_provider_adapter(adapter)
+    provider_id = _required_text(adapter.get("providerId"), "providerId")
+    profile = _REVIEWED_PROFILES.get(provider_id)
+    if profile is None:
+        raise ProviderPaymentDecisionError(
+            f"providerId={provider_id} is not a reviewed AFSP profile"
+        )
+
+    label = str(profile["label"])
     if adapter.get("schema") != ADAPTER_SCHEMA_V3:
         raise ProviderPaymentDecisionError(
-            "pilot requires the reviewed Crossmint Provider Adapter Contract v0.3 profile"
+            f"reviewed {label} profile requires Provider Adapter Contract v0.3"
         )
-    if adapter.get("providerId") != _REVIEWED_PROVIDER_ID:
+    if adapter.get("profileVersion") != profile["profileVersion"]:
         raise ProviderPaymentDecisionError(
-            f"pilot requires providerId={_REVIEWED_PROVIDER_ID}"
-        )
-    if adapter.get("profileVersion") != _REVIEWED_PROFILE_VERSION:
-        raise ProviderPaymentDecisionError(
-            f"pilot requires profileVersion={_REVIEWED_PROFILE_VERSION}"
+            f"reviewed {label} profile requires profileVersion={profile['profileVersion']}"
         )
 
     create = adapter.get("create")
     if not isinstance(create, dict) or create.get("supportsIdempotencyKey") is not True:
         raise ProviderPaymentDecisionError(
-            "reviewed Crossmint profile requires documented idempotent creation"
+            f"reviewed {label} profile requires documented idempotent creation"
         )
     if create.get("sameKeyReplayDocumented") is not True:
         raise ProviderPaymentDecisionError(
-            "reviewed Crossmint profile requires documented same-key replay"
+            f"reviewed {label} profile requires documented same-key replay"
         )
 
     if adapter.get("evidencePrecedenceStatus") != "unresolved":
         raise ProviderPaymentDecisionError(
-            "reviewed Crossmint profile does not publish a complete normative timeout precedence"
+            f"reviewed {label} profile keeps complete evidence precedence unresolved"
         )
     if adapter.get("evidencePrecedence") != []:
         raise ProviderPaymentDecisionError(
-            "reviewed Crossmint profile must not invent a complete evidence ordering"
+            f"reviewed {label} profile must not invent a complete evidence ordering"
         )
     if adapter.get("retrySemanticsStatus") != "unresolved":
         raise ProviderPaymentDecisionError(
-            "reviewed Crossmint profile keeps new-operation retry authority unresolved"
+            f"reviewed {label} profile keeps new-operation retry authority unresolved"
         )
     if adapter.get("retryAllowedAfterProviderStates") != []:
         raise ProviderPaymentDecisionError(
-            "reviewed Crossmint profile must not invent retry-authorized provider states"
+            f"reviewed {label} profile must not invent retry-authorized provider states"
         )
 
     evidence_sources = adapter.get("evidenceSources")
     if not isinstance(evidence_sources, list):
-        raise ProviderPaymentDecisionError("reviewed Crossmint evidenceSources must be an array")
+        raise ProviderPaymentDecisionError(
+            f"reviewed {label} evidenceSources must be an array"
+        )
     roles = {
         str(item.get("kind")): item.get("authoritativeForFinality")
         for item in evidence_sources
         if isinstance(item, dict)
     }
-    if roles != _REVIEWED_EVIDENCE_ROLES:
-        raise ProviderPaymentDecisionError(
-            "reviewed Crossmint profile requires GET transaction as finality authority and webhook as notification evidence"
-        )
+    if roles != profile["evidenceRoles"]:
+        raise ProviderPaymentDecisionError(str(profile["evidenceRoleError"]))
 
 
 def _retry_authority(reconciliation: dict[str, Any]) -> tuple[str, bool, str | None]:
@@ -111,9 +135,6 @@ def _retry_authority(reconciliation: dict[str, Any]) -> tuple[str, bool, str | N
     if reconciliation["outcome"] != "failed":
         return "not_applicable", False, None
 
-    # Provider Adapter v0.3 separates terminal provider state from authority to
-    # create another monetary operation. Crossmint's reviewed public profile
-    # intentionally keeps the latter unresolved.
     if reconciliation.get("retryAllowed") is True:
         return "documented", True, None
 
@@ -134,7 +155,7 @@ def evaluate_provider_payment_decision(
     fulfillment: dict[str, Any] | None = None,
     decision_id: str | None = None,
 ) -> dict[str, Any]:
-    """Reconcile reviewed Crossmint evidence and derive a fail-closed decision."""
+    """Reconcile reviewed provider evidence and derive a fail-closed decision."""
     _validate_reviewed_profile(adapter)
     authority_state = _authority_payload(authority)
     reconciliation = reconcile_provider_observations(adapter, observations)
