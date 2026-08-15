@@ -198,13 +198,12 @@ facilitator /settle success
 → final / committed
 → STOP
 
-facilitator /settle failed
-→ prior settlement attempt classified failed
-→ retry authority unresolved
-→ HOLD
+facilitator /settle success:false
+→ generic monetary outcome remains unknown without a typed non-effect guarantee
+→ RECONCILE
 ```
 
-This exposes a new recovery boundary: if settlement occurred but the client loses the final resource response / `PAYMENT-RESPONSE`, replay prevention alone does not tell the client whether a fresh economic action is safe. AFSP keeps that ambiguity fail-closed until a documented discovery/reconciliation path is available.
+This exposes a new recovery boundary: if settlement occurred but the client loses the final resource response / `PAYMENT-RESPONSE`, replay prevention alone does not tell the client whether a fresh economic action is safe. Likewise, a generic settlement error is not promoted to proof that no effect can still appear. AFSP keeps both paths fail-closed until a documented discovery/reconciliation rule resolves them.
 
 ## Provider-neutral portability result
 
@@ -244,6 +243,7 @@ terminal failed/canceled → infer permission to spend again
 provider success → infer actor authority
 x402 verify-valid → assume settlement completed
 x402 nonce protection → assume duplicate economic action is impossible
+x402 settle error → assume no monetary effect can still appear
 ```
 
 ## Scope
