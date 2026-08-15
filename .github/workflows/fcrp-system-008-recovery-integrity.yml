@@ -171,7 +171,8 @@ jobs:
           rm -rf "$RUNNER_TEMP/cml-system-008"
           git clone --quiet "https://github.com/${CML_REPOSITORY}.git" "$RUNNER_TEMP/cml-system-008"
           git -C "$RUNNER_TEMP/cml-system-008" checkout --quiet --detach "$CML_COMMIT"
-          PYTHONPATH="$RUNNER_TEMP/cml-system-008" python3 - <<'PY'
+          python -m pip install --quiet "$RUNNER_TEMP/cml-system-008"
+          python3 - <<'PY'
           import json, os
           from pathlib import Path
           from cml.integrations.information_fitness import evaluate_information_fitness
