@@ -21,10 +21,13 @@ PAYMENT-REQUIRED
 → PAYMENT-SIGNATURE
 → facilitator /verify
 → valid authorization
+→ resource execution / fulfillment may occur depending on payment flow
 → facilitator /settle
 → settlement result
-→ server PAYMENT-RESPONSE + resource
+→ server PAYMENT-RESPONSE + resource response
 ```
+
+The x402 v2 specification explicitly allows payment-flow variation: the default authorization flow verifies before resource execution and settles afterward, while schemes may define settlement-before-execution flows. AFSP therefore keeps payment finality and fulfillment finality as separate concerns.
 
 `/verify` answers whether the payment payload is valid against requirements. It does not itself establish that funds have settled.
 
