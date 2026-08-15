@@ -93,7 +93,11 @@ def create_baseline(root: Path) -> None:
 
 def _read_authority(path: Path) -> dict[str, Any]:
     try:
-        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        # The subject emits its phase marker only after wal_checkpoint(FULL).
+        # The cold observer mounts the durable state read-only and therefore
+        # reads the checkpointed database as an immutable snapshot instead of
+        # requiring WAL/shared-memory mutation semantics in the new container.
+        con = sqlite3.connect(f"file:{path}?mode=ro&immutable=1", uri=True)
         try:
             check = con.execute("PRAGMA integrity_check").fetchone()
             if not check or check[0] != "ok":
@@ -101,11 +105,21 @@ def _read_authority(path: Path) -> dict[str, Any]:
             row = con.execute("SELECT value FROM meta WHERE key='generation'").fetchone()
             if not row or not isinstance(row[0], int):
                 return {"integrity": "CORRUPT", "generation": None, "error": "missing generation"}
-            return {"integrity": "VALID", "generation": row[0], "error": None}
+            return {
+                "integrity": "VALID",
+                "generation": row[0],
+                "error": None,
+                "readMode": "sqlite-immutable-read-only",
+            }
         finally:
             con.close()
     except sqlite3.DatabaseError as exc:
-        return {"integrity": "CORRUPT", "generation": None, "error": type(exc).__name__}
+        return {
+            "integrity": "CORRUPT",
+            "generation": None,
+            "error": type(exc).__name__,
+            "readMode": "sqlite-immutable-read-only",
+        }
 
 
 def _read_projection(path: Path) -> dict[str, Any]:
@@ -263,7 +277,11 @@ def finalize_case_receipt(
         raise ContainerHardStopError("cold container observer must remain read-only")
     expected_state, expected_rebuild, expected_execution = EXPECTED[case]
     if observation.get("projectionState") != expected_state:
-        raise ContainerHardStopError("projection state does not match fault phase")
+        raise ContainerHardStopError(
+            "projection state does not match fault phase: "
+            f"case={case} expected={expected_state} observed={observation.get('projectionState')} "
+            f"authority={observation.get('authority')} projection={observation.get('projection')}"
+        )
     if observation.get("rebuildDecision") != expected_rebuild:
         raise ContainerHardStopError("rebuild decision exceeds observed evidence")
     if observation.get("executionDecision") != expected_execution:
