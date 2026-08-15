@@ -1,0 +1,53 @@
+{
+  "schema": "cgqa.system-native-case.v0.1",
+  "caseId": "RECOVERY-INTEGRITY-001",
+  "systemCase": "FCRP-SYSTEM-008",
+  "title": "Recovery Integrity: projection rebuild permission must not become execution continuation",
+  "source": {
+    "repository": "safal207/RESONANCE",
+    "branch": "agent/recovery-integrity-v0.1",
+    "commit": "361b93cb773779afe24ca38e28d0ac22c60a93b6",
+    "protocol": "recovery-integrity-v0.1",
+    "fixture": "real SQLite + atomic JSON process-crash harness / after_authority_commit"
+  },
+  "verificationChain": [
+    {
+      "repository": "safal207/ProofPath",
+      "capability": "proofpath.scig.v0.1",
+      "commit": "685d50e256a5125a21f4c4584b326411caaa64ad",
+      "requiredResult": "VALID"
+    },
+    {
+      "repository": "safal207/Causal-Memory-Layer",
+      "capability": "information_fitness",
+      "commit": "90c7fdaaf31ad7c17ddc0c3c55b7ccd33f6affc2",
+      "requiredStatus": "READY_FOR_AUTHORITY_CHECK",
+      "authorizesAction": false
+    },
+    {
+      "repository": "safal207/ContractGraph-QA",
+      "capability": "recovery_integrity_adapter",
+      "requiredVerdict": "PROJECTION_REBUILD_ALLOWED_EXECUTION_HELD"
+    }
+  ],
+  "falsifiableQuestion": "Can a real process-crash RecoveryIntegrityRecord that permits projection rebuild cross ProofPath and CML while preserving HOLD for execution and transferring no authority?",
+  "expected": {
+    "projectionDecision": "ALLOW_REBUILD",
+    "executionDecision": "HOLD",
+    "executionAuthorized": false,
+    "mutationAuthorized": false,
+    "authorityTransfer": "NONE",
+    "evidenceBoundary": "PROCESS_CRASH_NOT_PHYSICAL_POWER_LOSS"
+  },
+  "negativeControls": [
+    "Changing execution_continuation from HOLD to ALLOW_FORK must be rejected before the ProofPath bridge.",
+    "Changing the CML result to authorizesAction=true must prevent Recovery Receipt issuance.",
+    "Changing the source RecoveryIntegrityRecord after SCIG creation must fail source-digest binding."
+  ],
+  "nonClaims": [
+    "This case does not prove arbitrary physical power-loss durability.",
+    "This case does not grant production recovery, mutation, or execution authority.",
+    "This case does not claim that Codex implements this recovery protocol.",
+    "ProofPath VALID and CML READY_FOR_AUTHORITY_CHECK are verification/readiness results, not execution permission."
+  ]
+}
