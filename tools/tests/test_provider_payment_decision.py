@@ -25,6 +25,11 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        cls.x402_adapter = json.loads(
+            (ADAPTERS / "coinbase-x402-v2-public-contract.v0.1.json").read_text(
+                encoding="utf-8"
+            )
+        )
 
     def _observations(self, name: str) -> dict:
         return json.loads((ADAPTERS / name).read_text(encoding="utf-8"))
@@ -39,6 +44,12 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
         return {
             "status": "authorized",
             "evidenceRef": "fixture://authority/stripe/test",
+        }
+
+    def _x402_authority(self) -> dict[str, str]:
+        return {
+            "status": "authorized",
+            "evidenceRef": "fixture://authority/coinbase-x402/test",
         }
 
     def test_reviewed_profile_records_same_key_replay_without_inventing_retry_authority(self) -> None:
@@ -181,6 +192,77 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
         self.assertEqual(result["retryAuthority"]["status"], "unresolved")
         self.assertEqual(result["decision"]["decision"], "HOLD")
         self.assertFalse(result["decision"]["monetaryActionAllowed"])
+
+    def test_x402_core_profile_preserves_nonce_vs_idempotency_distinction(self) -> None:
+        self.assertEqual(self.x402_adapter["schema"], "cgqa.payment-provider-adapter.v0.3")
+        self.assertEqual(self.x402_adapter["profileVersion"], "0.1")
+        self.assertFalse(self.x402_adapter["create"]["supportsIdempotencyKey"])
+        self.assertFalse(self.x402_adapter["create"]["sameKeyReplayDocumented"])
+        self.assertEqual(self.x402_adapter["evidencePrecedenceStatus"], "unresolved")
+        self.assertEqual(self.x402_adapter["retrySemanticsStatus"], "unresolved")
+
+    def test_x402_verify_valid_is_not_settlement_and_reconciles(self) -> None:
+        result = evaluate_provider_payment_decision(
+            self.x402_adapter,
+            self._observations("coinbase-x402-observations-verify-valid.json"),
+            self._x402_authority(),
+        )
+
+        self.assertEqual(result["providerId"], "coinbase-x402-v2-public")
+        self.assertEqual(result["reconciliation"]["status"], "nonfinal")
+        self.assertEqual(result["reconciliation"]["outcome"], "pending")
+        self.assertEqual(result["decision"]["decision"], "RECONCILE")
+        self.assertFalse(result["decision"]["monetaryActionAllowed"])
+
+    def test_x402_settle_success_stops_second_economic_action(self) -> None:
+        result = evaluate_provider_payment_decision(
+            self.x402_adapter,
+            self._observations("coinbase-x402-observations-settle-success.json"),
+            self._x402_authority(),
+        )
+
+        self.assertEqual(result["reconciliation"]["status"], "final")
+        self.assertEqual(result["reconciliation"]["outcome"], "committed")
+        self.assertEqual(result["decision"]["decision"], "STOP")
+        self.assertEqual(result["decision"]["reason"], "logical_operation_already_satisfied")
+        self.assertFalse(result["decision"]["monetaryActionAllowed"])
+
+    def test_x402_settle_failure_does_not_authorize_fresh_payment(self) -> None:
+        result = evaluate_provider_payment_decision(
+            self.x402_adapter,
+            self._observations("coinbase-x402-observations-settle-failed.json"),
+            self._x402_authority(),
+        )
+
+        self.assertEqual(result["reconciliation"]["status"], "final")
+        self.assertEqual(result["reconciliation"]["outcome"], "failed")
+        self.assertFalse(result["reconciliation"]["retryAllowed"])
+        self.assertEqual(result["retryAuthority"]["status"], "unresolved")
+        self.assertEqual(result["decision"]["decision"], "HOLD")
+        self.assertFalse(result["decision"]["monetaryActionAllowed"])
+
+    def test_x402_profile_rejects_invented_core_idempotency(self) -> None:
+        adapter = copy.deepcopy(self.x402_adapter)
+        adapter["create"]["supportsIdempotencyKey"] = True
+        adapter["create"]["sameKeyReplayDocumented"] = True
+
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "must not invent an idempotency key"):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("coinbase-x402-observations-settle-success.json"),
+                self._x402_authority(),
+            )
+
+    def test_x402_profile_rejects_verify_promoted_to_finality(self) -> None:
+        adapter = copy.deepcopy(self.x402_adapter)
+        adapter["evidenceSources"][1]["authoritativeForFinality"] = True
+
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "facilitator settle as finality"):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("coinbase-x402-observations-settle-success.json"),
+                self._x402_authority(),
+            )
 
     def test_rejects_profile_that_downgrades_documented_same_key_replay(self) -> None:
         adapter = copy.deepcopy(self.adapter)
