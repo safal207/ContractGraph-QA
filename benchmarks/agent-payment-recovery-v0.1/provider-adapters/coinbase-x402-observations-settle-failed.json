@@ -1,0 +1,12 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "coinbase-x402-example-failed",
+  "executionId": "exec-coinbase-x402-failed",
+  "observations": [
+    {
+      "source": "facilitator-settle",
+      "providerState": "settle-failed",
+      "evidenceRef": "fixture://coinbase-x402/facilitator/settle/failed"
+    }
+  ]
+}

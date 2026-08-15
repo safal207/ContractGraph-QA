@@ -1,0 +1,12 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "coinbase-x402-example-verify",
+  "executionId": "exec-coinbase-x402-verify",
+  "observations": [
+    {
+      "source": "facilitator-verify",
+      "providerState": "verify-valid",
+      "evidenceRef": "fixture://coinbase-x402/facilitator/verify/valid"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "stripe-payment-intent-001",
+  "executionId": "exec-stripe-payment-intent-001",
+  "observations": [
+    {
+      "source": "get-payment-intent",
+      "providerState": "succeeded",
+      "evidenceRef": "fixture://stripe/payment-intent/succeeded"
+    }
+  ]
+}
