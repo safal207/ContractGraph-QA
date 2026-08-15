@@ -30,6 +30,15 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
             "evidenceRef": "fixture://authority/crossmint/test",
         }
 
+    def test_reviewed_profile_records_same_key_replay_without_inventing_retry_authority(self) -> None:
+        self.assertEqual(self.adapter["schema"], "cgqa.payment-provider-adapter.v0.3")
+        self.assertEqual(self.adapter["profileVersion"], "0.2")
+        self.assertTrue(self.adapter["create"]["supportsIdempotencyKey"])
+        self.assertTrue(self.adapter["create"]["sameKeyReplayDocumented"])
+        self.assertEqual(self.adapter["evidencePrecedenceStatus"], "unresolved")
+        self.assertEqual(self.adapter["retrySemanticsStatus"], "unresolved")
+        self.assertEqual(self.adapter["retryAllowedAfterProviderStates"], [])
+
     def test_crossmint_webhook_only_stays_nonfinal_and_blocks_money(self) -> None:
         result = evaluate_provider_payment_decision(
             self.adapter,
@@ -65,7 +74,7 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
         self.assertEqual(result["decision"]["reason"], "logical_operation_already_satisfied")
         self.assertFalse(result["decision"]["monetaryActionAllowed"])
 
-    def test_v02_final_failure_does_not_inherit_legacy_retry_allowance(self) -> None:
+    def test_v03_final_failure_keeps_new_money_retry_authority_unresolved(self) -> None:
         failed = {
             "schema": "cgqa.payment-provider-observations.v0.1",
             "logicalOperationId": "crossmint-public-example-failed",
@@ -89,11 +98,14 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
 
         self.assertEqual(result["reconciliation"]["status"], "final")
         self.assertEqual(result["reconciliation"]["outcome"], "failed")
-        # The v0.2 reconciler predates explicit retry-authority semantics and may
-        # report retryAllowed=True. The bridge must not promote that to money authority.
-        self.assertTrue(result["reconciliation"]["retryAllowed"])
+        self.assertFalse(result["reconciliation"]["retryAllowed"])
+        self.assertEqual(
+            result["reconciliation"].get("retryBlockReason"),
+            "retry_semantics_unresolved",
+        )
         self.assertEqual(result["retryAuthority"]["status"], "unresolved")
         self.assertFalse(result["retryAuthority"]["allowed"])
+        self.assertEqual(result["retryAuthority"]["reason"], "retry_semantics_unresolved")
         self.assertEqual(result["decision"]["decision"], "HOLD")
         self.assertEqual(result["decision"]["reason"], "retry_authority_unresolved")
         self.assertFalse(result["decision"]["monetaryActionAllowed"])
@@ -112,20 +124,41 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
         self.assertEqual(result["decision"]["reason"], "authority_revoked")
         self.assertFalse(result["decision"]["monetaryActionAllowed"])
 
-    def test_rejects_retry_capable_v03_profile_before_decision(self) -> None:
+    def test_rejects_profile_that_downgrades_documented_same_key_replay(self) -> None:
         adapter = copy.deepcopy(self.adapter)
-        adapter["schema"] = "cgqa.payment-provider-adapter.v0.3"
-        adapter["retrySemanticsStatus"] = "documented"
-        adapter["retryAllowedAfterProviderStates"] = ["failed"]
+        adapter["create"]["sameKeyReplayDocumented"] = False
 
-        with self.assertRaisesRegex(ProviderPaymentDecisionError, "requires the reviewed Crossmint"):
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "same-key replay"):
             evaluate_provider_payment_decision(
                 adapter,
                 self._observations("crossmint-observations-get-success.json"),
                 self._authority(),
             )
 
-    def test_rejects_other_provider_using_v02_shape(self) -> None:
+    def test_rejects_profile_that_invents_retry_authority(self) -> None:
+        adapter = copy.deepcopy(self.adapter)
+        adapter["retrySemanticsStatus"] = "documented"
+        adapter["retryAllowedAfterProviderStates"] = ["failed"]
+
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "retry authority unresolved"):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("crossmint-observations-get-success.json"),
+                self._authority(),
+            )
+
+    def test_rejects_profile_that_promotes_webhook_to_finality_authority(self) -> None:
+        adapter = copy.deepcopy(self.adapter)
+        adapter["evidenceSources"][1]["authoritativeForFinality"] = True
+
+        with self.assertRaisesRegex(ProviderPaymentDecisionError, "GET transaction as finality authority"):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("crossmint-observations-get-success.json"),
+                self._authority(),
+            )
+
+    def test_rejects_other_provider_using_reviewed_shape(self) -> None:
         adapter = copy.deepcopy(self.adapter)
         adapter["providerId"] = "unreviewed-provider"
 
@@ -138,7 +171,7 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
 
     def test_rejects_unreviewed_crossmint_profile_version(self) -> None:
         adapter = copy.deepcopy(self.adapter)
-        adapter["profileVersion"] = "0.2"
+        adapter["profileVersion"] = "0.3"
 
         with self.assertRaisesRegex(ProviderPaymentDecisionError, "requires profileVersion"):
             evaluate_provider_payment_decision(
