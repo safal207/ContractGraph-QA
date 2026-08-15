@@ -1,0 +1,12 @@
+{
+  "schema": "cgqa.payment-provider-observations.v0.1",
+  "logicalOperationId": "stripe-payment-intent-003",
+  "executionId": "exec-stripe-payment-intent-003",
+  "observations": [
+    {
+      "source": "get-payment-intent",
+      "providerState": "canceled",
+      "evidenceRef": "fixture://stripe/payment-intent/canceled"
+    }
+  ]
+}
