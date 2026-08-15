@@ -1,0 +1,126 @@
+name: FCRP SYSTEM-009 Storage Faults
+
+on:
+  pull_request:
+    paths:
+      - "contractgraph_qa/storage_fault_adapter.py"
+      - "tests/test_storage_fault_adapter.py"
+      - "benchmarks/system-native/STORAGE-FAULT-001.json"
+      - ".github/workflows/fcrp-system-009-storage-faults.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contractgraph_qa/storage_fault_adapter.py"
+      - "tests/test_storage_fault_adapter.py"
+      - "benchmarks/system-native/STORAGE-FAULT-001.json"
+      - ".github/workflows/fcrp-system-009-storage-faults.yml"
+
+permissions:
+  contents: read
+
+env:
+  PARENT_SYSTEM_008_BRANCH: agent/recovery-integrity-system-008
+  PARENT_SYSTEM_008_HEAD: 71a37c7a6b71454edca2b50ef89ac3edff2d3855
+  PARENT_RECOVERY_RECEIPT_DIGEST: sha256:30f6966e3a55606f6ed3fc7ac04760a6c1ed6e53d858b589d51fde6d3daf6736
+
+jobs:
+  storage-fault-system-009:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ContractGraph-QA subject
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify parent SYSTEM-008 exact-head pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBSERVED="$(git ls-remote https://github.com/safal207/ContractGraph-QA.git "refs/heads/${PARENT_SYSTEM_008_BRANCH}" | awk '{print $1}')"
+          test "$OBSERVED" = "$PARENT_SYSTEM_008_HEAD"
+          printf '%s\n' "$OBSERVED" > parent-system-008-head.txt
+
+      - name: Re-run inherited SYSTEM-008 bridge regressions
+        run: python -m unittest -v tests/test_recovery_integrity_adapter.py
+
+      - name: Run SYSTEM-009 storage fault regressions
+        run: python -m unittest -v tests/test_storage_fault_adapter.py
+
+      - name: Execute real host-filesystem fault matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-009
+          python -m contractgraph_qa.storage_fault_adapter matrix --output evidence/system-009 \
+            | tee evidence/system-009/storage-fault.stdout.txt
+          grep -F 'PASS storage-fault matrix 6/6' evidence/system-009/storage-fault.stdout.txt
+          grep -F 'EVIDENCE_BOUNDARY HOST_FILESYSTEM_FAULT_INJECTION_NOT_PHYSICAL_POWER_LOSS' evidence/system-009/storage-fault.stdout.txt
+
+      - name: Verify benchmark and fail-closed decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected=json.loads(Path('benchmarks/system-native/STORAGE-FAULT-001.json').read_text())
+          observed=json.loads(Path('evidence/system-009/matrix.json').read_text())
+          by_name={row['case']: row for row in observed}
+          assert expected['parent']['head']=='71a37c7a6b71454edca2b50ef89ac3edff2d3855'
+          assert expected['parent']['recoveryReceiptDigest']=='sha256:30f6966e3a55606f6ed3fc7ac04760a6c1ed6e53d858b589d51fde6d3daf6736'
+          assert expected['evidenceBoundary']=='HOST_FILESYSTEM_FAULT_INJECTION_NOT_PHYSICAL_POWER_LOSS'
+          for case in expected['cases']:
+              actual=by_name[case['name']]
+              assert actual['projectionState']==case['projectionState']
+              assert actual['rebuildDecision']==case['rebuildDecision']
+              assert actual['executionDecision']=='HOLD'
+              assert actual['evidenceBoundary']==expected['evidenceBoundary']
+              assert actual['tempCandidateAuthority'] is False
+          assert by_name['projection_future_generation']['rebuildDecision']=='HOLD'
+          assert by_name['authority_header_corrupt']['rebuildDecision']=='HOLD'
+          print('SYSTEM_009_BENCHMARK PASS 6/6')
+          PY
+
+      - name: Bind suite receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          matrix=json.loads(Path('evidence/system-009/matrix.json').read_text())
+          body={
+              'schema':'cgqa.storage-fault-suite-receipt.v0.1',
+              'systemCase':'FCRP-SYSTEM-009',
+              'parentSystemCase':'FCRP-SYSTEM-008',
+              'parentHead':'71a37c7a6b71454edca2b50ef89ac3edff2d3855',
+              'parentRecoveryReceiptDigest':'sha256:30f6966e3a55606f6ed3fc7ac04760a6c1ed6e53d858b589d51fde6d3daf6736',
+              'caseCount':len(matrix),
+              'allExecutionHeld':all(row['executionDecision']=='HOLD' for row in matrix),
+              'authorityTransfer':'NONE',
+              'executionAuthorized':False,
+              'mutationAuthorized':False,
+              'externalEffectsPerformed':False,
+              'verdict':'STORAGE_FAULT_BOUNDARIES_PRESERVED',
+              'evidenceBoundary':'HOST_FILESYSTEM_FAULT_INJECTION_NOT_PHYSICAL_POWER_LOSS',
+              'caseReceiptDigests':[row['receiptDigest'] for row in matrix],
+          }
+          encoded=json.dumps(body, sort_keys=True, separators=(',', ':')).encode()
+          body['receiptDigest']='sha256:'+hashlib.sha256(encoded).hexdigest()
+          Path('evidence/system-009/storage-fault-suite-receipt.json').write_text(
+              json.dumps(body, indent=2, sort_keys=True)+'\n'
+          )
+          print('SYSTEM_009_RECEIPT', body['verdict'], body['receiptDigest'])
+          PY
+
+      - name: Upload SYSTEM-009 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcrp-system-009-storage-faults
+          path: evidence/system-009
+          if-no-files-found: error

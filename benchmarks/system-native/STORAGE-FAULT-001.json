@@ -1,0 +1,58 @@
+{
+  "id": "STORAGE-FAULT-001",
+  "systemCase": "FCRP-SYSTEM-009",
+  "title": "Host-filesystem storage fault recovery boundary",
+  "parent": {
+    "systemCase": "FCRP-SYSTEM-008",
+    "head": "71a37c7a6b71454edca2b50ef89ac3edff2d3855",
+    "recoveryReceiptDigest": "sha256:30f6966e3a55606f6ed3fc7ac04760a6c1ed6e53d858b589d51fde6d3daf6736"
+  },
+  "evidenceBoundary": "HOST_FILESYSTEM_FAULT_INJECTION_NOT_PHYSICAL_POWER_LOSS",
+  "cases": [
+    {
+      "name": "healthy",
+      "projectionState": "HEALTHY",
+      "rebuildDecision": "NO_REBUILD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "projection_missing",
+      "projectionState": "MISSING",
+      "rebuildDecision": "ALLOW_REBUILD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "projection_truncated",
+      "projectionState": "CORRUPT",
+      "rebuildDecision": "ALLOW_REBUILD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "projection_future_generation",
+      "projectionState": "UNPROVABLE",
+      "rebuildDecision": "HOLD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "orphan_temp_candidate",
+      "projectionState": "STALE",
+      "rebuildDecision": "ALLOW_REBUILD",
+      "executionDecision": "HOLD",
+      "tempCandidateAuthority": false
+    },
+    {
+      "name": "authority_header_corrupt",
+      "projectionState": "UNPROVABLE",
+      "rebuildDecision": "HOLD",
+      "executionDecision": "HOLD"
+    }
+  ],
+  "invariants": [
+    "Projection loss or truncation may permit rebuild only while durable authority remains valid.",
+    "A projection newer than durable authority is a contradiction and must fail closed.",
+    "An fsynced orphan temp candidate is evidence, never committed authority.",
+    "Corrupt authority blocks rebuild and execution continuation.",
+    "Storage recovery evidence never grants execution or mutation authority.",
+    "Hosted filesystem fault injection must not be represented as physical power-loss proof."
+  ]
+}
