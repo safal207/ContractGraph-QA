@@ -1,0 +1,147 @@
+name: FCRP SYSTEM-012 Container Hard Stop
+
+on:
+  pull_request:
+    paths:
+      - "contractgraph_qa/container_hard_stop.py"
+      - "tests/test_container_hard_stop.py"
+      - "benchmarks/system-native/CONTAINER-HARD-STOP-001.json"
+      - ".github/workflows/fcrp-system-012-container-hard-stop.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contractgraph_qa/container_hard_stop.py"
+      - "tests/test_container_hard_stop.py"
+      - "benchmarks/system-native/CONTAINER-HARD-STOP-001.json"
+      - ".github/workflows/fcrp-system-012-container-hard-stop.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  container-hard-stop-system-012:
+    runs-on: ubuntu-24.04
+    env:
+      PARENT_SYSTEM_011_BRANCH: agent/out-of-band-recovery-system-011
+      PARENT_SYSTEM_011_HEAD: b3eb2443d870d52a152fed8bbd25bfe9a522886c
+      PARENT_SYSTEM_011_RECEIPT_DIGEST: sha256:eeaca7299b3a47ef24fe3c378cb501a6f9861c08e48946b79fa5ee7cf9f9ef7f
+    steps:
+      - name: Checkout ContractGraph-QA subject
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify parent SYSTEM-011 exact-head pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBSERVED="$(git ls-remote https://github.com/safal207/ContractGraph-QA.git "refs/heads/${PARENT_SYSTEM_011_BRANCH}" | awk '{print $1}')"
+          test "$OBSERVED" = "$PARENT_SYSTEM_011_HEAD"
+          printf '%s\n' "$OBSERVED" > parent-system-011-head.txt
+
+      - name: Re-run inherited SYSTEM-011 regressions
+        run: python -m unittest -v tests/test_out_of_band_recovery.py
+
+      - name: Run SYSTEM-012 container boundary regressions
+        run: python -m unittest -v tests/test_container_hard_stop.py
+
+      - name: Execute container hard-stop cold-restart matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-012
+          python -m contractgraph_qa.container_hard_stop matrix \
+            --output evidence/system-012 \
+            --repo-root "$GITHUB_WORKSPACE" \
+            | tee evidence/system-012/container-hard-stop.stdout.txt
+          grep -F 'SYSTEM_012_VM_HARD_STOP FALSE' evidence/system-012/container-hard-stop.stdout.txt
+          grep -F 'SYSTEM_012_POWER_LOSS_PROVEN FALSE' evidence/system-012/container-hard-stop.stdout.txt
+          grep -F 'EVIDENCE_BOUNDARY CONTAINER_HARD_STOP_NOT_VM_OR_PHYSICAL_POWER_LOSS' evidence/system-012/container-hard-stop.stdout.txt
+
+      - name: Require exercised container boundary when Docker daemon is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if docker info >/dev/null 2>&1; then
+            grep -F 'SYSTEM_012_CAPABILITY CONTAINER_HARD_STOP_OBSERVED' evidence/system-012/container-hard-stop.stdout.txt
+            grep -F 'SYSTEM_012_CONTAINER_HARD_STOP TRUE' evidence/system-012/container-hard-stop.stdout.txt
+            grep -F 'SYSTEM_012_VERDICT CONTAINER_HARD_STOP_RECOVERY_OBSERVED_STRONGER_BOUNDARIES_HELD' evidence/system-012/container-hard-stop.stdout.txt
+          else
+            grep -F 'SYSTEM_012_CAPABILITY EXTERNAL_PROCESS_KILL_ONLY' evidence/system-012/container-hard-stop.stdout.txt
+            grep -F 'SYSTEM_012_CONTAINER_HARD_STOP FALSE' evidence/system-012/container-hard-stop.stdout.txt
+            grep -F 'SYSTEM_012_VERDICT CONTAINER_HARD_STOP_UNAVAILABLE_BOUNDARY_HELD' evidence/system-012/container-hard-stop.stdout.txt
+          fi
+
+      - name: Reconcile SYSTEM-012 receipt with benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected=json.loads(Path('benchmarks/system-native/CONTAINER-HARD-STOP-001.json').read_text())
+          suite=json.loads(Path('evidence/system-012/container-hard-stop-suite-receipt.json').read_text())
+
+          assert suite['parentHead']==expected['parent']['head']
+          assert suite['parentOutOfBandReceiptDigest']==expected['parent']['outOfBandReceiptDigest']
+          assert suite['strongestExercisedCapability'] in expected['allowedCapabilities']
+          assert suite['verdict'] in expected['allowedVerdicts']
+          assert suite['evidenceBoundary']==expected['evidenceBoundary']
+          assert suite['vmHardStopObserved'] is expected['vmHardStopObserved'] is False
+          assert suite['physicalPowerLossProven'] is expected['physicalPowerLossProven'] is False
+          assert suite['authorityTransfer']==expected['authorityTransfer']=='NONE'
+          assert suite['executionAuthorized'] is False
+          assert suite['mutationAuthorized'] is False
+          assert suite['externalEffectsPerformed'] is False
+
+          if suite['containerRuntimeAvailable']:
+              assert suite['strongestExercisedCapability']=='CONTAINER_HARD_STOP_OBSERVED'
+              assert suite['containerHardStopObserved'] is True
+              assert suite['caseCount']==3
+              assert suite['allExecutionHeld'] is True
+              assert suite['allDistinctColdContainers'] is True
+              assert suite['allSigkillExit137'] is True
+              for case in expected['cases']:
+                  receipt=json.loads(Path(f"evidence/system-012/{case['name']}.receipt.json").read_text())
+                  assert receipt['projectionState']==case['projectionState']
+                  assert receipt['rebuildDecision']==case['rebuildDecision']
+                  assert receipt['executionDecision']==case['executionDecision']=='HOLD'
+                  assert receipt['containerHardStopObserved'] is True
+                  assert receipt['subjectContainerId'] != receipt['observerContainerId']
+                  assert receipt['containerKillExitCode']==137
+                  assert receipt['observerMountMode']=='read-only'
+          else:
+              assert suite['strongestExercisedCapability']=='EXTERNAL_PROCESS_KILL_ONLY'
+              assert suite['containerHardStopObserved'] is False
+              assert suite['caseCount']==0
+
+          print('SYSTEM_012_BENCHMARK PASS')
+          print('SYSTEM_012_RECEIPT', suite['receiptDigest'])
+          print('SYSTEM_012_IMAGE_ID', suite.get('imageIdentity', {}).get('imageId'))
+          print('SYSTEM_012_IMAGE_DIGESTS', suite.get('imageIdentity', {}).get('repoDigests'))
+          PY
+
+      - name: Verify stronger boundaries remain unclaimed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          suite=json.loads(Path('evidence/system-012/container-hard-stop-suite-receipt.json').read_text())
+          assert suite['vmHardStopObserved'] is False
+          assert suite['physicalPowerLossProven'] is False
+          print('VM_HARD_STOP_UNEXERCISED: HOLD')
+          print('PHYSICAL_POWER_LOSS_UNPROVEN: HOLD')
+          PY
+
+      - name: Upload SYSTEM-012 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcrp-system-012-container-hard-stop
+          path: evidence/system-012
+          if-no-files-found: error
