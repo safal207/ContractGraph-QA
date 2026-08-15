@@ -49,15 +49,15 @@ payment.reconciliationStatus != final
 
 Webhook/event delivery may trigger reconciliation but must not automatically outrank the provider's canonical state surface.
 
-At-least-once delivery also requires event deduplication independently of financial-operation deduplication.
+At-least-once, duplicate, retryable, or out-of-order delivery also requires event deduplication independently of financial-operation deduplication.
 
 ### AFSP-4 — Settlement evidence is not discovery authority
 
-An on-chain transaction identifier, ledger receipt, or settlement record can prove an observed effect after it exists. Its absence before publication/broadcast does not prove that no operation was created.
+An on-chain transaction identifier, ledger receipt, charge record, or settlement record can prove an observed effect after it exists. Its absence before publication, broadcast, or object creation does not prove that no operation was created.
 
 ### AFSP-5 — Final failure does not imply retry authority
 
-A canonical `failed` outcome settles the status of the prior attempt. It does not automatically authorize a fresh spend.
+A canonical failed or canceled outcome settles the status of the prior attempt. It does not automatically authorize a fresh spend.
 
 ```text
 final / failed
@@ -103,7 +103,7 @@ AFSP reuses the Unified Agent Payment Decision Gate rather than creating a secon
 | authority revoked / expired | `STOP` | no |
 | authority unknown | `HOLD` | no |
 
-## Crossmint profile — first external instantiation
+## Crossmint profile — external instantiation 001
 
 Crossmint provides the first reviewed AFSP profile in this repository:
 
@@ -129,6 +129,51 @@ The reviewed profile records:
 
 Therefore Crossmint timeout recovery can be modeled without treating the derived composition as a provider guarantee.
 
+## Stripe PaymentIntents profile — external instantiation 002
+
+Stripe provides the second reviewed AFSP profile and the first portability check across a substantially different payment rail.
+
+The public PaymentIntents contract documents:
+
+- POST idempotency keys for safe retry after connection errors;
+- same-key replay returning the stored result for the idempotent request under the documented retention rules;
+- one PaymentIntent per order/customer session as the recommended integration shape;
+- reuse of the same PaymentIntent when checkout is interrupted;
+- PaymentIntent retrieval by ID and an explicit lifecycle state machine;
+- `processing` and related states as nonterminal;
+- `succeeded` as a completed payment flow;
+- webhook delivery that can be retried, duplicated, and delivered out of order.
+
+AFSP maps that surface as:
+
+```text
+create / confirm PaymentIntent
+→ timeout or response loss
+→ preserve idempotency + PaymentIntent identity
+→ GET PaymentIntent for current state
+→ processing / requires_action / requires_capture → RECONCILE
+→ succeeded                                → STOP
+→ canceled                                 → HOLD unless new-operation authority is separately proven
+```
+
+Webhook-only success remains `RECONCILE` in the AFSP profile. It is notification evidence that should cause reconciliation, not a shortcut around canonical object lookup.
+
+## Provider-neutral portability result
+
+Crossmint and Stripe use different APIs, settlement rails, and state names, but both reduce to the same continuation invariants:
+
+```text
+transport ambiguity != permission
+same-operation replay != new-operation authority
+notification != canonical state
+provider finality != actor authority
+failed/canceled != automatic permission to spend again
+```
+
+The provider-specific adapters differ. The Unified Agent Payment Decision Gate remains unchanged.
+
+That separation is the portability claim AFSP is designed to test.
+
 ## Negative cases
 
 AFSP must reject at least these shortcuts:
@@ -138,7 +183,7 @@ timeout → assume failed → create a fresh payment
 missing webhook → assume no payment happened
 onChain.txId == null → assume transaction does not exist
 webhook succeeded → skip canonical reconciliation
-terminal failed → infer permission to spend again
+terminal failed/canceled → infer permission to spend again
 provider success → infer actor authority
 ```
 
