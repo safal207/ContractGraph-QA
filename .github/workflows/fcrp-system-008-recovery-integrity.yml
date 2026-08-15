@@ -1,0 +1,296 @@
+name: FCRP SYSTEM-008 Recovery Integrity
+
+on:
+  pull_request:
+    paths:
+      - "contractgraph_qa/recovery_integrity_adapter.py"
+      - "tests/test_recovery_integrity_adapter.py"
+      - ".github/workflows/fcrp-system-008-recovery-integrity.yml"
+      - "benchmarks/system-native/RECOVERY-INTEGRITY-001.json"
+  push:
+    branches: [main]
+    paths:
+      - "contractgraph_qa/recovery_integrity_adapter.py"
+      - "tests/test_recovery_integrity_adapter.py"
+      - ".github/workflows/fcrp-system-008-recovery-integrity.yml"
+      - "benchmarks/system-native/RECOVERY-INTEGRITY-001.json"
+
+permissions:
+  contents: read
+
+env:
+  RESONANCE_REPOSITORY: safal207/RESONANCE
+  RESONANCE_BRANCH: agent/recovery-integrity-v0.1
+  RESONANCE_COMMIT: 361b93cb773779afe24ca38e28d0ac22c60a93b6
+  PROOFPATH_REPOSITORY: safal207/ProofPath
+  PROOFPATH_SCIG_CAPABILITY_COMMIT: 685d50e256a5125a21f4c4584b326411caaa64ad
+  CML_REPOSITORY: safal207/Causal-Memory-Layer
+  CML_COMMIT: 90c7fdaaf31ad7c17ddc0c3c55b7ccd33f6affc2
+
+jobs:
+  recovery-integrity-system-008:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ContractGraph-QA subject
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run bridge regression tests
+        run: python -m unittest -v tests/test_recovery_integrity_adapter.py
+
+      - name: Resolve exact RESONANCE recovery source and reproduce process crash
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESONANCE_HEAD="$(git ls-remote "https://github.com/${RESONANCE_REPOSITORY}.git" "refs/heads/${RESONANCE_BRANCH}" | awk '{print $1}')"
+          test "$RESONANCE_HEAD" = "$RESONANCE_COMMIT"
+          rm -rf "$RUNNER_TEMP/resonance-system-008"
+          git clone --quiet "https://github.com/${RESONANCE_REPOSITORY}.git" "$RUNNER_TEMP/resonance-system-008"
+          git -C "$RUNNER_TEMP/resonance-system-008" checkout --quiet --detach "$RESONANCE_COMMIT"
+          test "$(git -C "$RUNNER_TEMP/resonance-system-008" rev-parse HEAD)" = "$RESONANCE_COMMIT"
+
+          mkdir -p evidence/system-008
+          RES_DIR="$RUNNER_TEMP/resonance-system-008/protocols/recovery-integrity-v0.1"
+          python "$RES_DIR/validate.py" "$RES_DIR/fixtures/codex-26990-sanitized.json"
+          (
+            cd "$RES_DIR"
+            python fault_injection_harness.py matrix
+            python -m unittest -v test_fault_injection_harness.py
+          ) | tee evidence/system-008/resonance-process-crash.stdout.txt
+
+          RES_DIR="$RES_DIR" python3 - <<'PY'
+          import json, os, sys, tempfile
+          from pathlib import Path
+
+          res_dir=Path(os.environ['RES_DIR'])
+          sys.path.insert(0, str(res_dir))
+          from fault_injection_harness import run_one
+          from validate import validate
+
+          with tempfile.TemporaryDirectory(prefix='system-008-source-') as raw_root:
+              root=Path(raw_root)/'after_authority_commit'
+              observed=run_one('after_authority_commit', root)
+              record=observed['record']
+              raw_prefix=str(root)
+              portable_prefix='local-fixture://system-008/after_authority_commit'
+
+              def normalize(value):
+                  if isinstance(value, str):
+                      return value.replace(raw_prefix, portable_prefix)
+                  if isinstance(value, list):
+                      return [normalize(item) for item in value]
+                  if isinstance(value, dict):
+                      return {key: normalize(item) for key, item in value.items()}
+                  return value
+
+              record=normalize(record)
+              errors=validate(record)
+              assert not errors, errors
+              assert record['authority']['generation']==2
+              assert record['projection']['generation']==1
+              assert record['projection']['state']=='STALE'
+              assert record['decision']['rebuild_projection']=='ALLOW_REBUILD'
+              assert record['decision']['execution_continuation']=='HOLD'
+              assert record['rollout']['continuation_proof']=='NOT_PROVEN'
+              assert record['external_side_effect_state']=='UNKNOWN'
+              assert record['current_authority_proof']=='NOT_PROVEN'
+              Path('evidence/system-008/recovery-integrity-record.json').write_text(
+                  json.dumps(record, indent=2, sort_keys=True)+'\n', encoding='utf-8'
+              )
+          PY
+
+      - name: Build ProofPath SCIG from exact RecoveryIntegrityRecord
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          from contractgraph_qa.recovery_integrity_adapter import build_recovery_integrity_scig
+
+          out=Path('evidence/system-008')
+          record=json.loads((out/'recovery-integrity-record.json').read_text())
+          scig=build_recovery_integrity_scig(
+              record,
+              resonance_commit=os.environ['RESONANCE_COMMIT'],
+              observed_at='2026-08-15T12:06:58Z',
+          )
+          (out/'proofpath-recovery-scig.json').write_text(
+              json.dumps(scig, indent=2, sort_keys=True)+'\n'
+          )
+          print('RECOVERY_SCIG', scig['incident_id'])
+          PY
+
+      - name: Resolve canonical ProofPath capability and run native verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOFPATH_MAIN="$(git ls-remote "https://github.com/${PROOFPATH_REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
+          test -n "$PROOFPATH_MAIN"
+          rm -rf "$RUNNER_TEMP/proofpath-system-008"
+          git clone --quiet "https://github.com/${PROOFPATH_REPOSITORY}.git" "$RUNNER_TEMP/proofpath-system-008"
+          git -C "$RUNNER_TEMP/proofpath-system-008" checkout --quiet --detach "$PROOFPATH_MAIN"
+          PROOFPATH_MAIN="$PROOFPATH_MAIN" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          repo=Path(os.environ['RUNNER_TEMP'])/'proofpath-system-008'
+          manifest=json.loads((repo/'governance/capability-manifest.v0.1.json').read_text())
+          target=next(item for item in manifest['capabilities'] if item['id']=='proofpath.scig.v0.1')
+          assert target['status']=='CANONICAL'
+          assert target['consumer_default_allowed'] is True
+          assert target['canonical_commit']==os.environ['PROOFPATH_SCIG_CAPABILITY_COMMIT']
+          Path('evidence/system-008/proofpath-capability.json').write_text(json.dumps({
+              'observedMainSha':os.environ['PROOFPATH_MAIN'],
+              'canonicalCommit':target['canonical_commit'],
+              'status':target['status'],
+          }, indent=2, sort_keys=True)+'\n')
+          PY
+          git -C "$RUNNER_TEMP/proofpath-system-008" merge-base --is-ancestor "$PROOFPATH_SCIG_CAPABILITY_COMMIT" "$PROOFPATH_MAIN"
+          git -C "$RUNNER_TEMP/proofpath-system-008" checkout --quiet --detach "$PROOFPATH_SCIG_CAPABILITY_COMMIT"
+          cd "$RUNNER_TEMP/proofpath-system-008"
+          test ! -f Cargo.lock
+          cargo generate-lockfile
+          sha256sum Cargo.lock > "$GITHUB_WORKSPACE/evidence/system-008/proofpath-cargo-lock.sha256"
+          cargo test --locked -p proofpath-verifier --bin proofpath-scig
+          cargo run --quiet --locked -p proofpath-verifier --bin proofpath-scig -- \
+            "$GITHUB_WORKSPACE/evidence/system-008/proofpath-recovery-scig.json" \
+            | tee "$GITHUB_WORKSPACE/evidence/system-008/proofpath-scig.stdout.txt"
+          grep -Eq '^RESULT[[:space:]]+VALID$' "$GITHUB_WORKSPACE/evidence/system-008/proofpath-scig.stdout.txt"
+          grep -Eq '^VERIFICATION[[:space:]]+PASSED$' "$GITHUB_WORKSPACE/evidence/system-008/proofpath-scig.stdout.txt"
+
+      - name: Resolve exact CML and run native information-fitness boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          CML_MAIN="$(git ls-remote "https://github.com/${CML_REPOSITORY}.git" refs/heads/main | awk '{print $1}')"
+          test "$CML_MAIN" = "$CML_COMMIT"
+          rm -rf "$RUNNER_TEMP/cml-system-008"
+          git clone --quiet "https://github.com/${CML_REPOSITORY}.git" "$RUNNER_TEMP/cml-system-008"
+          git -C "$RUNNER_TEMP/cml-system-008" checkout --quiet --detach "$CML_COMMIT"
+          PYTHONPATH="$RUNNER_TEMP/cml-system-008" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          from cml.integrations.information_fitness import evaluate_information_fitness
+          from cml.integrations.information_quality import (
+              CompletenessStatus,
+              InformationQualityResult,
+              QualityReadiness,
+              RelevanceStatus,
+              SemanticTruthStatus,
+          )
+          from cml.integrations.memory_applicability import ApplicabilityResult, ApplicabilityStatus
+
+          applicability=ApplicabilityResult(
+              status=ApplicabilityStatus.MATCH,
+              reasons=('exact_recovery_source_commit_and_record_digest_bound',),
+          )
+          quality=InformationQualityResult(
+              semantic_truth=SemanticTruthStatus.SUPPORTED,
+              completeness=CompletenessStatus.COMPLETE,
+              relevance=RelevanceStatus.RELEVANT,
+              readiness=QualityReadiness.READY,
+              reasons=('recovery_record_passed_native_semantic_validator',),
+          )
+          result=evaluate_information_fitness(applicability=applicability, quality=quality)
+          assert result.status.value=='READY_FOR_AUTHORITY_CHECK'
+          assert result.ready_for_authority_check is True
+          assert result.authorizes_action is False
+          payload={
+              'repository':os.environ['CML_REPOSITORY'],
+              'commit':os.environ['CML_COMMIT'],
+              'status':result.status.value,
+              'readyForAuthorityCheck':result.ready_for_authority_check,
+              'authorizesAction':result.authorizes_action,
+              'reasons':list(result.reasons),
+          }
+          Path('evidence/system-008/cml-information-fitness.json').write_text(
+              json.dumps(payload, indent=2, sort_keys=True)+'\n'
+          )
+          print('CML_INFORMATION_FITNESS', result.status.value, 'authorizes_action=false')
+          PY
+
+      - name: Mint independent Recovery Receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from contractgraph_qa.recovery_integrity_adapter import finalize_recovery_integrity_receipt
+
+          out=Path('evidence/system-008')
+          record=json.loads((out/'recovery-integrity-record.json').read_text())
+          scig=json.loads((out/'proofpath-recovery-scig.json').read_text())
+          proofpath=(out/'proofpath-scig.stdout.txt').read_text()
+          cml=json.loads((out/'cml-information-fitness.json').read_text())
+          receipt=finalize_recovery_integrity_receipt(record, scig, proofpath, cml)
+          assert receipt['systemCase']=='FCRP-SYSTEM-008'
+          assert receipt['projectionDecision']=='ALLOW_REBUILD'
+          assert receipt['executionDecision']=='HOLD'
+          assert receipt['proofpath']['result']=='VALID'
+          assert receipt['cml']['status']=='READY_FOR_AUTHORITY_CHECK'
+          assert receipt['cml']['authorizesAction'] is False
+          assert receipt['executionAuthorized'] is False
+          assert receipt['mutationAuthorized'] is False
+          assert receipt['externalEffectsPerformed'] is False
+          assert receipt['evidenceBoundary']=='PROCESS_CRASH_NOT_PHYSICAL_POWER_LOSS'
+          (out/'recovery-receipt.json').write_text(
+              json.dumps(receipt, indent=2, sort_keys=True)+'\n'
+          )
+          print('RECOVERY_RECEIPT', receipt['verdict'], receipt['receiptDigest'])
+          PY
+
+      - name: Verify escalation negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import copy, json, os
+          from pathlib import Path
+          from contractgraph_qa.recovery_integrity_adapter import (
+              RecoveryIntegrityBridgeError,
+              build_recovery_integrity_scig,
+              finalize_recovery_integrity_receipt,
+          )
+
+          out=Path('evidence/system-008')
+          record=json.loads((out/'recovery-integrity-record.json').read_text())
+          scig=json.loads((out/'proofpath-recovery-scig.json').read_text())
+          proofpath=(out/'proofpath-scig.stdout.txt').read_text()
+          cml=json.loads((out/'cml-information-fitness.json').read_text())
+
+          escalated=copy.deepcopy(record)
+          escalated['decision']['execution_continuation']='ALLOW_FORK'
+          try:
+              build_recovery_integrity_scig(
+                  escalated,
+                  resonance_commit=os.environ['RESONANCE_COMMIT'],
+                  observed_at='2026-08-15T12:06:58Z',
+              )
+          except RecoveryIntegrityBridgeError:
+              pass
+          else:
+              raise AssertionError('ALLOW_FORK escalation unexpectedly crossed source boundary')
+
+          bad_cml=copy.deepcopy(cml)
+          bad_cml['authorizesAction']=True
+          try:
+              finalize_recovery_integrity_receipt(record, scig, proofpath, bad_cml)
+          except RecoveryIntegrityBridgeError:
+              pass
+          else:
+              raise AssertionError('CML action-authority escalation unexpectedly minted receipt')
+
+          print('NEGATIVE_CONTROLS PASS 2/2')
+          PY
+
+      - name: Upload independent SYSTEM-008 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcrp-system-008-recovery-integrity
+          path: evidence/system-008
+          if-no-files-found: error
