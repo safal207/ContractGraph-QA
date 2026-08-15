@@ -1,0 +1,13 @@
+{
+  "authority_effect": "NONE",
+  "execution_authorized": false,
+  "external_effects_authorized": false,
+  "lane": "reflection",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "mutation_authorized": false,
+  "record_id": "REFLECTION-PASS-001",
+  "reflection_only": true,
+  "role": "bounded_reflection",
+  "schema": "cgqa.p1-3-reflection-record.v0.1",
+  "source_mutated": false
+}

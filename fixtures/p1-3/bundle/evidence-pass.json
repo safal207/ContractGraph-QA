@@ -1,0 +1,13 @@
+{
+  "authority_effect": "NONE",
+  "decision": "PASS",
+  "evidence_integrity": "RECOMPUTABLE",
+  "execution_authorized": false,
+  "external_effects_authorized": false,
+  "lane": "evidence",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "mutation_authorized": false,
+  "record_id": "EVIDENCE-PASS-001",
+  "role": "verification_evidence",
+  "schema": "cgqa.p1-3-evidence-record.v0.1"
+}

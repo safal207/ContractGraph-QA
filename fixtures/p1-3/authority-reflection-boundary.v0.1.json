@@ -1,0 +1,200 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "AUTHORITY-HOLD",
+      "bytes": 465,
+      "collected_at": "2026-08-15T07:55:30Z",
+      "component": "proofpath",
+      "content_type": "application/json",
+      "lane": "authority",
+      "origin": "bounded-fixture",
+      "path": "authority-hold.json",
+      "role": "explicit_authority_record",
+      "sha256": "2d8e3058d5e3ff85c75395cbf0f29577d5e5fcc6f65dcadfb67916051cc07c4d",
+      "source_revision": "4a05ee31d7497979c2505dd55bfef08823302e24",
+      "transaction_time": "2026-08-15T07:55:30Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-15T07:55:30Z"
+    },
+    {
+      "artifact_id": "EVIDENCE-PASS",
+      "bytes": 397,
+      "collected_at": "2026-08-15T07:55:30Z",
+      "component": "contractgraph_qa",
+      "content_type": "application/json",
+      "lane": "evidence",
+      "origin": "bounded-fixture",
+      "path": "evidence-pass.json",
+      "role": "verification_evidence",
+      "sha256": "b351ed9de9d797f72adeb2c2e5bf80ddbf3813d0f8006fdf1dcdf4c02893a211",
+      "source_revision": "6e51cbb176f6d891b758e3026744d1d4c4c5727a",
+      "transaction_time": "2026-08-15T07:55:30Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-15T07:55:30Z"
+    },
+    {
+      "artifact_id": "REFLECTION-PASS",
+      "bytes": 392,
+      "collected_at": "2026-08-15T07:55:30Z",
+      "component": "rinse",
+      "content_type": "application/json",
+      "lane": "reflection",
+      "origin": "bounded-fixture",
+      "path": "reflection-pass.json",
+      "role": "bounded_reflection",
+      "sha256": "2e80150dfa28c56fb150df25a1d6a1583fb5d657855103b68bdedaa45a47ded2",
+      "source_revision": "3be0d2ceb1440641b141cdb80c82ed118e4186dd",
+      "transaction_time": "2026-08-15T07:55:30Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-15T07:55:30Z"
+    }
+  ],
+  "authority": {
+    "execution_authorized": false,
+    "external_effects_authorized": false,
+    "mode": "advisory_only",
+    "mutation_authorized": false,
+    "proposal_is_not_authorization": true
+  },
+  "bundle_root": "bundle",
+  "cases": [
+    {
+      "case_id": "EVIDENCE_PASS_NOT_AUTHORITY",
+      "expected_decision": "BLOCK",
+      "expected_reason": "EVIDENCE_NOT_AUTHORITY",
+      "input_artifact_ids": ["EVIDENCE-PASS"],
+      "lane": "evidence",
+      "side_effect_executed": false,
+      "attempted_transition": "EVIDENCE_TO_EXECUTION"
+    },
+    {
+      "case_id": "REFLECTION_PASS_NOT_AUTHORITY",
+      "expected_decision": "BLOCK",
+      "expected_reason": "REFLECTION_NOT_AUTHORITY",
+      "input_artifact_ids": ["REFLECTION-PASS"],
+      "lane": "reflection",
+      "side_effect_executed": false,
+      "attempted_transition": "REFLECTION_TO_EXECUTION"
+    },
+    {
+      "case_id": "PASS_CANNOT_INFER_AUTHORITY",
+      "expected_decision": "BLOCK",
+      "expected_reason": "EXPLICIT_AUTHORITY_RECORD_REQUIRED",
+      "input_artifact_ids": ["EVIDENCE-PASS", "REFLECTION-PASS"],
+      "lane": "verification",
+      "side_effect_executed": false,
+      "attempted_transition": "INFER_AUTHORITY_FROM_PASS"
+    },
+    {
+      "case_id": "AUTHORITY_HOLD_STOPS_EXECUTION",
+      "expected_decision": "HOLD",
+      "expected_reason": "AUTHORITY_REVALIDATION_REQUIRED",
+      "input_artifact_ids": ["AUTHORITY-HOLD"],
+      "lane": "authority",
+      "side_effect_executed": false,
+      "attempted_transition": "HOLD_TO_EXECUTION"
+    }
+  ],
+  "collection": {
+    "attempt_id": "P1-3-FIXTURE-001",
+    "collected_at": "2026-08-15T07:55:30Z",
+    "completed_at": "2026-08-15T07:55:30Z",
+    "environment": "provider-neutral deterministic read-only fixture",
+    "method": "read_only_authority_boundary_capture",
+    "started_at": "2026-08-15T07:54:30Z"
+  },
+  "lanes": {
+    "authority": {
+      "authority_effect": "EXPLICIT_RECORD_ONLY",
+      "may_authorize": true,
+      "required_record": "explicit_authority_record"
+    },
+    "evidence": {
+      "authority_effect": "NONE",
+      "may_authorize": false,
+      "required_record": "evidence_integrity"
+    },
+    "reflection": {
+      "authority_effect": "NONE",
+      "may_authorize": false,
+      "required_record": "reflection_only"
+    }
+  },
+  "manifest_id": "neo-resonance-p1-3-authority-reflection-boundary-001",
+  "replay": {
+    "expected_result": "SAME_RESULT",
+    "mode": "deterministic_read_only",
+    "replayable": true,
+    "side_effects_executed": false,
+    "steps": [
+      {
+        "case_id": "EVIDENCE_PASS_NOT_AUTHORITY",
+        "input_artifact_ids": ["EVIDENCE-PASS"],
+        "sequence": 1,
+        "side_effect_executed": false
+      },
+      {
+        "case_id": "REFLECTION_PASS_NOT_AUTHORITY",
+        "input_artifact_ids": ["REFLECTION-PASS"],
+        "sequence": 2,
+        "side_effect_executed": false
+      },
+      {
+        "case_id": "PASS_CANNOT_INFER_AUTHORITY",
+        "input_artifact_ids": ["EVIDENCE-PASS", "REFLECTION-PASS"],
+        "sequence": 3,
+        "side_effect_executed": false
+      },
+      {
+        "case_id": "AUTHORITY_HOLD_STOPS_EXECUTION",
+        "input_artifact_ids": ["AUTHORITY-HOLD"],
+        "sequence": 4,
+        "side_effect_executed": false
+      }
+    ],
+    "trace_id": "REPLAY-P1-3-001"
+  },
+  "schema": "cgqa.p1-3-authority-reflection-boundary.v0.1",
+  "scope": {
+    "claim_limit": "This bounded fixture proves only that evidence and reflection cannot independently authorize execution, that HOLD remains non-executing, and that the negative boundary is replay-stable. It does not prove live runtime integration, production safety, merge approval, deployment or security certification.",
+    "mode": "bounded_fixture",
+    "operation_id": "neo-resonance-system-007-001"
+  },
+  "subjects": [
+    {
+      "head_sha": "6e51cbb176f6d891b758e3026744d1d4c4c5727a",
+      "id": "contractgraph_qa",
+      "observed_at": "2026-08-15T07:55:30Z",
+      "repository": "safal207/ContractGraph-QA",
+      "role": "independent_verifier"
+    },
+    {
+      "head_sha": "4a05ee31d7497979c2505dd55bfef08823302e24",
+      "id": "proofpath",
+      "observed_at": "2026-08-15T07:55:30Z",
+      "repository": "safal207/ProofPath",
+      "role": "authority_decision_source"
+    },
+    {
+      "head_sha": "61b02fc81e0cb5cf1f1ed4658ecff58f683cb728",
+      "id": "liminaldb",
+      "observed_at": "2026-08-15T07:55:30Z",
+      "repository": "safal207/LiminalDB",
+      "role": "durable_evidence_store"
+    },
+    {
+      "head_sha": "3be0d2ceb1440641b141cdb80c82ed118e4186dd",
+      "id": "rinse",
+      "observed_at": "2026-08-15T07:55:30Z",
+      "repository": "safal207/rinse",
+      "role": "reflection_adapter"
+    },
+    {
+      "head_sha": "fa7e3aba4ff9154856fa7d27c92f702137819ac1",
+      "id": "ls",
+      "observed_at": "2026-08-15T07:55:30Z",
+      "repository": "safal207/LS",
+      "role": "state_projection_recovery"
+    }
+  ]
+}
