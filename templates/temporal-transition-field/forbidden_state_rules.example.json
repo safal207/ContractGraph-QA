@@ -1,0 +1,83 @@
+{
+  "schema_version": "0.3",
+  "rules": [
+    {
+      "id": "FS-01",
+      "description": "Cumulative consumption must not exceed the configured budget limit.",
+      "when": [],
+      "assert": {
+        "left": {"path": "post_state.values.consumed_budget"},
+        "op": "lte",
+        "right": {"path": "post_state.values.budget_limit"}
+      },
+      "forbidden_state": "CUMULATIVE_LIMIT_EXCEEDED",
+      "severity_hint": "high"
+    },
+    {
+      "id": "FS-02",
+      "description": "A rejected action must not change the resource balance.",
+      "when": [
+        {
+          "left": {"path": "decision.outcome"},
+          "op": "eq",
+          "right": {"value": "rejected"}
+        }
+      ],
+      "assert": {
+        "left": {"path": "post_state.values.resource_balance"},
+        "op": "eq",
+        "right": {"path": "pre_state.values.resource_balance"}
+      },
+      "forbidden_state": "REJECTED_ACTION_MUTATED_BALANCE",
+      "severity_hint": "high"
+    },
+    {
+      "id": "FS-03",
+      "description": "A duplicate/retry logical operation must not produce more than one financial mutation.",
+      "when": [
+        {
+          "left": {"path": "request.action"},
+          "op": "eq",
+          "right": {"value": "duplicate_retry"}
+        }
+      ],
+      "assert": {
+        "left": {"path": "mutation.financial_mutation_count"},
+        "op": "lte",
+        "right": {"value": 1}
+      },
+      "forbidden_state": "DUPLICATE_FINANCIAL_MUTATION",
+      "severity_hint": "high"
+    },
+    {
+      "id": "FS-04",
+      "description": "A committed mutation must have at least one audit reference.",
+      "when": [
+        {
+          "left": {"path": "mutation.committed"},
+          "op": "eq",
+          "right": {"value": true}
+        }
+      ],
+      "assert": {
+        "left": {"path": "evidence.audit_refs"},
+        "op": "nonempty",
+        "right": {"value": true}
+      },
+      "forbidden_state": "COMMIT_WITHOUT_AUDIT_EVIDENCE",
+      "severity_hint": "medium"
+    },
+    {
+      "id": "FS-05",
+      "description": "Transaction count must not decrease across a normal observed transition.",
+      "when": [],
+      "assert": {
+        "left": {"path": "post_state.values.transaction_count"},
+        "op": "gte",
+        "right": {"path": "pre_state.values.transaction_count"}
+      },
+      "forbidden_state": "TRANSACTION_HISTORY_REGRESSION",
+      "severity_hint": "medium"
+    }
+  ]
+}

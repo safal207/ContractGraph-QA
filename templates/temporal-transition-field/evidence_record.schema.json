@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.example/schemas/temporal-evidence-record.schema.json",
+  "title": "Temporal Transition Evidence Record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "scenario_id",
+    "scope",
+    "pre_state",
+    "request",
+    "decision",
+    "mutation",
+    "post_state",
+    "evidence",
+    "invariants",
+    "verdict"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.2"},
+    "run_id": {"type": "string", "minLength": 1},
+    "scenario_id": {"type": "string", "minLength": 1},
+    "timestamp_utc": {"type": "string"},
+    "scope": {
+      "type": "object",
+      "required": ["environment", "authorized", "target"],
+      "properties": {
+        "environment": {"enum": ["local", "sandbox", "test", "local-fork"]},
+        "authorized": {"const": true},
+        "target": {"type": "string", "minLength": 1},
+        "notes": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "pre_state": {"$ref": "#/$defs/stateSnapshot"},
+    "request": {
+      "type": "object",
+      "required": ["action", "logical_operation_id"],
+      "properties": {
+        "action": {"type": "string", "minLength": 1},
+        "logical_operation_id": {"type": "string", "minLength": 1},
+        "parameters": {"type": "object"},
+        "concurrency_group": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "decision": {
+      "type": "object",
+      "required": ["outcome"],
+      "properties": {
+        "outcome": {"enum": ["accepted", "rejected", "partial", "error", "unknown"]},
+        "status_code": {"type": ["integer", "string", "null"]},
+        "reason": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "mutation": {
+      "type": "object",
+      "required": ["committed"],
+      "properties": {
+        "committed": {"type": "boolean"},
+        "financial_mutation_count": {"type": "integer", "minimum": 0},
+        "durable_mutation_count": {"type": "integer", "minimum": 0},
+        "details": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "post_state": {"$ref": "#/$defs/stateSnapshot"},
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "transaction_refs": {"type": "array", "items": {"type": "string"}},
+        "audit_refs": {"type": "array", "items": {"type": "string"}},
+        "response_hash": {"type": ["string", "null"]},
+        "artifacts": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "verdict"],
+        "properties": {
+          "id": {"type": "string"},
+          "rule": {"type": "string"},
+          "verdict": {"enum": ["pass", "fail", "inconclusive", "not_evaluated"]},
+          "observed": {"type": ["string", "number", "boolean", "null"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["state", "forbidden_state_reached"],
+      "properties": {
+        "state": {"enum": ["pass", "fail", "inconclusive"]},
+        "forbidden_state_reached": {"type": "boolean"},
+        "finding_id": {"type": ["string", "null"]},
+        "summary": {"type": "string"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "stateSnapshot": {
+      "type": "object",
+      "required": ["state_id", "values"],
+      "properties": {
+        "state_id": {"type": "string", "minLength": 1},
+        "values": {"type": "object"},
+        "state_hash": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

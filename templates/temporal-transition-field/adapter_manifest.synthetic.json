@@ -1,0 +1,60 @@
+{
+  "schema_version": "0.6",
+  "adapter_id": "synthetic-budget-v1",
+  "target_kind": "synthetic",
+  "scope": {
+    "environment": "local",
+    "authorized": true,
+    "production": false,
+    "target": "synthetic-budget-state-machine",
+    "notes": "Offline in-memory adapter used only for deterministic regression tests."
+  },
+  "execution": {
+    "dry_run_default": true,
+    "max_concurrency": 2,
+    "max_depth": 6,
+    "max_paths": 250
+  },
+  "credentials": {
+    "source": "none",
+    "required_env_vars": []
+  },
+  "capabilities": {
+    "snapshot": true,
+    "apply": true,
+    "coverage_mode": "full_model",
+    "supported_events": [
+      "fund",
+      "set_policy",
+      "action_valid",
+      "action_reaches_limit",
+      "action_invalid",
+      "duplicate_retry",
+      "concurrent_action"
+    ]
+  },
+  "state_contract": {
+    "required_values": [
+      "resource_balance",
+      "consumed_budget",
+      "budget_limit",
+      "per_action_limit",
+      "transaction_count",
+      "evidence_count",
+      "accepted_count",
+      "rejected_count"
+    ]
+  },
+  "evidence_contract": {
+    "required_fields": [
+      "request.action",
+      "request.logical_operation_id",
+      "decision.outcome",
+      "mutation.committed",
+      "mutation.financial_mutation_count",
+      "mutation.durable_mutation_count",
+      "evidence.transaction_refs",
+      "evidence.audit_refs"
+    ]
+  }
+}
