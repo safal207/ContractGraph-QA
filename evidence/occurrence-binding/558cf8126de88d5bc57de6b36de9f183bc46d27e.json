@@ -1,0 +1,40 @@
+{
+  "schema": "cgqa-occurrence-binding-evidence/v0.1",
+  "subject": {
+    "repository": "safal207/ContractGraph-QA",
+    "pull_request": 61,
+    "head_sha": "558cf8126de88d5bc57de6b36de9f183bc46d27e"
+  },
+  "contract": {
+    "module": "contractgraph_qa/occurrence_binding.py",
+    "tests": "tools/tests/test_occurrence_binding.py",
+    "documentation": "docs/OCCURRENCE_BINDING_CONFORMANCE.md",
+    "invariant": "A side-effecting execution may consume an authorization only when the semantic decision resolves to exactly one concrete occurrence.",
+    "identity_rule": "semantic decision identity != authorization occurrence identity != consumption fact",
+    "fail_closed_statuses": [
+      "OCCURRENCE_AMBIGUOUS",
+      "OCCURRENCE_NOT_FOUND",
+      "NOT_AUTHORIZED",
+      "ALREADY_CONSUMED"
+    ],
+    "falsification_cases": 8
+  },
+  "verification": {
+    "product_workflow_run": 31873785489,
+    "product_conclusion": "success",
+    "unit_tests_step": "success",
+    "foundry_check": "success",
+    "exact_head_check_run_count_observed": 13,
+    "queued_or_in_progress_observed_after_completion": false,
+    "failure_observed_after_completion": false
+  },
+  "provenance": {
+    "external_reference": "crewAIInc/crewAI#4877 issuecomment-5300685269",
+    "external_reference_role": "independent review of a runnable reference shape",
+    "claims_not_made": [
+      "CrewAI adoption",
+      "production deployment",
+      "production ledger migration"
+    ]
+  }
+}
