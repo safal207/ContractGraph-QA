@@ -28,7 +28,9 @@ PAYMENT-REQUIRED
 
 `/verify` answers whether the payment payload is valid against requirements. It does not itself establish that funds have settled.
 
-`/settle` returns a settlement response with a success flag and, on success, a transaction identifier/network/payer record. Therefore the adapter treats facilitator settlement as the finality evidence surface and verification as non-final evidence.
+`/settle` returns a settlement response with a success flag and, on success, a transaction identifier/network/payer record. Therefore the adapter treats facilitator settlement success as finality evidence and verification as non-final evidence.
+
+A generic `success:false` settlement response is kept non-final in this profile. The public API exposes multiple settlement error reasons, and the profile does not promote every error class into proof that no monetary effect can appear.
 
 ## AFSP mapping
 
@@ -49,9 +51,8 @@ facilitator-settle: settle-success
 
 ```text
 facilitator-settle: settle-failed
-→ final / failed in the local public-contract fixture
-→ new-operation retry semantics unresolved
-→ HOLD
+→ outcome remains unknown without a typed non-effect guarantee
+→ RECONCILE
 → monetaryActionAllowed = false
 ```
 
