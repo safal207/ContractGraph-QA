@@ -1,0 +1,180 @@
+{
+  "artifacts": [
+    {
+      "created_at": "2026-08-15T10:32:21Z",
+      "digest": "sha256:9eb7e5f6d5e60cf0e65eb92f1d90408bcb91960e2118bceee0e33181fe274474",
+      "expired": false,
+      "id": 9245706691,
+      "name": "fcrp-system-007-61",
+      "size_in_bytes": 28222
+    }
+  ],
+  "authority": {
+    "deployment_authorized": false,
+    "external_effects_authorized": false,
+    "may_authorize": false,
+    "may_execute": false,
+    "may_mutate": false,
+    "merge_authorized": false
+  },
+  "case_id": "FCRP-GLOBAL-P2-1",
+  "cost_scope": {
+    "measured": [
+      "wall_clock_seconds",
+      "substantive_step_seconds",
+      "artifact_bytes",
+      "substantive_step_count"
+    ],
+    "monetary_cost_status": "NOT_MEASURED",
+    "monetary_cost_usd": null,
+    "not_measured": [
+      "provider_billing_usd",
+      "cpu_seconds",
+      "memory_bytes",
+      "network_bytes",
+      "energy"
+    ]
+  },
+  "measured_system": {
+    "name": "FCRP-SYSTEM-007 full-chain conformance",
+    "trust_spine_route": [
+      "intent",
+      "ProofPath",
+      "CML",
+      "LiminalDB",
+      "RINSE",
+      "ContractGraph-QA"
+    ],
+    "workflow_path": ".github/workflows/fcrp-system-007-full-chain-conformance.yml"
+  },
+  "non_claims": [
+    "GitHub Actions wall-clock timing is environment-dependent and not a production latency SLA",
+    "same-second timestamps mean observed duration below the one-second source resolution, not exact zero compute",
+    "artifact bytes are evidence-package size, not total network or storage cost",
+    "monetary provider cost is not measured",
+    "measurement evidence grants no merge, deployment, execution, payment, or external-effect authority"
+  ],
+  "schema": "cgqa.global-p2-1-trust-spine-source.v0.1",
+  "snapshot_digest": "sha256:bbc7a58d30235dd3f85a20c7385ef90f62b31ff3e53d7edb8eb70e8b7e5a9ec0",
+  "source": {
+    "completed_at": "2026-08-15T10:32:25Z",
+    "conclusion": "success",
+    "created_at": "2026-08-15T10:31:38Z",
+    "head_branch": "work/fcrp-system-007-2026-08-14",
+    "head_sha": "7fd3e744037832b74b2ee4c4c71cc8fce18fc329",
+    "job_id": 95000538396,
+    "job_name": "verify",
+    "repository": "safal207/ContractGraph-QA",
+    "run_attempt": 1,
+    "started_at": "2026-08-15T10:31:40Z",
+    "timestamp_resolution_seconds": 1,
+    "workflow_name": "FCRP SYSTEM-007 Full-Chain Conformance",
+    "workflow_run_id": 31879737027
+  },
+  "substantive_steps": [
+    {
+      "completed_at": "2026-08-15T10:31:46Z",
+      "conclusion": "success",
+      "group": "preflight",
+      "name": "Verify exact subject head and PR base",
+      "number": 5,
+      "started_at": "2026-08-15T10:31:46Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:31:46Z",
+      "conclusion": "success",
+      "group": "preflight",
+      "name": "Compile runner and execute fail-closed unit negatives",
+      "number": 6,
+      "started_at": "2026-08-15T10:31:46Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:31:49Z",
+      "conclusion": "success",
+      "group": "preflight",
+      "name": "Resolve and checkout exact external subjects",
+      "number": 7,
+      "started_at": "2026-08-15T10:31:46Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:31:49Z",
+      "conclusion": "success",
+      "group": "intent_cml",
+      "name": "Build intent, native ProofPath projection, and CML causal chain",
+      "number": 8,
+      "started_at": "2026-08-15T10:31:49Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:31:57Z",
+      "conclusion": "success",
+      "group": "proofpath",
+      "name": "Run the pinned native ProofPath verifier",
+      "number": 9,
+      "started_at": "2026-08-15T10:31:49Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:31:57Z",
+      "conclusion": "success",
+      "group": "liminaldb",
+      "name": "Bind native ProofPath receipt and LiminalDB artifact event",
+      "number": 10,
+      "started_at": "2026-08-15T10:31:57Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:31:57Z",
+      "conclusion": "success",
+      "group": "liminaldb",
+      "name": "Validate the exact LiminalDB artifact contract",
+      "number": 11,
+      "started_at": "2026-08-15T10:31:57Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:32:20Z",
+      "conclusion": "success",
+      "group": "liminaldb",
+      "name": "Write and reopen the exact LiminalDB durable record",
+      "number": 12,
+      "started_at": "2026-08-15T10:31:57Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:32:20Z",
+      "conclusion": "success",
+      "group": "liminaldb",
+      "name": "Verify durable retry idempotency and conflict rejection",
+      "number": 13,
+      "started_at": "2026-08-15T10:32:20Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:32:21Z",
+      "conclusion": "success",
+      "group": "rinse",
+      "name": "Derive bounded RINSE reflection from recovered durable bytes",
+      "number": 14,
+      "started_at": "2026-08-15T10:32:20Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:32:21Z",
+      "conclusion": "success",
+      "group": "contractgraph_qa",
+      "name": "Independently replay the complete chain and all negative cases",
+      "number": 15,
+      "started_at": "2026-08-15T10:32:21Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:32:21Z",
+      "conclusion": "success",
+      "group": "evidence_packaging",
+      "name": "Build immutable SYSTEM-007 evidence manifest",
+      "number": 16,
+      "started_at": "2026-08-15T10:32:21Z"
+    },
+    {
+      "completed_at": "2026-08-15T10:32:21Z",
+      "conclusion": "success",
+      "group": "evidence_packaging",
+      "name": "Upload SYSTEM-007 evidence",
+      "number": 17,
+      "started_at": "2026-08-15T10:32:21Z"
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+name: FCRP P2-1 — Trust-Spine Cost Latency
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - work/fcrp-system-007-2026-08-14
+    paths:
+      - benchmarks/global-p2-1/**
+      - tools/trust_spine_cost_latency.py
+      - tools/trust_spine_measurement_verifier.py
+      - tools/tests/test_trust_spine_cost_latency.py
+      - docs/GLOBAL_P2_1_TRUST_SPINE_COST_LATENCY.md
+      - .github/workflows/fcrp-p2-1-trust-spine-cost-latency.yml
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: fcrp-p2-1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      EXPECTED_PR_BASE: 7fd3e744037832b74b2ee4c4c71cc8fce18fc329
+      SOURCE_RUN_ID: "31879737027"
+      SOURCE_JOB_ID: "95000538396"
+      SOURCE_ARTIFACT_ID: "9245706691"
+      SOURCE_MEASURED_HEAD: 7fd3e744037832b74b2ee4c4c71cc8fce18fc329
+
+    steps:
+      - name: Checkout exact P2-1 verifier subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact stacked subject and base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Compile and run P2-1 regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/trust_spine_cost_latency.py \
+            tools/trust_spine_measurement_verifier.py \
+            tools/tests/test_trust_spine_cost_latency.py
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m unittest \
+            tools.tests.test_trust_spine_cost_latency -v
+
+      - name: Attest frozen source against GitHub Actions API
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p2-1
+          curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/safal207/ContractGraph-QA/actions/runs/$SOURCE_RUN_ID/jobs?per_page=100" \
+            > /tmp/p2-1-jobs.json
+          curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/safal207/ContractGraph-QA/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" \
+            > /tmp/p2-1-artifacts.json
+
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          fixture = json.loads(Path("benchmarks/global-p2-1/trust-spine-cost-latency.observed.v0.1.json").read_text(encoding="utf-8"))
+          jobs = json.loads(Path("/tmp/p2-1-jobs.json").read_text(encoding="utf-8"))
+          artifacts = json.loads(Path("/tmp/p2-1-artifacts.json").read_text(encoding="utf-8"))
+          job_id = int(os.environ["SOURCE_JOB_ID"])
+          artifact_id = int(os.environ["SOURCE_ARTIFACT_ID"])
+          measured_head = os.environ["SOURCE_MEASURED_HEAD"]
+
+          matches = [job for job in jobs["jobs"] if job["id"] == job_id]
+          assert len(matches) == 1
+          job = matches[0]
+          source = fixture["source"]
+          assert job["run_id"] == source["workflow_run_id"]
+          assert job["head_sha"] == measured_head == source["head_sha"]
+          assert job["workflow_name"] == source["workflow_name"]
+          assert job["run_attempt"] == source["run_attempt"]
+          assert job["name"] == source["job_name"]
+          assert job["conclusion"] == source["conclusion"]
+          assert job["created_at"] == source["created_at"]
+          assert job["started_at"] == source["started_at"]
+          assert job["completed_at"] == source["completed_at"]
+
+          live_steps = {step["number"]: step for step in job["steps"]}
+          for expected in fixture["substantive_steps"]:
+              live = live_steps[expected["number"]]
+              for field in ("name", "conclusion", "started_at", "completed_at"):
+                  assert live[field] == expected[field], (expected["number"], field)
+
+          artifact_matches = [a for a in artifacts["artifacts"] if a["id"] == artifact_id]
+          assert len(artifact_matches) == 1
+          live_artifact = artifact_matches[0]
+          expected_artifact = fixture["artifacts"][0]
+          for field in ("id", "name", "size_in_bytes", "digest", "created_at"):
+              assert live_artifact[field] == expected_artifact[field], field
+          assert live_artifact["workflow_run"]["head_sha"] == measured_head
+
+          attestation = {
+              "schema": "cgqa.p2-1-live-source-attestation.v0.1",
+              "decision": "PASS",
+              "workflow_run_id": source["workflow_run_id"],
+              "job_id": job_id,
+              "artifact_id": artifact_id,
+              "measured_subject": measured_head,
+              "mutable_artifact_expiration_ignored": True,
+              "authority": "read-only source attestation; no execution or merge authority",
+          }
+          Path("evidence/p2-1/live-source-attestation.json").write_text(json.dumps(attestation, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Derive deterministic cost and latency receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/trust_spine_cost_latency.py \
+            --source benchmarks/global-p2-1/trust-spine-cost-latency.observed.v0.1.json \
+            --output evidence/p2-1/measurement.json
+          jq -e '
+            .decision == "PASS" and
+            .policy == "READ_ONLY_MEASUREMENT_NO_AUTHORITY" and
+            .latency.job_elapsed_seconds == 45 and
+            .latency.substantive_window_seconds == 35 and
+            .latency.summed_substantive_step_seconds == 35 and
+            .latency.runner_overhead_seconds == 10 and
+            .structural_cost.substantive_step_count == 13 and
+            .structural_cost.artifact_count == 1 and
+            .structural_cost.artifact_bytes == 28222 and
+            .monetary_cost.status == "NOT_MEASURED" and
+            .monetary_cost.amount_usd == null and
+            .authority.may_authorize == false and
+            .authority.may_execute == false
+          ' evidence/p2-1/measurement.json >/dev/null
+
+      - name: Independently recompute measurement
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/trust_spine_measurement_verifier.py \
+            --source benchmarks/global-p2-1/trust-spine-cost-latency.observed.v0.1.json \
+            --measurement evidence/p2-1/measurement.json \
+            --verifier-subject "$EXACT_HEAD" \
+            --output evidence/p2-1/verification.json
+          jq -e '
+            .decision == "PASS" and
+            .measurement_recomputed == true and
+            .producer_imported == false and
+            .measured_subject == "7fd3e744037832b74b2ee4c4c71cc8fce18fc329" and
+            .verifier_subject == env.EXACT_HEAD and
+            .recomputed.job_elapsed_seconds == 45 and
+            .recomputed.substantive_window_seconds == 35 and
+            .recomputed.artifact_bytes == 28222 and
+            .dominant_measurement_group.group == "liminaldb" and
+            .dominant_measurement_group.observed_seconds == 23 and
+            .monetary_cost_status == "NOT_MEASURED" and
+            .authority.may_authorize == false
+          ' evidence/p2-1/verification.json >/dev/null
+
+      - name: Deterministic replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/trust_spine_cost_latency.py \
+            --source benchmarks/global-p2-1/trust-spine-cost-latency.observed.v0.1.json \
+            --output /tmp/p2-1-measurement-replay.json
+          cmp evidence/p2-1/measurement.json /tmp/p2-1-measurement-replay.json
+          python tools/trust_spine_measurement_verifier.py \
+            --source benchmarks/global-p2-1/trust-spine-cost-latency.observed.v0.1.json \
+            --measurement /tmp/p2-1-measurement-replay.json \
+            --verifier-subject "$EXACT_HEAD" \
+            --output /tmp/p2-1-verification-replay.json
+          cmp evidence/p2-1/verification.json /tmp/p2-1-verification-replay.json
+
+      - name: Capture exact P2-1 run context
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p2-1
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("evidence/p2-1/run-context.json").write_text(json.dumps({
+              "schema": "cgqa.p2-1-run-context.v0.1",
+              "verifier_subject": os.environ["EXACT_HEAD"],
+              "expected_base": os.environ["EXPECTED_PR_BASE"],
+              "measured_subject": os.environ["SOURCE_MEASURED_HEAD"],
+              "source_run_id": int(os.environ["SOURCE_RUN_ID"]),
+              "source_job_id": int(os.environ["SOURCE_JOB_ID"]),
+              "authority": "read-only measurement; no merge, deployment, production persistence, payment, or external effect",
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Build immutable P2-1 SHA-256 manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/p2-1
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - name: Upload P2-1 measurement evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-p2-1-trust-spine-cost-latency-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/p2-1/
+          if-no-files-found: error
+          retention-days: 90
