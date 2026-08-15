@@ -1,0 +1,45 @@
+{
+  "benchmark": "CONTAINER-HARD-STOP-001",
+  "systemCase": "FCRP-SYSTEM-012",
+  "parent": {
+    "systemCase": "FCRP-SYSTEM-011",
+    "head": "b3eb2443d870d52a152fed8bbd25bfe9a522886c",
+    "outOfBandReceiptDigest": "sha256:eeaca7299b3a47ef24fe3c378cb501a6f9861c08e48946b79fa5ee7cf9f9ef7f"
+  },
+  "allowedCapabilities": [
+    "EXTERNAL_PROCESS_KILL_ONLY",
+    "CONTAINER_HARD_STOP_OBSERVED"
+  ],
+  "allowedVerdicts": [
+    "CONTAINER_HARD_STOP_UNAVAILABLE_BOUNDARY_HELD",
+    "CONTAINER_HARD_STOP_RECOVERY_OBSERVED_STRONGER_BOUNDARIES_HELD"
+  ],
+  "evidenceBoundary": "CONTAINER_HARD_STOP_NOT_VM_OR_PHYSICAL_POWER_LOSS",
+  "vmHardStopObserved": false,
+  "physicalPowerLossProven": false,
+  "executionDecision": "HOLD",
+  "authorityTransfer": "NONE",
+  "executionAuthorized": false,
+  "mutationAuthorized": false,
+  "externalEffectsPerformed": false,
+  "cases": [
+    {
+      "name": "after_authority_commit",
+      "projectionState": "STALE",
+      "rebuildDecision": "ALLOW_REBUILD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "after_temp_fsync",
+      "projectionState": "STALE",
+      "rebuildDecision": "ALLOW_REBUILD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "after_projection_commit",
+      "projectionState": "HEALTHY",
+      "rebuildDecision": "NO_REBUILD",
+      "executionDecision": "HOLD"
+    }
+  ]
+}
