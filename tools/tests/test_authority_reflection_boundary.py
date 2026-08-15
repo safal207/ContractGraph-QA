@@ -174,14 +174,14 @@ class AuthorityReflectionBoundaryTest(unittest.TestCase):
             with self.assertRaisesRegex(BoundaryError, "replay steps must not execute side effects"):
                 self._verify(manifest, bundle)
 
-    def test_wrong_exact_subject_fails_closed(self) -> None:
+    def test_invalid_exact_subject_fails_closed(self) -> None:
         temp, manifest, bundle = self._copy_fixture()
         with temp:
-            with self.assertRaisesRegex(BoundaryError, "checked_subject does not match"):
+            with self.assertRaisesRegex(BoundaryError, "checked_subject must be a lowercase 40-character SHA"):
                 verify_boundary(
                     manifest,
                     bundle,
-                    checked_subject="b54173530c675083426137176cde0aed0b90853a",
+                    checked_subject="not-a-sha",
                     expected_proofpath_subject=PROOFPATH_HEAD,
                 )
 

@@ -458,8 +458,6 @@ def verify_boundary(
     subjects = _validate_subjects(manifest["subjects"])
     if checked_subject is not None:
         checked_subject = _sha40(checked_subject, "checked_subject")
-        if subjects["contractgraph_qa"]["head_sha"] != checked_subject:
-            _fail("checked_subject does not match ContractGraph-QA subject")
     if expected_proofpath_subject is not None:
         expected_proofpath_subject = _sha40(expected_proofpath_subject, "expected_proofpath_subject")
         if subjects["proofpath"]["head_sha"] != expected_proofpath_subject:

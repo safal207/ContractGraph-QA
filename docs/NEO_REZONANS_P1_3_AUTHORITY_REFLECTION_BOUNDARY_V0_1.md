@@ -48,9 +48,11 @@ and replay references. Tampered, missing, duplicate, unlisted, path-escaping,
 source-drifted, authority-escalating or side-effect-marked input fails closed as
 `HOLD` with a non-zero exit code.
 
-The workflow subject is the code that performed verification. The component
-subjects in the fixture are the revisions whose bounded records are being
-checked. These identities remain separate. A passing boundary fixture proves
+The workflow subject is the code that performed verification and is supplied by
+the exact-head workflow at runtime. The component subjects in the fixture are
+the frozen revisions whose bounded records are being checked. These identities
+remain separate; a verifier checkout may legitimately be newer than the cargo
+source revision. A passing boundary fixture proves
 the negative separation contract for this synthetic route only; it does not
 prove live adapter integration, production safety, merge approval, deployment,
 security certification or human approval.
