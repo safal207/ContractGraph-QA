@@ -1,10 +1,10 @@
 {
-  "schema": "cgqa.payment-provider-adapter.v0.2",
+  "schema": "cgqa.payment-provider-adapter.v0.3",
   "providerId": "crossmint-wallet-transactions-public",
-  "profileVersion": "0.1",
+  "profileVersion": "0.2",
   "create": {
     "supportsIdempotencyKey": true,
-    "sameKeyReplayDocumented": false
+    "sameKeyReplayDocumented": true
   },
   "stateMap": {
     "awaiting-approval": "pending",
@@ -25,15 +25,19 @@
   ],
   "evidencePrecedenceStatus": "unresolved",
   "evidencePrecedence": [],
+  "retrySemanticsStatus": "unresolved",
+  "retryAllowedAfterProviderStates": [],
   "publicContractRefs": [
     "https://docs.crossmint.com/api-reference/wallets/create-transaction",
     "https://docs.crossmint.com/api-reference/wallets/get-transaction",
-    "https://docs.crossmint.com/wallets/quickstarts/restapi",
+    "https://docs.crossmint.com/introduction/platform/webhooks/best-practices",
     "https://docs.crossmint.com/wallets/guides/webhooks"
   ],
   "openQuestions": [
-    "After a Create Transaction request times out before the transaction ID is received, what public reconciliation path should an integrator use before any new monetary action?",
-    "Does retrying Create Transaction with the same x-idempotency-key return or expose the already-created transaction in a documented way?",
-    "If GET transaction state and transfer webhook evidence ever disagree, is there a documented canonical precedence?"
+    "What is the documented retention or lifetime of a transaction x-idempotency-key?",
+    "What behavior is guaranteed if the same x-idempotency-key is replayed with materially different transaction parameters?",
+    "Crossmint does not publish a normative precedence rule for the complete timeout-recovery case; how should integrators document the derived composition they rely on?",
+    "After a terminal failed transaction, what public contract explicitly authorizes creation of a new monetary operation, if any?",
+    "In the x402 flow, what recovery behavior is recommended if payment may have settled but the post-payment HTTP response is lost?"
   ]
 }
