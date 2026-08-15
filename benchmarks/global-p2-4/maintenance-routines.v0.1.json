@@ -1,0 +1,169 @@
+{
+  "case_id": "FCRP-GLOBAL-P2-4",
+  "non_claims": [
+    "routine quality is not repository health",
+    "draft PR outcome is not merge approval",
+    "no deployment",
+    "no production persistence",
+    "no external effect authorization"
+  ],
+  "routine_runs": [
+    {
+      "authority": {
+        "deployment_authorized": false,
+        "external_effects_authorized": false,
+        "may_authorize": false,
+        "may_execute": false,
+        "may_mutate": false,
+        "merge_authorized": false,
+        "side_effect_executed": false
+      },
+      "causal_case": {
+        "alternatives": [
+          "the contract is intentionally versioned and compatible",
+          "the observation is stale because the source subject moved"
+        ],
+        "causal": "the maintenance mesh lacks one exact contract-drift run record joining source subject, patch intent, verification and outcome",
+        "confidence": 0.84,
+        "fmd": "shared routine-run contract is the first meaningful divergence",
+        "symptom": "contract evidence is locally present but not outcome-attributed"
+      },
+      "observation": {
+        "finding_id": "finding-contract-drift-proofpath-001",
+        "input_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "observed_at": "2026-08-15T10:30:00Z",
+        "scope_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "outcome": {
+        "merge_state": "NOT_MERGED",
+        "pr_number": 61,
+        "patch_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "routine_id": "contract_drift_detector",
+        "status": "DRAFT_OPEN"
+      },
+      "patch": {
+        "changed_paths": [
+          "docs/compatibility-contract.md"
+        ],
+        "intended_invariant": "exact source contract and implementation subjects remain bound",
+        "patch_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "routine": {
+        "id": "contract_drift_detector",
+        "rule_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "version": "0.1.0"
+      },
+      "run_id": "routine-run-contract-drift-001",
+      "routine_run_digest": "sha256:480912300416150fa371e68cfc0b83032f41fc48dc7884ea9d50b9feb76a7a1a",
+      "schema": "cgqa.maintenance-routine-run.v0.1",
+      "target": {
+        "base_subject": "4a05ee31d7497979c2505dd55bfef08823302e24",
+        "checked_subject": "4a05ee31d7497979c2505dd55bfef08823302e24",
+        "repository": "safal207/ProofPath",
+        "subject_paths": [
+          "schemas/proofpath-authorization-record-v0.1.schema.json"
+        ]
+      },
+      "verification": {
+        "evidence_refs": [
+          "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+        ],
+        "negative_cases": [
+          "stale_target_head",
+          "changed_contract_subject",
+          "false_green_verifier_boundary"
+        ],
+        "replay": "SAME_RESULT",
+        "result": "PASS",
+        "verifier_subject": "WORKFLOW_EXACT_HEAD"
+      }
+    },
+    {
+      "authority": {
+        "deployment_authorized": false,
+        "external_effects_authorized": false,
+        "may_authorize": false,
+        "may_execute": false,
+        "may_mutate": false,
+        "merge_authorized": false,
+        "side_effect_executed": false
+      },
+      "causal_case": {
+        "alternatives": [
+          "the evidence package is complete but the outcome is not attributable",
+          "the routine found no actionable discrepancy"
+        ],
+        "causal": "the evidence auditor needs a closed run record before a green verifier summary is usable as routine-quality evidence",
+        "confidence": 0.89,
+        "fmd": "outcome attribution is the first meaningful divergence for evidence logistics",
+        "symptom": "verification receipts are not yet joined to a routine version and draft outcome"
+      },
+      "observation": {
+        "finding_id": "finding-evidence-attribution-001",
+        "input_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "observed_at": "2026-08-15T10:31:00Z",
+        "scope_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+      },
+      "outcome": {
+        "merge_state": "NOT_MERGED",
+        "pr_number": 61,
+        "patch_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "routine_id": "evidence_auditor",
+        "status": "DRAFT_OPEN"
+      },
+      "patch": {
+        "changed_paths": [
+          "docs/evidence-logistics.md"
+        ],
+        "intended_invariant": "every ready routine result has closed replayable evidence and an exact outcome link",
+        "patch_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "routine": {
+        "id": "evidence_auditor",
+        "rule_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "version": "0.1.0"
+      },
+      "run_id": "routine-run-evidence-audit-001",
+      "routine_run_digest": "sha256:56dc50520acb3670c8b5db4e0b6532f4bda205c8a0344cdb97b686ce0d1bf271",
+      "schema": "cgqa.maintenance-routine-run.v0.1",
+      "target": {
+        "base_subject": "85c3baea0a551751263ef563a3dd1c75492f57ae",
+        "checked_subject": "85c3baea0a551751263ef563a3dd1c75492f57ae",
+        "repository": "safal207/RESONANCE",
+        "subject_paths": [
+          "governance/provider-neutral-interoperability-fixture.v0.1.json"
+        ]
+      },
+      "verification": {
+        "evidence_refs": [
+          "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+        ],
+        "negative_cases": [
+          "missing_evidence",
+          "duplicate_finding",
+          "outcome_attribution_drift"
+        ],
+        "replay": "SAME_RESULT",
+        "result": "PASS",
+        "verifier_subject": "WORKFLOW_EXACT_HEAD"
+      }
+    }
+  ],
+  "schema": "cgqa.global-p2-4-maintenance-routines.v0.1",
+  "subjects": [
+    {
+      "checkout_dir": "proofpath",
+      "component": "proofpath",
+      "path": "schemas/proofpath-authorization-record-v0.1.schema.json",
+      "repository": "safal207/ProofPath",
+      "revision": "4a05ee31d7497979c2505dd55bfef08823302e24"
+    },
+    {
+      "checkout_dir": "resonance",
+      "component": "resonance",
+      "path": "governance/provider-neutral-interoperability-fixture.v0.1.json",
+      "repository": "safal207/RESONANCE",
+      "revision": "85c3baea0a551751263ef563a3dd1c75492f57ae"
+    }
+  ]
+}

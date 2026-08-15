@@ -1,0 +1,10 @@
+{
+  "artifact_role": "intent",
+  "authority": {
+    "execution_authorized": false,
+    "external_effects_authorized": false,
+    "mutation_authorized": false
+  },
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "schema": "cgqa.p1-2-fixture-intent.v0.1"
+}

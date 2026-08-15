@@ -1,0 +1,124 @@
+name: FCRP P1-4/P1-5/P1-6 — Occurrence Portability
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - contractgraph_qa/occurrence_portability.py
+      - tools/occurrence_portability_matrix.py
+      - tools/tests/test_occurrence_portability.py
+      - docs/NEO_REZONANS_P1_4_P1_6_OCCURRENCE_PORTABILITY_V0_1.md
+      - .github/workflows/fcrp-p1-4-6-occurrence-portability.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-p1-4-6-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      EXPECTED_PR_BASE: b54173530c675083426137176cde0aed0b90853a
+
+    steps:
+      - name: Checkout exact occurrence-portability subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact verifier subject and PR base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Compile and run focused P1-4/P1-5/P1-6 tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m py_compile \
+            contractgraph_qa/occurrence_portability.py \
+            tools/occurrence_portability_matrix.py \
+            tools/tests/test_occurrence_portability.py
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m unittest \
+            tools.tests.test_occurrence_binding \
+            tools.tests.test_occurrence_portability -v
+
+      - name: Execute deterministic portability and race matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p1-4-6
+          PYTHONPATH="$GITHUB_WORKSPACE" python tools/occurrence_portability_matrix.py \
+            --output evidence/p1-4-6/result.json
+          PYTHONPATH="$GITHUB_WORKSPACE" python tools/occurrence_portability_matrix.py \
+            --output /tmp/p1-4-6-replay.json
+          cmp evidence/p1-4-6/result.json /tmp/p1-4-6-replay.json
+          jq -e '
+            .decision == "PASS" and
+            .case_count == 11 and
+            .passed_cases == 11 and
+            .failed_cases == 0 and
+            .p1_4_portability_verified == true and
+            .p1_5_race_replay_verified == true and
+            .p1_6_consumption_receipt_verified == true and
+            .side_effects_executed == false and
+            .production_ledger_mutated == false and
+            (.canonical_route == ["ProofPath", "CML", "LiminalDB", "RINSE", "ContractGraph-QA"])
+          ' evidence/p1-4-6/result.json >/dev/null
+
+      - name: Capture exact run context
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p1-4-6
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("evidence/p1-4-6/run-context.json").write_text(json.dumps({
+              "schema": "cgqa.p1-4-6-run-context.v0.1",
+              "checked_subject": os.environ["EXACT_HEAD"],
+              "expected_subject": os.environ["EXACT_HEAD"],
+              "reported_sha": os.environ.get("GITHUB_SHA"),
+              "workflow": os.environ.get("GITHUB_WORKFLOW"),
+              "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "canonical_route": ["ProofPath", "CML", "LiminalDB", "RINSE", "ContractGraph-QA"],
+              "authority": "conformance only; no executor, production ledger mutation, deployment, or external effect",
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+
+      - name: Build immutable P1-4/P1-5/P1-6 SHA-256 manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/p1-4-6
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - name: Upload occurrence-portability evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-p1-4-6-occurrence-portability-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/p1-4-6/
+          if-no-files-found: error
+          retention-days: 90

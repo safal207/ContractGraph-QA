@@ -1,0 +1,247 @@
+name: FCRP P1-7 — Independent Cross-Repo Replay
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - benchmarks/global-p1-7/**
+      - tools/independent_cross_repo_replay.py
+      - tools/tests/test_independent_cross_repo_replay.py
+      - docs/GLOBAL_P1_7_INDEPENDENT_CROSS_REPO_REPLAY.md
+      - .github/workflows/fcrp-global-p1-7-independent-cross-repo-replay.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-p1-7-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      EXPECTED_PR_BASE: b54173530c675083426137176cde0aed0b90853a
+      PROOFPATH_HEAD: 4a05ee31d7497979c2505dd55bfef08823302e24
+      CML_HEAD: 2a649903693fc61a560ee056834127ada3120206
+      LIMINALDB_HEAD: 61b02fc81e0cb5cf1f1ed4658ecff58f683cb728
+      RINSE_HEAD: 3be0d2ceb1440641b141cdb80c82ed118e4186dd
+      RESONANCE_HEAD: 85c3baea0a551751263ef563a3dd1c75492f57ae
+
+    steps:
+      - name: Checkout exact P1-7 verifier subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact verifier subject and PR base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Compile and run independent replay falsification tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/independent_cross_repo_replay.py \
+            tools/tests/test_independent_cross_repo_replay.py
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m unittest \
+            tools.tests.test_independent_cross_repo_replay -v
+
+      - name: Checkout exact external proof subjects
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/p1-7
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT"
+
+          clone_exact() {
+            repo="$1"
+            dir="$2"
+            sha="$3"
+            git init -q "$dir"
+            git -C "$dir" remote add origin "https://github.com/${repo}.git"
+            git -C "$dir" fetch -q --depth=1 origin "$sha"
+            git -C "$dir" checkout -q --detach FETCH_HEAD
+            test "$(git -C "$dir" rev-parse HEAD)" = "$sha"
+          }
+
+          clone_exact safal207/ProofPath "$ROOT/proofpath" "$PROOFPATH_HEAD"
+          clone_exact safal207/Causal-Memory-Layer "$ROOT/cml" "$CML_HEAD"
+          clone_exact safal207/LiminalDB "$ROOT/liminaldb" "$LIMINALDB_HEAD"
+          clone_exact safal207/rinse "$ROOT/rinse" "$RINSE_HEAD"
+          clone_exact safal207/RESONANCE "$ROOT/resonance" "$RESONANCE_HEAD"
+
+      - name: Independently reconstruct occurrence, route and ConsumptionReceipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p1-7
+          python tools/independent_cross_repo_replay.py \
+            --manifest benchmarks/global-p1-7/pinned-subjects.v0.1.json \
+            --occurrence benchmarks/global-p1-7/authorization-occurrence-consumption.v0.1.json \
+            --checkout-root /tmp/p1-7 \
+            --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" \
+            --output evidence/p1-7/result.json
+
+          python tools/independent_cross_repo_replay.py \
+            --manifest benchmarks/global-p1-7/pinned-subjects.v0.1.json \
+            --occurrence benchmarks/global-p1-7/authorization-occurrence-consumption.v0.1.json \
+            --checkout-root /tmp/p1-7 \
+            --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" \
+            --output /tmp/p1-7-replay.json
+
+          cmp evidence/p1-7/result.json /tmp/p1-7-replay.json
+          jq -e '
+            .decision == "PASS" and
+            .decision_ref == "decision-A" and
+            .cites_event_id == "evt-42" and
+            .route_fingerprint == "fee0b69553abc156b77ad446c3cda8c7f50bbf0efc2cd3aafa75a279016f7930" and
+            .receipt_digest == "690e4852db587c8aa97673ea3b93c5512ffb052ef15de7153604d3a2ff72d72a" and
+            .side_effects_executed == false and
+            .production_ledger_mutated == false and
+            (.verified_subjects | length) == 6
+          ' evidence/p1-7/result.json >/dev/null
+
+      - name: Prove fail-closed tamper behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expect_failure() {
+            label="$1"
+            shift
+            if "$@" >/tmp/p1-7-negative.log 2>&1; then
+              echo "negative case unexpectedly passed: $label" >&2
+              cat /tmp/p1-7-negative.log >&2
+              exit 1
+            fi
+          }
+
+          cp benchmarks/global-p1-7/authorization-occurrence-consumption.v0.1.json /tmp/route-tamper.json
+          python - <<'PY'
+          import json
+          p="/tmp/route-tamper.json"
+          d=json.load(open(p))
+          d["route"][2], d["route"][3] = d["route"][3], d["route"][2]
+          json.dump(d, open(p,"w"), indent=2, sort_keys=True)
+          PY
+          expect_failure route-reorder python tools/independent_cross_repo_replay.py \
+            --manifest benchmarks/global-p1-7/pinned-subjects.v0.1.json \
+            --occurrence /tmp/route-tamper.json \
+            --checkout-root /tmp/p1-7 --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" --output /tmp/negative.json
+
+          cp benchmarks/global-p1-7/authorization-occurrence-consumption.v0.1.json /tmp/ambiguous.json
+          python - <<'PY'
+          import json
+          p="/tmp/ambiguous.json"
+          d=json.load(open(p))
+          d["request"]["cites_event_id"] = None
+          json.dump(d, open(p,"w"), indent=2, sort_keys=True)
+          PY
+          expect_failure missing-event-id python tools/independent_cross_repo_replay.py \
+            --manifest benchmarks/global-p1-7/pinned-subjects.v0.1.json \
+            --occurrence /tmp/ambiguous.json \
+            --checkout-root /tmp/p1-7 --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" --output /tmp/negative.json
+
+          cp benchmarks/global-p1-7/authorization-occurrence-consumption.v0.1.json /tmp/receipt-tamper.json
+          python - <<'PY'
+          import json
+          p="/tmp/receipt-tamper.json"
+          d=json.load(open(p))
+          d["observed_receipt"]["receipt_digest"] = "0" * 64
+          json.dump(d, open(p,"w"), indent=2, sort_keys=True)
+          PY
+          expect_failure receipt-tamper python tools/independent_cross_repo_replay.py \
+            --manifest benchmarks/global-p1-7/pinned-subjects.v0.1.json \
+            --occurrence /tmp/receipt-tamper.json \
+            --checkout-root /tmp/p1-7 --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" --output /tmp/negative.json
+
+          cp benchmarks/global-p1-7/pinned-subjects.v0.1.json /tmp/revision-tamper.json
+          python - <<'PY'
+          import json
+          p="/tmp/revision-tamper.json"
+          d=json.load(open(p))
+          next(x for x in d["subjects"] if x["component"] == "cml")["revision"] = "0" * 40
+          json.dump(d, open(p,"w"), indent=2, sort_keys=True)
+          PY
+          expect_failure revision-tamper python tools/independent_cross_repo_replay.py \
+            --manifest /tmp/revision-tamper.json \
+            --occurrence benchmarks/global-p1-7/authorization-occurrence-consumption.v0.1.json \
+            --checkout-root /tmp/p1-7 --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" --output /tmp/negative.json
+
+          printf '\n# tamper\n' >> /tmp/p1-7/rinse/schemas/kairos_liminal_receipt.schema.json
+          expect_failure raw-subject-tamper python tools/independent_cross_repo_replay.py \
+            --manifest benchmarks/global-p1-7/pinned-subjects.v0.1.json \
+            --occurrence benchmarks/global-p1-7/authorization-occurrence-consumption.v0.1.json \
+            --checkout-root /tmp/p1-7 --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" --output /tmp/negative.json
+          git -C /tmp/p1-7/rinse checkout -q -- schemas/kairos_liminal_receipt.schema.json
+
+      - name: Capture exact P1-7 run context
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p1-7
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("evidence/p1-7/run-context.json").write_text(json.dumps({
+              "schema": "cgqa.p1-7-run-context.v0.1",
+              "checked_subject": os.environ["EXACT_HEAD"],
+              "expected_subject": os.environ["EXACT_HEAD"],
+              "reported_sha": os.environ.get("GITHUB_SHA"),
+              "workflow": os.environ.get("GITHUB_WORKFLOW"),
+              "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "external_revisions": {
+                  "ProofPath": os.environ["PROOFPATH_HEAD"],
+                  "CML": os.environ["CML_HEAD"],
+                  "LiminalDB": os.environ["LIMINALDB_HEAD"],
+                  "RINSE": os.environ["RINSE_HEAD"],
+                  "RESONANCE": os.environ["RESONANCE_HEAD"],
+              },
+              "authority": "conformance only; no executor, deployment, production ledger mutation, or external effect",
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+
+      - name: Build immutable P1-7 SHA-256 manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/p1-7
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - name: Upload independent cross-repo replay evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-p1-7-independent-cross-repo-replay-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/p1-7/
+          if-no-files-found: error
+          retention-days: 90

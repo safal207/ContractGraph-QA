@@ -1,0 +1,210 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "A-DURABLE",
+      "bytes": 201,
+      "collected_at": "2026-08-14T15:00:00Z",
+      "component": "liminaldb",
+      "content_type": "application/json",
+      "origin": "bounded-fixture",
+      "path": "durable-record.json",
+      "role": "durable",
+      "sha256": "e03db8b8fcc91f03be47b6e544a6287e1107842e9b0a3585e9de561dcb767852",
+      "source_revision": "61b02fc81e0cb5cf1f1ed4658ecff58f683cb728",
+      "transaction_time": "2026-08-14T15:00:00Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-14T15:00:00Z"
+    },
+    {
+      "artifact_id": "A-INTENT",
+      "bytes": 267,
+      "collected_at": "2026-08-14T15:00:00Z",
+      "component": "contractgraph_qa",
+      "content_type": "application/json",
+      "origin": "bounded-fixture",
+      "path": "intent.json",
+      "role": "intent",
+      "sha256": "c41ba09a3a64daaa1e43b1a81a5e67631da5a060444de85b7d509b765aa958ce",
+      "source_revision": "fcd5e88655eedd3e4e4d3944bb133a8e2c8b0d8e",
+      "transaction_time": "2026-08-14T15:00:00Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-14T15:00:00Z"
+    },
+    {
+      "artifact_id": "A-REFLECTION",
+      "bytes": 227,
+      "collected_at": "2026-08-14T15:00:00Z",
+      "component": "rinse",
+      "content_type": "application/json",
+      "origin": "bounded-fixture",
+      "path": "reflection-trace.json",
+      "role": "reflection",
+      "sha256": "370eb517be8c0263dd79cb452684f10ee8d08f22f544a6bcd1a37a6a4d5f1a42",
+      "source_revision": "3be0d2ceb1440641b141cdb80c82ed118e4186dd",
+      "transaction_time": "2026-08-14T15:00:00Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-14T15:00:00Z"
+    },
+    {
+      "artifact_id": "A-RECOVERY",
+      "bytes": 261,
+      "collected_at": "2026-08-14T15:00:00Z",
+      "component": "ls",
+      "content_type": "application/json",
+      "origin": "bounded-fixture",
+      "path": "recovery-receipt.json",
+      "role": "recovery",
+      "sha256": "cd47f28e1b6da26df8b11e2fab679fefa4eafa3f0887f6fff4827465a2003aff",
+      "source_revision": "fa7e3aba4ff9154856fa7d27c92f702137819ac1",
+      "transaction_time": "2026-08-14T15:00:00Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-14T15:00:00Z"
+    },
+    {
+      "artifact_id": "A-REPLAY",
+      "bytes": 211,
+      "collected_at": "2026-08-14T15:00:00Z",
+      "component": "contractgraph_qa",
+      "content_type": "application/json",
+      "origin": "bounded-fixture",
+      "path": "replay-trace.json",
+      "role": "replay",
+      "sha256": "ed5d631ec09bb9e1a1b0a79698a38f7b1f13838770c61f8ad2f8809c107a929c",
+      "source_revision": "fcd5e88655eedd3e4e4d3944bb133a8e2c8b0d8e",
+      "transaction_time": "2026-08-14T15:00:00Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-14T15:00:00Z"
+    },
+    {
+      "artifact_id": "A-VERIFICATION",
+      "bytes": 243,
+      "collected_at": "2026-08-14T15:00:00Z",
+      "component": "contractgraph_qa",
+      "content_type": "application/json",
+      "origin": "bounded-fixture",
+      "path": "verification-result.json",
+      "role": "verification",
+      "sha256": "a4911ea841e2db477026f6e85282e3eb044086be529845b9cb36eeebf3e5187c",
+      "source_revision": "fcd5e88655eedd3e4e4d3944bb133a8e2c8b0d8e",
+      "transaction_time": "2026-08-14T15:00:00Z",
+      "trust_domain": "fixture",
+      "valid_time": "2026-08-14T15:00:00Z"
+    }
+  ],
+  "authority": {
+    "execution_authorized": false,
+    "external_effects_authorized": false,
+    "mode": "advisory_only",
+    "mutation_authorized": false,
+    "proposal_is_not_authorization": true
+  },
+  "bundle_root": "bundle",
+  "collection": {
+    "attempt_id": "P1-2-FIXTURE-001",
+    "collected_at": "2026-08-14T15:00:00Z",
+    "completed_at": "2026-08-14T15:00:00Z",
+    "environment": "provider-neutral deterministic fixture",
+    "method": "read_only_manifest_capture",
+    "started_at": "2026-08-14T14:59:00Z"
+  },
+  "manifest_id": "neo-resonance-p1-2-bundle-001",
+  "replay": {
+    "expected_result": "SAME_RESULT",
+    "mode": "deterministic_read_only",
+    "replayable": true,
+      "required_artifact_ids": [
+      "A-DURABLE",
+      "A-INTENT",
+      "A-RECOVERY",
+      "A-REFLECTION",
+      "A-REPLAY",
+      "A-VERIFICATION"
+    ],
+    "side_effects_executed": false,
+    "steps": [
+      {
+        "action": "load_intent",
+        "input_artifact_ids": ["A-INTENT"],
+        "output_artifact_ids": ["A-DURABLE"],
+        "sequence": 1,
+        "side_effect_executed": false
+      },
+      {
+        "action": "reopen_durable_record",
+        "input_artifact_ids": ["A-DURABLE"],
+        "output_artifact_ids": ["A-REFLECTION"],
+        "sequence": 2,
+        "side_effect_executed": false
+      },
+      {
+        "action": "reflect_without_authority",
+        "input_artifact_ids": ["A-REFLECTION"],
+        "output_artifact_ids": ["A-RECOVERY"],
+        "sequence": 3,
+        "side_effect_executed": false
+      },
+      {
+        "action": "reconstruct_projection",
+        "input_artifact_ids": ["A-RECOVERY"],
+        "output_artifact_ids": ["A-REPLAY"],
+        "sequence": 4,
+        "side_effect_executed": false
+      },
+      {
+        "action": "replay_trace",
+        "input_artifact_ids": ["A-REPLAY"],
+        "output_artifact_ids": ["A-VERIFICATION"],
+        "sequence": 5,
+        "side_effect_executed": false
+      },
+      {
+        "action": "verify_bundle",
+        "input_artifact_ids": ["A-VERIFICATION"],
+        "output_artifact_ids": [],
+        "sequence": 6,
+        "side_effect_executed": false
+      }
+    ],
+    "trace_id": "REPLAY-P1-2-001"
+  },
+  "schema": "cgqa.p1-2-evidence-bundle-replay-manifest.v0.1",
+  "scope": {
+    "claim_limit": "This is a bounded provider-neutral fixture. It proves manifest membership, byte integrity and replay references only; it does not prove live runtime integration or production safety.",
+    "mode": "bounded_fixture",
+    "operation_id": "neo-resonance-system-007-001"
+  },
+  "subjects": [
+    {
+      "branch": "main",
+      "head_sha": "fcd5e88655eedd3e4e4d3944bb133a8e2c8b0d8e",
+      "id": "contractgraph_qa",
+      "observed_at": "2026-08-14T15:00:00Z",
+      "repository": "safal207/ContractGraph-QA",
+      "role": "independent_verifier"
+    },
+    {
+      "branch": "main",
+      "head_sha": "61b02fc81e0cb5cf1f1ed4658ecff58f683cb728",
+      "id": "liminaldb",
+      "observed_at": "2026-08-14T15:00:00Z",
+      "repository": "safal207/LiminalDB",
+      "role": "durable_evidence_store"
+    },
+    {
+      "branch": "main",
+      "head_sha": "3be0d2ceb1440641b141cdb80c82ed118e4186dd",
+      "id": "rinse",
+      "observed_at": "2026-08-14T15:00:00Z",
+      "repository": "safal207/rinse",
+      "role": "reflection_adapter"
+    },
+    {
+      "branch": "main",
+      "head_sha": "fa7e3aba4ff9154856fa7d27c92f702137819ac1",
+      "id": "ls",
+      "observed_at": "2026-08-14T15:00:00Z",
+      "repository": "safal207/LS",
+      "role": "state_projection_recovery"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "artifact_role": "durable",
+  "component": "liminaldb",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "reopen_byte_match": true,
+  "schema": "cgqa.p1-2-fixture-durable-record.v0.1"
+}

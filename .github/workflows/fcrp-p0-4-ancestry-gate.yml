@@ -1,0 +1,112 @@
+name: FCRP P0-4 — Exact Subject and Ancestry Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/ancestry_gate.py
+      - tools/tests/test_ancestry_gate.py
+      - docs/NEO_REZONANS_P0_4_ANCESTRY_GATE_V0_1.md
+      - .github/workflows/fcrp-p0-4-ancestry-gate.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-p0-4-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      EXPECTED_PR_BASE: b54173530c675083426137176cde0aed0b90853a
+      EXPECTED_WORKFLOW_FILE: .github/workflows/fcrp-p0-4-ancestry-gate.yml
+
+    steps:
+      - name: Checkout exact P0-4 subject
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Capture initial subject and run unit checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          INITIAL_SUBJECT="$(git rev-parse HEAD)"
+          test "$INITIAL_SUBJECT" = "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+          echo "INITIAL_SUBJECT=$INITIAL_SUBJECT" >> "$GITHUB_ENV"
+          python3 -m py_compile tools/ancestry_gate.py tools/tests/test_ancestry_gate.py
+          PYTHONPATH="$GITHUB_WORKSPACE" python3 -m unittest tools.tests.test_ancestry_gate -v
+
+      - name: Evaluate exact subject, ancestry, workflow and artifact binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p0-4
+          PYTHONPATH="$GITHUB_WORKSPACE" python3 tools/ancestry_gate.py \
+            --repo "$GITHUB_WORKSPACE" \
+            --repository "safal207/ContractGraph-QA" \
+            --initial-subject "$INITIAL_SUBJECT" \
+            --expected-subject "$EXACT_HEAD" \
+            --expected-base "$EXPECTED_PR_BASE" \
+            --workflow-name "$GITHUB_WORKFLOW" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --expected-workflow-file "$EXPECTED_WORKFLOW_FILE" \
+            --artifact-subject "$EXACT_HEAD" \
+            --output evidence/p0-4/ancestry-gate.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("evidence/p0-4/ancestry-gate.json").read_text())
+          assert report["decision"] == "PASS"
+          assert all(check["status"] == "PASS" for check in report["checks"].values())
+          assert report["artifact_subject"] == __import__("os").environ["EXACT_HEAD"]
+          PY
+
+      - name: Capture final subject and hash evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path("evidence/p0-4/run-context.json")
+          path.write_text(json.dumps({
+              "schema": "cgqa.p0-4-run-context.v0.1",
+              "checked_subject": os.environ["EXACT_HEAD"],
+              "expected_subject": os.environ["EXACT_HEAD"],
+              "reported_sha": os.environ.get("GITHUB_SHA"),
+              "workflow": os.environ.get("GITHUB_WORKFLOW"),
+              "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "authority": "advisory only; no human approval or merge authorization",
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+          find evidence/p0-4 -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum > evidence/p0-4/SHA256SUMS
+
+      - name: Upload P0-4 ancestry evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: cgqa-p0-4-ancestry-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/p0-4
+          if-no-files-found: error
+          retention-days: 90

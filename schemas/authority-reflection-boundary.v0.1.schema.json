@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/safal207/ContractGraph-QA/schemas/authority-reflection-boundary.v0.1.schema.json",
+  "title": "Evidence, authority and reflection boundary v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "manifest_id",
+    "bundle_root",
+    "scope",
+    "subjects",
+    "artifacts",
+    "lanes",
+    "cases",
+    "replay",
+    "authority",
+    "collection"
+  ],
+  "properties": {
+    "schema": {"const": "cgqa.p1-3-authority-reflection-boundary.v0.1"},
+    "manifest_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "bundle_root": {"const": "bundle"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "mode", "claim_limit"],
+      "properties": {
+        "operation_id": {"type": "string"},
+        "mode": {"const": "bounded_fixture"},
+        "claim_limit": {"type": "string", "minLength": 1}
+      }
+    },
+    "subjects": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "repository", "head_sha", "role", "observed_at"],
+        "properties": {
+          "id": {"type": "string"},
+          "repository": {"type": "string"},
+          "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "role": {"type": "string"},
+          "observed_at": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_id",
+          "path",
+          "bytes",
+          "sha256",
+          "source_revision",
+          "component",
+          "role",
+          "lane",
+          "content_type",
+          "origin",
+          "trust_domain",
+          "valid_time",
+          "transaction_time",
+          "collected_at"
+        ],
+        "properties": {
+          "artifact_id": {"type": "string"},
+          "path": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"},
+          "bytes": {"type": "integer", "minimum": 0},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "component": {"type": "string"},
+          "role": {"type": "string"},
+          "lane": {"enum": ["authority", "evidence", "reflection"]},
+          "content_type": {"const": "application/json"},
+          "origin": {"const": "bounded-fixture"},
+          "trust_domain": {"const": "fixture"},
+          "valid_time": {"type": "string", "format": "date-time"},
+          "transaction_time": {"type": "string", "format": "date-time"},
+          "collected_at": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    "lanes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence", "reflection", "authority"],
+      "properties": {
+        "evidence": {"$ref": "#/$defs/lane"},
+        "reflection": {"$ref": "#/$defs/lane"},
+        "authority": {"$ref": "#/$defs/lane"}
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 4,
+      "items": {"$ref": "#/$defs/case"}
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trace_id", "mode", "expected_result", "replayable", "side_effects_executed", "steps"],
+      "properties": {
+        "trace_id": {"type": "string"},
+        "mode": {"const": "deterministic_read_only"},
+        "expected_result": {"const": "SAME_RESULT"},
+        "replayable": {"const": true},
+        "side_effects_executed": {"const": false},
+        "steps": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sequence", "case_id", "input_artifact_ids", "side_effect_executed"],
+            "properties": {
+              "sequence": {"type": "integer", "minimum": 1},
+              "case_id": {"type": "string"},
+              "input_artifact_ids": {"type": "array", "items": {"type": "string"}},
+              "side_effect_executed": {"const": false}
+            }
+          }
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "proposal_is_not_authorization", "execution_authorized", "external_effects_authorized", "mutation_authorized"],
+      "properties": {
+        "mode": {"const": "advisory_only"},
+        "proposal_is_not_authorization": {"const": true},
+        "execution_authorized": {"const": false},
+        "external_effects_authorized": {"const": false},
+        "mutation_authorized": {"const": false}
+      }
+    },
+    "collection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempt_id", "started_at", "completed_at", "collected_at", "method", "environment"],
+      "properties": {
+        "attempt_id": {"type": "string"},
+        "started_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "collected_at": {"type": "string", "format": "date-time"},
+        "method": {"type": "string"},
+        "environment": {"type": "string"}
+      }
+    }
+  },
+  "$defs": {
+    "lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority_effect", "may_authorize", "required_record"],
+      "properties": {
+        "authority_effect": {"type": "string"},
+        "may_authorize": {"type": "boolean"},
+        "required_record": {"type": "string"}
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "lane", "attempted_transition", "input_artifact_ids", "expected_decision", "expected_reason", "side_effect_executed"],
+      "properties": {
+        "case_id": {"type": "string"},
+        "lane": {"type": "string"},
+        "attempted_transition": {"type": "string"},
+        "input_artifact_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "expected_decision": {"enum": ["BLOCK", "HOLD"]},
+        "expected_reason": {"type": "string"},
+        "side_effect_executed": {"const": false}
+      }
+    }
+  }
+}

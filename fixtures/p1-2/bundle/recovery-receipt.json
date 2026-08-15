@@ -1,0 +1,8 @@
+{
+  "artifact_role": "recovery",
+  "component": "ls",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "mutation_observed": false,
+  "recovery_status": "RECONSTRUCTED_WITHOUT_CONTENT_MUTATION",
+  "schema": "cgqa.p1-2-fixture-recovery-receipt.v0.1"
+}

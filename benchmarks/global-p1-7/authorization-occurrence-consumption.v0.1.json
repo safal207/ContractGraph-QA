@@ -1,0 +1,56 @@
+{
+  "authorization_occurrences": [
+    {
+      "action_digest": "sha256:action-A",
+      "authority_revision": "auth-rev-7",
+      "cites_event_id": "evt-42",
+      "decision_ref": "decision-A",
+      "expires_at_epoch": 1100,
+      "issued_at_epoch": 900,
+      "revoked": false
+    },
+    {
+      "action_digest": "sha256:action-A",
+      "authority_revision": "auth-rev-7",
+      "cites_event_id": "evt-43",
+      "decision_ref": "decision-A",
+      "expires_at_epoch": 1100,
+      "issued_at_epoch": 900,
+      "revoked": false
+    }
+  ],
+  "case_id": "FCRP-GLOBAL-P1-7",
+  "observed_receipt": {
+    "action_digest": "sha256:action-A",
+    "authority_revision": "auth-rev-7",
+    "cites_event_id": "evt-42",
+    "consumed_at_epoch": 1000,
+    "consumer_id": "agent-1",
+    "decision_ref": "decision-A",
+    "receipt_digest": "690e4852db587c8aa97673ea3b93c5512ffb052ef15de7153604d3a2ff72d72a",
+    "request_id": "req-p1-7",
+    "result": "CONSUMED",
+    "route_fingerprint": "fee0b69553abc156b77ad446c3cda8c7f50bbf0efc2cd3aafa75a279016f7930",
+    "schema": "cgqa.consumption-receipt.v0.1"
+  },
+  "request": {
+    "action_digest": "sha256:action-A",
+    "cites_event_id": "evt-42",
+    "consumed_at_epoch": 1000,
+    "consumer_id": "agent-1",
+    "decision_ref": "decision-A",
+    "request_id": "req-p1-7"
+  },
+  "route": [
+    "ProofPath",
+    "CML",
+    "LiminalDB",
+    "RINSE",
+    "ContractGraph-QA"
+  ],
+  "schema": "cgqa.global-p1-7-occurrence-consumption.v0.1",
+  "scope": {
+    "production_ledger_mutated": false,
+    "side_effects_executed": false
+  }
+}

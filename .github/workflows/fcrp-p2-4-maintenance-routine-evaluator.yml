@@ -1,0 +1,219 @@
+name: FCRP P2-4 — Maintenance Routine Evaluator
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - benchmarks/global-p2-4/**
+      - tools/maintenance_routine_evaluator.py
+      - tools/tests/test_maintenance_routine_evaluator.py
+      - docs/GLOBAL_P2_4_MAINTENANCE_ROUTINE_CONTRACT.md
+      - .github/workflows/fcrp-p2-4-maintenance-routine-evaluator.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fcrp-p2-4-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+      EXPECTED_PR_BASE: b54173530c675083426137176cde0aed0b90853a
+      PROOFPATH_HEAD: 4a05ee31d7497979c2505dd55bfef08823302e24
+      RESONANCE_HEAD: 85c3baea0a551751263ef563a3dd1c75492f57ae
+
+    steps:
+      - name: Checkout exact P2-4 verifier subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify exact verifier subject and PR base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          git merge-base --is-ancestor "$EXPECTED_PR_BASE" "$EXACT_HEAD"
+          if [ -n "$PR_BASE_SHA" ]; then test "$PR_BASE_SHA" = "$EXPECTED_PR_BASE"; fi
+
+      - name: Compile and run routine evaluator tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/maintenance_routine_evaluator.py \
+            tools/tests/test_maintenance_routine_evaluator.py
+          PYTHONPATH="$GITHUB_WORKSPACE" python -m unittest \
+            tools.tests.test_maintenance_routine_evaluator -v
+
+      - name: Checkout exact routine target subjects
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=/tmp/p2-4
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT"
+
+          clone_exact() {
+            repo="$1"
+            dir="$2"
+            sha="$3"
+            git init -q "$dir"
+            git -C "$dir" remote add origin "https://github.com/${repo}.git"
+            git -C "$dir" fetch -q --depth=1 origin "$sha"
+            git -C "$dir" checkout -q --detach FETCH_HEAD
+            test "$(git -C "$dir" rev-parse HEAD)" = "$sha"
+          }
+
+          clone_exact safal207/ProofPath "$ROOT/proofpath" "$PROOFPATH_HEAD"
+          clone_exact safal207/RESONANCE "$ROOT/resonance" "$RESONANCE_HEAD"
+
+      - name: Evaluate and independently replay two routine runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p2-4
+          python tools/maintenance_routine_evaluator.py \
+            --matrix benchmarks/global-p2-4/maintenance-routines.v0.1.json \
+            --checkout-root /tmp/p2-4 \
+            --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" \
+            --output evidence/p2-4/result.json
+
+          python tools/maintenance_routine_evaluator.py \
+            --matrix benchmarks/global-p2-4/maintenance-routines.v0.1.json \
+            --checkout-root /tmp/p2-4 \
+            --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" \
+            --output /tmp/p2-4-replay.json
+
+          cmp evidence/p2-4/result.json /tmp/p2-4-replay.json
+          jq -e '
+            .decision == "PASS" and
+            .policy == "QUALITY_ONLY_NO_MERGE_AUTHORITY" and
+            .routine_count == 2 and
+            .outcome_attribution_pass == 2 and
+            .all_authority_flags_false == true and
+            .side_effects_executed == false and
+            .production_ledger_mutated == false and
+            (.subjects | length) == 3
+          ' evidence/p2-4/result.json >/dev/null
+
+      - name: Prove routine fail-closed boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          expect_failure() {
+            label="$1"
+            shift
+            if "$@" >/tmp/p2-4-negative.log 2>&1; then
+              echo "negative case unexpectedly passed: $label" >&2
+              cat /tmp/p2-4-negative.log >&2
+              exit 1
+            fi
+          }
+
+          mutate_and_expect() {
+            label="$1"
+            script="$2"
+            matrix="/tmp/p2-4-${label}.json"
+            cp benchmarks/global-p2-4/maintenance-routines.v0.1.json "$matrix"
+            python - "$matrix" "$script" <<'PY'
+          import json
+          import sys
+          path, mode = sys.argv[1:]
+          data = json.load(open(path))
+          run = data["routine_runs"][0]
+          if mode == "stale":
+              run["target"]["checked_subject"] = "0" * 40
+          elif mode == "evidence":
+              run["verification"]["evidence_refs"] = []
+          elif mode == "duplicate":
+              data["routine_runs"][1]["observation"]["finding_id"] = run["observation"]["finding_id"]
+          elif mode == "replay":
+              run["verification"]["replay"] = "DIFFERENT_RESULT"
+          elif mode == "outcome":
+              run["outcome"]["routine_id"] = "routine-attacker"
+          elif mode == "authority":
+              run["authority"]["may_authorize"] = True
+          else:
+              raise SystemExit("unknown mutation")
+          json.dump(data, open(path, "w"), indent=2, sort_keys=True)
+          PY
+            expect_failure "$label" python tools/maintenance_routine_evaluator.py \
+              --matrix "$matrix" --checkout-root /tmp/p2-4 \
+              --verifier-root "$GITHUB_WORKSPACE" --verifier-revision "$EXACT_HEAD" \
+              --output /tmp/negative.json
+          }
+
+          mutate_and_expect stale-target stale
+          mutate_and_expect missing-evidence evidence
+          mutate_and_expect duplicate-finding duplicate
+          mutate_and_expect false-green-replay replay
+          mutate_and_expect wrong-outcome outcome
+          mutate_and_expect self-authorization authority
+
+          printf '\n# tamper\n' >> /tmp/p2-4/resonance/governance/provider-neutral-interoperability-fixture.v0.1.json
+          expect_failure raw-subject-tamper python tools/maintenance_routine_evaluator.py \
+            --matrix benchmarks/global-p2-4/maintenance-routines.v0.1.json \
+            --checkout-root /tmp/p2-4 --verifier-root "$GITHUB_WORKSPACE" \
+            --verifier-revision "$EXACT_HEAD" --output /tmp/negative.json
+          git -C /tmp/p2-4/resonance checkout -q -- governance/provider-neutral-interoperability-fixture.v0.1.json
+
+      - name: Capture exact P2-4 run context
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/p2-4
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("evidence/p2-4/run-context.json").write_text(json.dumps({
+              "schema": "cgqa.p2-4-run-context.v0.1",
+              "checked_subject": os.environ["EXACT_HEAD"],
+              "expected_subject": os.environ["EXACT_HEAD"],
+              "reported_sha": os.environ.get("GITHUB_SHA"),
+              "workflow": os.environ.get("GITHUB_WORKFLOW"),
+              "workflow_ref": os.environ.get("GITHUB_WORKFLOW_REF"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "external_revisions": {
+                  "ProofPath": os.environ["PROOFPATH_HEAD"],
+                  "RESONANCE": os.environ["RESONANCE_HEAD"],
+              },
+              "authority": "conformance only; no merge, deployment, production persistence, or external effect",
+          }, indent=2, sort_keys=True) + "\n")
+          PY
+
+      - name: Build immutable P2-4 SHA-256 manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence/p2-4
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - name: Upload maintenance routine evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fcrp-p2-4-maintenance-routine-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/p2-4/
+          if-no-files-found: error
+          retention-days: 90

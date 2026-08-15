@@ -1,0 +1,265 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-SYSTEM-007",
+  "title": "Full-chain intent to reflection conformance with independent final verification",
+  "scope": {
+    "nodeId": "neo-rezonans-full-chain-intent-proofpath-cml-liminaldb-rinse-cgqa",
+    "scale": "cross-repository native conformance / replay and authority-boundary frontier",
+    "ideaContract": {
+      "purpose": "Verify one deterministic logical operation from an explicit intent through canonical ProofPath, an actual CML causal record, durable local/test LiminalDB write and reopen, bounded RINSE reflection, and independent ContractGraph-QA reconstruction.",
+      "expectedOutcome": "The same logical_operation_id and argument digest survive every stage; exact pinned heads are checked; durable bytes replay after restart; reflection remains non-authorizing; and all declared negative cases fail closed.",
+      "invariants": [
+        "intent is explicit, nonce-bound and argument-digest-bound",
+        "the same logical_operation_id travels through every stage",
+        "ProofPath native verification is executed at the exact canonical capability commit",
+        "CML reconstructs an intact root-first causal chain",
+        "LiminalDB storage is separately admitted as local_test_only and survives reopen",
+        "same-operation retry is deduplicated without rewriting the first transaction time",
+        "RINSE consumes durable bytes read-only and produces ACCEPT_WITH_LIMITS / REFLECTION_ONLY",
+        "ContractGraph-QA independently recomputes the final result from raw artifacts",
+        "missing intent, replay, changed arguments, stale heads, tampering and reflection escalation are rejected",
+        "no stage grants execution, mutation or external-effect authority"
+      ],
+      "forbiddenOutcomes": [
+        "accepting a missing intent",
+        "accepting a previously consumed nonce",
+        "accepting an argument object under a stale digest",
+        "using a mutable or stale dependency head as current proof",
+        "creating a second durable record after retry",
+        "accepting tampered durable bytes",
+        "turning RINSE reflection into executable authority",
+        "claiming production interoperability or security from this bounded fixture"
+      ],
+      "dependencies": [
+        "FCRP-SYSTEM-005",
+        "FCRP-SYSTEM-006",
+        "safal207/ProofPath@4a05ee31d7497979c2505dd55bfef08823302e24",
+        "safal207/Causal-Memory-Layer@2a649903693fc61a560ee056834127ada3120206",
+        "safal207/LiminalDB@61b02fc81e0cb5cf1f1ed4658ecff58f683cb728",
+        "safal207/rinse@3be0d2ceb1440641b141cdb80c82ed118e4186dd"
+      ],
+      "parentContract": "NEO REZONANS system contract v0.1 plus the FCRP-SYSTEM-005 durable and FCRP-SYSTEM-006 reflection boundaries"
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-INTENT",
+      "kind": "explicit-intent-fixture",
+      "ref": "benchmarks/system-native/FCRP-SYSTEM-007-intent.json",
+      "claim": "The operation has an explicit nonce, canonical argument digest, expected outcome and non-authorizing authority boundary.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-PROOFPATH",
+      "kind": "native-proofpath-verification",
+      "ref": "safal207/ProofPath@4a05ee31d7497979c2505dd55bfef08823302e24:proofpath-scig",
+      "claim": "The generated SCIG is accepted by the pinned native ProofPath verifier as VALID.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-CML",
+      "kind": "native-cml-causal-record",
+      "ref": "safal207/Causal-Memory-Layer@2a649903693fc61a560ee056834127ada3120206:cml.record/cml.chain",
+      "claim": "CML reconstructs the deterministic intent -> ProofPath -> CML root-first parent-cause chain with integrity-bound records.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-DURABLE",
+      "kind": "native-liminaldb-restart-proof",
+      "ref": "safal207/LiminalDB@61b02fc81e0cb5cf1f1ed4658ecff58f683cb728:ProofPathDurableLedger",
+      "claim": "The local/test durable record is reopened byte-for-byte, deduplicates a same-semantic retry and rejects changed evidence under the same operation.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-RINSE",
+      "kind": "native-rinse-reflection",
+      "ref": "safal207/rinse@3be0d2ceb1440641b141cdb80c82ed118e4186dd:liminaldb_durable_proof",
+      "claim": "RINSE derives a bounded reflection from the exact durable bytes without mutating source or creating executable handoff authority.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-NEGATIVES",
+      "kind": "negative-path-matrix",
+      "ref": "tools/run_fcrp_system_007.py:verify",
+      "claim": "All six declared negative cases are exercised and rejected.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-FINAL",
+      "kind": "independent-reconstruction",
+      "ref": "ContractGraph-QA exact PR head:FCRP-SYSTEM-007",
+      "claim": "ContractGraph-QA recomputes the chain, native receipt, durable event, RINSE loop and FCRP result from raw artifacts.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "CAUSAL_SEQUENCE",
+      "REPOSITORY_HISTORY"
+    ],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": [
+      "E-INTENT",
+      "E-PROOFPATH",
+      "E-CML",
+      "E-DURABLE",
+      "E-RINSE",
+      "E-FINAL"
+    ]
+  },
+  "timeline": {
+    "past": {
+      "summary": "SYSTEM-005 proved durable ProofPath ingestion and SYSTEM-006 proved bounded durable-to-RINSE reflection, but no single fixture began at an explicit intent and independently reconstructed the complete chain.",
+      "evidenceRefs": [
+        "E-DURABLE",
+        "E-RINSE"
+      ]
+    },
+    "present": {
+      "summary": "SYSTEM-007 composes the existing native segments under one logical operation, exact dependency heads, CML parent-cause lineage, restart replay and negative authority tests.",
+      "evidenceRefs": [
+        "E-INTENT",
+        "E-PROOFPATH",
+        "E-CML",
+        "E-DURABLE",
+        "E-RINSE",
+        "E-FINAL"
+      ]
+    },
+    "future": {
+      "summary": "Production cross-repository interoperability, distributed transactionality, multi-tenant authorization, and semantic coverage beyond the bounded fixture remain separate gates.",
+      "evidenceRefs": [
+        "E-DURABLE",
+        "E-RINSE",
+        "E-FINAL"
+      ]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "intent-boundary",
+      "phase": "first-divergence",
+      "statement": "A cross-repository proof cannot safely start from ambient context; it needs an explicit intent, nonce and canonical argument digest before any native adapter is invoked.",
+      "evidenceRefs": [
+        "E-INTENT",
+        "E-NEGATIVES"
+      ]
+    },
+    {
+      "id": "N2",
+      "level": "system-model",
+      "phase": "symptom",
+      "statement": "The prior native segments were individually replayable but did not bind one complete intent-to-reflection operation across all boundaries.",
+      "evidenceRefs": [
+        "E-DURABLE",
+        "E-RINSE"
+      ]
+    },
+    {
+      "id": "N3",
+      "level": "causal-lineage",
+      "phase": "propagation",
+      "statement": "Without one CML parent-cause chain and one logical operation identity, a downstream PASS could be detached from the original intent.",
+      "evidenceRefs": [
+        "E-CML",
+        "E-FINAL"
+      ]
+    },
+    {
+      "id": "N4",
+      "level": "cross-repository-conformance",
+      "phase": "refactor",
+      "statement": "The bounded runner binds intent, native ProofPath, CML, durable LiminalDB state, RINSE reflection and final independent CGQA verification to exact revisions and explicit negative cases.",
+      "evidenceRefs": [
+        "E-INTENT",
+        "E-PROOFPATH",
+        "E-CML",
+        "E-DURABLE",
+        "E-RINSE",
+        "E-FINAL"
+      ]
+    },
+    {
+      "id": "N5",
+      "level": "authority-boundary",
+      "phase": "verification",
+      "statement": "Evidence, durable storage and reflection remain non-authorizing; execution and mutation authority stay false throughout the proof.",
+      "evidenceRefs": [
+        "E-DURABLE",
+        "E-RINSE",
+        "E-NEGATIVES"
+      ]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N2",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N4",
+    "evidenceRefs": [
+      "E-INTENT",
+      "E-CML",
+      "E-NEGATIVES"
+    ]
+  },
+  "navigation": {
+    "direction": "SIDEWAYS",
+    "reason": "The missing guarantee is composition across sibling repositories and authority boundaries, not a deeper change inside one repository."
+  },
+  "refactor": {
+    "point": "N4",
+    "change": "Add one exact-head, native-segment, restart-replay and negative-case conformance workflow driven by a deterministic intent and independently recomputed by ContractGraph-QA.",
+    "expectedEffect": "The complete bounded chain becomes replayable without silently converting evidence, persistence or reflection into execution authority."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": [
+      "children",
+      "siblings",
+      "parent",
+      "dependencies",
+      "future"
+    ],
+    "evidenceRefs": [
+      "E-INTENT",
+      "E-CML",
+      "E-DURABLE",
+      "E-RINSE",
+      "E-NEGATIVES"
+    ]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "The workflow may use only repository-local fixtures and an ephemeral local_test_only LiminalDB store. It grants no production write, execution, deployment, merge, financial or external-effect authority."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "PASS",
+    "evidenceRefs": [
+      "E-PROOFPATH",
+      "E-CML",
+      "E-DURABLE",
+      "E-RINSE",
+      "E-NEGATIVES",
+      "E-FINAL"
+    ],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}

@@ -1,0 +1,48 @@
+{
+  "case_id": "FCRP-GLOBAL-P1-7",
+  "non_claims": [
+    "no merge",
+    "no deployment",
+    "no production ledger mutation",
+    "no external effect authorization",
+    "no upstream framework adoption"
+  ],
+  "schema": "cgqa.global-p1-7-subject-manifest.v0.1",
+  "subjects": [
+    {
+      "checkout_dir": "proofpath",
+      "component": "proofpath",
+      "path": "conformance/authorization-record-export-v0.1.json",
+      "repository": "safal207/ProofPath",
+      "revision": "4a05ee31d7497979c2505dd55bfef08823302e24"
+    },
+    {
+      "checkout_dir": "cml",
+      "component": "cml",
+      "path": "tests/vectors/guardrail_decision_v1/decision-v1-valid.json",
+      "repository": "safal207/Causal-Memory-Layer",
+      "revision": "2a649903693fc61a560ee056834127ada3120206"
+    },
+    {
+      "checkout_dir": "liminaldb",
+      "component": "liminaldb",
+      "path": "sdk/ts/src/protocol-types.ts",
+      "repository": "safal207/LiminalDB",
+      "revision": "61b02fc81e0cb5cf1f1ed4658ecff58f683cb728"
+    },
+    {
+      "checkout_dir": "rinse",
+      "component": "rinse",
+      "path": "schemas/kairos_liminal_receipt.schema.json",
+      "repository": "safal207/rinse",
+      "revision": "3be0d2ceb1440641b141cdb80c82ed118e4186dd"
+    },
+    {
+      "checkout_dir": "resonance",
+      "component": "resonance",
+      "path": "governance/provider-neutral-interoperability-fixture.v0.1.json",
+      "repository": "safal207/RESONANCE",
+      "revision": "85c3baea0a551751263ef563a3dd1c75492f57ae"
+    }
+  ]
+}

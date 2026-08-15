@@ -1,0 +1,15 @@
+{
+  "approval_ref": null,
+  "authority_effect": "HOLD",
+  "decision": "HOLD",
+  "execution_authorized": false,
+  "explicit_authority_record": true,
+  "external_effects_authorized": false,
+  "lane": "authority",
+  "logical_operation_id": "neo-resonance-system-007-001",
+  "mutation_authorized": false,
+  "reason": "NO_CURRENT_AUTHORIZATION",
+  "record_id": "AUTHORITY-HOLD-001",
+  "role": "explicit_authority_record",
+  "schema": "cgqa.p1-3-authority-record.v0.1"
+}
