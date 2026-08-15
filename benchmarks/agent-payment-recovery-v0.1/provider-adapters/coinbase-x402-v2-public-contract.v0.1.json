@@ -10,7 +10,7 @@
     "verify-valid": "pending",
     "verify-invalid": "failed",
     "settle-success": "committed",
-    "settle-failed": "failed"
+    "settle-failed": "unknown"
   },
   "evidenceSources": [
     {
@@ -38,6 +38,6 @@
     "If settlement succeeds but the client loses the HTTP resource response and PAYMENT-RESPONSE header, what public read-after-settle discovery mechanism should the client use before authorizing another economic action?",
     "The Payment Identifier extension is documented as an idempotency extension for duplicate calls, but it is optional; what recovery guarantees apply when the extension is absent?",
     "How should an autonomous client bind the x402 authorization nonce, protected-resource intent, settlement transaction and any Payment Identifier into one stable logical-operation lineage?",
-    "Does a facilitator settle failure always prove that no later onchain effect can appear, or must specific error classes remain ambiguous?"
+    "Which typed settle error reasons, if any, normatively prove that no monetary effect occurred and permit a terminal failed classification rather than continued reconciliation?"
   ]
 }
