@@ -1,0 +1,133 @@
+name: FCRP SYSTEM-011 Out-of-Band Recovery
+
+on:
+  pull_request:
+    paths:
+      - "contractgraph_qa/out_of_band_recovery.py"
+      - "tests/test_out_of_band_recovery.py"
+      - "benchmarks/system-native/OUT-OF-BAND-RECOVERY-001.json"
+      - ".github/workflows/fcrp-system-011-out-of-band-recovery.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contractgraph_qa/out_of_band_recovery.py"
+      - "tests/test_out_of_band_recovery.py"
+      - "benchmarks/system-native/OUT-OF-BAND-RECOVERY-001.json"
+      - ".github/workflows/fcrp-system-011-out-of-band-recovery.yml"
+
+permissions:
+  contents: read
+
+env:
+  PARENT_SYSTEM_010_BRANCH: agent/block-device-boundary-system-010
+  PARENT_SYSTEM_010_HEAD: 09e681d320472ed2706a39b878e32b9309c5c981
+  PARENT_SYSTEM_010_RECEIPT_DIGEST: sha256:165316534e67d10f4ecc255787d840583b49f08ffd6aa3cfc40bb54f3cc597f1
+
+jobs:
+  out-of-band-recovery-system-011:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ContractGraph-QA subject
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify parent SYSTEM-010 exact-head pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBSERVED="$(git ls-remote https://github.com/safal207/ContractGraph-QA.git "refs/heads/${PARENT_SYSTEM_010_BRANCH}" | awk '{print $1}')"
+          test "$OBSERVED" = "$PARENT_SYSTEM_010_HEAD"
+          printf '%s\n' "$OBSERVED" > parent-system-010-head.txt
+
+      - name: Re-run inherited SYSTEM-010 boundary regressions
+        run: python -m unittest -v tests/test_block_device_boundary.py
+
+      - name: Run SYSTEM-011 out-of-band regressions
+        run: python -m unittest -v tests/test_out_of_band_recovery.py
+
+      - name: Execute external-kill cold-restart matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-011
+          python -m contractgraph_qa.out_of_band_recovery matrix --output evidence/system-011 \
+            | tee evidence/system-011/out-of-band.stdout.txt
+          grep -F 'PASS out-of-band matrix 3/3' evidence/system-011/out-of-band.stdout.txt
+          grep -F 'SYSTEM_011_CAPABILITY EXTERNAL_PROCESS_KILL_OBSERVED' evidence/system-011/out-of-band.stdout.txt
+          grep -F 'SYSTEM_011_POWER_BOUNDARY UNAVAILABLE' evidence/system-011/out-of-band.stdout.txt
+          grep -F 'SYSTEM_011_VERDICT OUT_OF_BAND_RECOVERY_OBSERVED_POWER_BOUNDARY_HELD' evidence/system-011/out-of-band.stdout.txt
+          grep -F 'EVIDENCE_BOUNDARY OUT_OF_BAND_PROCESS_TERMINATION_NOT_PHYSICAL_POWER_LOSS' evidence/system-011/out-of-band.stdout.txt
+
+      - name: Reconcile observer receipt with benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected=json.loads(Path('benchmarks/system-native/OUT-OF-BAND-RECOVERY-001.json').read_text())
+          observed=json.loads(Path('evidence/system-011/matrix.json').read_text())
+          suite=json.loads(Path('evidence/system-011/out-of-band-suite-receipt.json').read_text())
+          by_name={row['case']: row for row in observed}
+
+          assert expected['parent']['head']=='09e681d320472ed2706a39b878e32b9309c5c981'
+          assert expected['parent']['blockDeviceReceiptDigest']=='sha256:165316534e67d10f4ecc255787d840583b49f08ffd6aa3cfc40bb54f3cc597f1'
+          assert suite['parentHead']==expected['parent']['head']
+          assert suite['parentBlockDeviceReceiptDigest']==expected['parent']['blockDeviceReceiptDigest']
+          assert suite['strongestExercisedCapability']==expected['strongestExercisedCapability']=='EXTERNAL_PROCESS_KILL_OBSERVED'
+          assert suite['physicalPowerLossProven'] is expected['physicalPowerLossProven'] is False
+          assert suite['vmHardStopObserved'] is expected['vmHardStopObserved'] is False
+          assert suite['allExternalTerminationObserved'] is True
+          assert suite['allColdRestartObservers'] is True
+          assert suite['allExecutionHeld'] is True
+          assert suite['authorityTransfer']==expected['authorityTransfer']=='NONE'
+          assert suite['executionAuthorized'] is False
+          assert suite['mutationAuthorized'] is False
+          assert suite['externalEffectsPerformed'] is False
+          assert suite['evidenceBoundary']==expected['evidenceBoundary']
+          assert suite['verdict']==expected['verdict']
+
+          for case in expected['cases']:
+              actual=by_name[case['name']]
+              assert actual['projectionState']==case['projectionState']
+              assert actual['rebuildDecision']==case['rebuildDecision']
+              assert actual['executionDecision']==expected['executionDecision']=='HOLD'
+              assert actual['externalTerminationObserved'] is True
+              assert actual['coldRestartObserver'] is True
+              assert actual['physicalPowerLossProven'] is False
+
+          print('SYSTEM_011_BENCHMARK PASS 3/3')
+          print('SYSTEM_011_RECEIPT', suite['receiptDigest'])
+          print('SYSTEM_011_DOCKER_DAEMON_AVAILABLE', suite['outerCapabilities']['dockerDaemonAvailable'])
+          print('SYSTEM_011_QEMU_AVAILABLE', suite['outerCapabilities']['qemuSystemAvailable'])
+          print('SYSTEM_011_KVM_ACCESSIBLE', suite['outerCapabilities']['kvmDeviceAccessible'])
+          PY
+
+      - name: Verify stronger isolation remains unclaimed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          suite=json.loads(Path('evidence/system-011/out-of-band-suite-receipt.json').read_text())
+          assert suite['strongestExercisedCapability']=='EXTERNAL_PROCESS_KILL_OBSERVED'
+          assert suite['outerCapabilities']['containerHardStopExercised'] is False
+          assert suite['outerCapabilities']['vmHardStopExercised'] is False
+          assert suite['physicalPowerLossProven'] is False
+          print('CONTAINER_HARD_STOP_UNEXERCISED: HOLD')
+          print('VM_HARD_STOP_UNEXERCISED: HOLD')
+          print('PHYSICAL_POWER_LOSS_UNPROVEN: HOLD')
+          PY
+
+      - name: Upload SYSTEM-011 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcrp-system-011-out-of-band-recovery
+          path: evidence/system-011
+          if-no-files-found: error

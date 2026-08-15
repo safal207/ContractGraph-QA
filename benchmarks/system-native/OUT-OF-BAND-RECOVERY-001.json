@@ -1,0 +1,33 @@
+{
+  "schema": "cgqa.system-native-benchmark.v0.1",
+  "systemCase": "FCRP-SYSTEM-011",
+  "parent": {
+    "systemCase": "FCRP-SYSTEM-010",
+    "head": "09e681d320472ed2706a39b878e32b9309c5c981",
+    "blockDeviceReceiptDigest": "sha256:165316534e67d10f4ecc255787d840583b49f08ffd6aa3cfc40bb54f3cc597f1"
+  },
+  "evidenceBoundary": "OUT_OF_BAND_PROCESS_TERMINATION_NOT_PHYSICAL_POWER_LOSS",
+  "strongestExercisedCapability": "EXTERNAL_PROCESS_KILL_OBSERVED",
+  "physicalPowerLossProven": false,
+  "vmHardStopObserved": false,
+  "executionDecision": "HOLD",
+  "authorityTransfer": "NONE",
+  "verdict": "OUT_OF_BAND_RECOVERY_OBSERVED_POWER_BOUNDARY_HELD",
+  "cases": [
+    {
+      "name": "after_authority_commit",
+      "projectionState": "STALE",
+      "rebuildDecision": "ALLOW_REBUILD"
+    },
+    {
+      "name": "after_temp_fsync",
+      "projectionState": "STALE",
+      "rebuildDecision": "ALLOW_REBUILD"
+    },
+    {
+      "name": "after_projection_commit",
+      "projectionState": "HEALTHY",
+      "rebuildDecision": "NO_REBUILD"
+    }
+  ]
+}
