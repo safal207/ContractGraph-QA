@@ -227,18 +227,17 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
         self.assertEqual(result["decision"]["reason"], "logical_operation_already_satisfied")
         self.assertFalse(result["decision"]["monetaryActionAllowed"])
 
-    def test_x402_settle_failure_does_not_authorize_fresh_payment(self) -> None:
+    def test_x402_generic_settle_failure_remains_ambiguous_and_reconciles(self) -> None:
         result = evaluate_provider_payment_decision(
             self.x402_adapter,
             self._observations("coinbase-x402-observations-settle-failed.json"),
             self._x402_authority(),
         )
 
-        self.assertEqual(result["reconciliation"]["status"], "final")
-        self.assertEqual(result["reconciliation"]["outcome"], "failed")
+        self.assertEqual(result["reconciliation"]["status"], "nonfinal")
+        self.assertEqual(result["reconciliation"]["outcome"], "unknown")
         self.assertFalse(result["reconciliation"]["retryAllowed"])
-        self.assertEqual(result["retryAuthority"]["status"], "unresolved")
-        self.assertEqual(result["decision"]["decision"], "HOLD")
+        self.assertEqual(result["decision"]["decision"], "RECONCILE")
         self.assertFalse(result["decision"]["monetaryActionAllowed"])
 
     def test_x402_profile_rejects_invented_core_idempotency(self) -> None:
