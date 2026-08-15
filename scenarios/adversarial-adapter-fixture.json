@@ -12,12 +12,26 @@
       "forbidden": false
     },
     {
+      "id": "canary-unauthorized-payout",
+      "description": "Canary-only forbidden capability representing an unauthorized monetary payout.",
+      "forbidden": true
+    },
+    {
       "id": "terminal-state-reachable",
       "description": "The actor can drive the fixture into the modeled terminal violating state.",
       "forbidden": true
     }
   ],
   "transitions": [
+    {
+      "id": "canary-bypass-payout-authorization",
+      "source": "advance-state-machine",
+      "target": "canary-unauthorized-payout",
+      "requiresViolations": ["terminal-transition-blocked"],
+      "invariantId": "canary-payout-authorization",
+      "boundary": "canary-payment-boundary",
+      "impact": "canary unauthorized monetary payout becomes reachable"
+    },
     {
       "id": "cross-terminal-state-boundary",
       "source": "advance-state-machine",
