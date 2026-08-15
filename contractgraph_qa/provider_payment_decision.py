@@ -12,7 +12,7 @@ from typing import Any
 
 from contractgraph_qa.agent_payment_decision import evaluate_agent_payment_decision
 from contractgraph_qa.provider_adapter import (
-    ADAPTER_SCHEMA_V2,
+    ADAPTER_SCHEMA_V3,
     reconcile_provider_observations,
     validate_provider_adapter,
 )
@@ -20,7 +20,11 @@ from contractgraph_qa.provider_adapter import (
 RESULT_SCHEMA = "cgqa.provider-payment-decision.v0.1"
 _AUTHORITY = {"authorized", "revoked", "expired", "unknown"}
 _REVIEWED_PROVIDER_ID = "crossmint-wallet-transactions-public"
-_REVIEWED_PROFILE_VERSION = "0.1"
+_REVIEWED_PROFILE_VERSION = "0.2"
+_REVIEWED_EVIDENCE_ROLES = {
+    "get-transaction": True,
+    "wallet-transfer-webhook": False,
+}
 
 
 class ProviderPaymentDecisionError(ValueError):
@@ -46,11 +50,11 @@ def _authority_payload(authority: dict[str, Any]) -> dict[str, str]:
 
 
 def _validate_reviewed_profile(adapter: dict[str, Any]) -> None:
-    """Accept only the exact public-contract profile reviewed for this pilot."""
+    """Accept only the reviewed Crossmint v0.2 public-contract semantics."""
     validate_provider_adapter(adapter)
-    if adapter.get("schema") != ADAPTER_SCHEMA_V2:
+    if adapter.get("schema") != ADAPTER_SCHEMA_V3:
         raise ProviderPaymentDecisionError(
-            "pilot requires the reviewed Crossmint Provider Adapter Contract v0.2 profile"
+            "pilot requires the reviewed Crossmint Provider Adapter Contract v0.3 profile"
         )
     if adapter.get("providerId") != _REVIEWED_PROVIDER_ID:
         raise ProviderPaymentDecisionError(
@@ -61,17 +65,65 @@ def _validate_reviewed_profile(adapter: dict[str, Any]) -> None:
             f"pilot requires profileVersion={_REVIEWED_PROFILE_VERSION}"
         )
 
+    create = adapter.get("create")
+    if not isinstance(create, dict) or create.get("supportsIdempotencyKey") is not True:
+        raise ProviderPaymentDecisionError(
+            "reviewed Crossmint profile requires documented idempotent creation"
+        )
+    if create.get("sameKeyReplayDocumented") is not True:
+        raise ProviderPaymentDecisionError(
+            "reviewed Crossmint profile requires documented same-key replay"
+        )
+
+    if adapter.get("evidencePrecedenceStatus") != "unresolved":
+        raise ProviderPaymentDecisionError(
+            "reviewed Crossmint profile does not publish a complete normative timeout precedence"
+        )
+    if adapter.get("evidencePrecedence") != []:
+        raise ProviderPaymentDecisionError(
+            "reviewed Crossmint profile must not invent a complete evidence ordering"
+        )
+    if adapter.get("retrySemanticsStatus") != "unresolved":
+        raise ProviderPaymentDecisionError(
+            "reviewed Crossmint profile keeps new-operation retry authority unresolved"
+        )
+    if adapter.get("retryAllowedAfterProviderStates") != []:
+        raise ProviderPaymentDecisionError(
+            "reviewed Crossmint profile must not invent retry-authorized provider states"
+        )
+
+    evidence_sources = adapter.get("evidenceSources")
+    if not isinstance(evidence_sources, list):
+        raise ProviderPaymentDecisionError("reviewed Crossmint evidenceSources must be an array")
+    roles = {
+        str(item.get("kind")): item.get("authoritativeForFinality")
+        for item in evidence_sources
+        if isinstance(item, dict)
+    }
+    if roles != _REVIEWED_EVIDENCE_ROLES:
+        raise ProviderPaymentDecisionError(
+            "reviewed Crossmint profile requires GET transaction as finality authority and webhook as notification evidence"
+        )
+
 
 def _retry_authority(reconciliation: dict[str, Any]) -> tuple[str, bool, str | None]:
-    """Map Crossmint v0.2 failures to unresolved retry authority."""
+    """Map provider reconciliation into explicit money-retry authority."""
     if reconciliation["outcome"] != "failed":
         return "not_applicable", False, None
 
-    # The reviewed v0.2 profile can represent evidence-precedence uncertainty,
-    # but it has no field that can establish retry authority. The legacy
-    # reconciler's retryAllowed value is therefore deliberately NOT promoted
-    # into a monetary authorization here.
-    return "unresolved", False, "adapter_schema_does_not_encode_retry_authority"
+    # Provider Adapter v0.3 separates terminal provider state from authority to
+    # create another monetary operation. Crossmint's reviewed public profile
+    # intentionally keeps the latter unresolved.
+    if reconciliation.get("retryAllowed") is True:
+        return "documented", True, None
+
+    reason = reconciliation.get("retryBlockReason")
+    if reason == "retry_semantics_unresolved":
+        return "unresolved", False, reason
+
+    return "documented", False, (
+        str(reason) if reason else "retry_not_documented_for_state"
+    )
 
 
 def evaluate_provider_payment_decision(
