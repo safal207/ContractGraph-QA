@@ -89,6 +89,19 @@ LOCAL POLICY
 
 A derived rule may be safe and useful, but it must not be relabeled as a provider guarantee.
 
+### AFSP-8 — Anti-replay is not recovery authority
+
+Cryptographic replay protection, transport idempotency, durable-state discovery, and permission to create a new economic operation are separate contracts.
+
+```text
+nonce uniqueness
+!= idempotent replay
+!= canonical reconciliation
+!= continuation authorization
+```
+
+A system must not promote one layer into another without explicit evidence.
+
 ## Decision mapping
 
 AFSP reuses the Unified Agent Payment Decision Gate rather than creating a second decision engine.
@@ -158,16 +171,60 @@ create / confirm PaymentIntent
 
 Webhook-only success remains `RECONCILE` in the AFSP profile. It is notification evidence that should cause reconciliation, not a shortcut around canonical object lookup.
 
+## Coinbase x402 v2 profile — external instantiation 003
+
+The third profile deliberately tests a different shape: an HTTP-native machine-payment protocol rather than a conventional durable payment object API.
+
+The reviewed x402 v2 public contract separates:
+
+- `PAYMENT-REQUIRED` payment requirements;
+- a signed `PAYMENT-SIGNATURE` payload;
+- facilitator `/verify`, which validates the authorization;
+- facilitator `/settle`, which performs settlement and returns a settlement result;
+- `PAYMENT-RESPONSE`, which carries settlement details back to the client;
+- EIP-3009 nonce/time-window/signature protections against replay for the exact EVM scheme;
+- the optional Payment Identifier extension for duplicate-call idempotency.
+
+AFSP intentionally does **not** treat the nonce as an idempotency key and does not assume the optional Payment Identifier extension is present in the core profile.
+
+The mapping is:
+
+```text
+facilitator /verify valid
+→ payment authorization valid, settlement not proven
+→ RECONCILE
+
+facilitator /settle success
+→ final / committed
+→ STOP
+
+facilitator /settle failed
+→ prior settlement attempt classified failed
+→ retry authority unresolved
+→ HOLD
+```
+
+This exposes a new recovery boundary: if settlement occurred but the client loses the final resource response / `PAYMENT-RESPONSE`, replay prevention alone does not tell the client whether a fresh economic action is safe. AFSP keeps that ambiguity fail-closed until a documented discovery/reconciliation path is available.
+
 ## Provider-neutral portability result
 
-Crossmint and Stripe use different APIs, settlement rails, and state names, but both reduce to the same continuation invariants:
+Crossmint, Stripe, and x402 use materially different payment abstractions:
+
+```text
+Crossmint: wallet transaction object + idempotent creation
+Stripe:    PaymentIntent state machine + idempotent POST
+x402:      signed authorization + verify/settle protocol + anti-replay nonce
+```
+
+Yet all three reduce to the same continuation invariants:
 
 ```text
 transport ambiguity != permission
 same-operation replay != new-operation authority
-notification != canonical state
+notification/verification != settlement finality
 provider finality != actor authority
 failed/canceled != automatic permission to spend again
+anti-replay protection != recovery authorization
 ```
 
 The provider-specific adapters differ. The Unified Agent Payment Decision Gate remains unchanged.
@@ -185,6 +242,8 @@ onChain.txId == null → assume transaction does not exist
 webhook succeeded → skip canonical reconciliation
 terminal failed/canceled → infer permission to spend again
 provider success → infer actor authority
+x402 verify-valid → assume settlement completed
+x402 nonce protection → assume duplicate economic action is impossible
 ```
 
 ## Scope
