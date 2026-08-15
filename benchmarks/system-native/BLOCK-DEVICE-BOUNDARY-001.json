@@ -1,0 +1,29 @@
+{
+  "id": "BLOCK-DEVICE-BOUNDARY-001",
+  "systemCase": "FCRP-SYSTEM-010",
+  "title": "Block-device capability and abrupt-power evidence boundary",
+  "parent": {
+    "systemCase": "FCRP-SYSTEM-009",
+    "head": "106ff65f2e8725a41aeb3a80f2f88c7da64b414e",
+    "storageFaultReceiptDigest": "sha256:65be6aff67020ebb073fc023ee9e53ca32177d9baa6b0a2de73ab93cd4a93e2e"
+  },
+  "allowedCapabilities": [
+    "BLOCK_DEVICE_UNAVAILABLE",
+    "LOOP_DEVICE_AVAILABLE",
+    "LOOP_FS_AVAILABLE",
+    "BLOCK_BACKED_FSYNC_AVAILABLE"
+  ],
+  "abruptPowerCapability": "UNAVAILABLE",
+  "physicalPowerLossProven": false,
+  "executionDecision": "HOLD",
+  "evidenceBoundary": "BLOCK_DEVICE_CAPABILITY_NOT_PHYSICAL_POWER_LOSS",
+  "verdict": "BLOCK_DEVICE_CAPABILITY_OBSERVED_POWER_BOUNDARY_HELD",
+  "invariants": [
+    "Capability discovery is evidence, not authorization.",
+    "Environment-dependent block-device capability may be AVAILABLE or UNAVAILABLE without weakening the contract.",
+    "An in-band hosted runner cannot prove observation of its own abrupt physical power cut.",
+    "Loopback and block-backed fsync evidence must not be promoted to device-controller or physical-power-loss proof.",
+    "Unavailable stronger evidence produces HOLD, never fabricated PASS.",
+    "Parent SYSTEM-009 exact head and receipt digest are pinned fail-closed."
+  ]
+}

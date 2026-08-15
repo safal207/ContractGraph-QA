@@ -1,0 +1,110 @@
+name: FCRP SYSTEM-010 Block Device Boundary
+
+on:
+  pull_request:
+    paths:
+      - "contractgraph_qa/block_device_boundary.py"
+      - "tests/test_block_device_boundary.py"
+      - "benchmarks/system-native/BLOCK-DEVICE-BOUNDARY-001.json"
+      - ".github/workflows/fcrp-system-010-block-device-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contractgraph_qa/block_device_boundary.py"
+      - "tests/test_block_device_boundary.py"
+      - "benchmarks/system-native/BLOCK-DEVICE-BOUNDARY-001.json"
+      - ".github/workflows/fcrp-system-010-block-device-boundary.yml"
+
+permissions:
+  contents: read
+
+env:
+  PARENT_SYSTEM_009_BRANCH: agent/storage-fault-system-009
+  PARENT_SYSTEM_009_HEAD: 106ff65f2e8725a41aeb3a80f2f88c7da64b414e
+  PARENT_SYSTEM_009_RECEIPT_DIGEST: sha256:65be6aff67020ebb073fc023ee9e53ca32177d9baa6b0a2de73ab93cd4a93e2e
+
+jobs:
+  block-device-boundary-system-010:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ContractGraph-QA subject
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify parent SYSTEM-009 exact-head pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBSERVED="$(git ls-remote https://github.com/safal207/ContractGraph-QA.git "refs/heads/${PARENT_SYSTEM_009_BRANCH}" | awk '{print $1}')"
+          test "$OBSERVED" = "$PARENT_SYSTEM_009_HEAD"
+          printf '%s\n' "$OBSERVED" > parent-system-009-head.txt
+
+      - name: Re-run inherited SYSTEM-009 regressions
+        run: python -m unittest -v tests/test_storage_fault_adapter.py
+
+      - name: Run SYSTEM-010 boundary regressions
+        run: python -m unittest -v tests/test_block_device_boundary.py
+
+      - name: Probe actual block-device capabilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-010
+          python -m contractgraph_qa.block_device_boundary probe --output evidence/system-010 \
+            | tee evidence/system-010/probe.stdout.txt
+          grep -F 'SYSTEM_010_POWER_BOUNDARY UNAVAILABLE' evidence/system-010/probe.stdout.txt
+          grep -F 'SYSTEM_010_VERDICT BLOCK_DEVICE_CAPABILITY_OBSERVED_POWER_BOUNDARY_HELD' evidence/system-010/probe.stdout.txt
+          grep -F 'EVIDENCE_BOUNDARY BLOCK_DEVICE_CAPABILITY_NOT_PHYSICAL_POWER_LOSS' evidence/system-010/probe.stdout.txt
+
+      - name: Reconcile capability receipt with benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected=json.loads(Path('benchmarks/system-native/BLOCK-DEVICE-BOUNDARY-001.json').read_text())
+          observed=json.loads(Path('evidence/system-010/capability-observation.json').read_text())
+          receipt=json.loads(Path('evidence/system-010/block-device-boundary-receipt.json').read_text())
+
+          assert expected['parent']['head']=='106ff65f2e8725a41aeb3a80f2f88c7da64b414e'
+          assert expected['parent']['storageFaultReceiptDigest']=='sha256:65be6aff67020ebb073fc023ee9e53ca32177d9baa6b0a2de73ab93cd4a93e2e'
+          assert receipt['capability'] in expected['allowedCapabilities']
+          assert receipt['abruptPowerCapability']==expected['abruptPowerCapability']=='UNAVAILABLE'
+          assert receipt['physicalPowerLossProven'] is expected['physicalPowerLossProven'] is False
+          assert receipt['executionDecision']==expected['executionDecision']=='HOLD'
+          assert receipt['authorityTransfer']=='NONE'
+          assert receipt['executionAuthorized'] is False
+          assert receipt['mutationAuthorized'] is False
+          assert receipt['externalEffectsPerformed'] is False
+          assert receipt['evidenceBoundary']==expected['evidenceBoundary']
+          assert receipt['verdict']==expected['verdict']
+          assert observed['abruptRunnerPowerCutObserved'] is False
+          assert observed['physicalPowerLossProven'] is False
+          print('SYSTEM_010_BENCHMARK PASS')
+          print('SYSTEM_010_OBSERVED_CAPABILITY', receipt['capability'])
+          PY
+
+      - name: Record stronger-evidence availability without fabricating PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          CAP="$(python3 -c "import json; print(json.load(open('evidence/system-010/block-device-boundary-receipt.json'))['capability'])")"
+          if [ "$CAP" = "BLOCK_BACKED_FSYNC_AVAILABLE" ]; then
+            echo 'BLOCK_DEVICE_PATH_REACHED: real loop-backed filesystem write+fsync observed'
+          else
+            echo "BLOCK_DEVICE_PATH_NOT_FULLY_AVAILABLE: ${CAP}; stronger evidence remains HOLD"
+          fi
+          echo 'ABRUPT_PHYSICAL_POWER_PATH_UNAVAILABLE: HOLD'
+
+      - name: Upload SYSTEM-010 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcrp-system-010-block-device-boundary
+          path: evidence/system-010
+          if-no-files-found: error
