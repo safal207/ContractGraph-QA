@@ -1,0 +1,42 @@
+{
+  "schema": "cgqa.system-native-benchmark.v0.1",
+  "systemCase": "FCRP-SYSTEM-014",
+  "parent": {
+    "systemCase": "FCRP-SYSTEM-013",
+    "head": "896b8c6e4710c733e7ac82ac70e0287f3ffa017d",
+    "recoveryObservationReceiptDigest": "sha256:cd35a7a0157b5750986ea85c7482c6b62310d62cca9e3fd2db18831a2a746c20"
+  },
+  "evidenceBoundary": "RECOVERY_PACKAGE_COMPLETENESS_NOT_AUTHORITY",
+  "verdict": "RECOVERY_PACKAGE_COMPLETENESS_BOUNDARIES_PRESERVED",
+  "cases": [
+    {
+      "name": "complete_live_wal_package",
+      "classification": "COMPLETE_COHERENT",
+      "observationDecision": "ALLOW_OBSERVATION",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "missing_required_wal",
+      "classification": "MISSING_REQUIRED_COMPONENT",
+      "observationDecision": "HOLD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "tampered_required_wal",
+      "classification": "DIGEST_MISMATCH",
+      "observationDecision": "HOLD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "generation_incoherent_manifest",
+      "classification": "GENERATION_INCOHERENT",
+      "observationDecision": "HOLD",
+      "executionDecision": "HOLD"
+    }
+  ],
+  "authorityClaimed": false,
+  "authorityTransfer": "NONE",
+  "executionAuthorized": false,
+  "mutationAuthorized": false,
+  "externalEffectsPerformed": false
+}
