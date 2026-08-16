@@ -1,0 +1,130 @@
+name: FCRP SYSTEM-014 Recovery Package Completeness
+
+on:
+  pull_request:
+    paths:
+      - "contractgraph_qa/recovery_package_completeness.py"
+      - "tests/test_recovery_package_completeness.py"
+      - "benchmarks/system-native/RECOVERY-PACKAGE-001.json"
+      - ".github/workflows/fcrp-system-014-recovery-package.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PARENT_SYSTEM_013_BRANCH: agent/recovery-observation-integrity-system-013
+  PARENT_SYSTEM_013_HEAD: 896b8c6e4710c733e7ac82ac70e0287f3ffa017d
+  PARENT_SYSTEM_013_RECEIPT_DIGEST: sha256:cd35a7a0157b5750986ea85c7482c6b62310d62cca9e3fd2db18831a2a746c20
+
+jobs:
+  recovery-package-system-014:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout ContractGraph-QA subject
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify parent SYSTEM-013 exact-head pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBSERVED="$(git ls-remote https://github.com/safal207/ContractGraph-QA.git "refs/heads/${PARENT_SYSTEM_013_BRANCH}" | awk '{print $1}')"
+          test "$OBSERVED" = "$PARENT_SYSTEM_013_HEAD"
+          printf '%s\n' "$OBSERVED" > parent-system-013-head.txt
+
+      - name: Re-run inherited SYSTEM-013 regressions
+        run: python -m unittest -v tests/test_recovery_observation_integrity.py
+
+      - name: Run SYSTEM-014 fail-closed regressions
+        run: python -m unittest -v tests/test_recovery_package_completeness.py
+
+      - name: Execute recovery package completeness matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-014
+          python -m contractgraph_qa.recovery_package_completeness matrix \
+            --output evidence/system-014 \
+            | tee evidence/system-014/recovery-package.stdout.txt
+          grep -F 'SYSTEM_014_COMPLETE_PACKAGE TRUE' evidence/system-014/recovery-package.stdout.txt
+          grep -F 'SYSTEM_014_MISSING_SIDECAR_REJECTED TRUE' evidence/system-014/recovery-package.stdout.txt
+          grep -F 'SYSTEM_014_TAMPERED_SIDECAR_REJECTED TRUE' evidence/system-014/recovery-package.stdout.txt
+          grep -F 'SYSTEM_014_GENERATION_INCOHERENCE_REJECTED TRUE' evidence/system-014/recovery-package.stdout.txt
+          grep -F 'SYSTEM_014_EXECUTION_HELD TRUE' evidence/system-014/recovery-package.stdout.txt
+          grep -F 'SYSTEM_014_AUTHORITY_UNCLAIMED TRUE' evidence/system-014/recovery-package.stdout.txt
+          grep -F 'EVIDENCE_BOUNDARY RECOVERY_PACKAGE_COMPLETENESS_NOT_AUTHORITY' evidence/system-014/recovery-package.stdout.txt
+
+      - name: Reconcile SYSTEM-014 receipt with benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = json.loads(Path("benchmarks/system-native/RECOVERY-PACKAGE-001.json").read_text())
+          suite = json.loads(Path("evidence/system-014/recovery-package-suite-receipt.json").read_text())
+
+          assert suite["parentHead"] == expected["parent"]["head"]
+          assert suite["parentRecoveryObservationReceiptDigest"] == expected["parent"]["recoveryObservationReceiptDigest"]
+          assert suite["evidenceBoundary"] == expected["evidenceBoundary"]
+          assert suite["verdict"] == expected["verdict"]
+          assert suite["receiptDigest"] == expected["semanticReceiptDigest"]
+          assert suite["caseCount"] == len(expected["cases"]) == 4
+          assert suite["completePackageObserved"] is True
+          assert suite["missingSidecarRejected"] is True
+          assert suite["tamperedSidecarRejected"] is True
+          assert suite["generationIncoherenceRejected"] is True
+          assert suite["allExecutionHeld"] is True
+          assert suite["allAuthorityUnclaimed"] is True
+          assert suite["authorityTransfer"] == expected["authorityTransfer"] == "NONE"
+          assert suite["executionAuthorized"] is expected["executionAuthorized"] is False
+          assert suite["mutationAuthorized"] is expected["mutationAuthorized"] is False
+          assert suite["externalEffectsPerformed"] is expected["externalEffectsPerformed"] is False
+          assert suite["evidenceSetDigest"].startswith("sha256:")
+          assert suite["recordDigest"].startswith("sha256:")
+
+          for case in expected["cases"]:
+              receipt = json.loads(Path(f"evidence/system-014/{case['name']}.receipt.json").read_text())
+              assert receipt["classification"] == case["classification"]
+              assert receipt["observationDecision"] == case["observationDecision"]
+              assert receipt["executionDecision"] == case["executionDecision"] == "HOLD"
+              assert receipt["authorityClaimed"] is expected["authorityClaimed"] is False
+              assert receipt["authorityTransfer"] == "NONE"
+              if case["name"] == "complete_live_wal_package":
+                  assert receipt["packageComplete"] is True
+                  assert receipt["generationCoherent"] is True
+              else:
+                  assert receipt["observationDecision"] == "HOLD"
+
+          print("SYSTEM_014_BENCHMARK PASS")
+          print("SYSTEM_014_RECEIPT", suite["receiptDigest"])
+          print("SYSTEM_014_EVIDENCE_SET", suite["evidenceSetDigest"])
+          print("SYSTEM_014_RECORD", suite["recordDigest"])
+          PY
+
+      - name: Verify completeness never becomes authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          suite = json.loads(Path("evidence/system-014/recovery-package-suite-receipt.json").read_text())
+          assert suite["allAuthorityUnclaimed"] is True
+          assert suite["authorityTransfer"] == "NONE"
+          assert suite["executionAuthorized"] is False
+          print("PACKAGE_COMPLETENESS_AUTHORITY_ESCALATION: HOLD")
+          PY
+
+      - name: Upload SYSTEM-014 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcrp-system-014-recovery-package
+          path: evidence/system-014
+          if-no-files-found: error
