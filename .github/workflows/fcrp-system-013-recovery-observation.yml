@@ -1,0 +1,124 @@
+name: FCRP SYSTEM-013 Recovery Observation Integrity
+
+on:
+  pull_request:
+    paths:
+      - "contractgraph_qa/recovery_observation_integrity.py"
+      - "tests/test_recovery_observation_integrity.py"
+      - "benchmarks/system-native/RECOVERY-OBSERVATION-001.json"
+      - ".github/workflows/fcrp-system-013-recovery-observation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contractgraph_qa/recovery_observation_integrity.py"
+      - "tests/test_recovery_observation_integrity.py"
+      - "benchmarks/system-native/RECOVERY-OBSERVATION-001.json"
+      - ".github/workflows/fcrp-system-013-recovery-observation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  recovery-observation-system-013:
+    runs-on: ubuntu-24.04
+    env:
+      PARENT_SYSTEM_012_BRANCH: agent/container-hard-stop-system-012
+      PARENT_SYSTEM_012_HEAD: 82ff749eba2d257cfbebf873b52ec152c5b4664a
+      PARENT_SYSTEM_012_RECEIPT_DIGEST: sha256:a7ea56e8d8b9515301bf7f99e20c2817eb9848f2279aaa969c2ab08b25c42563
+    steps:
+      - name: Checkout ContractGraph-QA subject
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify parent SYSTEM-012 exact-head pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBSERVED="$(git ls-remote https://github.com/safal207/ContractGraph-QA.git "refs/heads/${PARENT_SYSTEM_012_BRANCH}" | awk '{print $1}')"
+          test "$OBSERVED" = "$PARENT_SYSTEM_012_HEAD"
+          printf '%s\n' "$OBSERVED" > parent-system-012-head.txt
+
+      - name: Re-run inherited SYSTEM-012 regressions
+        run: python -m unittest -v tests/test_container_hard_stop.py
+
+      - name: Run SYSTEM-013 fail-closed regressions
+        run: python -m unittest -v tests/test_recovery_observation_integrity.py
+
+      - name: Execute WAL and read-mode observation matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/system-013
+          python -m contractgraph_qa.recovery_observation_integrity matrix \
+            --output evidence/system-013 \
+            | tee evidence/system-013/recovery-observation.stdout.txt
+          grep -F 'SYSTEM_013_DIVERGENT_WAL_VIEW TRUE' evidence/system-013/recovery-observation.stdout.txt
+          grep -F 'SYSTEM_013_READABLE_STALE_VIEW TRUE' evidence/system-013/recovery-observation.stdout.txt
+          grep -F 'SYSTEM_013_CHECKPOINTED_CURRENT TRUE' evidence/system-013/recovery-observation.stdout.txt
+          grep -F 'SYSTEM_013_EXECUTION_HELD TRUE' evidence/system-013/recovery-observation.stdout.txt
+          grep -F 'SYSTEM_013_AUTHORITY_UNCLAIMED TRUE' evidence/system-013/recovery-observation.stdout.txt
+          grep -F 'EVIDENCE_BOUNDARY RECOVERY_OBSERVATION_MODE_NOT_AUTHORITY' evidence/system-013/recovery-observation.stdout.txt
+
+      - name: Reconcile SYSTEM-013 receipt with benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected=json.loads(Path('benchmarks/system-native/RECOVERY-OBSERVATION-001.json').read_text())
+          suite=json.loads(Path('evidence/system-013/recovery-observation-suite-receipt.json').read_text())
+
+          assert suite['parentHead']==expected['parent']['head']
+          assert suite['parentContainerHardStopReceiptDigest']==expected['parent']['containerHardStopReceiptDigest']
+          assert suite['evidenceBoundary']==expected['evidenceBoundary']
+          assert suite['verdict']==expected['verdict']
+          assert suite['caseCount']==3
+          assert suite['allExecutionHeld'] is True
+          assert suite['allAuthorityUnclaimed'] is True
+          assert suite['divergentWalViewObserved'] is True
+          assert suite['readableStaleViewObserved'] is True
+          assert suite['consistentCheckpointedViewObserved'] is True
+          assert suite['authorityTransfer']==expected['authorityTransfer']=='NONE'
+          assert suite['executionAuthorized'] is expected['executionAuthorized'] is False
+          assert suite['mutationAuthorized'] is expected['mutationAuthorized'] is False
+          assert suite['externalEffectsPerformed'] is expected['externalEffectsPerformed'] is False
+
+          for case in expected['cases']:
+              receipt=json.loads(Path(f"evidence/system-013/{case['name']}.receipt.json").read_text())
+              assert receipt['classification']==case['classification']
+              assert receipt['observationDecision']==case['observationDecision']
+              assert receipt['executionDecision']==case['executionDecision']=='HOLD'
+              assert receipt['plainRead']['generation']==case['plainGeneration']
+              assert receipt['immutableRead']['generation']==case['immutableGeneration']
+              assert receipt['authorityClaimed'] is expected['authorityClaimed'] is False
+
+          print('SYSTEM_013_BENCHMARK PASS')
+          print('SYSTEM_013_RECEIPT', suite['receiptDigest'])
+          PY
+
+      - name: Verify observation never becomes authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          suite=json.loads(Path('evidence/system-013/recovery-observation-suite-receipt.json').read_text())
+          assert suite['allAuthorityUnclaimed'] is True
+          assert suite['authorityTransfer']=='NONE'
+          assert suite['executionAuthorized'] is False
+          print('OBSERVATION_AUTHORITY_ESCALATION: HOLD')
+          PY
+
+      - name: Upload SYSTEM-013 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fcrp-system-013-recovery-observation
+          path: evidence/system-013
+          if-no-files-found: error
