@@ -74,6 +74,7 @@ jobs:
           assert suite["parentRecoveryObservationReceiptDigest"] == expected["parent"]["recoveryObservationReceiptDigest"]
           assert suite["evidenceBoundary"] == expected["evidenceBoundary"]
           assert suite["verdict"] == expected["verdict"]
+          assert suite["receiptDigest"] == expected["semanticReceiptDigest"]
           assert suite["caseCount"] == len(expected["cases"]) == 4
           assert suite["completePackageObserved"] is True
           assert suite["missingSidecarRejected"] is True
@@ -85,6 +86,8 @@ jobs:
           assert suite["executionAuthorized"] is expected["executionAuthorized"] is False
           assert suite["mutationAuthorized"] is expected["mutationAuthorized"] is False
           assert suite["externalEffectsPerformed"] is expected["externalEffectsPerformed"] is False
+          assert suite["evidenceSetDigest"].startswith("sha256:")
+          assert suite["recordDigest"].startswith("sha256:")
 
           for case in expected["cases"]:
               receipt = json.loads(Path(f"evidence/system-014/{case['name']}.receipt.json").read_text())
@@ -101,6 +104,8 @@ jobs:
 
           print("SYSTEM_014_BENCHMARK PASS")
           print("SYSTEM_014_RECEIPT", suite["receiptDigest"])
+          print("SYSTEM_014_EVIDENCE_SET", suite["evidenceSetDigest"])
+          print("SYSTEM_014_RECORD", suite["recordDigest"])
           PY
 
       - name: Verify completeness never becomes authority
