@@ -360,7 +360,7 @@ def run_case(case: str, output_dir: Path) -> dict[str, Any]:
 def run_matrix(output_dir: Path) -> dict[str, Any]:
     receipts = [run_case(case, output_dir) for case in CASES]
     by_case = dict(zip(CASES, receipts))
-    unsigned = {
+    semantic = {
         "schema": SUITE_SCHEMA,
         "systemCase": SYSTEM_CASE,
         "parentHead": PARENT_SYSTEM_013_HEAD,
@@ -378,10 +378,14 @@ def run_matrix(output_dir: Path) -> dict[str, Any]:
         "externalEffectsPerformed": False,
         "evidenceBoundary": EVIDENCE_BOUNDARY,
         "verdict": VERDICT,
-        "caseReceiptDigests": {case: by_case[case]["receiptDigest"] for case in CASES},
     }
-    suite = dict(unsigned)
-    suite["receiptDigest"] = _sha256_value(unsigned)
+    case_receipt_digests = {case: by_case[case]["receiptDigest"] for case in CASES}
+    suite = dict(semantic)
+    suite["receiptDigest"] = _sha256_value(semantic)
+    suite["caseReceiptDigests"] = case_receipt_digests
+    suite["evidenceSetDigest"] = _sha256_value(case_receipt_digests)
+    record_unsigned = dict(suite)
+    suite["recordDigest"] = _sha256_value(record_unsigned)
     _write_json(output_dir / "recovery-package-suite-receipt.json", suite)
     return suite
 
@@ -395,6 +399,8 @@ def _print_suite(suite: dict[str, Any]) -> None:
     print("SYSTEM_014_AUTHORITY_UNCLAIMED", str(suite["allAuthorityUnclaimed"]).upper())
     print("SYSTEM_014_VERDICT", suite["verdict"])
     print("SYSTEM_014_RECEIPT", suite["receiptDigest"])
+    print("SYSTEM_014_EVIDENCE_SET", suite["evidenceSetDigest"])
+    print("SYSTEM_014_RECORD", suite["recordDigest"])
     print("EVIDENCE_BOUNDARY", suite["evidenceBoundary"])
 
 
