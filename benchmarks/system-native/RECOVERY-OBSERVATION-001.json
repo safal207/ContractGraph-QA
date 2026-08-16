@@ -1,0 +1,42 @@
+{
+  "schema": "cgqa.system-native-benchmark.v0.1",
+  "systemCase": "FCRP-SYSTEM-013",
+  "parent": {
+    "systemCase": "FCRP-SYSTEM-012",
+    "head": "82ff749eba2d257cfbebf873b52ec152c5b4664a",
+    "containerHardStopReceiptDigest": "sha256:a7ea56e8d8b9515301bf7f99e20c2817eb9848f2279aaa969c2ab08b25c42563"
+  },
+  "evidenceBoundary": "RECOVERY_OBSERVATION_MODE_NOT_AUTHORITY",
+  "verdict": "RECOVERY_OBSERVATION_BOUNDARIES_PRESERVED",
+  "cases": [
+    {
+      "name": "checkpointed_current",
+      "plainGeneration": 2,
+      "immutableGeneration": 2,
+      "classification": "CONSISTENT_CURRENT",
+      "observationDecision": "ACCEPT_OBSERVATION",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "live_wal_divergence",
+      "plainGeneration": 2,
+      "immutableGeneration": 1,
+      "classification": "DIVERGENT_READ_VIEWS",
+      "observationDecision": "HOLD",
+      "executionDecision": "HOLD"
+    },
+    {
+      "name": "main_db_only_snapshot",
+      "plainGeneration": 1,
+      "immutableGeneration": 1,
+      "classification": "READABLE_STALE_VIEW",
+      "observationDecision": "HOLD",
+      "executionDecision": "HOLD"
+    }
+  ],
+  "authorityClaimed": false,
+  "authorityTransfer": "NONE",
+  "executionAuthorized": false,
+  "mutationAuthorized": false,
+  "externalEffectsPerformed": false
+}
