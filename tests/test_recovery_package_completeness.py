@@ -11,6 +11,7 @@ from contractgraph_qa.recovery_package_completeness import (
     _make_live_wal_package,
     _mutate_case,
     run_case,
+    run_matrix,
     validate_package,
 )
 
@@ -138,6 +139,16 @@ class RecoveryPackageCompletenessTests(unittest.TestCase):
                 validate_package(root)
         finally:
             td.cleanup()
+
+    def test_semantic_receipt_is_stable_across_run_specific_wal_bytes(self):
+        expected = "sha256:58ff962f91a4f57612b31ed4093d79db152e0dc818a4a81d9f3abaffc23ea408"
+        with tempfile.TemporaryDirectory() as td1, tempfile.TemporaryDirectory() as td2:
+            first = run_matrix(Path(td1))
+            second = run_matrix(Path(td2))
+            self.assertEqual(first["receiptDigest"], expected)
+            self.assertEqual(second["receiptDigest"], expected)
+            self.assertIn("evidenceSetDigest", first)
+            self.assertIn("recordDigest", first)
 
     def test_live_cases_preserve_execution_hold(self):
         with tempfile.TemporaryDirectory() as td:
