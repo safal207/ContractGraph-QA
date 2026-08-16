@@ -8,6 +8,7 @@
   },
   "evidenceBoundary": "RECOVERY_PACKAGE_COMPLETENESS_NOT_AUTHORITY",
   "verdict": "RECOVERY_PACKAGE_COMPLETENESS_BOUNDARIES_PRESERVED",
+  "semanticReceiptDigest": "sha256:58ff962f91a4f57612b31ed4093d79db152e0dc818a4a81d9f3abaffc23ea408",
   "cases": [
     {
       "name": "complete_live_wal_package",
