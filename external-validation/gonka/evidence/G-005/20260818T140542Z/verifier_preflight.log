@@ -1,0 +1,15 @@
+COMMAND: python tools/gonka_capture_runtime_fingerprint.py --source-revision 379bebced638aeb5e6077bfd51c986f898443832 --config-generation g005-pinned-379bebc --devshardctl devshardctl --versiond versiond-0 --devshardd versiond-0 --versiond-router versiond-router --output /tmp/g005-runtime_fingerprint.json
+OUTPUT: runtime fingerprint capture failed: [Errno 2] No such file or directory: 'docker'
+EXIT: 2
+POSTCONDITION: /tmp/g005-runtime_fingerprint.json is absent
+
+VERIFIER REVIEW:
+- inspect_container obtains container ID, image ID, and configured image ref.
+- It hashes those three strings into a new digest.
+- That digest is not independently an OCI manifest/config digest.
+- The emitted note says source/runtime equality must still be established.
+- verify_runtime_fingerprint nevertheless returns PROVEN when the pinned source string and three structurally valid component entries are present.
+- Therefore helper-level PROVEN is insufficient without independent build/source provenance and running-container verification.
+
+No runtime fingerprint JSON was created for this attempt.
+

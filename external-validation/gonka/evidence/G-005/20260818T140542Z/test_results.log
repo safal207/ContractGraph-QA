@@ -1,0 +1,25 @@
+COMMAND: python -m py_compile contractgraph_qa/gonka_atman.py contractgraph_qa/gonka_atman_holdout.py contractgraph_qa/gonka_atman_runtime.py tools/gonka_capture_runtime_fingerprint.py
+RESULT: PASS
+
+COMMAND: PYTHONPATH=/tmp/cgqa-pytest python -m pytest -q tools/tests/test_gonka_atman_runtime.py tools/tests/test_gonka_atman.py tools/tests/test_gonka_atman_holdout.py
+RESULT:
+...............                                                          [100%]
+15 passed in 0.04s
+EXIT: 0
+
+COMMAND: PYTHONPATH=/tmp/cgqa-pytest python -m pytest -q tools/tests
+RESULT:
+.................................................................... [ 59%]
+..............................................                           [100%]
+114 passed, 4 subtests passed in 0.23s
+EXIT: 0
+
+COMMAND: python -m unittest discover -s tools/tests -p 'test_*.py' -v
+RESULT: Ran 99 tests in 0.052s; OK
+EXIT: 0
+
+COMMAND: test ! -e external-validation/gonka/evidence/G-005/runtime_fingerprint.json
+RESULT: PASS; no synthetic runtime_fingerprint.json exists at the CI-guarded path
+
+LIMITATION: Python contract/unit tests do not provide Gonka runtime, restart-control, accounting, or settlement evidence.
+

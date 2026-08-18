@@ -1,0 +1,30 @@
+COMMAND: make gen-compose
+WORKDIR: upstream-gonka/devshard/testenv
+OUTPUT:
+go run ./cmd/gencompose -config config/config.yaml
+/bin/bash: line 1: go: command not found
+make: *** [Makefile:13: gen-compose] Error 127
+EXIT: 2
+
+COMMAND: docker compose -f docker-compose.yml config
+WORKDIR: upstream-gonka/devshard/testenv
+OUTPUT: docker: command not found
+EXIT: 127
+
+COMMAND: make build-devshardd
+WORKDIR: upstream-gonka/devshard/testenv
+OUTPUT:
+make -C ../.. devshardd-build DEVSHARD_VERSION=v2 DEVSHARD_BINARY_VERSION=0.2.13-v2-r2
+Building devshardd (DEVSHARD_VERSION=v2 DEVSHARD_BINARY_VERSION=0.2.13-v2-r2)...
+/bin/sh: 1: docker: not found
+make[1]: *** [Makefile:185: devshardd-build] Error 127
+make: *** [Makefile:19: build-devshardd] Error 2
+EXIT: 2
+
+COMMAND: TESTENV_CITEST=1 go test -tags=testenvci ./citest/ -run '^TestVersiondRestartSessionPersistence$' -count=1 -v -timeout 30m
+WORKDIR: upstream-gonka/devshard/testenv
+OUTPUT: go: command not found
+EXIT: 127
+
+INTERPRETATION BOUNDARY: the upstream restart control was NOT_RUN. It did not PASS and did not execute far enough to FAIL an assertion.
+

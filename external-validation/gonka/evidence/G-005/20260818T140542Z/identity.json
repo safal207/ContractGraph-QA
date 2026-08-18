@@ -1,0 +1,18 @@
+{
+  "packet_version": "cgqa-g005-runtime-attempt-v0.1",
+  "repository": "safal207/ContractGraph-QA",
+  "canonical_url": "https://github.com/safal207/ContractGraph-QA.git",
+  "target_branch": "feat/gonka-verification-v0.1",
+  "expected_head_sha": "73c042b4174cde2c006857b7bf50e779a70bb228",
+  "initial_head_sha": "73c042b4174cde2c006857b7bf50e779a70bb228",
+  "gonka_repository": "gonka-ai/gonka",
+  "gonka_canonical_url": "https://github.com/gonka-ai/gonka.git",
+  "gonka_expected_sha": "379bebced638aeb5e6077bfd51c986f898443832",
+  "gonka_observed_sha": "379bebced638aeb5e6077bfd51c986f898443832",
+  "collection_started_at": "2026-08-18T14:01:59Z",
+  "packet_created_at": "2026-08-18T14:05:42Z",
+  "source_worktree_initial_state": "clean detached HEAD",
+  "scope": "local permitted Docker testenv only; reproduce and verify; no remediation",
+  "authority_boundary": "no production change, mainnet action, real funds, external disclosure, merge, push, or deployment"
+}
+

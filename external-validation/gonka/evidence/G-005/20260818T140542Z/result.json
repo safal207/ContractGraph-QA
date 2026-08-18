@@ -1,0 +1,48 @@
+{
+  "case_id": "G-005",
+  "verdict": "INCONCLUSIVE",
+  "target_claim_allowed": false,
+  "environment_coherence": "UNPROVEN",
+  "control": {
+    "state": "NOT_RUN",
+    "reason": "Go toolchain and Docker runtime are absent"
+  },
+  "stimulus": {
+    "state": "NOT_RUN",
+    "logical_operation_id": null,
+    "reason": "environment proof and control are prerequisites"
+  },
+  "logical_lineage": "ABSENT",
+  "duplicate_economic_effects": "UNPROVEN",
+  "orphan_state": "UNPROVEN",
+  "runtime_fingerprint": {
+    "state": "ABSENT",
+    "file_created": false,
+    "reason": "collector exited 2 because docker executable is absent"
+  },
+  "rendered_compose": {
+    "state": "ABSENT",
+    "reason": "gencompose could not run because Go is absent"
+  },
+  "request_accounting": "NOT_COLLECTED",
+  "pre_restart_snapshot": "NOT_COLLECTED",
+  "post_restart_snapshot": "NOT_COLLECTED",
+  "settlement_data": "NOT_COLLECTED",
+  "anything_still_unproven": [
+    "source-to-runtime/image equality",
+    "running component IDs and OCI image digests",
+    "rendered compose/config generation",
+    "upstream restart/session-persistence control",
+    "pending-usage restart stimulus",
+    "request, execution nonce, accounting, and settlement lineage",
+    "duplicate economic effect absence",
+    "orphan-state absence"
+  ],
+  "non_claims": [
+    "No vulnerability or security finding is claimed.",
+    "Source evidence is not treated as runtime evidence.",
+    "Control NOT_RUN is not treated as control FAIL or PASS.",
+    "No immediate terminal state was interpreted because no operation was dispatched."
+  ]
+}
+
