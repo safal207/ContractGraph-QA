@@ -3,20 +3,33 @@ from contractgraph_qa.gonka_atman_runtime import verify_restart_lineage, verify_
 PIN = "379bebced638aeb5e6077bfd51c986f898443832"
 
 
+def artifact(component, ch):
+    return {
+        "component": component,
+        "container_id": f"container-{component}",
+        "image_id": f"image-{component}",
+        "image_ref": f"local/{component}:g005",
+        "image_digest": "sha256:" + ch * 64,
+    }
+
+
 def fp():
+    arts = [artifact("devshardctl", "1"), artifact("versiond", "2"), artifact("devshardd", "3")]
     return {
         "source_revision": PIN,
         "config_generation": "g005-testenv-1",
-        "runtime_artifacts": [
-            {"component": "devshardctl", "sha256": "sha256:" + "1" * 64},
-            {"component": "versiond", "sha256": "sha256:" + "2" * 64},
-            {"component": "devshardd", "sha256": "sha256:" + "3" * 64},
-        ],
+        "runtime_artifacts": arts,
+        "provenance": {
+            "method": "local-build-from-pinned-source",
+            "source_revision": PIN,
+            "evidence_sha256": "sha256:" + "a" * 64,
+            "component_image_digests": {x["component"]: x["image_digest"] for x in arts},
+        },
     }
 
 
 def test_runtime_fingerprint_fails_closed_without_runtime_artifacts():
-    out = verify_runtime_fingerprint({"source_revision": PIN, "config_generation": "x"})
+    out = verify_runtime_fingerprint({"source_revision": PIN, "config_generation": "x", "provenance": {}})
     assert out["verdict"] == "UNPROVEN"
     assert out["target_claim_allowed"] is False
 
@@ -32,6 +45,27 @@ def test_runtime_fingerprint_requires_three_execution_components():
     out = verify_runtime_fingerprint(payload)
     assert out["verdict"] == "UNPROVEN"
     assert "devshardd" in out["missing_components"]
+
+
+def test_metadata_digest_without_provenance_is_never_proven():
+    payload = fp(); payload.pop("provenance")
+    out = verify_runtime_fingerprint(payload)
+    assert out["verdict"] == "UNPROVEN"
+    assert "provenance" in out["missing"]
+
+
+def test_runtime_digest_must_match_provenance_binding():
+    payload = fp()
+    payload["provenance"]["component_image_digests"]["devshardctl"] = "sha256:" + "f" * 64
+    out = verify_runtime_fingerprint(payload)
+    assert out["verdict"] == "MISMATCH"
+    assert out["target_claim_allowed"] is False
+
+
+def test_runtime_fingerprint_proven_only_with_source_image_binding():
+    out = verify_runtime_fingerprint(fp())
+    assert out["verdict"] == "PROVEN"
+    assert out["target_claim_allowed"] is True
 
 
 def test_restart_lineage_inconclusive_until_runtime_proven():
