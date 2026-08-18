@@ -11,6 +11,10 @@ from contractgraph_qa.agent_payment_decision import (
     AgentPaymentDecisionError,
     evaluate_agent_payment_decision_file,
 )
+from contractgraph_qa.astra_state_planes import (
+    AstraStatePlaneError,
+    analyze_state_planes,
+)
 from contractgraph_qa.astra_transition import AstraTransitionError, analyze_transition_path
 from contractgraph_qa.payment_evidence_pack import (
     PaymentEvidencePackError,
@@ -133,6 +137,31 @@ def _astra_transition_main(argv: list[str]) -> int:
         return EXIT_INTERNAL
 
 
+def _astra_state_planes_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa astra-state-planes",
+        description=(
+            "Compare primary, mirror, and independent-witness state observations "
+            "and detect state-hash suspicion without promoting it to a target defect."
+        ),
+    )
+    parser.add_argument("--input", type=Path, required=True, help="ASTRA state-plane JSON")
+    args = parser.parse_args(argv)
+    try:
+        payload = json.loads(args.input.resolve().read_text(encoding="utf-8"))
+        _emit(analyze_state_planes(payload))
+        return EXIT_OK
+    except (AstraStatePlaneError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
 def main(argv: list[str] | None = None) -> int:
     effective = list(sys.argv[1:] if argv is None else argv)
     if effective and effective[0] == "agent-payment-decision":
@@ -143,6 +172,8 @@ def main(argv: list[str] | None = None) -> int:
         return _verify_evidence_pack_main(effective[1:])
     if effective and effective[0] == "astra-transition":
         return _astra_transition_main(effective[1:])
+    if effective and effective[0] == "astra-state-planes":
+        return _astra_state_planes_main(effective[1:])
     return legacy_cli.main(effective)
 
 
