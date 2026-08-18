@@ -15,6 +15,7 @@ from contractgraph_qa.astra_causal_locality import (
     AstraCausalLocalityError,
     analyze_causal_locality,
 )
+from contractgraph_qa.astra_queue import AstraQueueError, compare_queue_ordering
 from contractgraph_qa.astra_state_planes import (
     AstraStatePlaneError,
     analyze_state_planes,
@@ -191,6 +192,31 @@ def _astra_causal_locality_main(argv: list[str]) -> int:
         return EXIT_INTERNAL
 
 
+def _astra_queue_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa astra-queue",
+        description=(
+            "Compare deterministic BFS discovery cost with an ASTRA pressure-guided "
+            "queue over the exact same reviewed graph."
+        ),
+    )
+    parser.add_argument("--input", type=Path, required=True, help="ASTRA queue comparison JSON")
+    args = parser.parse_args(argv)
+    try:
+        payload = json.loads(args.input.resolve().read_text(encoding="utf-8"))
+        _emit(compare_queue_ordering(payload))
+        return EXIT_OK
+    except (AstraQueueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
 def main(argv: list[str] | None = None) -> int:
     effective = list(sys.argv[1:] if argv is None else argv)
     if effective and effective[0] == "agent-payment-decision":
@@ -205,6 +231,8 @@ def main(argv: list[str] | None = None) -> int:
         return _astra_state_planes_main(effective[1:])
     if effective and effective[0] == "astra-causal-locality":
         return _astra_causal_locality_main(effective[1:])
+    if effective and effective[0] == "astra-queue":
+        return _astra_queue_main(effective[1:])
     return legacy_cli.main(effective)
 
 
