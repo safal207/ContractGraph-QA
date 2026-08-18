@@ -1,0 +1,97 @@
+id: G-001
+title: Normal inference within a valid funded devshard
+profile: gonka-verification-v0.1
+priority: P0
+status: executable_contract
+upstream_revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+safety:
+  environment: local_testenv_or_explicitly_permitted_gateway
+  mainnet_destructive_testing: forbidden
+  secrets_in_evidence: redact
+
+intent:
+  logical_operation: single_chat_completion
+  endpoint: /v1/chat/completions
+  method: POST
+
+preconditions:
+  - gateway_health_is_ok
+  - valid_test_credentials_are_available_if_required
+  - exactly_one_test_devshard_is_selected
+  - selected_devshard_is_funded_before_dispatch
+  - baseline_gateway_status_is_captured
+  - baseline_devshard_state_is_captured
+
+stimulus:
+  request:
+    model: configured_test_model
+    messages:
+      - role: user
+        content: "CGQA control request: reply with a short deterministic acknowledgement."
+    max_tokens: 32
+    stream: false
+  client_policy:
+    attempts: 1
+    no_retry: true
+
+expected:
+  - id: INV-G001-01
+    assertion: one_client_attempt_maps_to_one_observed_terminal_transport_outcome
+  - id: INV-G001-02
+    assertion: selected_devshard_was_funded_before_billable_dispatch
+  - id: INV-G001-03
+    assertion: observed_execution_and_usage_are_attributable_to_the_selected_devshard
+  - id: INV-G001-04
+    assertion: winner_and_nonwinner_attempt_costs_reconcile_with_reported_cost_fields
+  - id: INV-G001-05
+    assertion: no_unexplained_duplicate_or_orphaned_effect_exists
+
+evidence:
+  directory: G-001
+  required:
+    - run_metadata.json
+    - request.redacted.json
+    - response.redacted.json
+    - gateway_status.before.json
+    - gateway_status.after.json
+    - devshard_state.before.json
+    - devshard_state.after.json
+    - accounting.json
+    - reconciliation.json
+  conditional:
+    - chain_state.before.json
+    - chain_state.after.json
+    - settlement.json
+    - gateway_logs.redacted.txt
+  correlation_fields:
+    - logical_operation_id
+    - execution_attempt_id
+    - X_Request_Id
+    - client_timestamp_start
+    - client_timestamp_end
+    - escrow_id
+    - attempt_nonces
+    - all_attempts_actual_cost
+
+pass_criteria:
+  all:
+    - every_transport_request_id_has_a_terminal_disposition
+    - request_accounting_is_observed
+    - every_execution_nonce_has_known_request_lineage
+    - attempt_derived_costs_equal_reported_cost_fields
+    - aggregate_accounting_cost_arithmetic_reconciles
+    - no_unexplained_effects_exist
+    - all_required_evidence_artifacts_exist
+
+fail_criteria:
+  any:
+    - successful_transport_without_request_accounting
+    - execution_nonce_without_request_lineage
+    - attempt_costs_disagree_with_reported_costs
+    - more_than_one_unexplained_billable_effect_for_one_attempt
+    - successful_response_without_reconcilable_devshard_attribution
+    - required_evidence_artifact_missing
+
+notes:
+  - This is the control case. G-002 reuses the same reconciliation schema so deltas are comparable.
+  - A successful inference is not by itself a PASS; transport, execution, accounting, and source evidence must reconcile.

@@ -1,0 +1,30 @@
+{
+  "artifacts": [
+    {"bytes": 1114, "path": "README.md", "role": "raw_or_summary_evidence", "sha256": "b83e2b95fb423963a3ea9d498d1cc66dec88cf4267227ae774b123dca4600f3c"},
+    {"bytes": 1280, "path": "commands.txt", "role": "raw_or_summary_evidence", "sha256": "05d25a454407c8a7f1d8e67f886f8b91122662bf978a087f45f6a07e19c824ed"},
+    {"bytes": 1103, "path": "control_attempt.log", "role": "raw_or_summary_evidence", "sha256": "20997c77cd350c849440f123809d2b67cbe0d0b7ca23321182e1a6f65b824275"},
+    {"bytes": 779, "path": "environment_probe.log", "role": "raw_or_summary_evidence", "sha256": "825cc2ef950bf93167d26615571527789e51ecd8537429fa2437fde228884bb9"},
+    {"bytes": 969, "path": "identity.json", "role": "raw_or_summary_evidence", "sha256": "62d2e134cf3488050e03bacd7e3a954237753213db146df5b873cf28da82bace"},
+    {"bytes": 2754, "path": "ordered_trace.json", "role": "raw_or_summary_evidence", "sha256": "371db0be3b8730a66d51b25452fe4b19315c27809e3ebef206b43daa9fbf248f"},
+    {"bytes": 1594, "path": "result.json", "role": "raw_or_summary_evidence", "sha256": "aebb3bda9dfb24cc1f7f483387cbe1f4f3f54c0144df4e971734d2661efe5ace"},
+    {"bytes": 2238, "path": "source_artifact_hashes.txt", "role": "raw_or_summary_evidence", "sha256": "c8ba5b1c35d3d18d0acba99eb821a69095f7d4e247fbf55e501448e93fc1b922"},
+    {"bytes": 1170, "path": "test_results.log", "role": "raw_or_summary_evidence", "sha256": "527a185252c7328e6f9d569b343adf6b90587abde9872035aebbade3e79e7562"},
+    {"bytes": 489, "path": "upstream_checkout.log", "role": "raw_or_summary_evidence", "sha256": "de7ba7c232247e885d34290e4b0ba92e62b69a4d6feb2f7954d2c71a3da778d4"},
+    {"bytes": 540, "path": "verifier_preflight.json", "role": "raw_or_summary_evidence", "sha256": "abe90f6d12204cdc4bfa25d04d3e03527fea9e9ba35f2b1974aad2db0f83396b"},
+    {"bytes": 1088, "path": "verifier_preflight.log", "role": "raw_or_summary_evidence", "sha256": "dc0cd980e89a29bba0c1ce40cca9f58f511b3fa58e05249926a56de0b37a19f1"}
+  ],
+  "collected_at": "2026-08-18T14:05:42Z",
+  "completion_state": "BLOCKED",
+  "evidence_grade": "F1",
+  "expected_head_sha": "73c042b4174cde2c006857b7bf50e779a70bb228",
+  "final_head_sha": "73c042b4174cde2c006857b7bf50e779a70bb228",
+  "gonka_source_sha": "379bebced638aeb5e6077bfd51c986f898443832",
+  "initial_head_sha": "73c042b4174cde2c006857b7bf50e779a70bb228",
+  "integrity_note": "Digest verifies byte identity and bundle membership only, not semantic truth.",
+  "repository": "safal207/ContractGraph-QA",
+  "run_attempt": null,
+  "run_id": null,
+  "schema_version": "cgqa-evidence-manifest-v0.1",
+  "target": "feat/gonka-verification-v0.1",
+  "workflow_sha": "73c042b4174cde2c006857b7bf50e779a70bb228"
+}

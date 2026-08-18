@@ -1,0 +1,26 @@
+COMMAND: command -v docker; docker version; docker compose version
+RESULT: docker not found; exit 127
+
+COMMAND: command -v podman; command -v nerdctl; command -v ctr; command -v docker-compose
+RESULT: no compatible container CLI found
+
+COMMAND: ls -l /var/run/docker.sock /run/docker.sock
+RESULT:
+ls: cannot access '/var/run/docker.sock': No such file or directory
+ls: cannot access '/run/docker.sock': No such file or directory
+
+COMMAND: command -v go; go version
+RESULT: go not found; exit 127
+
+COMMAND: uname -a
+RESULT: Linux 12b1b77a214a 6.18.35 #1 SMP Mon Jul 27 18:07:50 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+
+COMMAND: id
+RESULT: uid=0(root) gid=0(root) groups=0(root)
+
+COMMAND: python --version
+RESULT: Python 3.12.13
+
+COMMAND: git --version
+RESULT: git version 2.51.1
+

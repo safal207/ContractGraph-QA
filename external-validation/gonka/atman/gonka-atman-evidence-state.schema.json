@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schemas/gonka-atman-evidence-state-v0.1.json",
+  "title": "Gonka ATMAN Evidence State v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "subject_ref", "state", "generation"],
+  "properties": {
+    "schema_version": {"const": "gonka-atman-evidence-state-v0.1"},
+    "subject_ref": {"type": "string", "minLength": 1},
+    "state": {
+      "enum": [
+        "ABSENT",
+        "PENDING",
+        "STALE",
+        "SUPERSEDED",
+        "REJECTED",
+        "CONFIRMED",
+        "AMBIGUOUS"
+      ]
+    },
+    "generation": {"type": "string", "minLength": 1},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "source_refs": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "supersedes": {"type": ["string", "null"]},
+    "reason": {"type": "string"}
+  }
+}

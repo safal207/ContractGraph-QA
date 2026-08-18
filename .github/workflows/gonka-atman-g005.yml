@@ -1,0 +1,31 @@
+name: Gonka ATMAN G-005
+
+on:
+  pull_request:
+    paths:
+      - 'contractgraph_qa/gonka_atman_runtime.py'
+      - 'tools/gonka_capture_runtime_fingerprint.py'
+      - 'tools/tests/test_gonka_atman_runtime.py'
+      - 'external-validation/gonka/cases/G-005-restart-recovery.yaml'
+      - 'external-validation/gonka/gonka-atman-runtime-fingerprint.schema.json'
+      - '.github/workflows/gonka-atman-g005.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run G-005 ATMAN unit checks
+        run: python -m pytest -q tools/tests/test_gonka_atman_runtime.py
+      - name: Compile collector and verifier
+        run: python -m py_compile contractgraph_qa/gonka_atman_runtime.py tools/gonka_capture_runtime_fingerprint.py
+      - name: Enforce no synthetic runtime evidence in CI
+        run: |
+          test ! -e external-validation/gonka/evidence/G-005/runtime_fingerprint.json || {
+            echo 'Runtime fingerprint must come from an explicit permitted Gonka testenv run, not generic CI.' >&2
+            exit 1
+          }

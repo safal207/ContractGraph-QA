@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schemas/gonka-correlation-collision-v0.1.json",
+  "title": "Gonka client correlation canonicalization collision evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "upstream_revision",
+    "client_correlation_id",
+    "escrow_id",
+    "logical_operations_simulated",
+    "canonical_request_rows",
+    "attempt_nonces",
+    "winner_nonce_after_second_completion",
+    "records_coalesced",
+    "candidate_status",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": { "const": "gonka-correlation-collision-v0.1" },
+    "case_id": { "const": "G-002-COLLISION" },
+    "upstream_revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "client_correlation_id": { "type": "string", "minLength": 1 },
+    "escrow_id": { "type": "string", "minLength": 1 },
+    "logical_operations_simulated": { "const": 2 },
+    "canonical_request_rows": { "type": "integer", "minimum": 0 },
+    "attempt_nonces": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1 },
+      "minItems": 2,
+      "uniqueItems": true
+    },
+    "winner_nonce_after_second_completion": { "type": "integer", "minimum": 1 },
+    "records_coalesced": { "type": "boolean" },
+    "candidate_status": {
+      "type": "string",
+      "enum": ["SAFE_FOR_CANONICALIZATION", "REJECTED_AS_PRODUCTION_FIX"]
+    },
+    "notes": { "type": "string", "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "records_coalesced": { "const": true } }, "required": ["records_coalesced"] },
+      "then": { "properties": { "candidate_status": { "const": "REJECTED_AS_PRODUCTION_FIX" } } }
+    }
+  ]
+}

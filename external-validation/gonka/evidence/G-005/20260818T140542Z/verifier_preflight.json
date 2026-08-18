@@ -1,0 +1,26 @@
+{
+  "runtime_preflight": {
+    "missing": [
+      "config_generation",
+      "runtime_artifacts",
+      "source_revision"
+    ],
+    "target_claim_allowed": false,
+    "verdict": "UNPROVEN"
+  },
+  "lineage_preflight": {
+    "reason": "runtime generation not proven",
+    "runtime": {
+      "missing": [
+        "config_generation",
+        "runtime_artifacts",
+        "source_revision"
+      ],
+      "target_claim_allowed": false,
+      "verdict": "UNPROVEN"
+    },
+    "target_claim_allowed": false,
+    "verdict": "INCONCLUSIVE"
+  }
+}
+

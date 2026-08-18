@@ -1,0 +1,289 @@
+name: Gonka G-001-ID proof of fix
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/**'
+      - '.github/workflows/gonka-proof-of-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+
+jobs:
+  baseline:
+    name: Baseline G-001-ID reproduces FAIL
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      verdict: ${{ steps.verdict.outputs.verdict }}
+    env:
+      CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-proof/baseline
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install unchanged G-001-ID harness
+        shell: bash
+        run: |
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          mkdir -p "$CGQA_EVIDENCE_DIR"
+
+      - name: Assert pinned baseline identity boundary
+        shell: bash
+        run: |
+          test "$(grep -Fc 'p.redundancy.RunInference(context.Background(), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
+          grep -F 'e.recordAccountingRequestStart(ctx, params)' upstream-gonka/devshard/cmd/devshardctl/redundancy.go
+
+      - name: Build Gonka devshardd
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Collect baseline G-001-ID evidence
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaIdentityBoundaryEvidence$'
+          -v -count=1 -timeout=30m
+
+      - name: Validate baseline evidence
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID'
+          required = [
+              'run_metadata.json', 'request.redacted.json', 'response.redacted.json',
+              'transport.json', 'gateway_status.before.json', 'gateway_status.after.json',
+              'devshard_state.before.json', 'devshard_state.after.json',
+              'debug_perf.after.json', 'accounting.client-id.json',
+              'accounting.response-id.json', 'reconciliation.json',
+          ]
+          missing = [str(root / n) for n in required if not (root / n).is_file() or (root / n).stat().st_size == 0]
+          if missing:
+              raise SystemExit('baseline evidence incomplete:\n' + '\n'.join(missing))
+          for p in root.glob('*.json'):
+              json.loads(p.read_text(encoding='utf-8'))
+          schema = json.loads(Path('external-validation/gonka/identity-boundary.schema.json').read_text(encoding='utf-8'))
+          instance = json.loads((root / 'reconciliation.json').read_text(encoding='utf-8'))
+          errors = list(Draft202012Validator(schema).iter_errors(instance))
+          if errors:
+              raise SystemExit('\n'.join(e.message for e in errors))
+          PY
+
+      - name: Read and enforce baseline verdict
+        id: verdict
+        shell: bash
+        run: |
+          verdict="$(python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID' / 'reconciliation.json'
+          print(json.loads(p.read_text(encoding='utf-8'))['verdict'])
+          PY
+          )"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "Baseline verdict: $verdict"
+          test "$verdict" = "FAIL"
+
+      - name: Upload baseline evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-g001-id-baseline
+          path: cgqa-proof/baseline/G-001-ID
+          if-no-files-found: error
+          retention-days: 14
+
+  patched:
+    name: Patched G-001-ID proves PASS
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      verdict: ${{ steps.verdict.outputs.verdict }}
+    env:
+      CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-proof/patched
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install unchanged G-001-ID harness
+        shell: bash
+        run: |
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          mkdir -p "$CGQA_EVIDENCE_DIR"
+
+      - name: Apply temporary identity-only proof patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('upstream-gonka/devshard/cmd/devshardctl/proxy.go')
+          src = path.read_text(encoding='utf-8')
+          old_call = 'p.redundancy.RunInference(context.Background(), params'
+          count = src.count(old_call)
+          if count != 2:
+              raise SystemExit(f'expected exactly 2 background RunInference calls, found {count}')
+          import_anchor = '\t"devshard/state"\n'
+          if src.count(import_anchor) != 1:
+              raise SystemExit('unexpected proxy.go import layout')
+          src = src.replace(import_anchor, '\t"devshard/logging"\n\t"devshard/state"\n', 1)
+          src = src.replace(
+              old_call,
+              'p.redundancy.RunInference(logging.PropagateRequestID(context.Background(), r.Context()), params',
+          )
+          path.write_text(src, encoding='utf-8')
+          PY
+          gofmt -w upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          test "$(grep -Fc 'p.redundancy.RunInference(logging.PropagateRequestID(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
+          test "$(grep -Fc 'p.redundancy.RunInference(context.Background(), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 0
+          git -C upstream-gonka diff --check
+          git -C upstream-gonka diff -- devshard/cmd/devshardctl/proxy.go
+
+      - name: Compile patched devshardctl accounting controls
+        working-directory: upstream-gonka/devshard
+        run: >-
+          go test ./cmd/devshardctl
+          -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$'
+          -count=1
+
+      - name: Build Gonka devshardd
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Collect patched G-001-ID evidence
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaIdentityBoundaryEvidence$'
+          -v -count=1 -timeout=30m
+
+      - name: Validate patched evidence
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          root = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID'
+          required = [
+              'run_metadata.json', 'request.redacted.json', 'response.redacted.json',
+              'transport.json', 'gateway_status.before.json', 'gateway_status.after.json',
+              'devshard_state.before.json', 'devshard_state.after.json',
+              'debug_perf.after.json', 'accounting.client-id.json',
+              'accounting.response-id.json', 'reconciliation.json',
+          ]
+          missing = [str(root / n) for n in required if not (root / n).is_file() or (root / n).stat().st_size == 0]
+          if missing:
+              raise SystemExit('patched evidence incomplete:\n' + '\n'.join(missing))
+          for p in root.glob('*.json'):
+              json.loads(p.read_text(encoding='utf-8'))
+          schema = json.loads(Path('external-validation/gonka/identity-boundary.schema.json').read_text(encoding='utf-8'))
+          instance = json.loads((root / 'reconciliation.json').read_text(encoding='utf-8'))
+          errors = list(Draft202012Validator(schema).iter_errors(instance))
+          if errors:
+              raise SystemExit('\n'.join(e.message for e in errors))
+          PY
+
+      - name: Read and enforce patched verdict
+        id: verdict
+        shell: bash
+        run: |
+          verdict="$(python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ['CGQA_EVIDENCE_DIR']) / 'G-001-ID' / 'reconciliation.json'
+          d = json.loads(p.read_text(encoding='utf-8'))
+          print(d['verdict'])
+          print(f"response_id={d.get('response_request_id')} accounting_response={d.get('accounting_resolved_by_response_id')}", file=__import__('sys').stderr)
+          PY
+          )"
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "Patched verdict: $verdict"
+          test "$verdict" = "PASS"
+
+      - name: Upload patched evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-g001-id-patched
+          path: cgqa-proof/patched/G-001-ID
+          if-no-files-found: error
+          retention-days: 14
+
+  compare:
+    name: Prove G-001-ID FAIL to PASS
+    needs: [baseline, patched]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce proof-of-fix transition
+        shell: bash
+        env:
+          BASELINE: ${{ needs.baseline.outputs.verdict }}
+          PATCHED: ${{ needs.patched.outputs.verdict }}
+        run: |
+          echo "Baseline: $BASELINE"
+          echo "Patched:  $PATCHED"
+          test "$BASELINE" = "FAIL"
+          test "$PATCHED" = "PASS"
+          {
+            echo '### CGQA-GONKA-001 proof of fix'
+            echo
+            echo "- pinned Gonka: \`$GONKA_SHA\`"
+            echo "- unchanged baseline criterion: \`$BASELINE\`"
+            echo "- identity-propagation patch, same criterion: \`$PATCHED\`"
+            echo '- patch changes request-identity propagation only; HTTP cancellation remains detached via context.Background().' 
+          } >> "$GITHUB_STEP_SUMMARY"

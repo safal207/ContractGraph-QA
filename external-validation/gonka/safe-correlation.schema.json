@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schemas/gonka-safe-correlation-v0.1.json",
+  "title": "Gonka non-collapsing request correlation proof evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "upstream_revision",
+    "environment",
+    "reused_client_correlation_id",
+    "internal_request_ids",
+    "correlation_match_ids",
+    "canonical_ids_distinct",
+    "accounting_resolved_for_each_internal_id",
+    "winner_nonces",
+    "winner_nonces_distinct",
+    "timeout_client_correlation_id",
+    "timeout_observed",
+    "timeout_completion_observed",
+    "timeout_correlation_match_ids",
+    "timeout_accounting_resolved",
+    "verdict",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": { "const": "gonka-safe-correlation-v0.1" },
+    "case_id": { "const": "G-CORR-SAFE" },
+    "upstream_revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "environment": { "const": "gonka-local-devshard-testenv" },
+    "reused_client_correlation_id": { "type": "string", "minLength": 1 },
+    "internal_request_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "correlation_match_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 2
+    },
+    "canonical_ids_distinct": { "type": "boolean" },
+    "accounting_resolved_for_each_internal_id": { "type": "boolean" },
+    "winner_nonces": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1 },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "winner_nonces_distinct": { "type": "boolean" },
+    "timeout_client_correlation_id": { "type": "string", "minLength": 1 },
+    "timeout_observed": { "type": "boolean" },
+    "timeout_completion_observed": { "type": "boolean" },
+    "timeout_correlation_match_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "timeout_accounting_resolved": { "type": "boolean" },
+    "verdict": { "type": "string", "enum": ["PASS", "FAIL", "INCONCLUSIVE"] },
+    "notes": { "type": "string", "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "verdict": { "const": "PASS" } }, "required": ["verdict"] },
+      "then": {
+        "properties": {
+          "canonical_ids_distinct": { "const": true },
+          "accounting_resolved_for_each_internal_id": { "const": true },
+          "winner_nonces_distinct": { "const": true },
+          "timeout_observed": { "const": true },
+          "timeout_completion_observed": { "const": true },
+          "timeout_accounting_resolved": { "const": true }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+id: G-004
+name: causal money reconciliation after ambiguous timeout retry
+status: executable-awaiting-runtime-evidence
+profile: gonka
+upstream_revision: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+environment: gonka-local-devshard-testenv
+
+purpose: >-
+  Prove that two independently addressable internal requests created by one
+  ambiguous timeout/retry logical operation produce one causally explainable
+  financial effect across request accounting, inference state, host cost, and
+  escrow balance.
+
+preconditions:
+  - G-CORR-SAFE non-collapsing correlation prerequisite passes on the same executed environment.
+  - Caller-controlled correlation remains separate from gateway-generated internal request IDs.
+  - The first transport times out after dispatch while protocol execution may continue.
+  - The first request produces a completed request witness before retry.
+  - Retry reuses the client correlation ID but must receive a distinct canonical internal request ID.
+  - No real funds, mainnet fault injection, or public-network destructive testing.
+
+causal_spine:
+  - logical_operation_id
+  - client_correlation_id
+  - internal_request_id_A
+  - internal_request_id_B
+  - request_accounting_attempt_nonce_set
+  - inference_terminal_state_per_nonce
+  - host_cost_delta
+  - escrow_balance_delta
+  - LiminalDB_transition_id
+
+execution:
+  first_transport:
+    downstream_latency_ms: 1800
+    client_timeout_ms: 350
+    expected_transport_outcome: client_timeout_ambiguous
+  retry:
+    downstream_latency_ms: 0
+    expected_http_class: 2xx
+    correlation: same_client_correlation_id
+  accounting:
+    canonical_internal_request_count: 2
+    require_unique_attempt_nonce_ownership: true
+    compute_cost_from_attempts: true
+    re_read_after_terminal_state: true
+  terminal_state:
+    allowed:
+      - finished
+      - timed_out
+    excluded_from_v0_1:
+      - challenged
+      - invalidated
+      - pending
+      - started
+      - validated
+
+primary_invariant: >-
+  sum(request_accounting.attempts[].actual_cost)
+  == sum(request_accounting.cost.all_attempts_actual_cost)
+  == sum(inference[attempt_nonce].actual_cost)
+  == host_stats_cost_after - host_stats_cost_before
+  == escrow_balance_before - escrow_balance_after
+
+secondary_invariants:
+  - exactly two canonical internal request IDs exist after retry
+  - each execution nonce belongs to exactly one canonical request-accounting lineage
+  - the request-accounting attempt set is stable between discovery and terminal reconciliation
+  - each request aggregate equals the independently summed per-attempt actual costs
+  - winner_actual_cost + other_attempts_actual_cost == all_attempts_actual_cost
+  - unexplained_financial_effects is empty on PASS
+
+liminaldb:
+  revision: 0cd6e77d52787bb36a97b75ba1a37cb027268eb3
+  transition_id: logical_operation_id
+  records:
+    - authorization
+    - observation: internal_request_A
+    - observation: internal_request_B
+    - observation: four_way_financial_state
+    - response_integrity
+    - causal_audit
+    - continuity_snapshot
+  response_integrity: NOT_EVALUATED
+  pass_causal_validity: VALID
+  pass_continuity_posture: REPORT_ONLY
+  require_snapshot: true
+  require_close_reopen_full_replay: true
+  expected_transition_count: 1
+  expected_event_count: 7
+
+pass_requires:
+  - timeout_observed == true
+  - first_completion_observed == true
+  - internal_request_ids.length == 2
+  - requests.length == 2
+  - attempt_nonces_unique == true
+  - four_way_reconciles == true
+  - unexplained_financial_effects.length == 0
+  - liminaldb.replay_verified == true
+  - LiminalDB recovered transition_id equals the source logical_operation_id
+
+fail_semantics: >-
+  FAIL means the executable verification invariant was not satisfied under the
+  pinned local test environment. It is not, by itself, a claim of a security
+  vulnerability, exploitable financial loss, or mainnet settlement defect.
+
+not_claimed:
+  - retry idempotency
+  - response semantic fidelity
+  - challenge or invalidation accounting correctness
+  - epoch settlement correctness
+  - chain-level reward correctness
+  - mainnet behavior
+  - security exploitability
+
+next_cases:
+  - G-004D: challenge/invalidation refund reconciliation
+  - G-005: restart/recovery preserves financial causal lineage
+  - G-006: epoch/devshard rotation settlement continuity

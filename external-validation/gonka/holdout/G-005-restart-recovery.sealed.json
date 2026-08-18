@@ -1,0 +1,29 @@
+{
+  "schema_version": "gonka-atman-holdout-v0.1",
+  "case_id": "G-005",
+  "surface": "gateway_restart_recovery",
+  "sealed_before_investigation": true,
+  "target_cause": null,
+  "source_scope": "Gonka restart/recovery path only",
+  "hypotheses": [
+    "IDENTITY_PROPAGATION_FAILURE",
+    "ACCOUNTING_LOOKUP_FAILURE",
+    "STALE_RUNTIME_GENERATION",
+    "DUPLICATE_EXECUTION",
+    "SETTLEMENT_RECONCILIATION_FAILURE"
+  ],
+  "baseline_check_order": [
+    "TRACE_REQUEST_IDENTITY",
+    "RECONCILE_EXECUTION_NONCES",
+    "RECONCILE_SETTLEMENT_REFS",
+    "COMPARE_RUNTIME_FINGERPRINT"
+  ],
+  "policy_version": "gonka-atman-next-evidence-v0.1",
+  "rules": {
+    "no_target_oracle_before_reveal": true,
+    "no_post_seal_policy_edits": true,
+    "generation_mismatch_blocks_target_claim": true,
+    "inconclusive_is_not_fail": true
+  },
+  "status": "SEALED_AWAITING_EVIDENCE"
+}

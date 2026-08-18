@@ -1,0 +1,134 @@
+profile: gonka-verification-v0.1
+model: actor-action-state-transition-invariant-evidence
+
+identity:
+  logical_operation_id:
+    purpose: stable semantic operation across retries and re-drives
+  execution_attempt_id:
+    purpose: one concrete transport/execution attempt
+  rule: execution_attempt_id_must_not_replace_logical_operation_id
+
+actors:
+  - developer
+  - gateway
+  - broker
+  - host
+  - executor
+  - validator
+  - chain
+
+states:
+  - request_created
+  - request_authorized
+  - devshard_open
+  - escrow_funded
+  - inference_dispatched
+  - inference_executed
+  - result_returned
+  - usage_accounted_offchain
+  - settlement_submitted
+  - settlement_finalized
+  - epoch_rotated
+  - reward_pending
+  - reward_claimed
+  - recovery_pending
+
+transitions:
+  - id: T1
+    from: request_created
+    to: request_authorized
+    actor: gateway
+    invariant: I1_authorization_before_execution
+
+  - id: T2
+    from: request_authorized
+    to: devshard_open
+    actor: gateway
+    invariant: I2_escrow_precedes_billable_execution
+
+  - id: T2F
+    from: devshard_open
+    to: escrow_funded
+    actor: chain
+    invariant: I2_escrow_precedes_billable_execution
+    evidence:
+      - escrow_or_devshard_id
+      - funded_balance_before_dispatch
+
+  - id: T3
+    from: escrow_funded
+    to: inference_dispatched
+    actor: gateway
+    invariant: I3_logical_request_maps_to_single_billable_operation
+    evidence:
+      - logical_operation_id
+      - execution_attempt_id
+      - request_digest
+      - escrow_or_devshard_id
+
+  - id: T4
+    from: inference_dispatched
+    to: inference_executed
+    actor: host
+    invariant: I3_logical_request_maps_to_single_billable_operation
+
+  - id: T5
+    from: inference_executed
+    to: result_returned
+    actor: host
+    invariant: I4_result_and_usage_share_operation_identity
+
+  - id: T6
+    from: result_returned
+    to: usage_accounted_offchain
+    actor: gateway
+    invariant: I5_usage_accounting_matches_observed_execution
+
+  - id: T7
+    from: usage_accounted_offchain
+    to: settlement_submitted
+    actor: gateway
+    invariant: I6_settlement_matches_accumulated_usage
+
+  - id: T8
+    from: settlement_submitted
+    to: settlement_finalized
+    actor: chain
+    invariant: I7_finalization_is_idempotent
+
+  - id: T9
+    from: settlement_finalized
+    to: epoch_rotated
+    actor: gateway
+    invariant: I8_epoch_rotation_preserves_accounting_continuity
+
+  - id: T10
+    from: reward_pending
+    to: reward_claimed
+    actor: host
+    invariant: I9_reward_claim_is_epoch_bound_and_recoverable_when_retryable
+
+failure_edges:
+  - trigger: client_timeout_after_dispatch
+    rule: ambiguous_transport_outcome_is_not_proof_of_non_execution
+    recovery: retry_same_logical_operation_with_new_execution_attempt
+  - trigger: duplicate_delivery
+    rule: duplicate_billable_effect_must_be_suppressed_or_explicitly_reconcilable
+  - trigger: gateway_restart
+    rule: recover_pending_state_and_causal_linkage
+  - trigger: settlement_retry
+    rule: no_unexplained_double_settlement
+  - trigger: epoch_boundary
+    rule: rotate_without_orphaning_or_duplicating_usage
+  - trigger: chain_unavailable
+    rule: defer_and_retry_without_mutation_loss
+
+safety:
+  permitted:
+    - local_gonka_testenv
+    - community_devnet
+    - explicitly_authorized_test_environment
+  forbidden:
+    - destructive_mainnet_testing
+    - real_funds_fault_injection_without_explicit_authorization
+    - public_disclosure_of_untriaged_security_sensitive_findings

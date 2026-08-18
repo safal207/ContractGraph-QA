@@ -1,0 +1,71 @@
+{
+  "attempt_id": "G005-20260818T140542Z",
+  "ordered_trace": [
+    {
+      "trace_id": "TRACE-001",
+      "sequence": 1,
+      "observed_at": "2026-08-18T14:02:23Z",
+      "actor": "agent",
+      "action": "checkout",
+      "target": "safal207/ContractGraph-QA feat/gonka-verification-v0.1",
+      "pre_state": {"remote_tracking_head": "73c042b4174cde2c006857b7bf50e779a70bb228"},
+      "post_state": {"head": "73c042b4174cde2c006857b7bf50e779a70bb228", "clean": true},
+      "evidence_refs": ["identity.json"],
+      "result": "OBSERVED",
+      "notes": "Separate worktree used; unrelated dirty main checkout was not modified."
+    },
+    {
+      "trace_id": "TRACE-002",
+      "sequence": 2,
+      "observed_at": "2026-08-18T14:03:54Z",
+      "actor": "agent",
+      "action": "checkout",
+      "target": "gonka-ai/gonka",
+      "pre_state": {"expected_sha": "379bebced638aeb5e6077bfd51c986f898443832"},
+      "post_state": {"head": "379bebced638aeb5e6077bfd51c986f898443832", "clean": true},
+      "evidence_refs": ["upstream_checkout.log"],
+      "result": "OBSERVED",
+      "notes": "Exact pinned source revision checked out detached."
+    },
+    {
+      "trace_id": "TRACE-003",
+      "sequence": 3,
+      "observed_at": "2026-08-18T14:05:42Z",
+      "actor": "agent",
+      "action": "run_check",
+      "target": "local Docker/Go prerequisites",
+      "pre_state": {},
+      "post_state": {"docker": "ABSENT", "docker_socket": "ABSENT", "go": "ABSENT"},
+      "evidence_refs": ["environment_probe.log", "control_attempt.log"],
+      "result": "BLOCKED",
+      "notes": "No runtime or control execution occurred."
+    },
+    {
+      "trace_id": "TRACE-004",
+      "sequence": 4,
+      "observed_at": "2026-08-18T14:05:42Z",
+      "actor": "agent",
+      "action": "run_check",
+      "target": "G-005 runtime fingerprint collector",
+      "pre_state": {"runtime_fingerprint_file": "ABSENT"},
+      "post_state": {"collector_exit": 2, "runtime_fingerprint_file": "ABSENT"},
+      "evidence_refs": ["verifier_preflight.log", "verifier_preflight.json"],
+      "result": "BLOCKED",
+      "notes": "Collector failed closed on missing docker; no synthetic fingerprint was written."
+    },
+    {
+      "trace_id": "TRACE-005",
+      "sequence": 5,
+      "observed_at": "2026-08-18T14:06:39Z",
+      "actor": "agent",
+      "action": "run_check",
+      "target": "G-005/ATMAN tests and relevant Python CI",
+      "pre_state": {},
+      "post_state": {"targeted_pytest": "15 passed", "all_tools_pytest": "114 passed, 4 subtests passed", "unittest": "99 passed", "compile": "PASS"},
+      "evidence_refs": ["test_results.log"],
+      "result": "OBSERVED",
+      "notes": "Verifier contract checks passed; this does not supply runtime evidence."
+    }
+  ]
+}
+

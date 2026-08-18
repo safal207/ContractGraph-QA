@@ -1,0 +1,257 @@
+name: Gonka G-002-ID proof of fix
+
+on:
+  pull_request:
+    paths:
+      - 'external-validation/gonka/**'
+      - '.github/workflows/gonka-timeout-identity-proof-of-fix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proof-of-fix:
+    name: Gonka G-002-ID FAIL to PASS proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GONKA_SHA: f040d0a5b5ef207a0c431894c9f9e2608f9d3073
+      PROOF_ROOT: ${{ github.workspace }}/cgqa-g002-id-proof
+    steps:
+      - name: Checkout ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Gonka revision
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: gonka-ai/gonka
+          ref: ${{ env.GONKA_SHA }}
+          path: upstream-gonka
+          persist-credentials: false
+
+      - name: Setup upstream Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: upstream-gonka/devshard/go.mod
+          cache: false
+
+      - name: Install unchanged G-002-ID harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp external-validation/gonka/harness/cgqa_gonka_test.go upstream-gonka/devshard/testenv/citest/cgqa_gonka_test.go
+          cp external-validation/gonka/harness/cgqa_identity_boundary_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_boundary_test.go
+          cp external-validation/gonka/harness/cgqa_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_identity_evidence_test.go
+          cp external-validation/gonka/harness/cgqa_timeout_identity_evidence_test.go upstream-gonka/devshard/testenv/citest/cgqa_timeout_identity_evidence_test.go
+          gofmt -w upstream-gonka/devshard/testenv/citest/cgqa_*_test.go
+          mkdir -p "$PROOF_ROOT/baseline-v1" "$PROOF_ROOT/patched-v2" "$PROOF_ROOT/meta"
+          sha256sum external-validation/gonka/harness/cgqa_timeout_identity_evidence_test.go > "$PROOF_ROOT/meta/harness.sha256"
+          sha256sum external-validation/gonka/timeout-identity-boundary.schema.json > "$PROOF_ROOT/meta/schema.sha256"
+
+      - name: Apply proven G-001 background identity patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python external-validation/gonka/remediation/apply_cgqa_gonka_001_proof_patch.py upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          gofmt -w upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          test "$(grep -F -c 'RunInference(logging.PropagateRequestID(context.Background(), r.Context()), params' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 2
+
+      - name: Compile v1 baseline
+        working-directory: upstream-gonka/devshard
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./cmd/devshardctl -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$' -count=1
+          TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
+
+      - name: Build v1 baseline Gonka
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Collect v1 timeout baseline evidence
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+          CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-g002-id-proof/baseline-v1
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaTimeoutIdentityEvidence$'
+          -v -count=1 -timeout=25m
+
+      - name: Pin executed v1 devshardctl image identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker image inspect devshard-runtime:latest --format '{{.Id}}' > "$PROOF_ROOT/meta/devshardctl-v1.image-id"
+          test -s "$PROOF_ROOT/meta/devshardctl-v1.image-id"
+          echo "v1 devshardctl image: $(cat "$PROOF_ROOT/meta/devshardctl-v1.image-id")"
+
+      - name: Apply local client-known identity proof patch v2
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C upstream-gonka diff -- devshard/cmd/devshardctl/proxy.go > "$PROOF_ROOT/meta/v1-background-identity.diff"
+          python external-validation/gonka/remediation/apply_cgqa_gonka_002_client_id_patch.py upstream-gonka
+          gofmt -w upstream-gonka/devshard/cmd/devshardctl/logging.go upstream-gonka/devshard/cmd/devshardctl/gateway.go upstream-gonka/devshard/cmd/devshardctl/proxy.go
+          test "$(grep -F -c 'ensureRequestLogContext(r.Context(), strings.TrimSpace(r.Header.Get("X-Request-Id")))' upstream-gonka/devshard/cmd/devshardctl/gateway.go)" -eq 2
+          test "$(grep -F -c 'ensureRequestLogContext(r.Context(), strings.TrimSpace(r.Header.Get("X-Request-Id")))' upstream-gonka/devshard/cmd/devshardctl/proxy.go)" -eq 1
+          grep -F 'func ensureRequestLogContext(ctx context.Context, ids ...string)' upstream-gonka/devshard/cmd/devshardctl/logging.go
+          git -C upstream-gonka diff -- devshard/cmd/devshardctl/logging.go devshard/cmd/devshardctl/gateway.go devshard/cmd/devshardctl/proxy.go > "$PROOF_ROOT/meta/v2-combined-proof.diff"
+          test -s "$PROOF_ROOT/meta/v2-combined-proof.diff"
+
+      - name: Compile v2 patched controls
+        working-directory: upstream-gonka/devshard
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./cmd/devshardctl -run '^TestHandleRequestAccounting(ReturnsJoinedInferenceCosts|ResolvesCachedRequestAliasCosts)$' -count=1
+          TESTENV_CITEST=0 go test -tags=testenvci ./testenv/citest -run '^$' -count=1
+
+      - name: Rebuild v2 devshardctl image from patched source
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --file upstream-gonka/devshard/Dockerfile \
+            --target devshardctl-runtime \
+            --build-arg DEVSHARD_VERSION=v2 \
+            --tag devshard-runtime:latest \
+            upstream-gonka
+          docker image inspect devshard-runtime:latest --format '{{.Id}}' > "$PROOF_ROOT/meta/devshardctl-v2.image-id"
+          test -s "$PROOF_ROOT/meta/devshardctl-v2.image-id"
+          test "$(cat "$PROOF_ROOT/meta/devshardctl-v1.image-id")" != "$(cat "$PROOF_ROOT/meta/devshardctl-v2.image-id")"
+          echo "v2 devshardctl image: $(cat "$PROOF_ROOT/meta/devshardctl-v2.image-id")"
+
+      - name: Rebuild v2 patched Gonka devshardd
+        working-directory: upstream-gonka/devshard/testenv
+        run: make build-devshardd
+
+      - name: Collect v2 timeout evidence with identical criterion
+        working-directory: upstream-gonka/devshard
+        env:
+          TESTENV_CITEST: '1'
+          CGQA_EVIDENCE_DIR: ${{ github.workspace }}/cgqa-g002-id-proof/patched-v2
+        run: >-
+          go test -tags=testenvci ./testenv/citest
+          -run '^TestCGQAGonkaTimeoutIdentityEvidence$'
+          -v -count=1 -timeout=25m
+
+      - name: Validate both G-002-ID evidence bundles
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema==4.25.1'
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          proof = Path(os.environ['PROOF_ROOT'])
+          schema = json.loads(Path('external-validation/gonka/timeout-identity-boundary.schema.json').read_text(encoding='utf-8'))
+          Draft202012Validator.check_schema(schema)
+          validator = Draft202012Validator(schema)
+          required = [
+              'run_metadata.json', 'request.redacted.json', 'transport.json',
+              'gateway_status.before.json', 'gateway_status.after.json',
+              'devshard_state.before.json', 'devshard_state.after.json',
+              'debug_perf.before.json', 'debug_perf.after.json',
+              'accounting.client-id.json', 'reconciliation.json',
+          ]
+          for phase in ('baseline-v1', 'patched-v2'):
+              root = proof / phase / 'G-002-ID'
+              missing = [name for name in required if not (root / name).is_file() or (root / name).stat().st_size == 0]
+              if missing:
+                  raise SystemExit(f'{phase}: missing evidence: {missing}')
+              for path in root.glob('*.json'):
+                  json.loads(path.read_text(encoding='utf-8'))
+              rec = json.loads((root / 'reconciliation.json').read_text(encoding='utf-8'))
+              errors = sorted(validator.iter_errors(rec), key=lambda e: list(e.path))
+              if errors:
+                  raise SystemExit('\n'.join(f'{phase} {e.json_path}: {e.message}' for e in errors))
+              print(f'{phase}: complete and schema-valid')
+          PY
+
+      - name: Assert G-002-ID FAIL to PASS proof
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          proof = Path(os.environ['PROOF_ROOT'])
+          baseline = json.loads((proof / 'baseline-v1/G-002-ID/reconciliation.json').read_text(encoding='utf-8'))
+          patched = json.loads((proof / 'patched-v2/G-002-ID/reconciliation.json').read_text(encoding='utf-8'))
+          v1_image = (proof / 'meta/devshardctl-v1.image-id').read_text(encoding='utf-8').strip()
+          v2_image = (proof / 'meta/devshardctl-v2.image-id').read_text(encoding='utf-8').strip()
+          checks = {
+              'same_case': baseline.get('case_id') == patched.get('case_id') == 'G-002-ID',
+              'same_upstream_revision': baseline.get('upstream_revision') == patched.get('upstream_revision') == os.environ['GONKA_SHA'],
+              'same_harness_criterion': (proof / 'meta/harness.sha256').is_file() and (proof / 'meta/schema.sha256').is_file(),
+              'runtime_image_changed': bool(v1_image) and bool(v2_image) and v1_image != v2_image,
+              'baseline_timeout': baseline.get('client_timeout_observed') is True,
+              'patched_timeout': patched.get('client_timeout_observed') is True,
+              'baseline_completed_after_timeout': baseline.get('perf_record_added_after_timeout') is True,
+              'patched_completed_after_timeout': patched.get('perf_record_added_after_timeout') is True,
+              'baseline_reproduced': baseline.get('verdict') == 'FAIL' and baseline.get('private_hypothesis_id') == 'CGQA-GONKA-002',
+              'baseline_client_id_unresolved': baseline.get('accounting_resolved_by_client_id') is False,
+              'patched_passed': patched.get('verdict') == 'PASS',
+              'patched_client_id_resolved': patched.get('accounting_resolved_by_client_id') is True,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          summary = {
+              'proof_id': 'CGQA-GONKA-002-PROOF-OF-FIX',
+              'upstream_revision': os.environ['GONKA_SHA'],
+              'baseline_verdict': baseline.get('verdict'),
+              'patched_verdict': patched.get('verdict'),
+              'baseline_client_id_resolved': baseline.get('accounting_resolved_by_client_id'),
+              'patched_client_id_resolved': patched.get('accounting_resolved_by_client_id'),
+              'v1_devshardctl_image': v1_image,
+              'v2_devshardctl_image': v2_image,
+              'checks': checks,
+              'verdict': 'PASS' if not failed else 'FAIL',
+          }
+          (proof / 'meta/proof-summary.json').write_text(json.dumps(summary, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(summary, indent=2))
+          if failed:
+              raise SystemExit('G-002-ID proof-of-fix failed checks: ' + ', '.join(failed))
+          PY
+
+      - name: Publish G-002-ID proof summary
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          import os
+          from pathlib import Path
+          p = Path(os.environ['PROOF_ROOT']) / 'meta/proof-summary.json'
+          print('### CGQA-GONKA-002 proof of fix')
+          if not p.is_file():
+              print('- proof summary was not produced')
+          else:
+              d = json.loads(p.read_text(encoding='utf-8'))
+              print(f"- pinned Gonka: `{d.get('upstream_revision')}`")
+              print(f"- v1 baseline: `{d.get('baseline_verdict')}`")
+              print(f"- v2 patched: `{d.get('patched_verdict')}`")
+              print(f"- client-known accounting addressability: `{d.get('baseline_client_id_resolved')} -> {d.get('patched_client_id_resolved')}`")
+              print(f"- devshardctl image changed: `{d.get('v1_devshardctl_image') != d.get('v2_devshardctl_image')}`")
+              print(f"- proof verdict: `{d.get('verdict')}`")
+              print('- timeout fault, harness, schema and verdict criterion are unchanged between phases')
+          PY
+
+      - name: Upload G-002-ID FAIL to PASS proof bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gonka-cgqa-g002-id-proof-of-fix
+          path: cgqa-g002-id-proof
+          if-no-files-found: error
+          retention-days: 14

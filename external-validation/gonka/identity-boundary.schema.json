@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schemas/gonka-identity-boundary-v0.1.json",
+  "title": "Gonka CGQA Request Accounting Identity Boundary Evidence v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "run_id",
+    "upstream_revision",
+    "environment",
+    "client_request_id",
+    "response_request_id",
+    "request_succeeded",
+    "accounting_resolved_by_client_id",
+    "accounting_resolved_by_response_id",
+    "verdict",
+    "private_hypothesis_id",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {"const": "gonka-identity-boundary-v0.1"},
+    "case_id": {"const": "G-001-ID"},
+    "run_id": {"type": "string", "minLength": 1},
+    "upstream_revision": {"type": "string", "minLength": 40},
+    "environment": {"const": "gonka-local-devshard-testenv"},
+    "client_request_id": {"type": "string", "minLength": 1},
+    "response_request_id": {"type": "string"},
+    "request_succeeded": {"type": "boolean"},
+    "http_status": {"type": "integer", "minimum": 100, "maximum": 599},
+    "escrow_id": {"type": "string", "minLength": 1},
+    "accounting_resolved_by_client_id": {"type": "boolean"},
+    "accounting_resolved_by_response_id": {"type": "boolean"},
+    "state_nonce_before": {"type": ["integer", "null"], "minimum": 0},
+    "state_nonce_after": {"type": ["integer", "null"], "minimum": 0},
+    "state_progressed": {"type": "boolean"},
+    "verdict": {"enum": ["PASS", "FAIL", "INCONCLUSIVE"]},
+    "private_hypothesis_id": {"type": ["string", "null"]},
+    "notes": {"type": "string", "minLength": 1}
+  }
+}

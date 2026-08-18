@@ -1,0 +1,14 @@
+git -C <ContractGraph-QA> fetch --prune origin feat/gonka-verification-v0.1
+git -C <ContractGraph-QA-worktree> checkout --detach refs/remotes/origin/feat/gonka-verification-v0.1
+git -C <upstream-gonka> fetch --depth=1 origin 379bebced638aeb5e6077bfd51c986f898443832
+git -C <upstream-gonka> checkout --detach FETCH_HEAD
+make gen-compose
+docker compose -f docker-compose.yml config
+make build-devshardd
+TESTENV_CITEST=1 go test -tags=testenvci ./citest/ -run '^TestVersiondRestartSessionPersistence$' -count=1 -v -timeout 30m
+python tools/gonka_capture_runtime_fingerprint.py --source-revision 379bebced638aeb5e6077bfd51c986f898443832 --config-generation g005-pinned-379bebc --devshardctl devshardctl --versiond versiond-0 --devshardd versiond-0 --versiond-router versiond-router --output /tmp/g005-runtime_fingerprint.json
+python -m py_compile contractgraph_qa/gonka_atman.py contractgraph_qa/gonka_atman_holdout.py contractgraph_qa/gonka_atman_runtime.py tools/gonka_capture_runtime_fingerprint.py
+PYTHONPATH=/tmp/cgqa-pytest python -m pytest -q tools/tests/test_gonka_atman_runtime.py tools/tests/test_gonka_atman.py tools/tests/test_gonka_atman_holdout.py
+PYTHONPATH=/tmp/cgqa-pytest python -m pytest -q tools/tests
+python -m unittest discover -s tools/tests -p 'test_*.py' -v
+

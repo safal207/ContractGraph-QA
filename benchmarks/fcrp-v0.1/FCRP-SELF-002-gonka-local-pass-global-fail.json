@@ -1,0 +1,131 @@
+{
+  "schema": "cgqa.fcrp-case.v0.1",
+  "caseId": "FCRP-SELF-002",
+  "scope": {
+    "nodeId": "gonka-g002-remediation",
+    "scale": "request identity -> accounting lineage",
+    "idea": "A timeout-addressability repair is acceptable only if it restores client reconciliation without collapsing independent request accounting lineage."
+  },
+  "evidence": [
+    {
+      "id": "E1",
+      "kind": "workflow-proof",
+      "ref": "workflow://ContractGraph-QA/31663766091",
+      "claim": "The direct caller-ID binding proof changed client-known timeout addressability from false to true while preserving the timeout and completion witness."
+    },
+    {
+      "id": "E2",
+      "kind": "collision-guard",
+      "ref": "external-validation/gonka/harness/cgqa_correlation_collision_test.go",
+      "claim": "Two independent logical operations using the same caller-controlled ID collapse into one canonical request row with both attempt nonces and the second completion as winner."
+    },
+    {
+      "id": "E3",
+      "kind": "remediation-contract",
+      "ref": "external-validation/gonka/remediation/production-correlation-contract.md",
+      "claim": "The production-safe shape preserves a gateway-generated canonical internal_request_id and stores client correlation separately as a one-to-many relation."
+    },
+    {
+      "id": "E4",
+      "kind": "research-thread",
+      "ref": "github://safal207/ContractGraph-QA/pull/33",
+      "claim": "The Gonka verification thread explicitly rejects the direct client-ID canonicalization proof patch as a production remediation."
+    }
+  ],
+  "timeline": {
+    "past": {
+      "summary": "A client timeout could lose the only response-carried internal request identifier even though execution continued and completed.",
+      "evidenceRefs": ["E1", "E4"]
+    },
+    "present": {
+      "summary": "Binding the caller correlation directly to canonical request accounting restores local addressability, but upward storage verification exposes lineage collision when that caller value is reused.",
+      "evidenceRefs": ["E1", "E2"]
+    },
+    "future": {
+      "summary": "Client correlation remains a separate one-to-many lookup relation while internal request identity stays unique and gateway-controlled.",
+      "evidenceRefs": ["E3"]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "transport",
+      "phase": "symptom-origin",
+      "statement": "The client times out before receiving Gonka's generated internal request identifier while the request can still complete in the background.",
+      "evidenceRefs": ["E1", "E4"]
+    },
+    {
+      "id": "N2",
+      "level": "gateway-identity",
+      "phase": "candidate-refactor",
+      "statement": "The tempting proof patch promotes caller-controlled client correlation into the canonical request accounting identity.",
+      "evidenceRefs": ["E1", "E2", "E3"]
+    },
+    {
+      "id": "N3",
+      "level": "local-verification",
+      "phase": "verification",
+      "statement": "At the timeout-addressability level the candidate repair passes: the client-known identifier can resolve completed accounting after timeout.",
+      "evidenceRefs": ["E1", "E4"]
+    },
+    {
+      "id": "N4",
+      "level": "storage-contract",
+      "phase": "upward-verification",
+      "statement": "The parent accounting layer keys canonical request state by request_id plus escrow_id, while caller correlation is allowed to repeat across independent operations.",
+      "evidenceRefs": ["E2", "E3"]
+    },
+    {
+      "id": "N5",
+      "level": "accounting-lineage",
+      "phase": "upward-verification",
+      "statement": "Two independent logical operations that reuse the same caller-controlled ID are represented by one canonical request row containing attempts from both operations.",
+      "evidenceRefs": ["E2"]
+    },
+    {
+      "id": "N6",
+      "level": "system-integrity",
+      "phase": "symptom",
+      "statement": "The local repair therefore corrupts higher-level lineage: attempts 101 and 202 coexist in one row and the second completion becomes the winner, so the candidate is rejected as a production fix.",
+      "evidenceRefs": ["E2", "E4"]
+    },
+    {
+      "id": "N7",
+      "level": "remediation-contract",
+      "phase": "future",
+      "statement": "The safer design keeps canonical internal request identity unique and persists client correlation separately as a one-to-many relation.",
+      "evidenceRefs": ["E3"]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N6",
+    "firstMeaningfulDivergence": "N2",
+    "causePoint": "N2",
+    "selectedRefactorPoint": "N2",
+    "evidenceRefs": ["E1", "E2", "E3", "E4"]
+  },
+  "navigation": {
+    "direction": "UP",
+    "reason": "The candidate is green at the timeout-addressability level, so FCRP must move upward into the parent persistence/accounting contract before accepting the repair."
+  },
+  "refactor": {
+    "point": "N2",
+    "change": "Use caller-controlled client correlation directly as the canonical request_accounting request identity.",
+    "expectedEffect": "Restore post-timeout addressability using an identifier the client already knows."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "FAIL",
+    "evidenceRefs": ["E1", "E2", "E3"],
+    "stopConditions": {
+      "parentInvariantsPreserved": false,
+      "crossBoundaryEffectsAbsent": false,
+      "causalExplanationComplete": true
+    }
+  },
+  "recommendedReplacement": {
+    "change": "Keep gateway-generated internal_request_id canonical and persist client_correlation_id as a separate one-to-many mapping.",
+    "evidenceRefs": ["E3"]
+  },
+  "expectedProtocolDecision": "BLOCK"
+}
