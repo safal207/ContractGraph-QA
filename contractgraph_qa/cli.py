@@ -1,4 +1,4 @@
-"""Compatibility CLI dispatcher with agent-payment product commands."""
+"""Compatibility CLI dispatcher with agent-payment and ASTRA product commands."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from contractgraph_qa.agent_payment_decision import (
     AgentPaymentDecisionError,
     evaluate_agent_payment_decision_file,
 )
+from contractgraph_qa.astra_transition import AstraTransitionError, analyze_transition_path
 from contractgraph_qa.payment_evidence_pack import (
     PaymentEvidencePackError,
     build_payment_evidence_pack,
@@ -107,6 +108,31 @@ def _verify_evidence_pack_main(argv: list[str]) -> int:
         return EXIT_INTERNAL
 
 
+def _astra_transition_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa astra-transition",
+        description=(
+            "Score a bounded transition path with ASTRA Transition Pressure, "
+            "failure-gradient, and verifier-reflection semantics."
+        ),
+    )
+    parser.add_argument("--input", type=Path, required=True, help="ASTRA transition JSON")
+    args = parser.parse_args(argv)
+    try:
+        payload = json.loads(args.input.resolve().read_text(encoding="utf-8"))
+        _emit(analyze_transition_path(payload))
+        return EXIT_OK
+    except (AstraTransitionError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
 def main(argv: list[str] | None = None) -> int:
     effective = list(sys.argv[1:] if argv is None else argv)
     if effective and effective[0] == "agent-payment-decision":
@@ -115,6 +141,8 @@ def main(argv: list[str] | None = None) -> int:
         return _evidence_pack_main(effective[1:])
     if effective and effective[0] == "verify-agent-payment-evidence-pack":
         return _verify_evidence_pack_main(effective[1:])
+    if effective and effective[0] == "astra-transition":
+        return _astra_transition_main(effective[1:])
     return legacy_cli.main(effective)
 
 
