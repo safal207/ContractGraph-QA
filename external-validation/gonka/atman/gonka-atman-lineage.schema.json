@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schemas/gonka-atman-lineage-v0.1.json",
+  "title": "Gonka ATMAN Lineage Evidence v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "logical_operation_id",
+    "generation",
+    "lineage_root",
+    "transport_request_ids",
+    "execution_nonces",
+    "escrow_ids",
+    "settlement_refs",
+    "verdict"
+  ],
+  "properties": {
+    "schema_version": {"const": "gonka-atman-lineage-v0.1"},
+    "case_id": {"type": "string", "minLength": 1},
+    "logical_operation_id": {"type": "string", "minLength": 1},
+    "client_correlation_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "generation": {"type": "string", "minLength": 1},
+    "lineage_root": {"type": "string", "minLength": 1},
+    "transport_request_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "execution_nonces": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 1},
+      "uniqueItems": true
+    },
+    "escrow_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "accounting_refs": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "settlement_refs": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "observer_receipts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["observer", "subject_ref", "generation", "lineage_root", "verdict"],
+        "properties": {
+          "observer": {"enum": ["A1_LOCAL", "A2_TEMPORAL", "A3_BINDING", "A4_COHERENCE"]},
+          "subject_ref": {"type": "string", "minLength": 1},
+          "generation": {"type": "string", "minLength": 1},
+          "lineage_root": {"type": "string", "minLength": 1},
+          "verdict": {"enum": ["PASS", "FAIL", "INCONCLUSIVE"]},
+          "limitations": {"type": "array", "items": {"type": "string"}},
+          "evidence_refs": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "verdict": {"enum": ["PASS", "LINEAGE_MISMATCH", "INCONCLUSIVE"]},
+    "notes": {"type": "string"}
+  }
+}
