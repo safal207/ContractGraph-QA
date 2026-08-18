@@ -115,6 +115,21 @@ Product binding is fail-closed: the selected target capability must be marked fo
 
 See [`docs/ADVERSARIAL_REACHABILITY.md`](docs/ADVERSARIAL_REACHABILITY.md).
 
+## Experimental ASTRA transition intelligence
+
+ASTRA is an interpretation layer over the deterministic core. It does not create new transitions or turn pressure scores into findings.
+
+It adds two experimental views:
+
+```bash
+cgqa astra-transition --input astra-path.json
+cgqa astra-state-planes --input astra-state-planes.json
+```
+
+`astra-transition` computes Transition Pressure Score, DeltaTPS/failure gradient, phase labels, and verifier-reflection gates. `astra-state-planes` compares primary/mirror/independent-witness observations and reports `STATE_HASH_SUSPECT` when one configured state hash appears to collapse states with different reviewed future signatures or conflicting independent witness state.
+
+Both commands fail closed and preserve deterministic BFS/reachability as the independent baseline. See [`docs/ASTRA_TRANSITION.md`](docs/ASTRA_TRANSITION.md).
+
 ## Mental model
 
 ```text
@@ -219,6 +234,8 @@ cgqa fingerprint --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json
 cgqa validate --manifest manifests/client.json --result results/client.result.json
 cgqa reachability --model scenarios/adversarial-wallet-replay.json
+cgqa astra-transition --input astra-path.json
+cgqa astra-state-planes --input astra-state-planes.json
 cgqa run --config cgqa.toml --clean
 cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
 cgqa verify-bundle dist/client.evidence.zip
@@ -266,6 +283,8 @@ contractgraph_qa/
   finding.py
   report.py
   reachability.py
+  astra_transition.py
+  astra_state_planes.py
   demo_assets/
 
 src/harness/
@@ -298,6 +317,7 @@ docs/
   CLI.md
   ENGAGEMENT.md
   ADVERSARIAL_REACHABILITY.md
+  ASTRA_TRANSITION.md
   DISTRIBUTION.md
   RELEASE.md
   client-proof/
