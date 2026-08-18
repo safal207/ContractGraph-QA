@@ -1,0 +1,33 @@
+case_id: G-005
+title: gateway restart with pending usage
+status: experimental-held-out
+source_revision: 379bebced638aeb5e6077bfd51c986f898443832
+preconditions:
+  - exact runtime fingerprint captured for devshardctl/versiond/devshardd
+  - one logical_operation_id is assigned before dispatch
+  - request/accounting observation endpoints are reachable in local testenv
+stimulus:
+  - start one inference operation
+  - create a pending or transport-ambiguous state after dispatch
+  - restart the relevant versiond/devshard runtime
+  - allow protocol completion/recovery
+invariants:
+  - every post-restart execution nonce is explainable by the sealed logical operation lineage
+  - no unexplained duplicate accounting mutation exists
+  - no pending usage is silently lost
+  - settlement/accounting references remain attributable to one logical operation
+required_evidence:
+  - runtime_fingerprint.json
+  - pre_restart_state.json
+  - post_restart_state.json
+  - request_accounting.json
+  - execution_nonces.json
+  - settlement_refs.json
+  - lineage_reconciliation.json
+verdict_rules:
+  PASS: all observed attempts and mutations reconcile with no unexplained effects
+  FAIL_HYPOTHESIS: a bounded invariant is violated on the pinned local testenv
+  INCONCLUSIVE: runtime generation or causal evidence is incomplete
+safety:
+  - local or explicitly permitted test environment only
+  - no mainnet fault injection
