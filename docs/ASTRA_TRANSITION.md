@@ -68,7 +68,91 @@ If any flag is true, the ASTRA verdict is `VERIFIER_FAIL`, even when TPS is high
 
 This is intentionally aligned with the Gonka protocol-time lesson: a verifier must not convert a wrong causal model into an upstream defect claim.
 
-## CLI
+## State planes and independent witnesses
+
+ASTRA can now inspect a modeled state as multiple observations rather than one undifferentiated snapshot:
+
+```text
+PRIMARY STATE
+├── mirror(s)
+└── independent witness(es)
+```
+
+The primary observation may be contract storage or an authoritative service record. Mirrors may include event logs, application projections, dashboards, accounting rows, or caches. A witness is only treated as independent when it is explicitly marked independent and has a different `source_root` from the primary observation.
+
+For each state ASTRA reports:
+
+- `witness_gap` — `1.0` when there is no qualifying independent witness, otherwise `0.0` in v0.1;
+- `mirror_divergence` — fraction of declared mirrors that disagree with the primary fingerprint;
+- `witness_divergence` — fraction of qualifying independent witnesses that disagree with the primary fingerprint;
+- `state_plane_ambiguity` — fail-closed review signal when mirrors/witnesses disagree or no independent witness exists.
+
+This is evidence structure, not a declaration that the primary state is wrong. An independent witness may disagree because either side is stale, incomplete, or modeled incorrectly.
+
+### State-hash suspicion
+
+ContractGraph-QA already relies on reviewed state hashes for deduplication. ASTRA adds a diagnostic guard for a dangerous case:
+
+```text
+hash(S1) == hash(S2)
+```
+
+while the reviewed model says:
+
+```text
+future_signature(S1) != future_signature(S2)
+```
+
+or independent witnesses expose different observed states across members of the same hash group.
+
+ASTRA emits:
+
+```text
+STATE_HASH_SUSPECT
+```
+
+This does **not** prove the state hash is defective. It means the observations are not sufficient to treat those states as causally equivalent for pruning without review.
+
+Run the state-plane analyzer with:
+
+```bash
+cgqa astra-state-planes --input astra-state-planes.json
+```
+
+Minimal shape:
+
+```json
+{
+  "states": [
+    {
+      "id": "pending-a",
+      "state_hash": "abc",
+      "future_signature": "retry-can-settle",
+      "primary": {
+        "fingerprint": "pending",
+        "source_root": "contract-storage"
+      },
+      "mirrors": [
+        {
+          "id": "event-view",
+          "fingerprint": "pending",
+          "source_root": "event-log"
+        }
+      ],
+      "witnesses": [
+        {
+          "id": "token-balance",
+          "fingerprint": "pending",
+          "source_root": "erc20-balance",
+          "independent": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Transition CLI
 
 Example input:
 
@@ -126,7 +210,8 @@ It must not:
 - hide `inconclusive` evidence;
 - override authorization boundaries;
 - interpret correlation as idempotency;
-- interpret wall-clock delay as protocol liveness without a proven clock model.
+- interpret wall-clock delay as protocol liveness without a proven clock model;
+- promote state-plane disagreement or `STATE_HASH_SUSPECT` to a target vulnerability without normal CGQA replay and invariant evidence.
 
 The intended pipeline is:
 
@@ -136,6 +221,10 @@ DETERMINISTIC BOUNDED MODEL
 LEGAL TRANSITIONS
         ↓
 ASTRA TPS / FAILURE GRADIENT
+        ↓
+STATE PLANES / INDEPENDENT WITNESS
+        ↓
+STATE-HASH SUSPICION GUARD
         ↓
 CAUSAL FOCUS
         ↓
@@ -150,8 +239,7 @@ CLIENT-VERIFIABLE FINDING
 
 Potential follow-ups, each gated separately:
 
-1. state-plane descriptors and independent witness bindings;
-2. state-hash suspicion when causally different states collide under one hash;
-3. causal-locality weighting after the first meaningful divergence;
-4. pressure-guided exploration with deterministic BFS retained as an independent baseline;
-5. evidence-bundle binding for TPS inputs and recomputation.
+1. causal-locality weighting after the first meaningful divergence;
+2. pressure-guided exploration with deterministic BFS retained as an independent baseline;
+3. evidence-bundle binding for TPS and state-plane inputs with independent recomputation;
+4. automatic linkage from adapter state-hash fields to ASTRA suspicion evidence.
