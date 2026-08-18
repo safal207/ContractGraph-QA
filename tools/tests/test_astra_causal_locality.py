@@ -12,7 +12,13 @@ class AstraCausalLocalityTests(unittest.TestCase):
             {
                 "first_meaningful_divergence": "accounting",
                 "max_hops": 1,
-                "nodes": ["request", "accounting", "settlement", "unrelated"],
+                "nodes": [
+                    "request",
+                    "accounting",
+                    "settlement",
+                    "unrelated-a",
+                    "unrelated-b",
+                ],
                 "edges": [
                     {
                         "from": "request",
@@ -27,8 +33,8 @@ class AstraCausalLocalityTests(unittest.TestCase):
                         "tps": 0.9,
                     },
                     {
-                        "from": "unrelated",
-                        "to": "request",
+                        "from": "unrelated-a",
+                        "to": "unrelated-b",
                         "transition_id": "unrelated-hop",
                         "tps": 1.0,
                     },
