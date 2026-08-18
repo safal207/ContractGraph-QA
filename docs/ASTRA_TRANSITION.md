@@ -152,6 +152,71 @@ Minimal shape:
 }
 ```
 
+## Causal locality
+
+After a first meaningful divergence is identified, ASTRA can build a bounded causal neighborhood and rank nearby transitions for focused replay.
+
+```text
+GLOBAL BOUNDED MODEL
+        ↓
+FIRST MEANINGFUL DIVERGENCE
+        ↓
+CAUSES + EFFECTS WITHIN max_hops
+        ↓
+TPS × locality weight
+        ↓
+FOCUS ORDER
+```
+
+The v0.1 locality layer is deliberately **focus-only**. It never removes transitions from the deterministic baseline and cannot certify safety outside the focus neighborhood.
+
+For a transition touching a focused node:
+
+```text
+locality_weight = 1 / (1 + causal_distance)
+focus_priority  = normalized_tps * locality_weight
+```
+
+The graph is traversed in both directions around the divergence so immediate causes and immediate effects remain visible. Results include:
+
+- `focused_nodes` with causal distance;
+- `ranked_focus_transitions`;
+- `outside_focus_transition_ids`;
+- `focus_coverage`;
+- explicit `baseline_preserved=true` and `pruning_allowed=false` safety flags.
+
+Run:
+
+```bash
+cgqa astra-causal-locality --input astra-locality.json
+```
+
+Minimal shape:
+
+```json
+{
+  "first_meaningful_divergence": "accounting",
+  "max_hops": 1,
+  "nodes": ["request", "accounting", "settlement"],
+  "edges": [
+    {
+      "from": "request",
+      "to": "accounting",
+      "transition_id": "retry",
+      "tps": 0.8
+    },
+    {
+      "from": "accounting",
+      "to": "settlement",
+      "transition_id": "settle",
+      "tps": 0.9
+    }
+  ]
+}
+```
+
+`FOCUS_READY` means only that a deterministic focus order was produced. It is not a target finding and not evidence that transitions outside the focus are safe.
+
 ## Transition CLI
 
 Example input:
@@ -211,7 +276,8 @@ It must not:
 - override authorization boundaries;
 - interpret correlation as idempotency;
 - interpret wall-clock delay as protocol liveness without a proven clock model;
-- promote state-plane disagreement or `STATE_HASH_SUSPECT` to a target vulnerability without normal CGQA replay and invariant evidence.
+- promote state-plane disagreement or `STATE_HASH_SUSPECT` to a target vulnerability without normal CGQA replay and invariant evidence;
+- use causal locality to prune or certify transitions outside the focused neighborhood.
 
 The intended pipeline is:
 
@@ -226,7 +292,9 @@ STATE PLANES / INDEPENDENT WITNESS
         ↓
 STATE-HASH SUSPICION GUARD
         ↓
-CAUSAL FOCUS
+FIRST MEANINGFUL DIVERGENCE
+        ↓
+CAUSAL-LOCALITY FOCUS (NO PRUNING)
         ↓
 NORMAL CGQA INVARIANT + REPLAY + EVIDENCE
         ↓
@@ -239,7 +307,7 @@ CLIENT-VERIFIABLE FINDING
 
 Potential follow-ups, each gated separately:
 
-1. causal-locality weighting after the first meaningful divergence;
-2. pressure-guided exploration with deterministic BFS retained as an independent baseline;
-3. evidence-bundle binding for TPS and state-plane inputs with independent recomputation;
-4. automatic linkage from adapter state-hash fields to ASTRA suspicion evidence.
+1. pressure-guided queue ordering with deterministic BFS retained as an independent baseline;
+2. evidence-bundle binding for TPS, state-plane, and locality inputs with independent recomputation;
+3. automatic linkage from adapter state-hash fields to ASTRA suspicion evidence;
+4. automatic extraction of causal neighborhoods from reviewed adapter/reachability graphs.
