@@ -1,0 +1,31 @@
+{
+  "benchmark_id": "ASTRA-GONKA-002-QUEUE-v0.1",
+  "classification": "DERIVED_BENCHMARK_PROJECTION",
+  "source_binding": {
+    "contractgraph_pr": 33,
+    "gonka_revision": "f040d0a5b5ef207a0c431894c9f9e2608f9d3073",
+    "source_graph": "external-validation/gonka/graph.yaml",
+    "verified_finding": "CGQA-GONKA-002",
+    "finding_fact": "After a client timeout, the request could continue and complete while the caller-known request ID still failed to resolve the completed accounting record."
+  },
+  "pressure_semantics": "ASTRA tps values below are reviewed benchmark assumptions for queue-order comparison. They are not facts asserted by Gonka and are not vulnerability severity scores.",
+  "start": "inference_dispatched",
+  "target": "client_known_accounting_lookup_fail",
+  "nodes": [
+    "inference_dispatched",
+    "normal_response_path",
+    "retry_side_review",
+    "client_timeout",
+    "background_completion",
+    "generated_response_id_unavailable",
+    "client_known_accounting_lookup_fail"
+  ],
+  "edges": [
+    {"from": "inference_dispatched", "to": "normal_response_path", "transition_id": "A-normal-response", "tps": 0.10},
+    {"from": "inference_dispatched", "to": "retry_side_review", "transition_id": "B-retry-side-review", "tps": 0.35},
+    {"from": "inference_dispatched", "to": "client_timeout", "transition_id": "Z-client-timeout", "tps": 0.96},
+    {"from": "client_timeout", "to": "background_completion", "transition_id": "Z-background-completion", "tps": 0.98},
+    {"from": "background_completion", "to": "generated_response_id_unavailable", "transition_id": "Z-response-id-unavailable", "tps": 0.99},
+    {"from": "generated_response_id_unavailable", "to": "client_known_accounting_lookup_fail", "transition_id": "Z-accounting-addressability-fail", "tps": 1.00}
+  ]
+}

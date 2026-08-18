@@ -1,0 +1,109 @@
+{
+  "schema_version": "astra-opportunity-cohort-v0.1",
+  "observed_at": "2026-08-18",
+  "evidence_boundary": "PUBLIC_PRODUCT_EVIDENCE_ONLY_PRIVATE_CORRESPONDENCE_EXCLUDED",
+  "cases": [
+    {
+      "company_id": "passes",
+      "initial_product_generation": "passes-public-payments-2026-08-18",
+      "final_product_generation": "passes-public-payments-2026-08-18",
+      "opportunity_score": 9.8,
+      "verification_debt": "HIGH",
+      "checks": {
+        "identity": "PASS",
+        "execution_surface": "PASS",
+        "evidence_freshness": "PASS",
+        "reachability": "PASS"
+      },
+      "competing_hypothesis": "existing payout controls may already make retry/reconciliation semantics sufficiently explicit internally",
+      "next_best_evidence": "determine canonical operation identity when a payout is accepted but completion remains ambiguous across timeout and retry",
+      "sources": [
+        {
+          "source_id": "passes-payouts",
+          "locator": "https://www.passes.com/blog/posts/how-do-i-pay-out-my-earnings",
+          "claim": "official Passes guidance exposes payout limits plus Pending, Complete, and Failed payout states and states that failed transfers may be retried"
+        },
+        {
+          "source_id": "passes-chargebacks",
+          "locator": "https://www.passes.com/blog/posts/where-can-i-see-chargebacks",
+          "claim": "official Passes guidance states that successful chargebacks deduct the original payment amount from creator earnings"
+        }
+      ],
+      "expected_action": "OUTREACH"
+    },
+    {
+      "company_id": "kastle",
+      "initial_product_generation": "kastle-servicing-agents-2026-08-18",
+      "final_product_generation": "kastle-servicing-agents-2026-08-18",
+      "opportunity_score": 9.8,
+      "verification_debt": "HIGH",
+      "checks": {
+        "identity": "PASS",
+        "execution_surface": "PASS",
+        "evidence_freshness": "PASS",
+        "reachability": "PASS"
+      },
+      "competing_hypothesis": "Kastle's existing compliance engine, QA coverage, simulations, and workflow controls may already close part of the proposed boundary",
+      "next_best_evidence": "verify whether payment acceptance, call interruption, agent retry, and human handoff share one canonical servicing operation identity",
+      "sources": [
+        {
+          "source_id": "kastle-official",
+          "locator": "https://www.kastle.ai/",
+          "claim": "Kastle publicly describes servicing agents, payment collection, payment-processor and LMS integrations, workflow control, QA coverage, and simulation testing"
+        }
+      ],
+      "expected_action": "OUTREACH"
+    },
+    {
+      "company_id": "fullseam",
+      "initial_product_generation": "fullseam-finance-agents-2026-08-18",
+      "final_product_generation": "fullseam-finance-agents-2026-08-18",
+      "opportunity_score": 9.6,
+      "verification_debt": "HIGH",
+      "checks": {
+        "identity": "PASS",
+        "execution_surface": "PASS",
+        "evidence_freshness": "PASS",
+        "reachability": "PASS"
+      },
+      "competing_hypothesis": "configured approvals and auditable action logs may constrain autonomous mutation enough that the highest-risk retry path is already bounded",
+      "next_best_evidence": "verify the identity and reconciliation rule for an agent correction when an external accounting or billing mutation is delayed and the action is retried",
+      "sources": [
+        {
+          "source_id": "fullseam-official",
+          "locator": "https://fullseam.com/",
+          "claim": "FullSeam publicly describes agents handling AR, AP, cash application, reconciliation, Stripe invoice updates, GL coding, approval rules, audit logs, and exception routing"
+        }
+      ],
+      "expected_action": "OUTREACH"
+    },
+    {
+      "company_id": "grade",
+      "initial_product_generation": "grade-payout-api-2026-08-18",
+      "final_product_generation": "grade-payout-api-2026-08-18",
+      "opportunity_score": 9.9,
+      "verification_debt": "HIGH",
+      "checks": {
+        "identity": "PASS",
+        "execution_surface": "PASS",
+        "evidence_freshness": "PASS",
+        "reachability": "INCOMPLETE"
+      },
+      "competing_hypothesis": "Grade's merchant-of-record role and payout controls may provide stronger canonical financial ownership than is visible publicly",
+      "next_best_evidence": "resolve a verified team contact and then ask how changed performance eligibility after payout initiation is reconciled against one payout obligation",
+      "sources": [
+        {
+          "source_id": "grade-marketplace-api",
+          "locator": "https://usegrade.com/marketplaces",
+          "claim": "Grade publicly exposes an API and sandbox for global payouts, real-time payout status webhooks, KYC, tax, and compliance handling"
+        },
+        {
+          "source_id": "grade-terms",
+          "locator": "https://usegrade.com/terms",
+          "claim": "Grade's terms describe performance-data integrity checks, payout pauses or metric adjustments, pre-funded client accounts, and creator disbursement once payout conditions are met"
+        }
+      ],
+      "expected_action": "INCOMPLETE"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "benchmark_id": "ASTRA-GONKA-001-QUEUE-v0.1",
+  "classification": "DERIVED_BENCHMARK_PROJECTION",
+  "source_binding": {
+    "contractgraph_pr": 33,
+    "gonka_revision": "f040d0a5b5ef207a0c431894c9f9e2608f9d3073",
+    "source_graph": "external-validation/gonka/graph.yaml",
+    "verified_finding": "CGQA-GONKA-001",
+    "finding_fact": "Detached/background execution lost request identity on the unmodified baseline; the same harness passed after explicit background identity propagation."
+  },
+  "pressure_semantics": "ASTRA tps values below are reviewed benchmark assumptions for queue-order comparison. They are not facts asserted by Gonka and are not vulnerability severity scores.",
+  "start": "request_created",
+  "target": "background_request_identity_boundary_fail",
+  "nodes": [
+    "request_created",
+    "request_authorized",
+    "devshard_open",
+    "escrow_funded",
+    "inference_dispatched",
+    "normal_execution_review",
+    "timeout_side_review",
+    "detached_background_execution",
+    "background_request_identity_boundary_fail"
+  ],
+  "edges": [
+    {"from": "request_created", "to": "request_authorized", "transition_id": "T1", "tps": 0.20},
+    {"from": "request_authorized", "to": "devshard_open", "transition_id": "T2", "tps": 0.20},
+    {"from": "devshard_open", "to": "escrow_funded", "transition_id": "T2F", "tps": 0.25},
+    {"from": "escrow_funded", "to": "inference_dispatched", "transition_id": "T3", "tps": 0.45},
+    {"from": "inference_dispatched", "to": "normal_execution_review", "transition_id": "A-normal-execution-review", "tps": 0.15},
+    {"from": "inference_dispatched", "to": "timeout_side_review", "transition_id": "B-timeout-side-review", "tps": 0.30},
+    {"from": "inference_dispatched", "to": "detached_background_execution", "transition_id": "Z-detached-background-execution", "tps": 0.98},
+    {"from": "detached_background_execution", "to": "background_request_identity_boundary_fail", "transition_id": "Z-identity-loss-witness", "tps": 1.00}
+  ]
+}
