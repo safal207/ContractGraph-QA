@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from contractgraph_qa.engagement import verify_engagement_bundle
+from contractgraph_qa.engagement_provenance import verify_engagement_provenance_bundle
 from contractgraph_qa.engagement_run import (
     EngagementCaptureConfig,
     EngagementRunConfig,
@@ -67,6 +67,7 @@ class EngagementRunRuntimeTest(unittest.TestCase):
 
             self.assertEqual(first_bytes, second_bytes)
             self.assertEqual(first["bundleSha256"], second["bundleSha256"])
+            self.assertEqual(first["measurementProvenanceStatus"], "pass")
             self.assertEqual(
                 first["coverage"],
                 {
@@ -77,9 +78,11 @@ class EngagementRunRuntimeTest(unittest.TestCase):
                     "inconclusive": 1,
                 },
             )
-            verified = verify_engagement_bundle(config.bundle)
+            verified = verify_engagement_provenance_bundle(config.bundle)
             self.assertTrue(verified["ok"])
             self.assertEqual(verified["engagementId"], "CGQA-E-001")
+            self.assertEqual(verified["measurementProvenanceStatus"], "pass")
+            self.assertEqual(first["baseBundleSha256"], verified["baseBundleSha256"])
 
     def test_capture_cannot_reuse_stale_result(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
