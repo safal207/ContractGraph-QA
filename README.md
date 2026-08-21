@@ -52,11 +52,13 @@ DETERMINISTIC REPLAY
       ↓
 OBSERVED PRE/POST STATE
       ↓
-PROVENANCE VALIDATION
+MEASUREMENT POPULATION + SOURCE RECEIPT
+      ↓
+MEASUREMENT PROVENANCE
       ↓
 CLIENT FINDINGS / ENGAGEMENT REPORT
       ↓
-DETERMINISTIC EVIDENCE ZIP
+PROVENANCE-BOUND EVIDENCE ZIP
       ↓
 INDEPENDENT VERIFICATION
 ```
@@ -72,6 +74,24 @@ cgqa verify-engagement-bundle engagements/acme-escrow/evidence/engagement.eviden
 ```
 
 The generated scaffold deliberately starts fail-closed and is not execution-ready until the operator replaces the authorization, target, state-hash, action, invariant, and capture-adapter TODOs.
+
+### Measurement provenance in v1.8
+
+For multi-invariant engagement evidence, ContractGraph-QA derives the eligible measurement population from the invariant IDs declared in the reviewed manifest and the observed population from the checks actually emitted by the engagement result.
+
+The final engagement wrapper binds exact manifest/result artifact SHA-256 values and contains:
+
+```text
+base-engagement.zip
+measurement-input.json
+measurement-source.json
+measurement-provenance.json
+bundle.json
+```
+
+`cgqa verify-engagement-bundle` auto-detects legacy engagement bundles and provenance wrappers. For a provenance wrapper it independently verifies the embedded legacy evidence, reconstructs the declared/observed populations, checks exact source digests, recomputes the provenance verdict, and rejects `EPOCH_MISMATCH`, `PARTIAL_COVERAGE`, or `UNMEASURED` before the evidence can be treated as authoritative.
+
+A passing provenance boundary means the declared measurement is source-bound and sufficiently covered for its stated requirement. It does **not** mean the selected invariants are complete or that bounded exploration proved the target secure.
 
 See [`docs/PRODUCT.md`](docs/PRODUCT.md), [`docs/CLI.md`](docs/CLI.md), and [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md).
 
@@ -244,6 +264,8 @@ review adapter + state hash + invariants
   ↓
 one-command engagement-run
   ↓
+measurement provenance + source binding
+  ↓
 human severity/impact review
   ↓
 client report + independently verifiable evidence ZIP
@@ -262,6 +284,8 @@ contractgraph_qa/
   product.py
   engagement.py
   engagement_run.py
+  engagement_provenance.py
+  measurement_provenance.py
   scaffold.py
   finding.py
   report.py
@@ -306,6 +330,7 @@ docs/
   ci.yml
   reporting.yml
   product.yml
+  measurement-provenance.yml
   distribution.yml
   authorized-fork.yml
 ```
@@ -320,6 +345,8 @@ python -m unittest discover -s tools/tests -p 'test_*.py' -v
 python -m pip wheel . --no-deps --wheel-dir .product-wheel
 cgqa demo --output-dir /tmp/cgqa-demo
 cgqa verify-bundle /tmp/cgqa-demo/CGQA-005.evidence.zip
+cgqa engagement-run --config cgqa.engagement.example.toml
+cgqa verify-engagement-bundle dist/CGQA-E-001-run/CGQA-E-001.engagement.zip
 ```
 
 Release/version policy: [`CHANGELOG.md`](CHANGELOG.md) and [`docs/RELEASE.md`](docs/RELEASE.md).
@@ -336,10 +363,11 @@ It does not claim that:
 - the chosen invariants are complete;
 - the state hash is automatically complete;
 - a finite parameter corpus covers every possible value;
+- measurement provenance expands the modeled scope beyond the declared population;
 - `not_found_within_bound` means no vulnerability exists;
 - a QA engagement is equivalent to formal verification or an independent full security audit.
 
-Security conclusions remain limited to the modeled actors, actions, parameters, time assumptions, search depth, state-hash completeness, authorization scope, fork snapshot, adapter mapping, manifest correctness, capture mapping, and explicit invariants.
+Security conclusions remain limited to the modeled actors, actions, parameters, time assumptions, search depth, state-hash completeness, authorization scope, fork snapshot, adapter mapping, manifest correctness, capture mapping, measurement coverage scope, source binding, and explicit invariants.
 
 ## Product evolution
 
@@ -350,6 +378,8 @@ Security conclusions remain limited to the modeled actors, actions, parameters, 
 - **v1.4** — one-command `engagement-run`.
 - **v1.5** — fail-closed client engagement scaffold.
 - **v1.6** — packaged self-serve demo and verified distribution artifact workflow.
+- **v1.7** — Linux/Windows portability, deterministic SBOM, checksums, and GitHub/Sigstore release attestations.
+- **v1.8** — measurement provenance, independent coverage populations, source receipts, and provenance-bound engagement evidence.
 
 Earlier v0.x engine milestones remain documented in Git history and the changelog.
 
