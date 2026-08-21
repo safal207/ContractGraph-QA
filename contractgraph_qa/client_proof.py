@@ -7,6 +7,11 @@ import hashlib
 import json
 from typing import Any
 
+from contractgraph_qa.change_gate_measurement import (
+    COVERAGE_SCOPE,
+    validate_change_gate_measurement_source,
+)
+from contractgraph_qa.measurement_provenance import verify_measurement_provenance_result
 from contractgraph_qa.path_replay import replay_prior_model_path
 from contractgraph_qa.postimpact import PostImpactModel, run_post_impact_model
 from contractgraph_qa.reachability import ReachabilityModel, run_reachability_model
@@ -15,6 +20,7 @@ from contractgraph_qa.reachability import ReachabilityModel, run_reachability_mo
 PROOF_SCHEMA = "cgqa.client-proof.v2"
 CAUSAL_PROOF_SCHEMA = "cgqa.client-causal-proof.v1"
 CHANGE_GATE_EVIDENCE_SCHEMA = "cgqa.client-change-gate-evidence.v1"
+MEASUREMENT_PROVENANCE_EVIDENCE_SCHEMA = "cgqa.client-measurement-provenance-evidence.v1"
 
 
 def _coverage(result: dict[str, Any]) -> dict[str, int]:
@@ -69,13 +75,7 @@ def _require_commit_sha(value: object, label: str) -> str:
 def validate_change_gate_result_for_client_proof(
     gate_result: dict[str, Any],
 ) -> None:
-    """Validate only the identity envelope needed to bind a gate result verbatim.
-
-    The client-proof layer deliberately does not re-derive targets, invariants,
-    paths, or replay conclusions. Those causal claims remain owned by the change
-    gate result itself; this function only verifies that the object is a complete
-    machine gate result with explicit base/head identity.
-    """
+    """Validate only the identity envelope needed to bind a gate result verbatim."""
 
     if not isinstance(gate_result, dict):
         raise ValueError("change-gate result must be a JSON object")
@@ -148,6 +148,118 @@ def attach_change_gate_evidence(
     return bound
 
 
+def measurement_provenance_result_sha256(result: dict[str, Any]) -> str:
+    """Return the canonical digest after independently recomputing the provenance verdict."""
+
+    verify_measurement_provenance_result(result)
+    return hashlib.sha256(_canonical_json_bytes(result)).hexdigest()
+
+
+def _validate_provenance_result_against_source(
+    result: dict[str, Any], source: dict[str, Any]
+) -> None:
+    verify_measurement_provenance_result(result)
+    measurements = result.get("measurements")
+    if not isinstance(measurements, list) or len(measurements) != 1:
+        raise ValueError("change-gate provenance must contain exactly one measurement")
+    measurement = measurements[0]
+    if not isinstance(measurement, dict):
+        raise ValueError("change-gate provenance measurement must be an object")
+    if measurement.get("id") != source.get("measurementId"):
+        raise ValueError("measurement-provenance source measurement id mismatch")
+    if measurement.get("coverageScope") != COVERAGE_SCOPE:
+        raise ValueError("measurement-provenance coverage scope mismatch")
+    if measurement.get("observedUnits") != len(source["observedModelIds"]):
+        raise ValueError("measurement-provenance observed count does not match source ids")
+    if measurement.get("eligibleUnits") != len(source["eligibleModelIds"]):
+        raise ValueError("measurement-provenance eligible count does not match source ids")
+
+
+def build_measurement_provenance_evidence(
+    result: dict[str, Any],
+    source: dict[str, Any],
+    *,
+    gate_result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Content-address a recomputed result plus the exact source-binding receipt."""
+
+    validate_change_gate_measurement_source(source, gate_result=gate_result)
+    _validate_provenance_result_against_source(result, source)
+    return {
+        "schema": MEASUREMENT_PROVENANCE_EVIDENCE_SCHEMA,
+        "source": copy.deepcopy(source),
+        "provenanceResultSha256": measurement_provenance_result_sha256(result),
+        "provenanceResult": copy.deepcopy(result),
+    }
+
+
+def verify_measurement_provenance_evidence(
+    evidence: dict[str, Any],
+    *,
+    gate_result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Verify source binding, result semantics, and the content digest."""
+
+    if not isinstance(evidence, dict):
+        raise ValueError("measurement-provenance evidence must be an object")
+    if set(evidence) != {
+        "schema",
+        "source",
+        "provenanceResultSha256",
+        "provenanceResult",
+    }:
+        raise ValueError("measurement-provenance evidence has invalid shape")
+    if evidence.get("schema") != MEASUREMENT_PROVENANCE_EVIDENCE_SCHEMA:
+        raise ValueError("unsupported measurement-provenance evidence schema")
+
+    source = evidence.get("source")
+    result = evidence.get("provenanceResult")
+    if not isinstance(source, dict) or not isinstance(result, dict):
+        raise ValueError("measurement-provenance evidence source/result must be objects")
+    validate_change_gate_measurement_source(source, gate_result=gate_result)
+    _validate_provenance_result_against_source(result, source)
+    expected = measurement_provenance_result_sha256(result)
+    if evidence.get("provenanceResultSha256") != expected:
+        raise ValueError("measurement-provenance evidence digest mismatch")
+    return copy.deepcopy(result)
+
+
+def attach_measurement_provenance_evidence(
+    proof_pack: dict[str, Any],
+    result: dict[str, Any],
+    source: dict[str, Any],
+) -> dict[str, Any]:
+    """Attach provenance only when it passes and matches the proof's exact gate result."""
+
+    if not isinstance(proof_pack, dict):
+        raise ValueError("client proof pack must be a JSON object")
+    change_evidence = proof_pack.get("changeGateEvidence")
+    if not isinstance(change_evidence, dict):
+        raise ValueError(
+            "measurement provenance requires changeGateEvidence in the client proof"
+        )
+    gate_result = verify_change_gate_evidence(change_evidence)
+    evidence = build_measurement_provenance_evidence(
+        result, source, gate_result=gate_result
+    )
+    verified = verify_measurement_provenance_evidence(
+        evidence, gate_result=gate_result
+    )
+    if verified.get("status") != "pass":
+        raise ValueError(
+            "blocked measurement provenance cannot be bound into an authoritative client proof"
+        )
+
+    existing = proof_pack.get("measurementProvenanceEvidence")
+    if existing is not None and existing != evidence:
+        raise ValueError(
+            "client proof pack already contains different measurement-provenance evidence"
+        )
+    bound = copy.deepcopy(proof_pack)
+    bound["measurementProvenanceEvidence"] = evidence
+    return bound
+
+
 def build_causal_security_proof(
     prior_model: ReachabilityModel,
     post_impact_model: PostImpactModel,
@@ -208,6 +320,8 @@ def build_client_proof_pack(
     fixed_model: ReachabilityModel,
     *,
     change_gate_result: dict[str, Any] | None = None,
+    measurement_provenance_result: dict[str, Any] | None = None,
+    measurement_provenance_source: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the complete deterministic repository-owned client proof pack."""
 
@@ -249,4 +363,17 @@ def build_client_proof_pack(
     }
     if change_gate_result is not None:
         proof = attach_change_gate_evidence(proof, change_gate_result)
+    if (measurement_provenance_result is None) != (
+        measurement_provenance_source is None
+    ):
+        raise ValueError(
+            "measurement provenance result and source must be supplied together"
+        )
+    if measurement_provenance_result is not None:
+        assert measurement_provenance_source is not None
+        proof = attach_measurement_provenance_evidence(
+            proof,
+            measurement_provenance_result,
+            measurement_provenance_source,
+        )
     return proof

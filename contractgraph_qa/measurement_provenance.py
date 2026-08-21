@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 
 class MeasurementProvenanceError(ValueError):
@@ -166,11 +166,151 @@ def evaluate_measurement(measurement: MeasurementSpec) -> dict[str, Any]:
 
 
 def run_measurement_provenance_gate(measurements: tuple[MeasurementSpec, ...]) -> dict[str, Any]:
-    results = [evaluate_measurement(item) for item in measurements]
+    results = [
+        evaluate_measurement(item)
+        for item in sorted(measurements, key=lambda candidate: candidate.id)
+    ]
     blocking_measurements = [item["id"] for item in results if item["blocking"] is True]
     return {
         "schemaVersion": 1,
         "status": "blocked" if blocking_measurements else "pass",
         "blockingMeasurements": blocking_measurements,
         "measurements": results,
+    }
+
+
+def verify_measurement_provenance_result(result: dict[str, Any]) -> None:
+    """Recompute a gate result so a consumer does not trust self-declared status fields."""
+
+    if not isinstance(result, dict):
+        raise MeasurementProvenanceError("measurement-provenance result must be an object")
+    expected_top = {"schemaVersion", "status", "blockingMeasurements", "measurements"}
+    if set(result) != expected_top:
+        raise MeasurementProvenanceError(
+            "measurement-provenance result must contain exactly "
+            "schemaVersion, status, blockingMeasurements, and measurements"
+        )
+    if result.get("schemaVersion") != 1:
+        raise MeasurementProvenanceError("measurement-provenance result schemaVersion must be 1")
+
+    raw_measurements = result.get("measurements")
+    if not isinstance(raw_measurements, list) or not raw_measurements:
+        raise MeasurementProvenanceError("measurement-provenance result measurements must be non-empty")
+
+    reconstructed: list[MeasurementSpec] = []
+    expected_result_keys = {
+        "id",
+        "status",
+        "blocking",
+        "gateReasons",
+        "schemaEpoch",
+        "requiredSchemaEpoch",
+        "coverageScope",
+        "observedUnits",
+        "eligibleUnits",
+        "coverageFraction",
+        "requiredCoverage",
+        "measurementAvailable",
+    }
+    for index, item in enumerate(raw_measurements):
+        if not isinstance(item, dict) or set(item) != expected_result_keys:
+            raise MeasurementProvenanceError(
+                f"measurements[{index}] has an invalid result shape"
+            )
+        spec = _parse_measurement(
+            {
+                "id": item["id"],
+                "schemaEpoch": item["schemaEpoch"],
+                "requiredSchemaEpoch": item["requiredSchemaEpoch"],
+                "coverageScope": item["coverageScope"],
+                "observedUnits": item["observedUnits"],
+                "eligibleUnits": item["eligibleUnits"],
+                "requiredCoverage": item["requiredCoverage"],
+                "measurementAvailable": item["measurementAvailable"],
+            },
+            f"measurements[{index}]",
+        )
+        expected_item = evaluate_measurement(spec)
+        if item != expected_item:
+            raise MeasurementProvenanceError(
+                f"measurements[{index}] does not match a recomputed provenance verdict"
+            )
+        reconstructed.append(spec)
+
+    ids = [item.id for item in reconstructed]
+    if len(ids) != len(set(ids)):
+        raise MeasurementProvenanceError("measurement-provenance result ids must be unique")
+    expected = run_measurement_provenance_gate(tuple(reconstructed))
+    if result != expected:
+        raise MeasurementProvenanceError(
+            "measurement-provenance aggregate status does not match recomputed measurements"
+        )
+
+
+def _canonical_ids(values: Iterable[str], label: str) -> tuple[str, ...]:
+    items = tuple(_require_text(value, label) for value in values)
+    if len(items) != len(set(items)):
+        raise MeasurementProvenanceError(f"{label} must not contain duplicates")
+    return tuple(sorted(items))
+
+
+def build_change_gate_model_coverage_input(
+    gate_result: dict[str, Any],
+    *,
+    base_model_ids: Iterable[str],
+    head_model_ids: Iterable[str],
+    required_schema_epoch: int = 1,
+) -> dict[str, Any]:
+    """Build a real coverage measurement from configs versus emitted change-gate results.
+
+    The denominator comes from the independent union of base/head configured model
+    identifiers. The numerator comes from model results actually emitted by the gate.
+    This avoids allowing the result list to define its own expected population.
+    """
+
+    if not isinstance(gate_result, dict):
+        raise MeasurementProvenanceError("change-gate result must be an object")
+    schema_epoch = _require_int(
+        gate_result.get("schemaVersion"), "change-gate result schemaVersion", minimum=1
+    )
+    required_epoch = _require_int(
+        required_schema_epoch, "required_schema_epoch", minimum=1
+    )
+    raw_models = gate_result.get("models")
+    if not isinstance(raw_models, list):
+        raise MeasurementProvenanceError("change-gate result models must be an array")
+
+    base_ids = _canonical_ids(base_model_ids, "base_model_ids")
+    head_ids = _canonical_ids(head_model_ids, "head_model_ids")
+    eligible_ids = tuple(sorted(set(base_ids) | set(head_ids)))
+    if not eligible_ids:
+        raise MeasurementProvenanceError("configured change-gate model population must be non-empty")
+
+    observed_values: list[str] = []
+    for index, model in enumerate(raw_models):
+        if not isinstance(model, dict):
+            raise MeasurementProvenanceError(f"change-gate result models[{index}] must be an object")
+        observed_values.append(_require_text(model.get("id"), f"change-gate result models[{index}].id"))
+    observed_ids = _canonical_ids(observed_values, "observed_change_gate_model_ids")
+    unexpected = sorted(set(observed_ids) - set(eligible_ids))
+    if unexpected:
+        raise MeasurementProvenanceError(
+            "change-gate result contains model ids outside the base/head config population: "
+            + ", ".join(unexpected)
+        )
+
+    return {
+        "schemaVersion": 1,
+        "measurements": [
+            {
+                "id": "causal-security-change-gate-model-results",
+                "schemaEpoch": schema_epoch,
+                "requiredSchemaEpoch": required_epoch,
+                "coverageScope": "change_gate_base_head_configured_model_results",
+                "observedUnits": len(observed_ids),
+                "eligibleUnits": len(eligible_ids),
+                "requiredCoverage": 1.0,
+                "measurementAvailable": True,
+            }
+        ],
     }

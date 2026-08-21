@@ -118,4 +118,6 @@ Content identity and source identity should also remain distinct. A digest ident
 
 The executable v0.1 gate lives in `contractgraph_qa.measurement_provenance` with `tools/run_measurement_provenance_gate.py` as the CLI. It blocks `EPOCH_MISMATCH`, coverage below an explicitly declared `requiredCoverage`, and `UNMEASURED`; an unavailable measurement preserves its counts and derived coverage as `null` rather than manufacturing a negative observation.
 
+The causal-security PR pipeline applies this invariant to a real evidence boundary. Its denominator is the independent union of model IDs declared by the exact base and candidate gate configs; its numerator is the model-result IDs actually emitted by the trusted change gate. The resulting provenance verdict is recomputed, content-addressed, and may be attached to the authoritative client proof only when its status is `pass`. A blocked provenance result remains available as diagnostic evidence but cannot be promoted into proof authority.
+
 For ContractGraph-QA, this principle limits evidence claims to what the active measurement epoch and declared coverage scope can actually support. A green result must not silently mean `nothing was measured`.

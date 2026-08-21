@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -78,3 +79,58 @@ jobs:
           test "${exit_code}" -eq 10
           grep -q 'EPOCH_MISMATCH' /tmp/blocked.json
           grep -q 'PARTIAL_COVERAGE' /tmp/blocked.json
+
+      - name: Exercise real change-gate provenance binding on candidate
+        if: github.event_name == 'pull_request'
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          work=/tmp/cgqa-provenance-integration
+          mkdir -p "${work}"
+
+          if git cat-file -e "${BASE_SHA}:causal-security-gate.toml" 2>/dev/null; then
+            git show "${BASE_SHA}:causal-security-gate.toml" > "${work}/base-config.toml"
+          else
+            rm -f "${work}/base-config.toml"
+          fi
+
+          set +e
+          python tools/run_change_gate.py \
+            --base-ref "${BASE_SHA}" \
+            --config causal-security-gate.toml \
+            --repo-root . \
+            > "${work}/change-gate.json"
+          gate_exit=$?
+          set -e
+          if [[ "${gate_exit}" != "0" && "${gate_exit}" != "10" ]]; then
+            echo "Unexpected change-gate exit: ${gate_exit}" >&2
+            exit "${gate_exit}"
+          fi
+
+          python tools/build_change_gate_measurement_input.py \
+            --gate-result "${work}/change-gate.json" \
+            --base-config "${work}/base-config.toml" \
+            --head-config causal-security-gate.toml \
+            --output "${work}/measurement-input.json" \
+            --source-output "${work}/measurement-source.json"
+
+          python tools/run_measurement_provenance_gate.py \
+            --input "${work}/measurement-input.json" \
+            > "${work}/measurement-result.json"
+          grep -q '"status": "pass"' "${work}/measurement-result.json"
+
+          python tools/bind_change_gate_client_proof.py \
+            --proof docs/client-proof/proof.json \
+            --gate-result "${work}/change-gate.json" \
+            --output "${work}/proof.with-change-gate.json"
+
+          python tools/bind_measurement_provenance_client_proof.py \
+            --proof "${work}/proof.with-change-gate.json" \
+            --provenance-result "${work}/measurement-result.json" \
+            --source "${work}/measurement-source.json" \
+            --base-config "${work}/base-config.toml" \
+            --head-config causal-security-gate.toml \
+            --output "${work}/proof.with-gates.json"
+          grep -q '"measurementProvenanceEvidence"' "${work}/proof.with-gates.json"
