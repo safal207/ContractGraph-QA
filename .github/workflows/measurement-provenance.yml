@@ -1,0 +1,80 @@
+name: Measurement provenance gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  measurement-provenance:
+    name: deterministic provenance verdicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile Python sources
+        run: python -m compileall -q contractgraph_qa tools
+
+      - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python -m unittest discover -s tools/tests -p 'test_*.py' -v
+
+      - name: Exercise CLI pass and blocked exits
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        shell: bash
+        run: |
+          cat > /tmp/measurement-pass.json <<'JSON'
+          {
+            "schemaVersion": 1,
+            "measurements": [
+              {
+                "id": "route-coverage",
+                "schemaEpoch": 2,
+                "requiredSchemaEpoch": 2,
+                "coverageScope": "tool_call_route",
+                "observedUnits": 100,
+                "eligibleUnits": 100,
+                "requiredCoverage": 1.0,
+                "measurementAvailable": true
+              }
+            ]
+          }
+          JSON
+          python tools/run_measurement_provenance_gate.py --input /tmp/measurement-pass.json > /tmp/pass.json
+          grep -q '"status": "pass"' /tmp/pass.json
+
+          cat > /tmp/measurement-blocked.json <<'JSON'
+          {
+            "schemaVersion": 1,
+            "measurements": [
+              {
+                "id": "route-coverage",
+                "schemaEpoch": 1,
+                "requiredSchemaEpoch": 2,
+                "coverageScope": "tool_call_route",
+                "observedUnits": 33,
+                "eligibleUnits": 100,
+                "requiredCoverage": 1.0,
+                "measurementAvailable": true
+              }
+            ]
+          }
+          JSON
+          set +e
+          python tools/run_measurement_provenance_gate.py --input /tmp/measurement-blocked.json > /tmp/blocked.json
+          exit_code=$?
+          set -e
+          test "${exit_code}" -eq 10
+          grep -q 'EPOCH_MISMATCH' /tmp/blocked.json
+          grep -q 'PARTIAL_COVERAGE' /tmp/blocked.json
