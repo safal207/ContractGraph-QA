@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/execution-trace.schema.json",
+  "title": "ContractGraph-QA Normalized Execution Trace v0.1",
+  "type": "object",
+  "required": ["schemaVersion", "traceId", "events"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "minLength": 1 },
+    "traceId": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["eventId"],
+        "additionalProperties": false,
+        "properties": {
+          "eventId": { "type": "string", "minLength": 1 },
+          "sourceRef": { "type": "string", "minLength": 1 },
+          "economicEffect": {
+            "type": "object",
+            "required": ["actionId", "effectKey", "occurrenceId", "applied"],
+            "additionalProperties": false,
+            "properties": {
+              "actionId": { "type": "string", "minLength": 1 },
+              "effectKey": { "type": "string", "minLength": 1 },
+              "occurrenceId": { "type": "string", "minLength": 1 },
+              "applied": { "type": "boolean" }
+            }
+          },
+          "stateCommit": {
+            "type": "object",
+            "required": ["commitId", "conflictKey", "parentState", "parentVersion", "operation", "successorState", "successorVersion", "committed"],
+            "additionalProperties": false,
+            "properties": {
+              "commitId": { "type": "string", "minLength": 1 },
+              "conflictKey": { "type": "string", "minLength": 1 },
+              "parentState": { "type": "string", "minLength": 1 },
+              "parentVersion": { "type": "integer", "minimum": 0 },
+              "operation": { "type": "string", "minLength": 1 },
+              "successorState": { "type": "string", "minLength": 1 },
+              "successorVersion": { "type": "integer", "minimum": 0 },
+              "committed": { "type": "boolean" }
+            }
+          }
+        },
+        "anyOf": [
+          { "required": ["economicEffect"] },
+          { "required": ["stateCommit"] }
+        ]
+      }
+    }
+  }
+}
