@@ -24,6 +24,10 @@ from contractgraph_qa.payment_evidence_pack import (
     build_payment_evidence_pack,
     verify_payment_evidence_pack,
 )
+from contractgraph_qa.successor_consistency import (
+    load_successor_consistency_model,
+    run_successor_consistency_model,
+)
 from contractgraph_qa import legacy_cli
 
 EXIT_OK = legacy_cli.EXIT_OK
@@ -124,6 +128,37 @@ def _economic_cardinality_main(argv: list[str]) -> int:
         return EXIT_INTERNAL
 
 
+def _successor_consistency_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa successor-consistency",
+        description=(
+            "Verify that one conflict-domain parent state version produces at most "
+            "one distinct committed child commit."
+        ),
+    )
+    parser.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Successor consistency model JSON",
+    )
+    args = parser.parse_args(argv)
+    try:
+        model = load_successor_consistency_model(args.model.resolve())
+        result = run_successor_consistency_model(model)
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
 def _evidence_pack_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa agent-payment-evidence-pack",
@@ -185,6 +220,8 @@ def main(argv: list[str] | None = None) -> int:
         return _lifecycle_liveness_main(effective[1:])
     if effective and effective[0] == "economic-cardinality":
         return _economic_cardinality_main(effective[1:])
+    if effective and effective[0] == "successor-consistency":
+        return _successor_consistency_main(effective[1:])
     if effective and effective[0] == "agent-payment-evidence-pack":
         return _evidence_pack_main(effective[1:])
     if effective and effective[0] == "verify-agent-payment-evidence-pack":
