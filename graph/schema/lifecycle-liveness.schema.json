@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/lifecycle-liveness.schema.json",
+  "title": "ContractGraph-QA Lifecycle Liveness Model v0.1",
+  "type": "object",
+  "required": ["states", "transitions", "initialState", "invariantId"],
+  "additionalProperties": false,
+  "properties": {
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "holdsValue", "safeTerminal"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "holdsValue": {"type": "boolean"},
+          "safeTerminal": {"type": "boolean"}
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "target"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "source": {"type": "string", "minLength": 1},
+          "target": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "initialState": {"type": "string", "minLength": 1},
+    "invariantId": {"type": "string", "minLength": 1}
+  }
+}
