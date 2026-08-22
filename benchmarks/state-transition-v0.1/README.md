@@ -46,6 +46,26 @@ COUNTEREXAMPLE: Active → Funded → Disputed → DEAD_END
 
 Product message: **17/17 tests passed. Funds can still be locked forever.**
 
+### Executable B001
+
+B001 is backed by the repository-owned lifecycle model:
+
+```text
+scenarios/escrow-disputed-dead-end.json
+```
+
+Run it with:
+
+```bash
+cgqa lifecycle-liveness --model scenarios/escrow-disputed-dead-end.json
+```
+
+The command returns a deterministic failure for `CGQ-LIVE-001`, identifies `Disputed` as a reachable value-holding dead end, and emits the shortest counterexample path. A model with an added `Disputed → Released` or `Disputed → Refunded` transition passes the same check.
+
+The analyzer also detects value-holding **trap cycles**: adding outgoing transitions is not sufficient if every reachable path remains trapped away from a safe economic terminal.
+
+See [`../../docs/LIFECYCLE_LIVENESS.md`](../../docs/LIFECYCLE_LIVENESS.md).
+
 ## CGQ-B002 — Replay Without Theft
 
 A finalized business action must not produce a second economic effect when replayed, even if no direct token theft occurs.
