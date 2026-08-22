@@ -1,0 +1,25 @@
+{
+  "benchmark": "langgraph-checkpoint-state-conformance-v0.1",
+  "mode": "hosted_adapter",
+  "source": {
+    "repository": "langchain-ai/langgraph",
+    "commit": "f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f",
+    "stateGraphSource": "libs/langgraph/langgraph/graph/state.py",
+    "checkpointSource": "libs/checkpoint/langgraph/checkpoint/base/__init__.py"
+  },
+  "spec": "witness-projection-conformance/v0.1",
+  "expectedConformant": true,
+  "expectedPassedChecks": [
+    "deterministic_across_evaluator_time",
+    "explicit_absence_enables_transition",
+    "replay_stability",
+    "prefix_stability",
+    "non_monotone_state_over_monotone_evidence",
+    "deadline_bound_to_evidence",
+    "missing_deadline_fails_closed",
+    "projection_does_not_mutate_evidence"
+  ],
+  "expectedFailedChecks": [],
+  "nativeFrameworkClaim": false,
+  "interpretation": "The pinned LangGraph StateGraph/checkpoint substrate can host an append-only witness log and preserve explicit absence/deadline evidence in checkpoint channel_values. A thin deterministic projection adapter therefore satisfies Witness Projection Conformance v0.1 without consulting ambient wall-clock time. This does not claim LangGraph itself defines the domain-specific witness projection semantics."
+}
