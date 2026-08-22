@@ -1,0 +1,20 @@
+{
+  "states": [
+    {"id": "Active", "description": "Agreement is active but not yet funded.", "holdsValue": false, "safeTerminal": false},
+    {"id": "Funded", "description": "Escrow holds funded value.", "holdsValue": true, "safeTerminal": false},
+    {"id": "Delivered", "description": "Delivery is recorded while escrow value remains held.", "holdsValue": true, "safeTerminal": false},
+    {"id": "Disputed", "description": "A participant raised a dispute while escrow value remains held.", "holdsValue": true, "safeTerminal": false},
+    {"id": "Released", "description": "Escrow value was released to the seller.", "holdsValue": false, "safeTerminal": true},
+    {"id": "Refunded", "description": "Escrow value was returned to the buyer.", "holdsValue": false, "safeTerminal": true}
+  ],
+  "transitions": [
+    {"id": "fund", "source": "Active", "target": "Funded"},
+    {"id": "deliver", "source": "Funded", "target": "Delivered"},
+    {"id": "release", "source": "Delivered", "target": "Released"},
+    {"id": "refund", "source": "Funded", "target": "Refunded"},
+    {"id": "raise-dispute-from-funded", "source": "Funded", "target": "Disputed"},
+    {"id": "raise-dispute-from-delivered", "source": "Delivered", "target": "Disputed"}
+  ],
+  "initialState": "Active",
+  "invariantId": "CGQ-LIVE-001"
+}
