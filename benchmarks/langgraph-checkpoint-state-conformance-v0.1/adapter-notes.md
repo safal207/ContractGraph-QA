@@ -1,0 +1,1 @@
+The adapter is intentionally thin: LangGraph supplies generic reducer and checkpoint capabilities; ContractGraph-QA supplies the frozen witness semantics. A PASS therefore means the framework can host the conformance contract without semantic loss or ambient-clock dependence, not that LangGraph natively owns this domain state machine.
