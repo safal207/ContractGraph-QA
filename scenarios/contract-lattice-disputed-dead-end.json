@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "contract-lattice-v0.1",
+  "modelId": "mileage-escrow-disputed-dead-end",
+  "scope": "synthetic escrow lifecycle modeled after a real liveness class",
+  "initialPoint": "Created@0",
+  "safeTerminals": ["Released@2", "Refunded@2"],
+  "points": [
+    {
+      "id": "Created@0",
+      "state": "Created",
+      "version": 0,
+      "lockedValue": 0,
+      "authorityRefs": ["participant-authority"],
+      "evidenceRefs": ["agreement-created"],
+      "timeWitnessRefs": []
+    },
+    {
+      "id": "Funded@1",
+      "state": "Funded",
+      "version": 1,
+      "lockedValue": 10000000,
+      "authorityRefs": ["participant-authority"],
+      "evidenceRefs": ["funding-confirmed"],
+      "timeWitnessRefs": []
+    },
+    {
+      "id": "Released@2",
+      "state": "Released",
+      "version": 2,
+      "lockedValue": 0,
+      "authorityRefs": [],
+      "evidenceRefs": ["release-confirmed"],
+      "timeWitnessRefs": []
+    },
+    {
+      "id": "Refunded@2",
+      "state": "Refunded",
+      "version": 2,
+      "lockedValue": 0,
+      "authorityRefs": [],
+      "evidenceRefs": ["refund-confirmed"],
+      "timeWitnessRefs": []
+    },
+    {
+      "id": "Disputed@2",
+      "state": "Disputed",
+      "version": 2,
+      "lockedValue": 10000000,
+      "authorityRefs": ["participant-authority"],
+      "evidenceRefs": ["dispute-raised"],
+      "timeWitnessRefs": []
+    }
+  ],
+  "transitions": [
+    {
+      "id": "fund",
+      "source": "Created@0",
+      "target": "Funded@1",
+      "action": "fund",
+      "authorityRef": "participant-authority",
+      "evidenceRefs": ["agreement-created"],
+      "timeSensitive": false,
+      "timeWitnessRefs": []
+    },
+    {
+      "id": "release",
+      "source": "Funded@1",
+      "target": "Released@2",
+      "action": "release",
+      "authorityRef": "participant-authority",
+      "evidenceRefs": ["funding-confirmed"],
+      "timeSensitive": false,
+      "timeWitnessRefs": []
+    },
+    {
+      "id": "refund",
+      "source": "Funded@1",
+      "target": "Refunded@2",
+      "action": "refund",
+      "authorityRef": "participant-authority",
+      "evidenceRefs": ["funding-confirmed"],
+      "timeSensitive": false,
+      "timeWitnessRefs": []
+    },
+    {
+      "id": "raiseDispute",
+      "source": "Funded@1",
+      "target": "Disputed@2",
+      "action": "raiseDispute",
+      "authorityRef": "participant-authority",
+      "evidenceRefs": ["funding-confirmed"],
+      "timeSensitive": false,
+      "timeWitnessRefs": []
+    }
+  ]
+}
