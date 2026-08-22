@@ -94,6 +94,16 @@ Lifecycle liveness: FAIL
 Active → Funded → Disputed → DEAD_END
 ```
 
+The same graph algorithm also verifies **CGQ-B003 — Timeout Without Escape** through `scenarios/timeout-without-recovery.json` and invariant `CGQ-LIVE-002 — TIMEOUT_REQUIRES_RECOVERY_PATH`:
+
+```text
+Funded → DeadlineExceeded → DEAD_END
+```
+
+Adding a valid recovery edge such as `DeadlineExceeded → Refunded` makes the model pass. Adding only another non-terminal review state does not help if the new path remains trapped in a cycle.
+
+This reuse is deliberate: dispute dead-ends and timeout dead-ends have different business causes, but both reduce to the same graph property — reachable locked value without a path to safe economic termination.
+
 This is the product-level lesson:
 
 > A function can be correct while the lifecycle is wrong.
