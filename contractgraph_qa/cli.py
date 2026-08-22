@@ -11,6 +11,10 @@ from contractgraph_qa.agent_payment_decision import (
     AgentPaymentDecisionError,
     evaluate_agent_payment_decision_file,
 )
+from contractgraph_qa.lifecycle_liveness import (
+    load_lifecycle_liveness_model,
+    run_lifecycle_liveness_model,
+)
 from contractgraph_qa.payment_evidence_pack import (
     PaymentEvidencePackError,
     build_payment_evidence_pack,
@@ -44,6 +48,37 @@ def _decision_main(argv: list[str]) -> int:
         _emit(evaluate_agent_payment_decision_file(args.input.resolve()))
         return EXIT_OK
     except (AgentPaymentDecisionError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
+def _lifecycle_liveness_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa lifecycle-liveness",
+        description=(
+            "Verify that every reachable state holding locked economic value "
+            "retains a path to a declared safe economic terminal."
+        ),
+    )
+    parser.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Lifecycle liveness model JSON",
+    )
+    args = parser.parse_args(argv)
+    try:
+        model = load_lifecycle_liveness_model(args.model.resolve())
+        result = run_lifecycle_liveness_model(model)
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
         print(f"cgqa: {exc}", file=sys.stderr)
         return EXIT_VALIDATION
     except KeyboardInterrupt:
@@ -111,6 +146,8 @@ def main(argv: list[str] | None = None) -> int:
     effective = list(sys.argv[1:] if argv is None else argv)
     if effective and effective[0] == "agent-payment-decision":
         return _decision_main(effective[1:])
+    if effective and effective[0] == "lifecycle-liveness":
+        return _lifecycle_liveness_main(effective[1:])
     if effective and effective[0] == "agent-payment-evidence-pack":
         return _evidence_pack_main(effective[1:])
     if effective and effective[0] == "verify-agent-payment-evidence-pack":
