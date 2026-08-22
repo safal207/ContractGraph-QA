@@ -32,4 +32,4 @@ include = ["contractgraph_qa*"]
 include-package-data = false
 
 [tool.setuptools.package-data]
-contractgraph_qa = ["demo_assets/*.json"]
+contractgraph_qa = ["demo_assets/*.json", "schemas/*.json"]
