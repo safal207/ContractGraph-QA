@@ -24,6 +24,12 @@ from contractgraph_qa.payment_evidence_pack import (
     build_payment_evidence_pack,
     verify_payment_evidence_pack,
 )
+from contractgraph_qa.solidity_lifecycle_extractor import (
+    check_lifecycle_from_ast,
+    load_ast_file,
+    load_forge_ast,
+    load_lifecycle_profile,
+)
 from contractgraph_qa.successor_consistency import (
     load_successor_consistency_model,
     run_successor_consistency_model,
@@ -87,6 +93,56 @@ def _lifecycle_liveness_main(argv: list[str]) -> int:
         _emit(result)
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
+def _solidity_lifecycle_check_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa solidity-lifecycle-check",
+        description=(
+            "Extract lifecycle transitions from Solidity compiler AST evidence and "
+            "run deterministic economic liveness verification."
+        ),
+    )
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--ast",
+        type=Path,
+        help="Pre-captured Solidity compiler AST JSON",
+    )
+    source.add_argument(
+        "--target",
+        help="Foundry contract target passed to `forge inspect <target> ast`",
+    )
+    parser.add_argument(
+        "--profile",
+        type=Path,
+        required=True,
+        help="Reviewed Solidity lifecycle extraction profile JSON",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        help="Optional Foundry project root when --target is used",
+    )
+    args = parser.parse_args(argv)
+    try:
+        profile = load_lifecycle_profile(args.profile.resolve())
+        if args.ast is not None:
+            ast = load_ast_file(args.ast.resolve())
+        else:
+            ast = load_forge_ast(args.target, args.root)
+        result = check_lifecycle_from_ast(ast, profile)
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError, OSError) as exc:
         print(f"cgqa: {exc}", file=sys.stderr)
         return EXIT_VALIDATION
     except KeyboardInterrupt:
@@ -218,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
         return _decision_main(effective[1:])
     if effective and effective[0] == "lifecycle-liveness":
         return _lifecycle_liveness_main(effective[1:])
+    if effective and effective[0] == "solidity-lifecycle-check":
+        return _solidity_lifecycle_check_main(effective[1:])
     if effective and effective[0] == "economic-cardinality":
         return _economic_cardinality_main(effective[1:])
     if effective and effective[0] == "successor-consistency":
