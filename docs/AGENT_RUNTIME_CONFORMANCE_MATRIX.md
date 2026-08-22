@@ -1,20 +1,64 @@
-# Agent Runtime Conformance Matrix
+# Agent Runtime Conformance Matrix v0.1
 
-`Witness Projection Conformance v0.1` measures one narrow property: whether an exact recorded witness sequence can be projected deterministically, append-only, and replayably without ambient time/config creating new facts.
+`Witness Projection Conformance v0.1` started as an eight-check semantic test. The runtime matrix adds a second layer: it separates **projection correctness** from the **storage/evidence guarantees** required to make that projection trustworthy in a real agent runtime.
 
-Scores below are **boundary-specific**. They are not overall framework rankings.
+Scores and axis values are **boundary-specific**. They are not overall framework rankings.
 
-| Runtime | Pinned source | Boundary type | Result | Key interpretation |
-|---|---|---|---:|---|
-| CrewAI | `crewAIInc/crewAI@f4731f5025f861c78e3af0487cc80bf5e7c64782` | native tool-event evidence vocabulary | **6/8** | Current event vocabulary cannot represent explicit absence + bound deadline at the measured boundary. |
-| LangGraph | `langchain-ai/langgraph@f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f` | hosted state/checkpoint boundary | **8/8** | User reducer state and checkpoint `channel_values` can preserve the complete witness sequence. |
-| AutoGen | `microsoft/autogen@027ecf0a379bcc1d09956d46d12d44a3ad9cee14` | hosted JSON-serializable saved-state boundary | **8/8** | `save_state()/load_state()` can carry the complete witness set through replay. |
-| Microsoft Agent Framework | `microsoft/agent-framework@d9d3fb6252f7ae9e7f8104edce7266f0782a813c` | framework-native workflow checkpoint hosting domain state | **8/8** | `WorkflowCheckpoint.state` can preserve explicit witnesses while checkpoint timestamp/lineage remain non-decision metadata. |
-| OpenAI Agents SDK | `openai/openai-agents-python@7f7a44f8dc0650296bd5ab6c745c9bcbaa6ac3b7` | restricted hosted witness envelope over `SQLiteSession` JSON items | **8/8*** | JSON session persistence preserves ordered evidence, but native `Session` is mutable via `pop_item()` / `clear_session()`; adapter policy is required. |
+Machine-readable source of truth:
 
-`*` An 8/8 hosted projection score does **not** make the underlying storage contract append-only. For OpenAI Agents SDK, the benchmark intentionally records the native mutation surface separately.
+```text
+benchmarks/agent-runtime-conformance-matrix-v0.1/matrix.json
+```
 
-## The eight checks
+Validator:
+
+```text
+contractgraph_qa/runtime_conformance_matrix.py
+```
+
+## Seven-axis matrix
+
+Legend:
+
+- `PASS` — measured boundary satisfies the capability.
+- `FAIL` — measured boundary contradicts the capability.
+- `ADAPTER` — the framework can host the capability, but adapter policy must enforce it.
+- `N/M` — not measured by the pinned benchmark.
+- destructive mutations are shown as `PRESENT`, `ABSENT`, or `N/M` rather than as a capability pass/fail.
+
+| Runtime | Projection | Replay | Explicit absence | Deadline binding | Persistence | Append-only evidence | Destructive mutations |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| CrewAI | **6/8 FAIL** | PASS | **FAIL** | **FAIL** | N/M | N/M | N/M |
+| LangGraph | **8/8 PASS** | PASS | PASS | PASS | PASS | **ADAPTER** | N/M |
+| AutoGen | **8/8 PASS** | PASS | PASS | PASS | PASS | **ADAPTER** | N/M |
+| Microsoft Agent Framework | **8/8 PASS** | PASS | PASS | PASS | PASS | **ADAPTER** | N/M |
+| OpenAI Agents SDK | **8/8 PASS** | PASS | PASS | PASS | PASS | **FAIL** | **PRESENT** (`pop_item`, `clear_session`) |
+
+The matrix exposes an important distinction:
+
+```text
+projection conformance != persistence != append-only evidence
+```
+
+A runtime may replay the frozen projection perfectly while its underlying storage still permits evidence deletion or replacement.
+
+## Pinned sources and measured boundaries
+
+| Runtime | Pinned source | Boundary |
+|---|---|---|
+| CrewAI | `crewAIInc/crewAI@f4731f5025f861c78e3af0487cc80bf5e7c64782` | native tool-event evidence vocabulary |
+| LangGraph | `langchain-ai/langgraph@f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f` | hosted StateGraph/checkpoint state |
+| AutoGen | `microsoft/autogen@027ecf0a379bcc1d09956d46d12d44a3ad9cee14` | hosted JSON-serializable `save_state()/load_state()` |
+| Microsoft Agent Framework | `microsoft/agent-framework@d9d3fb6252f7ae9e7f8104edce7266f0782a813c` | native `WorkflowCheckpoint.state` hosting domain witnesses |
+| OpenAI Agents SDK | `openai/openai-agents-python@7f7a44f8dc0650296bd5ab6c745c9bcbaa6ac3b7` | restricted hosted witness envelope over `SQLiteSession` JSON items |
+
+## Axis definitions
+
+### Projection
+
+Whether the measured adapter/boundary passes the eight checks in `witness-projection-conformance/v0.1`.
+
+The eight checks are:
 
 1. deterministic across evaluator time;
 2. explicit absence enables transition;
@@ -25,14 +69,54 @@ Scores below are **boundary-specific**. They are not overall framework rankings.
 7. missing deadline fails closed;
 8. projection does not mutate evidence.
 
-## Comparison discipline
+### Replay
 
-The matrix deliberately distinguishes **native evidence vocabulary** from **hosted state/checkpoint capability**.
+Whether the same recorded witness sequence produces the same projected outcome when evaluated again.
 
-A `6/8` native-event result is not directly equivalent to an `8/8` hosted-state result. Likewise, an `8/8` hosted projection does not imply that the underlying persistence API is immutable. The useful question is where each runtime exposes a boundary capable of preserving the facts required for deterministic replay, and what policy is still required around that boundary.
+### Explicit absence
 
-The matrix therefore answers:
+Whether a negative observation such as “no response in this inspected window” can exist as explicit evidence rather than being inferred from the evaluator's current clock.
 
-> At this pinned source boundary, can the runtime represent and replay the complete witness contract without inventing facts from ambient time?
+### Deadline binding
 
-It does not answer which framework is better overall, which framework has stronger security, whether storage is append-only unless explicitly tested, or whether arbitrary applications built on a conformant substrate are themselves conformant.
+Whether the deadline that changes the outcome is carried by evidence rather than read from ambient configuration during replay.
+
+### Persistence
+
+Whether the measured boundary provides a concrete persistence/restore path capable of carrying the witness contract. `N/M` means the benchmark did not test that question; it does not mean the runtime lacks persistence features elsewhere.
+
+### Append-only evidence
+
+Whether the evidence path itself is protected against destructive history changes.
+
+`ADAPTER` means the measured framework substrate can host append-only witness semantics, but the guarantee comes from the adapter/reducer policy rather than from a proven immutable native storage contract.
+
+### Destructive mutations
+
+Whether the measured native persistence API exposes operations that can remove evidence history. For OpenAI Agents SDK the pinned `Session` protocol exposes `pop_item()` and `clear_session()`, so this axis is explicitly `PRESENT` even though hosted projection remains 8/8.
+
+## Machine-checking discipline
+
+`tools/tests/test_agent_runtime_conformance_matrix.py` cross-checks every runtime row against its source-pinned benchmark `result.json`:
+
+- repository and commit pins must match;
+- projection pass/fail score must match the eight underlying checks;
+- replay, explicit-absence, and deadline-binding axes must agree with the benchmark result;
+- an 8/8 projection cannot hide an independently observed storage mutation surface;
+- `appendOnly=PASS` cannot coexist with known destructive mutations.
+
+This makes the comparison table derived evidence rather than hand-maintained prose.
+
+## Current interpretation
+
+The first five runtimes already show three distinct architectural profiles:
+
+1. **insufficient native evidence vocabulary** — CrewAI at the measured tool-event boundary cannot encode explicit absence/deadline evidence;
+2. **conformant hosted state substrate** — LangGraph, AutoGen, and Microsoft Agent Framework can carry the complete contract, while append-only behavior remains an adapter responsibility;
+3. **conformant projection over mutable persistence** — OpenAI Agents SDK can carry/replay the contract through `SQLiteSession`, but the native session API permits destructive history mutation.
+
+The useful question is therefore no longer just “does this framework score 8/8?” It is:
+
+> Which guarantees come from the runtime itself, which come from the adapter, and which remain unmeasured?
+
+That is the claim boundary of Agent Runtime Conformance Matrix v0.1.
