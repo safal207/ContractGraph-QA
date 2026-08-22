@@ -107,6 +107,30 @@ Whether the measured native persistence API exposes operations that can remove e
 
 This makes the comparison table derived evidence rather than hand-maintained prose.
 
+## Portable runtime profiles
+
+External runtimes do not need to edit the central matrix to express a result. `Agent Runtime Conformance Profile v0.1` defines a portable single-runtime document with the same seven axes, an exact source pin, evidence references, and an explicit claim boundary.
+
+Validate one profile with:
+
+```bash
+cgqa runtime-conformance-profile --input profile.json
+```
+
+Schema:
+
+```text
+contractgraph_qa/schemas/agent-runtime-conformance-profile-v0.1.schema.json
+```
+
+Canonical example:
+
+```text
+examples/openai-agents-runtime-conformance-profile-v0.1.json
+```
+
+See `docs/AGENT_RUNTIME_CONFORMANCE_PROFILE.md` for the submission contract and the distinction between `profileValid` and `projectionConformant`.
+
 ## Current interpretation
 
 The first five runtimes already show three distinct architectural profiles:

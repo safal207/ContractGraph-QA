@@ -25,6 +25,10 @@ from contractgraph_qa.payment_evidence_pack import (
     build_payment_evidence_pack,
     verify_payment_evidence_pack,
 )
+from contractgraph_qa.runtime_conformance_profile import (
+    evaluate_runtime_conformance_profile,
+    load_runtime_conformance_profile,
+)
 from contractgraph_qa.successor_consistency import (
     load_successor_consistency_model,
     run_successor_consistency_model,
@@ -190,6 +194,36 @@ def _execution_trace_main(argv: list[str]) -> int:
         return EXIT_INTERNAL
 
 
+def _runtime_conformance_profile_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa runtime-conformance-profile",
+        description=(
+            "Validate one portable Agent Runtime Conformance Profile v0.1 and "
+            "emit separate profile-validity and projection-conformance claims."
+        ),
+    )
+    parser.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Agent Runtime Conformance Profile v0.1 JSON",
+    )
+    args = parser.parse_args(argv)
+    try:
+        profile = load_runtime_conformance_profile(args.input.resolve())
+        _emit(evaluate_runtime_conformance_profile(profile))
+        return EXIT_OK
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
 def _evidence_pack_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa agent-payment-evidence-pack",
@@ -255,6 +289,8 @@ def main(argv: list[str] | None = None) -> int:
         return _successor_consistency_main(effective[1:])
     if effective and effective[0] == "execution-trace-check":
         return _execution_trace_main(effective[1:])
+    if effective and effective[0] == "runtime-conformance-profile":
+        return _runtime_conformance_profile_main(effective[1:])
     if effective and effective[0] == "agent-payment-evidence-pack":
         return _evidence_pack_main(effective[1:])
     if effective and effective[0] == "verify-agent-payment-evidence-pack":
