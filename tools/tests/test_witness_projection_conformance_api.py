@@ -62,7 +62,7 @@ class WitnessProjectionConformanceApiTest(unittest.TestCase):
         self.assertFalse(report.conformant)
         checks = {check.name: check for check in report.checks}
         self.assertFalse(checks["deterministic_across_evaluator_time"].passed)
-        self.assertFalse(checks["replay_stability"].passed)
+        self.assertFalse(checks["explicit_absence_enables_transition"].passed)
 
     def test_deadline_ignoring_projection_is_rejected(self) -> None:
         report = run_witness_projection_conformance(deadline_ignoring_projection)
