@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "agent-runtime-conformance-matrix/v0.1",
+  "projectionSpec": "witness-projection-conformance/v0.1",
+  "statusVocabulary": {
+    "capability": ["pass", "fail", "adapter_required", "not_measured"],
+    "mutationSurface": ["present", "absent", "not_measured"]
+  },
+  "axes": [
+    "projection",
+    "replay",
+    "explicitAbsence",
+    "deadlineBinding",
+    "persistence",
+    "appendOnly",
+    "destructiveMutations"
+  ],
+  "runtimes": [
+    {
+      "id": "crewai",
+      "name": "CrewAI",
+      "source": {
+        "repository": "crewAIInc/crewAI",
+        "commit": "f4731f5025f861c78e3af0487cc80bf5e7c64782"
+      },
+      "boundaryType": "native_event_vocabulary",
+      "benchmarkResult": "benchmarks/crewai-tool-event-conformance-v0.1/result.json",
+      "projection": {"status": "fail", "passed": 6, "total": 8},
+      "replay": "pass",
+      "explicitAbsence": "fail",
+      "deadlineBinding": "fail",
+      "persistence": "not_measured",
+      "appendOnly": "not_measured",
+      "destructiveMutations": {"status": "not_measured", "operations": []},
+      "claimBoundary": "The measured native tool-event vocabulary replays recorded events deterministically but cannot represent an explicit absence observation bound to its inspected deadline/window. Persistence and storage immutability are outside this benchmark."
+    },
+    {
+      "id": "langgraph",
+      "name": "LangGraph",
+      "source": {
+        "repository": "langchain-ai/langgraph",
+        "commit": "f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f"
+      },
+      "boundaryType": "hosted_checkpoint_state",
+      "benchmarkResult": "benchmarks/langgraph-checkpoint-state-conformance-v0.1/result.json",
+      "projection": {"status": "pass", "passed": 8, "total": 8},
+      "replay": "pass",
+      "explicitAbsence": "pass",
+      "deadlineBinding": "pass",
+      "persistence": "pass",
+      "appendOnly": "adapter_required",
+      "destructiveMutations": {"status": "not_measured", "operations": []},
+      "claimBoundary": "StateGraph reducers and checkpoint channel_values can host the complete witness contract. Append-only evidence behavior comes from the witness reducer/adapter policy, not a claim that arbitrary LangGraph state is immutable."
+    },
+    {
+      "id": "autogen",
+      "name": "AutoGen",
+      "source": {
+        "repository": "microsoft/autogen",
+        "commit": "027ecf0a379bcc1d09956d46d12d44a3ad9cee14"
+      },
+      "boundaryType": "hosted_saved_state",
+      "benchmarkResult": "benchmarks/autogen-saved-state-conformance-v0.1/result.json",
+      "projection": {"status": "pass", "passed": 8, "total": 8},
+      "replay": "pass",
+      "explicitAbsence": "pass",
+      "deadlineBinding": "pass",
+      "persistence": "pass",
+      "appendOnly": "adapter_required",
+      "destructiveMutations": {"status": "not_measured", "operations": []},
+      "claimBoundary": "JSON-serializable save_state/load_state can carry and restore the complete witness contract. Append-only evidence behavior is an adapter discipline rather than a proven native storage guarantee."
+    },
+    {
+      "id": "microsoft-agent-framework",
+      "name": "Microsoft Agent Framework",
+      "source": {
+        "repository": "microsoft/agent-framework",
+        "commit": "d9d3fb6252f7ae9e7f8104edce7266f0782a813c"
+      },
+      "boundaryType": "native_workflow_checkpoint_hosting_domain_state",
+      "benchmarkResult": "benchmarks/ms-agent-framework-checkpoint-conformance-v0.1/result.json",
+      "projection": {"status": "pass", "passed": 8, "total": 8},
+      "replay": "pass",
+      "explicitAbsence": "pass",
+      "deadlineBinding": "pass",
+      "persistence": "pass",
+      "appendOnly": "adapter_required",
+      "destructiveMutations": {"status": "not_measured", "operations": []},
+      "claimBoundary": "WorkflowCheckpoint.state can persist and restore complete witnesses while checkpoint timestamp/lineage remain non-decision metadata. Immutable evidence semantics still require an append-only adapter policy."
+    },
+    {
+      "id": "openai-agents-sdk",
+      "name": "OpenAI Agents SDK",
+      "source": {
+        "repository": "openai/openai-agents-python",
+        "commit": "7f7a44f8dc0650296bd5ab6c745c9bcbaa6ac3b7"
+      },
+      "boundaryType": "restricted_hosted_sqlite_session",
+      "benchmarkResult": "benchmarks/openai-agents-session-conformance-v0.1/result.json",
+      "projection": {"status": "pass", "passed": 8, "total": 8},
+      "replay": "pass",
+      "explicitAbsence": "pass",
+      "deadlineBinding": "pass",
+      "persistence": "pass",
+      "appendOnly": "fail",
+      "destructiveMutations": {"status": "present", "operations": ["pop_item", "clear_session"]},
+      "claimBoundary": "SQLiteSession JSON persistence can carry the complete witness contract under a restricted adapter, but the native Session protocol explicitly permits destructive history mutation."
+    }
+  ]
+}
