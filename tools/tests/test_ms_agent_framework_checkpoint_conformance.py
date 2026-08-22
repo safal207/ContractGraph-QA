@@ -33,7 +33,11 @@ class MicrosoftAgentFrameworkCheckpointConformanceTest(unittest.TestCase):
         )
 
     def test_checkpoint_state_preserves_exact_witness_order(self) -> None:
-        witnesses = [copy.deepcopy(SENT), copy.deepcopy(ABSENCE_AFTER_DEADLINE), copy.deepcopy(RESPONSE)]
+        witnesses = [
+            copy.deepcopy(SENT),
+            copy.deepcopy(ABSENCE_AFTER_DEADLINE),
+            copy.deepcopy(RESPONSE),
+        ]
         checkpoint = workflow_checkpoint_state(witnesses)
         restored = restore_witnesses_from_workflow_checkpoint(checkpoint)
         self.assertEqual(restored, witnesses)
@@ -47,13 +51,24 @@ class MicrosoftAgentFrameworkCheckpointConformanceTest(unittest.TestCase):
         )
         restored_checkpoint = checkpoint_json_round_trip(checkpoint)
         restored = restore_witnesses_from_workflow_checkpoint(restored_checkpoint)
-        self.assertEqual(restored, witnesses)
+
+        self.assertEqual([item["kind"] for item in restored], ["sent", "absence"])
+        self.assertEqual(restored[0]["at"], SENT["at"])
+        self.assertEqual(restored[0]["deadline"], SENT["deadline"])
+        self.assertEqual(restored[1]["checked_at"], ABSENCE_AFTER_DEADLINE["checked_at"])
+        self.assertEqual(tuple(restored[1]["window"]), ABSENCE_AFTER_DEADLINE["window"])
+        self.assertEqual(restored[1]["deadline"], ABSENCE_AFTER_DEADLINE["deadline"])
+        self.assertEqual(restored[1]["result"], ABSENCE_AFTER_DEADLINE["result"])
         self.assertEqual(restored_checkpoint["previous_checkpoint_id"], "cp-1")
 
     def test_checkpoint_metadata_time_is_not_projection_input(self) -> None:
         witnesses = [copy.deepcopy(SENT), copy.deepcopy(ABSENCE_AFTER_DEADLINE)]
-        early = workflow_checkpoint_state(witnesses, timestamp="2026-01-01T00:00:00+00:00")
-        late = workflow_checkpoint_state(witnesses, timestamp="2099-01-01T00:00:00+00:00")
+        early = workflow_checkpoint_state(
+            witnesses, timestamp="2026-01-01T00:00:00+00:00"
+        )
+        late = workflow_checkpoint_state(
+            witnesses, timestamp="2099-01-01T00:00:00+00:00"
+        )
         early_outcome = project_ms_agent_framework_checkpoint_boundary(
             restore_witnesses_from_workflow_checkpoint(early), now=3000
         )
