@@ -10,6 +10,9 @@ Scores below are **boundary-specific**. They are not overall framework rankings.
 | LangGraph | `langchain-ai/langgraph@f09cfe8ffc1eeffd68f4b628ed69c30f7cad229f` | hosted state/checkpoint boundary | **8/8** | User reducer state and checkpoint `channel_values` can preserve the complete witness sequence. |
 | AutoGen | `microsoft/autogen@027ecf0a379bcc1d09956d46d12d44a3ad9cee14` | hosted JSON-serializable saved-state boundary | **8/8** | `save_state()/load_state()` can carry the complete witness set through replay. |
 | Microsoft Agent Framework | `microsoft/agent-framework@d9d3fb6252f7ae9e7f8104edce7266f0782a813c` | framework-native workflow checkpoint hosting domain state | **8/8** | `WorkflowCheckpoint.state` can preserve explicit witnesses while checkpoint timestamp/lineage remain non-decision metadata. |
+| OpenAI Agents SDK | `openai/openai-agents-python@7f7a44f8dc0650296bd5ab6c745c9bcbaa6ac3b7` | restricted hosted witness envelope over `SQLiteSession` JSON items | **8/8*** | JSON session persistence preserves ordered evidence, but native `Session` is mutable via `pop_item()` / `clear_session()`; adapter policy is required. |
+
+`*` An 8/8 hosted projection score does **not** make the underlying storage contract append-only. For OpenAI Agents SDK, the benchmark intentionally records the native mutation surface separately.
 
 ## The eight checks
 
@@ -26,10 +29,10 @@ Scores below are **boundary-specific**. They are not overall framework rankings.
 
 The matrix deliberately distinguishes **native evidence vocabulary** from **hosted state/checkpoint capability**.
 
-A `6/8` native-event result is not directly equivalent to an `8/8` hosted-state result. The useful question is where each runtime exposes a boundary capable of preserving the facts required for deterministic replay.
+A `6/8` native-event result is not directly equivalent to an `8/8` hosted-state result. Likewise, an `8/8` hosted projection does not imply that the underlying persistence API is immutable. The useful question is where each runtime exposes a boundary capable of preserving the facts required for deterministic replay, and what policy is still required around that boundary.
 
 The matrix therefore answers:
 
 > At this pinned source boundary, can the runtime represent and replay the complete witness contract without inventing facts from ambient time?
 
-It does not answer which framework is better overall, which framework has stronger security, or whether arbitrary applications built on a conformant substrate are themselves conformant.
+It does not answer which framework is better overall, which framework has stronger security, whether storage is append-only unless explicitly tested, or whether arbitrary applications built on a conformant substrate are themselves conformant.
