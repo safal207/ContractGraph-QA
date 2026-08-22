@@ -51,7 +51,12 @@ def _decision_main(argv: list[str]) -> int:
         prog="cgqa agent-payment-decision",
         description="Derive one fail-closed next action from normalized agent-payment state.",
     )
-    parser.add_argument("--input", type=Path, required=True, help="Unified Agent Payment Decision Input v0.1 JSON")
+    parser.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Unified Agent Payment Decision Input v0.1 JSON",
+    )
     args = parser.parse_args(argv)
     try:
         _emit(evaluate_agent_payment_decision_file(args.input.resolve()))
@@ -62,7 +67,7 @@ def _decision_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -70,12 +75,21 @@ def _decision_main(argv: list[str]) -> int:
 def _lifecycle_liveness_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa lifecycle-liveness",
-        description="Verify that every reachable state holding locked economic value retains a path to a declared safe economic terminal.",
+        description=(
+            "Verify that every reachable state holding locked economic value "
+            "retains a path to a declared safe economic terminal."
+        ),
     )
-    parser.add_argument("--model", type=Path, required=True, help="Lifecycle liveness model JSON")
+    parser.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Lifecycle liveness model JSON",
+    )
     args = parser.parse_args(argv)
     try:
-        result = run_lifecycle_liveness_model(load_lifecycle_liveness_model(args.model.resolve()))
+        model = load_lifecycle_liveness_model(args.model.resolve())
+        result = run_lifecycle_liveness_model(model)
         _emit(result)
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
@@ -84,7 +98,7 @@ def _lifecycle_liveness_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -97,10 +111,16 @@ def _contract_lattice_main(argv: list[str]) -> int:
             "and explicit time-witness coordinates."
         ),
     )
-    parser.add_argument("--model", type=Path, required=True, help="Contract Lattice v0.1 JSON")
+    parser.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Contract Lattice v0.1 JSON",
+    )
     args = parser.parse_args(argv)
     try:
-        result = run_contract_lattice(load_contract_lattice(args.model.resolve()))
+        model = load_contract_lattice(args.model.resolve())
+        result = run_contract_lattice(model)
         _emit(result)
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
@@ -109,7 +129,7 @@ def _contract_lattice_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -117,12 +137,21 @@ def _contract_lattice_main(argv: list[str]) -> int:
 def _economic_cardinality_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa economic-cardinality",
-        description="Verify that each logical action/effect slot produces at most one distinct confirmed economic occurrence.",
+        description=(
+            "Verify that each logical action/effect slot produces at most one "
+            "distinct confirmed economic occurrence."
+        ),
     )
-    parser.add_argument("--model", type=Path, required=True, help="Economic effect cardinality model JSON")
+    parser.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Economic effect cardinality model JSON",
+    )
     args = parser.parse_args(argv)
     try:
-        result = run_economic_cardinality_model(load_economic_cardinality_model(args.model.resolve()))
+        model = load_economic_cardinality_model(args.model.resolve())
+        result = run_economic_cardinality_model(model)
         _emit(result)
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
@@ -131,7 +160,7 @@ def _economic_cardinality_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -139,12 +168,21 @@ def _economic_cardinality_main(argv: list[str]) -> int:
 def _successor_consistency_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa successor-consistency",
-        description="Verify that one conflict-domain parent state version produces at most one distinct committed child commit.",
+        description=(
+            "Verify that one conflict-domain parent state version produces at most "
+            "one distinct committed child commit."
+        ),
     )
-    parser.add_argument("--model", type=Path, required=True, help="Successor consistency model JSON")
+    parser.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Successor consistency model JSON",
+    )
     args = parser.parse_args(argv)
     try:
-        result = run_successor_consistency_model(load_successor_consistency_model(args.model.resolve()))
+        model = load_successor_consistency_model(args.model.resolve())
+        result = run_successor_consistency_model(model)
         _emit(result)
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
@@ -153,7 +191,7 @@ def _successor_consistency_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -161,9 +199,17 @@ def _successor_consistency_main(argv: list[str]) -> int:
 def _execution_trace_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa execution-trace-check",
-        description="Project one normalized execution evidence stream into independent economic-cardinality and successor-consistency checks.",
+        description=(
+            "Project one normalized execution evidence stream into independent "
+            "economic-cardinality and successor-consistency checks."
+        ),
     )
-    parser.add_argument("--trace", type=Path, required=True, help="Normalized execution trace v0.1 JSON")
+    parser.add_argument(
+        "--trace",
+        type=Path,
+        required=True,
+        help="Normalized execution trace v0.1 JSON",
+    )
     args = parser.parse_args(argv)
     try:
         result = run_execution_trace(load_execution_trace(args.trace.resolve()))
@@ -175,7 +221,7 @@ def _execution_trace_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -183,9 +229,17 @@ def _execution_trace_main(argv: list[str]) -> int:
 def _runtime_conformance_profile_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa runtime-conformance-profile",
-        description="Validate one portable Agent Runtime Conformance Profile v0.1 and emit separate profile-validity and projection-conformance claims.",
+        description=(
+            "Validate one portable Agent Runtime Conformance Profile v0.1 and "
+            "emit separate profile-validity and projection-conformance claims."
+        ),
     )
-    parser.add_argument("--input", type=Path, required=True, help="Agent Runtime Conformance Profile v0.1 JSON")
+    parser.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Agent Runtime Conformance Profile v0.1 JSON",
+    )
     args = parser.parse_args(argv)
     try:
         profile = load_runtime_conformance_profile(args.input.resolve())
@@ -197,7 +251,7 @@ def _runtime_conformance_profile_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -207,8 +261,18 @@ def _evidence_pack_main(argv: list[str]) -> int:
         prog="cgqa agent-payment-evidence-pack",
         description="Build a deterministic customer-facing evidence ZIP from agent-payment state.",
     )
-    parser.add_argument("--input", type=Path, required=True, help="Unified Agent Payment Decision Input v0.1 JSON")
-    parser.add_argument("--output", type=Path, required=True, help="Destination evidence ZIP")
+    parser.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Unified Agent Payment Decision Input v0.1 JSON",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Destination evidence ZIP",
+    )
     args = parser.parse_args(argv)
     try:
         _emit(build_payment_evidence_pack(args.input.resolve(), args.output.resolve()))
@@ -219,7 +283,7 @@ def _evidence_pack_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
@@ -240,7 +304,7 @@ def _verify_evidence_pack_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         print("cgqa: interrupted", file=sys.stderr)
         return 130
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:  # pragma: no cover - defensive product boundary
         print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
         return EXIT_INTERNAL
 
