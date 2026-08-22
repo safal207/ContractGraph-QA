@@ -1,13 +1,8 @@
 """Extract lifecycle state transitions from Solidity compiler AST evidence.
 
-The extractor separates structural facts from reviewed economic semantics:
-- Solidity/Foundry AST supplies enum states, guarded source states and state writes.
-- A strict profile declares which extracted states hold economic value and which
-  states are safe economic terminals.
-
-If a state-writing function cannot be tied to an unambiguous source-state guard,
-extraction is marked incomplete and the combined check returns ``inconclusive``
-instead of overstating lifecycle safety.
+Structural facts come from compiler AST. Economic semantics come from a reviewed
+profile. Unsupported or ambiguous state writers make verification inconclusive
+instead of manufacturing a PASS.
 """
 
 from __future__ import annotations
@@ -76,16 +71,32 @@ def lifecycle_profile_from_dict(data: dict[str, Any]) -> SolidityLifecycleProfil
     _require(isinstance(data, dict), "Solidity lifecycle profile must be a JSON object")
     extras = sorted(set(data) - PROFILE_KEYS)
     missing = sorted(PROFILE_KEYS - set(data))
-    _require(not extras, "Solidity lifecycle profile contains unexpected fields: " + ", ".join(extras))
-    _require(not missing, "Solidity lifecycle profile missing required fields: " + ", ".join(missing))
+    _require(
+        not extras,
+        "Solidity lifecycle profile contains unexpected fields: " + ", ".join(extras),
+    )
+    _require(
+        not missing,
+        "Solidity lifecycle profile missing required fields: " + ", ".join(missing),
+    )
 
     selector_kind = _text(data["selectorKind"], "selectorKind")
-    _require(selector_kind in SELECTOR_KINDS, "selectorKind must be identifier, member, or either")
+    _require(
+        selector_kind in SELECTOR_KINDS,
+        "selectorKind must be identifier, member, or either",
+    )
 
     value_states = _string_tuple(data["valueHoldingStates"], "valueHoldingStates")
-    safe_terminals = _string_tuple(data["safeTerminalStates"], "safeTerminalStates", non_empty=True)
+    safe_terminals = _string_tuple(
+        data["safeTerminalStates"],
+        "safeTerminalStates",
+        non_empty=True,
+    )
     overlap = sorted(set(value_states) & set(safe_terminals))
-    _require(not overlap, "safe terminal states cannot hold locked value: " + ", ".join(overlap))
+    _require(
+        not overlap,
+        "safe terminal states cannot hold locked value: " + ", ".join(overlap),
+    )
 
     return SolidityLifecycleProfile(
         contract_name=_text(data["contractName"], "contractName"),
@@ -115,22 +126,37 @@ def _walk(value: Any) -> Iterable[dict[str, Any]]:
 
 
 def _canonical_sha256(value: object) -> str:
-    canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    canonical = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _find_contract(ast: dict[str, Any], profile: SolidityLifecycleProfile) -> dict[str, Any]:
+def _find_contract(
+    ast: dict[str, Any],
+    profile: SolidityLifecycleProfile,
+) -> dict[str, Any]:
     matches = [
         node
         for node in _walk(ast)
-        if node.get("nodeType") == "ContractDefinition" and node.get("name") == profile.contract_name
+        if node.get("nodeType") == "ContractDefinition"
+        and node.get("name") == profile.contract_name
     ]
     _require(bool(matches), f"contract not found in AST: {profile.contract_name}")
-    _require(len(matches) == 1, f"multiple contract definitions found: {profile.contract_name}")
+    _require(
+        len(matches) == 1,
+        f"multiple contract definitions found: {profile.contract_name}",
+    )
     return matches[0]
 
 
-def _enum_states(contract: Mapping[str, Any], profile: SolidityLifecycleProfile) -> tuple[str, ...]:
+def _enum_states(
+    contract: Mapping[str, Any],
+    profile: SolidityLifecycleProfile,
+) -> tuple[str, ...]:
     matches = [
         node
         for node in contract.get("nodes", [])
@@ -139,30 +165,49 @@ def _enum_states(contract: Mapping[str, Any], profile: SolidityLifecycleProfile)
         and node.get("name") == profile.enum_name
     ]
     _require(bool(matches), f"enum not found in contract: {profile.enum_name}")
-    _require(len(matches) == 1, f"multiple enum definitions found: {profile.enum_name}")
+    _require(
+        len(matches) == 1,
+        f"multiple enum definitions found: {profile.enum_name}",
+    )
     members = tuple(
         _text(member.get("name"), f"enum {profile.enum_name} member")
         for member in matches[0].get("members", [])
         if isinstance(member, dict)
     )
     _require(bool(members), f"enum has no members: {profile.enum_name}")
-    _require(len(members) == len(set(members)), f"enum contains duplicate members: {profile.enum_name}")
+    _require(
+        len(members) == len(set(members)),
+        f"enum contains duplicate members: {profile.enum_name}",
+    )
     return members
 
 
-def _matches_state_expression(node: Any, profile: SolidityLifecycleProfile) -> bool:
+def _matches_state_expression(
+    node: Any,
+    profile: SolidityLifecycleProfile,
+) -> bool:
     if not isinstance(node, dict):
         return False
     if profile.selector_kind in {"identifier", "either"}:
-        if node.get("nodeType") == "Identifier" and node.get("name") == profile.state_selector:
+        if (
+            node.get("nodeType") == "Identifier"
+            and node.get("name") == profile.state_selector
+        ):
             return True
     if profile.selector_kind in {"member", "either"}:
-        if node.get("nodeType") == "MemberAccess" and node.get("memberName") == profile.state_selector:
+        if (
+            node.get("nodeType") == "MemberAccess"
+            and node.get("memberName") == profile.state_selector
+        ):
             return True
     return False
 
 
-def _enum_member(node: Any, profile: SolidityLifecycleProfile, enum_states: set[str]) -> str | None:
+def _enum_member(
+    node: Any,
+    profile: SolidityLifecycleProfile,
+    enum_states: set[str],
+) -> str | None:
     if not isinstance(node, dict) or node.get("nodeType") != "MemberAccess":
         return None
     member = node.get("memberName")
@@ -170,11 +215,16 @@ def _enum_member(node: Any, profile: SolidityLifecycleProfile, enum_states: set[
         return None
     expression = node.get("expression")
     if isinstance(expression, dict):
-        if expression.get("nodeType") == "Identifier" and expression.get("name") == profile.enum_name:
+        if (
+            expression.get("nodeType") == "Identifier"
+            and expression.get("name") == profile.enum_name
+        ):
             return str(member)
-        type_string = expression.get("typeDescriptions", {}).get("typeString")
-        if isinstance(type_string, str) and f".{profile.enum_name}" in type_string:
-            return str(member)
+        type_descriptions = expression.get("typeDescriptions", {})
+        if isinstance(type_descriptions, dict):
+            type_string = type_descriptions.get("typeString")
+            if isinstance(type_string, str) and f".{profile.enum_name}" in type_string:
+                return str(member)
     return None
 
 
@@ -229,7 +279,11 @@ def _allowed_when_false(
     if comparison is not None:
         operator, member = comparison
         return {member} if operator == "!=" else None
-    if isinstance(node, dict) and node.get("nodeType") == "UnaryOperation" and node.get("operator") == "!":
+    if (
+        isinstance(node, dict)
+        and node.get("nodeType") == "UnaryOperation"
+        and node.get("operator") == "!"
+    ):
         return _allowed_when_true(node.get("subExpression"), profile, enum_states)
     return None
 
@@ -241,14 +295,22 @@ def _contains_revert(node: Any) -> bool:
     )
 
 
-def _require_guard(statement: Any, profile: SolidityLifecycleProfile, enum_states: set[str]) -> set[str] | None:
+def _require_guard(
+    statement: Any,
+    profile: SolidityLifecycleProfile,
+    enum_states: set[str],
+) -> set[str] | None:
     if not isinstance(statement, dict) or statement.get("nodeType") != "ExpressionStatement":
         return None
     expression = statement.get("expression")
     if not isinstance(expression, dict) or expression.get("nodeType") != "FunctionCall":
         return None
     callee = expression.get("expression")
-    if not isinstance(callee, dict) or callee.get("nodeType") != "Identifier" or callee.get("name") != "require":
+    if (
+        not isinstance(callee, dict)
+        or callee.get("nodeType") != "Identifier"
+        or callee.get("name") != "require"
+    ):
         return None
     arguments = expression.get("arguments", [])
     if not arguments:
@@ -256,14 +318,16 @@ def _require_guard(statement: Any, profile: SolidityLifecycleProfile, enum_state
     return _allowed_when_true(arguments[0], profile, enum_states)
 
 
-def _if_revert_guard(statement: Any, profile: SolidityLifecycleProfile, enum_states: set[str]) -> set[str] | None:
+def _if_revert_guard(
+    statement: Any,
+    profile: SolidityLifecycleProfile,
+    enum_states: set[str],
+) -> set[str] | None:
     if not isinstance(statement, dict) or statement.get("nodeType") != "IfStatement":
         return None
-    false_body = statement.get("falseBody")
-    if false_body is not None:
+    if statement.get("falseBody") is not None:
         return None
-    true_body = statement.get("trueBody")
-    if not _contains_revert(true_body):
+    if not _contains_revert(statement.get("trueBody")):
         return None
     return _allowed_when_false(statement.get("condition"), profile, enum_states)
 
@@ -273,7 +337,11 @@ def _assignment_target(
     profile: SolidityLifecycleProfile,
     enum_states: set[str],
 ) -> str | None:
-    if not isinstance(node, dict) or node.get("nodeType") != "Assignment" or node.get("operator") != "=":
+    if (
+        not isinstance(node, dict)
+        or node.get("nodeType") != "Assignment"
+        or node.get("operator") != "="
+    ):
         return None
     if not _matches_state_expression(node.get("leftHandSide"), profile):
         return None
@@ -290,7 +358,10 @@ def _function_source_states(
         return None
     allowed: set[str] | None = None
     for statement in body.get("statements", []):
-        if any(_assignment_target(node, profile, enum_states) for node in _walk(statement)):
+        if any(
+            _assignment_target(node, profile, enum_states)
+            for node in _walk(statement)
+        ):
             break
         candidate = _require_guard(statement, profile, enum_states)
         if candidate is None:
@@ -312,13 +383,16 @@ def extract_lifecycle_from_ast(
     enum_members = _enum_states(contract, profile)
     enum_set = set(enum_members)
 
-    declared_semantic_states = (
+    semantic_states = (
         {profile.initial_state}
         | set(profile.value_holding_states)
         | set(profile.safe_terminal_states)
     )
-    unknown = sorted(declared_semantic_states - enum_set)
-    _require(not unknown, "profile references states absent from enum: " + ", ".join(unknown))
+    unknown = sorted(semantic_states - enum_set)
+    _require(
+        not unknown,
+        "profile references states absent from enum: " + ", ".join(unknown),
+    )
 
     states = tuple(
         LifecycleState(
@@ -353,7 +427,10 @@ def extract_lifecycle_from_ast(
         )
         if not targets:
             continue
-        function_name = str(function.get("name") or f"function-{function.get('id', 'unknown')}")
+
+        function_name = str(
+            function.get("name") or f"function-{function.get('id', 'unknown')}"
+        )
         source_states = _function_source_states(function, profile, enum_set)
         if source_states is None:
             unresolved.append(
@@ -370,7 +447,11 @@ def extract_lifecycle_from_ast(
             for target in targets:
                 transition_id = f"{function_name}:{source}->{target}"
                 transitions.append(
-                    LifecycleTransition(id=transition_id, source=source, target=target)
+                    LifecycleTransition(
+                        id=transition_id,
+                        source=source,
+                        target=target,
+                    )
                 )
                 evidence.append(
                     {
@@ -390,7 +471,9 @@ def extract_lifecycle_from_ast(
 
     model = LifecycleLivenessModel(
         states=states,
-        transitions=tuple(sorted(transitions, key=lambda item: (item.source, item.target, item.id))),
+        transitions=tuple(
+            sorted(transitions, key=lambda item: (item.source, item.target, item.id))
+        ),
         initial_state=profile.initial_state,
         invariant_id=profile.invariant_id,
     )
@@ -415,7 +498,10 @@ def extract_lifecycle_from_ast(
         "stateSelector": profile.state_selector,
         "enumStates": list(enum_members),
         "model": lifecycle_liveness_model_to_dict(model),
-        "transitionEvidence": sorted(evidence, key=lambda item: str(item["transitionId"])),
+        "transitionEvidence": sorted(
+            evidence,
+            key=lambda item: str(item["transitionId"]),
+        ),
         "unresolvedStateWriters": unresolved,
         "scopeNote": (
             "Transitions are extracted only from supported compiler-AST guard/write shapes. "
@@ -473,27 +559,118 @@ def check_lifecycle_from_ast(
 def load_ast_file(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
-    _require(isinstance(data, dict), "Solidity AST file must contain a JSON object")
+    _require(
+        isinstance(data, dict),
+        "Solidity AST file must contain a JSON object",
+    )
     return data
 
 
-def load_forge_ast(target: str, root: Path | None = None) -> dict[str, Any]:
-    """Run ``forge inspect <target> ast`` and return the decoded compiler AST."""
-
-    target = _text(target, "target")
+def _forge_output_directory(root: Path) -> Path:
     completed = subprocess.run(
-        ["forge", "inspect", target, "ast"],
-        cwd=str(root.resolve()) if root is not None else None,
+        ["forge", "config", "--json"],
+        cwd=str(root),
         text=True,
         capture_output=True,
         check=False,
     )
     if completed.returncode != 0:
-        detail = completed.stderr.strip() or completed.stdout.strip() or "forge inspect failed"
+        detail = completed.stderr.strip() or completed.stdout.strip() or "forge config failed"
         raise ValueError(detail)
     try:
-        data = json.loads(completed.stdout)
+        config = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
-        raise ValueError("forge inspect did not return valid JSON AST") from exc
-    _require(isinstance(data, dict), "forge inspect AST must be a JSON object")
-    return data
+        raise ValueError("forge config did not return valid JSON") from exc
+    _require(isinstance(config, dict), "forge config JSON must be an object")
+    out = config.get("out")
+    _require(isinstance(out, str) and bool(out.strip()), "forge config is missing output directory")
+    output = Path(out)
+    return output if output.is_absolute() else root / output
+
+
+def _source_matches(candidate: str, requested: str) -> bool:
+    candidate_norm = candidate.replace("\\", "/").lstrip("./")
+    requested_norm = requested.replace("\\", "/").lstrip("./")
+    return (
+        candidate_norm == requested_norm
+        or candidate_norm.endswith("/" + requested_norm)
+    )
+
+
+def _ast_candidates_from_build_info(
+    build_info_dir: Path,
+    requested_source: str,
+) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for path in sorted(build_info_dir.glob("*.json")):
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                document = json.load(handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"invalid Foundry build-info JSON: {path}") from exc
+        if not isinstance(document, dict):
+            raise ValueError(f"Foundry build-info must be a JSON object: {path}")
+        output = document.get("output")
+        if not isinstance(output, dict):
+            continue
+        sources = output.get("sources")
+        if not isinstance(sources, dict):
+            continue
+        for source_name, source_data in sources.items():
+            if not isinstance(source_name, str) or not _source_matches(
+                source_name,
+                requested_source,
+            ):
+                continue
+            if not isinstance(source_data, dict):
+                continue
+            ast = source_data.get("ast")
+            if isinstance(ast, dict):
+                candidates.append(ast)
+    return candidates
+
+
+def load_forge_ast(target: str, root: Path | None = None) -> dict[str, Any]:
+    """Compile with Foundry AST/build-info output and return one source-unit AST.
+
+    Foundry 1.7 no longer exposes ``ast`` as a ``forge inspect`` field. The stable
+    compiler-output path is ``forge build --ast --build-info`` followed by the
+    standard compiler output at ``build-info[].output.sources[<source>].ast``.
+    Multiple matching build-info records are accepted only when their AST bytes
+    are semantically identical; divergent candidates fail closed.
+    """
+
+    target = _text(target, "target")
+    _require(":" in target, "target must use <source.sol>:<Contract> form")
+    source, contract_name = target.rsplit(":", 1)
+    source = _text(source, "target source")
+    _text(contract_name, "target contract")
+
+    project_root = (root or Path.cwd()).resolve()
+    completed = subprocess.run(
+        ["forge", "build", "--ast", "--build-info"],
+        cwd=str(project_root),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "forge build failed"
+        raise ValueError(detail)
+
+    build_info_dir = _forge_output_directory(project_root) / "build-info"
+    _require(
+        build_info_dir.is_dir(),
+        f"Foundry build-info directory not found after AST build: {build_info_dir}",
+    )
+    candidates = _ast_candidates_from_build_info(build_info_dir, source)
+    _require(candidates, f"AST not found in Foundry build-info for source: {source}")
+
+    by_digest: dict[str, dict[str, Any]] = {}
+    for ast in candidates:
+        by_digest.setdefault(_canonical_sha256(ast), ast)
+    _require(
+        len(by_digest) == 1,
+        f"ambiguous Foundry AST candidates for source: {source}",
+    )
+    return next(iter(by_digest.values()))
