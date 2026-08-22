@@ -5,6 +5,7 @@ Repository-owned benchmark suites for reproducible verification research and pro
 ## Suites
 
 - [`state-transition-v0.1`](state-transition-v0.1/) — function-level PASS vs lifecycle-level FAIL cases: dead-end escrow states, replay, timeout recovery, and invalid transition composition.
+- [`contract-lattice-v0.1`](contract-lattice-v0.1/) — six-coordinate contract model binding state, version, value, authority, evidence, and time witnesses.
 - [`agent-payment-recovery-v0.1`](agent-payment-recovery-v0.1/) — agent payment recovery and evidence scenarios.
 - [`crewai-tool-event-conformance-v0.1`](crewai-tool-event-conformance-v0.1/) — source-pinned CrewAI native tool-event witness projection benchmark.
 - [`langgraph-checkpoint-state-conformance-v0.1`](langgraph-checkpoint-state-conformance-v0.1/) — source-pinned LangGraph hosted checkpoint/state benchmark.
@@ -30,3 +31,13 @@ The first state-transition suite is designed around a deliberately uncomfortable
 > **17/17 tests passed. The funds can still be locked forever.**
 
 That distinction is the benchmark target: locally correct functions do not imply a safe reachable lifecycle.
+
+## Contract-lattice thesis
+
+A lifecycle point is not only a named state. ContractGraph-QA v0.1 can bind the point to six explicit coordinates:
+
+```text
+State × Version × Value × Authority × Evidence × TimeWitness
+```
+
+This lets the same model reason about economic liveness, causal version continuity, authority/evidence provenance, and deterministic time-bound transitions without reading an ambient clock.

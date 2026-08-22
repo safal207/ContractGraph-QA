@@ -11,6 +11,7 @@ from contractgraph_qa.agent_payment_decision import (
     AgentPaymentDecisionError,
     evaluate_agent_payment_decision_file,
 )
+from contractgraph_qa.contract_lattice import load_contract_lattice, run_contract_lattice
 from contractgraph_qa.economic_cardinality import (
     load_economic_cardinality_model,
     run_economic_cardinality_model,
@@ -89,6 +90,37 @@ def _lifecycle_liveness_main(argv: list[str]) -> int:
     try:
         model = load_lifecycle_liveness_model(args.model.resolve())
         result = run_lifecycle_liveness_model(model)
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
+def _contract_lattice_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa contract-lattice-check",
+        description=(
+            "Verify a Contract Lattice across state, version, value, authority, evidence, "
+            "and explicit time-witness coordinates."
+        ),
+    )
+    parser.add_argument(
+        "--model",
+        type=Path,
+        required=True,
+        help="Contract Lattice v0.1 JSON",
+    )
+    args = parser.parse_args(argv)
+    try:
+        model = load_contract_lattice(args.model.resolve())
+        result = run_contract_lattice(model)
         _emit(result)
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
@@ -283,6 +315,8 @@ def main(argv: list[str] | None = None) -> int:
         return _decision_main(effective[1:])
     if effective and effective[0] == "lifecycle-liveness":
         return _lifecycle_liveness_main(effective[1:])
+    if effective and effective[0] == "contract-lattice-check":
+        return _contract_lattice_main(effective[1:])
     if effective and effective[0] == "economic-cardinality":
         return _economic_cardinality_main(effective[1:])
     if effective and effective[0] == "successor-consistency":
