@@ -15,6 +15,7 @@ from contractgraph_qa.economic_cardinality import (
     load_economic_cardinality_model,
     run_economic_cardinality_model,
 )
+from contractgraph_qa.execution_trace import load_execution_trace, run_execution_trace
 from contractgraph_qa.lifecycle_liveness import (
     load_lifecycle_liveness_model,
     run_lifecycle_liveness_model,
@@ -159,6 +160,36 @@ def _successor_consistency_main(argv: list[str]) -> int:
         return EXIT_INTERNAL
 
 
+def _execution_trace_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa execution-trace-check",
+        description=(
+            "Project one normalized execution evidence stream into independent "
+            "economic-cardinality and successor-consistency checks."
+        ),
+    )
+    parser.add_argument(
+        "--trace",
+        type=Path,
+        required=True,
+        help="Normalized execution trace v0.1 JSON",
+    )
+    args = parser.parse_args(argv)
+    try:
+        result = run_execution_trace(load_execution_trace(args.trace.resolve()))
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
 def _evidence_pack_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog="cgqa agent-payment-evidence-pack",
@@ -222,6 +253,8 @@ def main(argv: list[str] | None = None) -> int:
         return _economic_cardinality_main(effective[1:])
     if effective and effective[0] == "successor-consistency":
         return _successor_consistency_main(effective[1:])
+    if effective and effective[0] == "execution-trace-check":
+        return _execution_trace_main(effective[1:])
     if effective and effective[0] == "agent-payment-evidence-pack":
         return _evidence_pack_main(effective[1:])
     if effective and effective[0] == "verify-agent-payment-evidence-pack":
