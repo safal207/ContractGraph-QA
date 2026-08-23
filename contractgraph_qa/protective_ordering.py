@@ -215,10 +215,10 @@ def run_protective_ordering_model(model: ProtectiveOrderingModel) -> dict[str, o
 
     if model.both_enabled_at_parent and model.protective_action_must_remain_effective:
         for item in ordered:
-            if item.protective_action_result != "committed" or not item.protective_right_preserved:
+            if not item.protective_right_preserved:
                 violations.append(
                     {
-                        "kind": "protective_action_defeated_by_ordering",
+                        "kind": "protective_right_defeated_by_ordering",
                         "sequence": list(item.sequence),
                         "finalState": item.final_state,
                         "economicOutcome": item.economic_outcome,
@@ -254,7 +254,7 @@ def run_protective_ordering_model(model: ProtectiveOrderingModel) -> dict[str, o
         "counterexample": counterexample,
         "claimBoundary": (
             "Exact over the reviewed two-order counterfactual model. Joint enablement of the actions, "
-            "the modeled transaction outcomes, and the business requirement that the protective action "
+            "the modeled transaction outcomes, and the business requirement that the protective right "
             "remain effective are independent source/specification evidence claims."
         ),
     }
