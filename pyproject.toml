@@ -31,6 +31,7 @@ cgqa-rpc-capture = "contractgraph_qa.rpc_capture_cli:main"
 cgqa-rpc-hydrated = "contractgraph_qa.rpc_hydrated_cli:main"
 cgqa-race = "contractgraph_qa.protective_ordering_cli:main"
 cgqa-causal-repair = "contractgraph_qa.causal_repair_cli:main"
+cgqa-repair-search = "contractgraph_qa.repair_search_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["contractgraph_qa*"]

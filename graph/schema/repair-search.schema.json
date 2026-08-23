@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schema/repair-search-v0.1.json",
+  "title": "ContractGraph-QA Repair Search Model v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "searchId",
+    "invariantId",
+    "targetInvariantIds",
+    "guardInvariantIds",
+    "baseline",
+    "repairs",
+    "candidateSets"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "repair-search-v0.1"},
+    "searchId": {"type": "string", "minLength": 1},
+    "invariantId": {"const": "CGQ-CAUSAL-002"},
+    "targetInvariantIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "guardInvariantIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "scope": {"type": "string", "minLength": 1},
+    "baseline": {"$ref": "#/$defs/assessment"},
+    "repairs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repairId", "description", "changedElements"],
+        "properties": {
+          "repairId": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "changedElements": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "candidateSets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidateSetId", "repairIds", "assessment"],
+        "properties": {
+          "candidateSetId": {"type": "string", "minLength": 1},
+          "repairIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "assessment": {"$ref": "#/$defs/assessment"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assessmentId", "evidenceSha256", "invariantResults"],
+      "properties": {
+        "assessmentId": {"type": "string", "minLength": 1},
+        "evidenceSha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "invariantResults": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["invariantId", "status"],
+            "properties": {
+              "invariantId": {"type": "string", "minLength": 1},
+              "status": {"enum": ["pass", "fail", "inconclusive", "not_applicable"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}
