@@ -10,6 +10,8 @@ from pathlib import Path
 from contractgraph_qa import legacy_cli
 from contractgraph_qa.execution_trace import load_execution_trace
 from contractgraph_qa.hydrated_lattice import load_hydration_bindings, run_hydrated_lattice
+from contractgraph_qa.hydrated_race_composition import compose_hydrated_with_protective_ordering
+from contractgraph_qa.protective_ordering import load_protective_ordering_model
 from contractgraph_qa.solidity_lattice import check_target, load_profile
 
 EXIT_OK = legacy_cli.EXIT_OK
@@ -23,13 +25,15 @@ def main(argv: list[str] | None = None) -> int:
         description=(
             "Compile Solidity to a static Contract Lattice template, hydrate it with a "
             "normalized execution trace and reviewed authority/time bindings, then run "
-            "lifecycle, replay, successor and static/runtime conformance checks."
+            "lifecycle, replay, successor and static/runtime conformance checks. An optional "
+            "reviewed protective-ordering model adds CGQ-RACE-001 as a required proof leg."
         ),
     )
     parser.add_argument("--target", required=True, help="Foundry target <source.sol>:<Contract>")
     parser.add_argument("--profile", type=Path, required=True, help="Reviewed Solidity lattice profile JSON")
     parser.add_argument("--trace", type=Path, required=True, help="Normalized execution trace v0.1 JSON")
     parser.add_argument("--bindings", type=Path, required=True, help="Hydration bindings v0.1 JSON")
+    parser.add_argument("--race-model", type=Path, help="Optional reviewed CGQ-RACE-001 protective-ordering model")
     parser.add_argument("--root", type=Path, help="Optional Foundry project root")
     args = parser.parse_args(argv)
 
@@ -41,6 +45,11 @@ def main(argv: list[str] | None = None) -> int:
             load_execution_trace(args.trace.resolve()),
             load_hydration_bindings(args.bindings.resolve()),
         )
+        if args.race_model is not None:
+            result = compose_hydrated_with_protective_ordering(
+                result,
+                load_protective_ordering_model(args.race_model.resolve()),
+            )
         print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError, OSError) as exc:
