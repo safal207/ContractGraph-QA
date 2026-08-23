@@ -258,21 +258,36 @@ def _operator_for_line(line: str) -> tuple[str, str, str] | None:
 
 
 def _function_by_line(source: str) -> list[str]:
+    """Map each source line to the enclosing function name.
+
+    Brace-on-next-line Solidity (Foundry/solhint style) must not keep attributing
+    later functions to the first `function` declaration. Reset only after the
+    function body has been entered and depth has returned to the outer scope.
+    """
+
     lines = source.splitlines(keepends=True)
     current = "<contract>"
     depth = 0
-    function_depth: int | None = None
+    outer_depth: int | None = None
+    entered_body = False
     names: list[str] = []
     for line in lines:
         match = _FUNCTION_RE.search(line)
-        if match and function_depth is None:
+        if match and outer_depth is None:
             current = match.group(1)
-            function_depth = depth + line.count("{") - line.count("}")
+            outer_depth = depth
+            entered_body = False
         names.append(current)
-        depth += line.count("{") - line.count("}")
-        if function_depth is not None and depth < function_depth:
-            current = "<contract>"
-            function_depth = None
+        opens = line.count("{")
+        closes = line.count("}")
+        depth += opens - closes
+        if outer_depth is not None:
+            if not entered_body and opens:
+                entered_body = True
+            if entered_body and depth <= outer_depth:
+                current = "<contract>"
+                outer_depth = None
+                entered_body = False
     return names
 
 
