@@ -5,6 +5,7 @@ Repository-owned benchmark suites for reproducible verification research and pro
 ## Suites
 
 - [`state-transition-v0.1`](state-transition-v0.1/) — function-level PASS vs lifecycle-level FAIL cases: dead-end escrow states, replay, timeout recovery, and invalid transition composition.
+- [`openescrow-partial-funding-v0.1`](openescrow-partial-funding-v0.1/) — source-pinned OpenEscrow multi-tenant partial-funding liveness case: one tenant funds, another stalls, and the funded tenant has no unilateral refund path.
 - [`contract-lattice-v0.1`](contract-lattice-v0.1/) — six-coordinate contract model binding state, version, value, authority, evidence, and time witnesses.
 - [`agent-payment-recovery-v0.1`](agent-payment-recovery-v0.1/) — agent payment recovery and evidence scenarios.
 - [`crewai-tool-event-conformance-v0.1`](crewai-tool-event-conformance-v0.1/) — source-pinned CrewAI native tool-event witness projection benchmark.
