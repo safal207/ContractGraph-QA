@@ -25,6 +25,7 @@ dependencies = []
 [project.scripts]
 cgqa = "contractgraph_qa.cli:main"
 cgqa-hydrated = "contractgraph_qa.hydrated_lattice_cli:main"
+cgqa-evm-receipt = "contractgraph_qa.evm_receipt_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["contractgraph_qa*"]
