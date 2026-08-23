@@ -33,6 +33,7 @@ cgqa-race = "contractgraph_qa.protective_ordering_cli:main"
 cgqa-causal-repair = "contractgraph_qa.causal_repair_cli:main"
 cgqa-repair-search = "contractgraph_qa.repair_search_cli:main"
 cgqa-spec-assurance = "contractgraph_qa.spec_assurance_cli:main"
+cgqa-mutation-run = "contractgraph_qa.mutation_acquisition_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["contractgraph_qa*"]
