@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 
 from contractgraph_qa import legacy_cli
-from contractgraph_qa.fault_coverage import build_fault_coverage_matrix, render_fault_coverage_markdown
 from contractgraph_qa.mutation_acquisition import mutation_plan_from_dict, run_mutation_acquisition
 from contractgraph_qa.semantic_units_mutation import generate_semantic_units_mutation_plan, load_semantic_units_config
 
@@ -27,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="cgqa-semantic-units-mutate",
         description=(
             "Generate compiler-AST-bound decimal counterfactuals from reviewed unit bindings; optionally execute "
-            "them through Foundry, CGQ-SPEC-001, and Fault Coverage Matrix."
+            "them through Foundry Mutation Acquisition and CGQ-SPEC-001."
         ),
     )
     parser.add_argument("--config", type=Path, required=True, help="Semantic Units Mutation v0.1 JSON")
@@ -49,7 +48,6 @@ def main(argv: list[str] | None = None) -> int:
             _write_json(output_dir / "generated-mutation-plan.json", plan)
 
         execution = None
-        matrix = None
         if args.execute:
             if not isinstance(plan, dict):
                 raise ValueError("no executable semantic units mutation plan was generated")
@@ -59,14 +57,8 @@ def main(argv: list[str] | None = None) -> int:
                 output_dir=output_dir / "mutation-evidence",
             )
             _write_json(output_dir / "mutation-execution-result.json", execution)
-            matrix = build_fault_coverage_matrix(generation, execution)
-            _write_json(output_dir / "fault-coverage-matrix.json", matrix)
-            (output_dir / "fault-coverage-matrix.md").write_text(
-                render_fault_coverage_markdown(matrix),
-                encoding="utf-8",
-            )
 
-        response = {"generation": generation, "execution": execution, "coverageMatrix": matrix}
+        response = {"generation": generation, "execution": execution}
         print(json.dumps(response, indent=2, ensure_ascii=False, sort_keys=True))
 
         if generation["status"] != "pass":
@@ -74,8 +66,6 @@ def main(argv: list[str] | None = None) -> int:
         if execution is not None:
             spec = execution.get("specAssurance") if isinstance(execution, dict) else None
             if not isinstance(spec, dict) or spec.get("status") != "pass":
-                return EXIT_VALIDATION
-            if not isinstance(matrix, dict) or matrix.get("status") != "pass":
                 return EXIT_VALIDATION
         return EXIT_OK
     except (ValueError, FileNotFoundError, json.JSONDecodeError, OSError) as exc:
