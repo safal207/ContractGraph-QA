@@ -11,6 +11,8 @@ from contractgraph_qa import legacy_cli
 from contractgraph_qa.evm_receipt_adapter import adapt_receipt_files
 from contractgraph_qa.execution_trace import execution_trace_from_dict
 from contractgraph_qa.hydrated_lattice import load_hydration_bindings, run_hydrated_lattice
+from contractgraph_qa.hydrated_race_composition import compose_hydrated_with_protective_ordering
+from contractgraph_qa.protective_ordering import load_protective_ordering_model
 from contractgraph_qa.solidity_lattice import check_target, load_profile
 
 EXIT_OK = legacy_cli.EXIT_OK
@@ -23,8 +25,9 @@ def main(argv: list[str] | None = None) -> int:
         prog="cgqa-evm-hydrated",
         description=(
             "Compile Solidity to a static lattice, normalize one raw JSON-RPC receipt "
-            "through a reviewed event mapping, then run hydrated lifecycle/replay/" 
-            "successor/static-runtime verification."
+            "through a reviewed event mapping, then run hydrated lifecycle/replay/"
+            "successor/static-runtime verification. An optional reviewed race model adds "
+            "CGQ-RACE-001 as a required proof leg."
         ),
     )
     parser.add_argument("--target", required=True, help="Foundry target <source.sol>:<Contract>")
@@ -32,6 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--receipt", type=Path, required=True, help="Raw JSON-RPC transaction receipt")
     parser.add_argument("--receipt-profile", type=Path, required=True, help="Reviewed EVM receipt mapping profile")
     parser.add_argument("--bindings", type=Path, required=True, help="Hydration authority/time/evidence bindings")
+    parser.add_argument("--race-model", type=Path, help="Optional reviewed CGQ-RACE-001 protective-ordering model")
     parser.add_argument("--root", type=Path, help="Optional Foundry project root")
     args = parser.parse_args(argv)
 
@@ -45,6 +49,11 @@ def main(argv: list[str] | None = None) -> int:
             trace,
             load_hydration_bindings(args.bindings.resolve()),
         )
+        if args.race_model is not None:
+            hydrated = compose_hydrated_with_protective_ordering(
+                hydrated,
+                load_protective_ordering_model(args.race_model.resolve()),
+            )
         result = {
             "schemaVersion": "evm-hydrated-assessment-v0.1",
             "status": hydrated["status"],
@@ -52,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
             "hydratedAssessment": hydrated,
             "claimBoundary": (
                 "The receipt adapter proves deterministic normalization only for explicitly mapped logs. "
-                "The hydrated assessment preserves separate static, runtime, binding and provenance claims."
+                "The hydrated assessment preserves separate static, runtime, binding, race and provenance claims."
             ),
         }
         print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
