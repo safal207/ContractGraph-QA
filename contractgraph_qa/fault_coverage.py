@@ -5,7 +5,8 @@ one Mutation Acquisition result into a per-fault-class coverage matrix.
 
 Claim boundaries:
 - generation and execution must bind to the exact same mutation plan SHA-256;
-- mutation identities, source SHA-256, and fault classes must agree exactly;
+- mutation identities, source path/SHA-256, acquisition ID, and fault classes
+  must agree exactly;
 - a kill rate is emitted only when every generated mutation in that class has a
   conclusive DETECTED/SURVIVED outcome;
 - unsupported, unrepresented, or execution-inconclusive classes stay
@@ -83,10 +84,18 @@ def build_fault_coverage_matrix(
     execution_plan_sha = _sha256(execution.get("planSha256"), "execution.planSha256")
     _require(execution_plan_sha == expected_plan_sha, "generation and execution mutation-plan SHA-256 differ")
 
+    generation_source_path = _text(generation.get("sourcePath"), "generation.sourcePath")
+    execution_source_path = _text(execution.get("sourcePath"), "execution.sourcePath")
+    _require(generation_source_path == plan.source_path, "generation source path differs from mutation plan")
+    _require(execution_source_path == plan.source_path, "execution source path differs from mutation plan")
+
     generation_source_sha = _sha256(generation.get("sourceSha256"), "generation.sourceSha256")
     execution_source_sha = _sha256(execution.get("sourceSha256"), "execution.sourceSha256")
     _require(generation_source_sha == plan.source_sha256, "generation source SHA differs from mutation plan")
     _require(execution_source_sha == plan.source_sha256, "execution source SHA differs from mutation plan")
+
+    execution_acquisition_id = _text(execution.get("acquisitionId"), "execution.acquisitionId")
+    _require(execution_acquisition_id == plan.acquisition_id, "execution acquisitionId differs from mutation plan")
 
     generated_ids_raw = _array(generation.get("generatedMutationIds"), "generation.generatedMutationIds")
     generated_ids = [_text(value, f"generation.generatedMutationIds[{index}]") for index, value in enumerate(generated_ids_raw)]
@@ -229,7 +238,7 @@ def build_fault_coverage_matrix(
         "status": status,
         "classification": classification,
         "generationId": _text(generation.get("generationId"), "generation.generationId"),
-        "acquisitionId": _text(execution.get("acquisitionId"), "execution.acquisitionId"),
+        "acquisitionId": execution_acquisition_id,
         "sourcePath": plan.source_path,
         "sourceSha256": plan.source_sha256,
         "mutationPlanSha256": expected_plan_sha,
@@ -248,11 +257,11 @@ def build_fault_coverage_matrix(
         "matrix": rows,
         "specAssuranceStatus": spec_status,
         "claimBoundary": (
-            "Exact over one source-bound generated mutation plan and the execution evidence bound to that same plan SHA-256. "
-            "A class is COVERED only when all generated reviewed mutations for that class have conclusive DETECTED outcomes. "
-            "A surviving mutation is a BLIND_SPOT in the current property/test suite for that reviewed mutation. "
-            "INCONCLUSIVE classes receive no kill-rate claim. This matrix does not prove exhaustive fault-model coverage "
-            "or smart-contract security."
+            "Exact over one source-bound generated mutation plan and the execution evidence bound to that same plan SHA-256, "
+            "source path/SHA-256, acquisition ID, mutation IDs, and fault classes. A class is COVERED only when all generated "
+            "reviewed mutations for that class have conclusive DETECTED outcomes. A surviving mutation is a BLIND_SPOT in the "
+            "current property/test suite for that reviewed mutation. INCONCLUSIVE classes receive no kill-rate claim. This "
+            "matrix does not prove exhaustive fault-model coverage or smart-contract security."
         ),
     }
     result = dict(core)
