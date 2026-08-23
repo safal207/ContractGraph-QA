@@ -52,6 +52,19 @@ class ProtectiveOrderingTest(unittest.TestCase):
         self.assertEqual(result["violations"], [])
         self.assertFalse(result["orderingSensitiveOutcome"])
 
+    def test_reverted_protective_tx_can_still_pass_if_right_is_preserved(self) -> None:
+        data = json.loads(self.path.read_text(encoding="utf-8"))
+        fixed = copy.deepcopy(data)
+        for ordering in fixed["orderings"]:
+            ordering["finalState"] = "Disputed"
+            ordering["economicOutcome"] = "protective_dispute_preserved"
+            ordering["protectiveRightPreserved"] = True
+        fixed["orderings"][0]["protectiveActionResult"] = "reverted"
+
+        result = run_protective_ordering_model(protective_ordering_model_from_dict(fixed))
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(result["violations"], [])
+
     def test_missing_business_guarantee_is_inconclusive_not_false_pass(self) -> None:
         data = json.loads(self.path.read_text(encoding="utf-8"))
         data["protectiveActionMustRemainEffectiveAcrossOrdering"] = False
