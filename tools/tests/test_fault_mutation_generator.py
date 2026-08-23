@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from contractgraph_qa.fault_coverage import build_fault_coverage_matrix  # noqa: E402
 from contractgraph_qa.fault_mutation_generator import (  # noqa: E402
     _function_by_line,
     generate_fault_mutation_plan,
@@ -208,6 +209,10 @@ class FaultMutationGeneratorTest(unittest.TestCase):
         spec = acquisition["specAssurance"]
         assert isinstance(spec, dict)
         self.assertEqual(spec["status"], "pass")
+        coverage = build_fault_coverage_matrix(generated, acquisition)
+        self.assertEqual(coverage["status"], "pass")
+        self.assertEqual(coverage["coveredFaultClasses"], ["authorization", "time_boundary"])
+        self.assertEqual(coverage["totals"]["reviewedKillRate"], 1.0)
 
 
 if __name__ == "__main__":
