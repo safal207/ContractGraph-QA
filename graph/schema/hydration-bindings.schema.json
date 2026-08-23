@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/hydration-bindings-v0.1.json",
+  "title": "ContractGraph-QA Hydration Bindings v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "bindingId",
+    "authorityRequiredOperations",
+    "timeSensitiveOperations",
+    "commits"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "hydration-bindings-v0.1"},
+    "bindingId": {"type": "string", "minLength": 1},
+    "authorityRequiredOperations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "timeSensitiveOperations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["commitId", "authorityRef", "evidenceRefs", "timeWitnessRefs"],
+        "properties": {
+          "commitId": {"type": "string", "minLength": 1},
+          "authorityRef": {"type": ["string", "null"]},
+          "evidenceRefs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "timeWitnessRefs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "scope": {"type": "string", "minLength": 1}
+  }
+}
