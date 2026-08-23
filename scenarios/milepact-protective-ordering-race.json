@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "protective-ordering-v0.1",
+  "modelId": "milepact-mp05-auto-release-vs-dispute",
+  "invariantId": "CGQ-RACE-001",
+  "parentState": "Delivered",
+  "parentVersion": 7,
+  "protectiveAction": "raiseDispute",
+  "competingAction": "autoRelease",
+  "bothEnabledAtParent": true,
+  "protectiveActionMustRemainEffectiveAcrossOrdering": true,
+  "orderings": [
+    {
+      "sequence": ["autoRelease", "raiseDispute"],
+      "finalState": "Released",
+      "protectiveActionResult": "reverted",
+      "competingActionResult": "committed",
+      "economicOutcome": "freelancer_paid_dispute_defeated",
+      "protectiveRightPreserved": false
+    },
+    {
+      "sequence": ["raiseDispute", "autoRelease"],
+      "finalState": "Disputed",
+      "protectiveActionResult": "committed",
+      "competingActionResult": "reverted",
+      "economicOutcome": "funds_remain_locked_pending_dispute_resolution",
+      "protectiveRightPreserved": true
+    }
+  ],
+  "scope": "MilePact-style reviewed counterfactual: Delivered after auto-release deadline; source-line provenance remains external to this repository fixture."
+}

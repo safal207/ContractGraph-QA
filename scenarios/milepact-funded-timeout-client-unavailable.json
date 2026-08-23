@@ -1,0 +1,42 @@
+{
+  "states": [
+    {
+      "id": "Funded",
+      "description": "Escrow is funded and still holds locked value.",
+      "holdsValue": true,
+      "safeTerminal": false
+    },
+    {
+      "id": "FundedAfterDeadlineClientUnavailable",
+      "description": "Refund deadline has passed while the client is unavailable; escrow still holds value and no independent recovery actor exists in the reviewed model.",
+      "holdsValue": true,
+      "safeTerminal": false
+    },
+    {
+      "id": "Refunded",
+      "description": "Client recovered the escrowed value.",
+      "holdsValue": false,
+      "safeTerminal": true
+    },
+    {
+      "id": "Released",
+      "description": "Freelancer received the escrowed value through a valid settlement path.",
+      "holdsValue": false,
+      "safeTerminal": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "client-refund-while-available",
+      "source": "Funded",
+      "target": "Refunded"
+    },
+    {
+      "id": "deadline-elapses-client-unavailable",
+      "source": "Funded",
+      "target": "FundedAfterDeadlineClientUnavailable"
+    }
+  ],
+  "initialState": "Funded",
+  "invariantId": "CGQ-LIVE-002"
+}
