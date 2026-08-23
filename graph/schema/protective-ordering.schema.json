@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schema/protective-ordering-v0.1.json",
+  "title": "ContractGraph-QA Protective Ordering Model v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "modelId",
+    "invariantId",
+    "parentState",
+    "parentVersion",
+    "protectiveAction",
+    "competingAction",
+    "bothEnabledAtParent",
+    "protectiveActionMustRemainEffectiveAcrossOrdering",
+    "orderings"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "protective-ordering-v0.1"},
+    "modelId": {"type": "string", "minLength": 1},
+    "invariantId": {"const": "CGQ-RACE-001"},
+    "parentState": {"type": "string", "minLength": 1},
+    "parentVersion": {"type": "integer", "minimum": 0},
+    "protectiveAction": {"type": "string", "minLength": 1},
+    "competingAction": {"type": "string", "minLength": 1},
+    "bothEnabledAtParent": {"type": "boolean"},
+    "protectiveActionMustRemainEffectiveAcrossOrdering": {"type": "boolean"},
+    "scope": {"type": "string", "minLength": 1},
+    "orderings": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sequence",
+          "finalState",
+          "protectiveActionResult",
+          "competingActionResult",
+          "economicOutcome",
+          "protectiveRightPreserved"
+        ],
+        "properties": {
+          "sequence": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "finalState": {"type": "string", "minLength": 1},
+          "protectiveActionResult": {"enum": ["committed", "reverted", "not_executed"]},
+          "competingActionResult": {"enum": ["committed", "reverted", "not_executed"]},
+          "economicOutcome": {"type": "string", "minLength": 1},
+          "protectiveRightPreserved": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}
