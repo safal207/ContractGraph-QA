@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "semantic-units-mutation-v0.1",
+  "generationId": "decimal-scaler-units-v0.1",
+  "target": "src/examples/DecimalScaler.sol:DecimalScaler",
+  "sourcePath": "src/examples/DecimalScaler.sol",
+  "sourceSha256": "b3f6dd220dec37ba0a7bc3c6851f8be09bbf724f51da7dce438d4c99775d411c",
+  "propertyInvariantId": "EXAMPLE-UNITS-001",
+  "propertyDescription": "Reviewed decimal scaling must preserve USDC-like 6-decimal asset amounts and 8-decimal price values when normalized to 18-decimal WAD units.",
+  "activationWitness": {
+    "observed": true,
+    "evidenceSha256": "552cb53c88b111077617f5b8e2b3cd1e14e92818bb5baf723a7a7e0cdd7d8acf",
+    "description": "Repository-owned DecimalScaler.t.sol directly exercises the two reviewed decimal normalization paths."
+  },
+  "requiredFaultClasses": [
+    "units_decimals"
+  ],
+  "foundry": {
+    "profile": "default",
+    "timeoutSeconds": 120
+  },
+  "unitBindings": [
+    {
+      "symbol": "ASSET_DECIMALS",
+      "unitId": "USDC-like asset amount",
+      "expectedDecimals": 6,
+      "alternateDecimals": [18],
+      "matchPath": "test/DecimalScaler.t.sol",
+      "matchTest": "testAssetDecimalsScaleToWad"
+    },
+    {
+      "symbol": "PRICE_DECIMALS",
+      "unitId": "USD oracle price",
+      "expectedDecimals": 8,
+      "alternateDecimals": [18],
+      "matchPath": "test/DecimalScaler.t.sol",
+      "matchTest": "testPriceDecimalsScaleToWad"
+    }
+  ],
+  "scope": "Repository-owned semantic units mutation fixture; demonstrates reviewed unit bindings rather than third-party token inference."
+}

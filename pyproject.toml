@@ -36,6 +36,7 @@ cgqa-spec-assurance = "contractgraph_qa.spec_assurance_cli:main"
 cgqa-mutation-run = "contractgraph_qa.mutation_acquisition_cli:main"
 cgqa-fault-mutate = "contractgraph_qa.fault_mutation_generator_cli:main"
 cgqa-fault-coverage = "contractgraph_qa.fault_coverage_cli:main"
+cgqa-semantic-units-mutate = "contractgraph_qa.semantic_units_mutation_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["contractgraph_qa*"]
