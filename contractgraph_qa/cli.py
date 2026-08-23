@@ -30,6 +30,7 @@ from contractgraph_qa.runtime_conformance_profile import (
     evaluate_runtime_conformance_profile,
     load_runtime_conformance_profile,
 )
+from contractgraph_qa.solidity_lattice import check_target, load_profile
 from contractgraph_qa.successor_consistency import (
     load_successor_consistency_model,
     run_successor_consistency_model,
@@ -124,6 +125,48 @@ def _contract_lattice_main(argv: list[str]) -> int:
         _emit(result)
         return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
     except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
+def _solidity_lattice_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa solidity-lattice-check",
+        description=(
+            "Compile Solidity to compiler AST, extract a lifecycle graph, verify economic "
+            "liveness, and emit a Contract Lattice template without inventing runtime facts."
+        ),
+    )
+    parser.add_argument(
+        "--target",
+        required=True,
+        help="Foundry target in <source.sol>:<Contract> form",
+    )
+    parser.add_argument(
+        "--profile",
+        type=Path,
+        required=True,
+        help="Reviewed Solidity lattice profile JSON",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        help="Optional Foundry project root",
+    )
+    args = parser.parse_args(argv)
+    try:
+        profile = load_profile(args.profile.resolve())
+        root = None if args.root is None else args.root.resolve()
+        result = check_target(args.target, profile, root)
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError, OSError) as exc:
         print(f"cgqa: {exc}", file=sys.stderr)
         return EXIT_VALIDATION
     except KeyboardInterrupt:
@@ -317,6 +360,8 @@ def main(argv: list[str] | None = None) -> int:
         return _lifecycle_liveness_main(effective[1:])
     if effective and effective[0] == "contract-lattice-check":
         return _contract_lattice_main(effective[1:])
+    if effective and effective[0] == "solidity-lattice-check":
+        return _solidity_lattice_main(effective[1:])
     if effective and effective[0] == "economic-cardinality":
         return _economic_cardinality_main(effective[1:])
     if effective and effective[0] == "successor-consistency":
