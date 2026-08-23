@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schema/causal-repair-v0.1.json",
+  "title": "ContractGraph-QA Causal Repair Model v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "repairId",
+    "invariantId",
+    "change",
+    "targetInvariantIds",
+    "guardInvariantIds",
+    "baseline",
+    "candidate"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "causal-repair-v0.1"},
+    "repairId": {"type": "string", "minLength": 1},
+    "invariantId": {"const": "CGQ-CAUSAL-001"},
+    "scope": {"type": "string", "minLength": 1},
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changeId", "description", "changedElements"],
+      "properties": {
+        "changeId": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "changedElements": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "targetInvariantIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "guardInvariantIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "baseline": {"$ref": "#/$defs/assessment"},
+    "candidate": {"$ref": "#/$defs/assessment"}
+  },
+  "$defs": {
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assessmentId", "evidenceSha256", "invariantResults"],
+      "properties": {
+        "assessmentId": {"type": "string", "minLength": 1},
+        "evidenceSha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "invariantResults": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["invariantId", "status"],
+            "properties": {
+              "invariantId": {"type": "string", "minLength": 1},
+              "status": {"enum": ["pass", "fail", "inconclusive", "not_applicable"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}
