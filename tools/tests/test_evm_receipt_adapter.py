@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import json
 import sys
 import unittest
@@ -75,7 +74,9 @@ class EvmReceiptAdapterTest(unittest.TestCase):
 
     def test_missing_data_word_fails_closed(self) -> None:
         receipt = _load(RECEIPT)
-        receipt["result"]["logs"][0]["data"] = "0x" + "00" * 32
+        receipt["result"]["logs"][0]["data"] = (
+            "0x0000000000000000000000000000000000000000000000000000000000000001"
+        )
         receipt["result"]["logs"] = [receipt["result"]["logs"][0]]
         with self.assertRaisesRegex(ValueError, "does not contain dataWord"):
             adapt_receipt(receipt, _load(PROFILE))
