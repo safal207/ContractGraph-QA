@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/rpc-capture-result-v0.1.json",
+  "title": "ContractGraph-QA RPC Capture Result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "capture", "captureSha256", "claimBoundary"],
+  "properties": {
+    "schemaVersion": {"const": "rpc-capture-result-v0.1"},
+    "status": {"enum": ["pass", "inconclusive"]},
+    "reason": {"type": "string", "minLength": 1},
+    "captureSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "claimBoundary": {"type": "string", "minLength": 1},
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "chainId", "transactionHash", "receipt", "blockWitness"],
+      "properties": {
+        "schemaVersion": {"const": "rpc-capture-v0.1"},
+        "chainId": {"type": "integer", "minimum": 0},
+        "transactionHash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+        "receipt": {"type": ["object", "null"]},
+        "blockWitness": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["blockHash", "blockNumber", "parentHash", "blockTimestamp", "observedHeadNumber", "observedConfirmationCount"],
+              "properties": {
+                "blockHash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+                "blockNumber": {"type": "integer", "minimum": 0},
+                "parentHash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+                "blockTimestamp": {"type": "integer", "minimum": 0},
+                "observedHeadNumber": {"type": "integer", "minimum": 0},
+                "observedConfirmationCount": {"type": "integer", "minimum": 1}
+              }
+            }
+          ]
+        },
+        "rpcResponseDigests": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["chainIdResponseSha256", "receiptResponseSha256", "blockResponseSha256", "headResponseSha256"],
+          "properties": {
+            "chainIdResponseSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "receiptResponseSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "blockResponseSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "headResponseSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      }
+    }
+  }
+}
