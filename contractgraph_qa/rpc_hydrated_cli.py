@@ -12,6 +12,8 @@ from contractgraph_qa import legacy_cli
 from contractgraph_qa.evm_receipt_adapter import adapt_receipt, load_profile as load_receipt_profile
 from contractgraph_qa.execution_trace import execution_trace_from_dict
 from contractgraph_qa.hydrated_lattice import load_hydration_bindings, run_hydrated_lattice
+from contractgraph_qa.hydrated_race_composition import compose_hydrated_with_protective_ordering
+from contractgraph_qa.protective_ordering import load_protective_ordering_model
 from contractgraph_qa.rpc_capture import capture_transaction, write_capture_result
 from contractgraph_qa.solidity_lattice import check_target, load_profile as load_solidity_profile
 
@@ -32,7 +34,8 @@ def main(argv: list[str] | None = None) -> int:
         prog="cgqa-rpc-hydrated",
         description=(
             "Capture one transaction from JSON-RPC, normalize its mapped logs into ExecutionTrace, "
-            "compile Solidity to a static lattice, then run the Hydrated Contract Lattice assessment."
+            "compile Solidity to a static lattice, then run the Hydrated Contract Lattice assessment. "
+            "An optional reviewed race model adds CGQ-RACE-001 as a required proof leg."
         ),
     )
     parser.add_argument("--tx-hash", required=True, help="32-byte transaction hash")
@@ -41,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--profile", type=Path, required=True, help="Reviewed Solidity lattice profile")
     parser.add_argument("--receipt-profile", type=Path, required=True, help="Reviewed EVM receipt mapping profile")
     parser.add_argument("--bindings", type=Path, required=True, help="Hydration authority/time/evidence bindings")
+    parser.add_argument("--race-model", type=Path, help="Optional reviewed CGQ-RACE-001 protective-ordering model")
     parser.add_argument("--root", type=Path, help="Optional Foundry project root")
     parser.add_argument("--capture-out", type=Path, help="Optional immutable RPC capture output path")
     args = parser.parse_args(argv)
@@ -94,6 +98,11 @@ def main(argv: list[str] | None = None) -> int:
             execution_trace_from_dict(adapter["executionTrace"]),
             load_hydration_bindings(args.bindings.resolve()),
         )
+        if args.race_model is not None:
+            hydrated = compose_hydrated_with_protective_ordering(
+                hydrated,
+                load_protective_ordering_model(args.race_model.resolve()),
+            )
         result = {
             "schemaVersion": "rpc-hydrated-assessment-v0.1",
             "status": hydrated["status"],
@@ -102,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
             "hydratedAssessment": hydrated,
             "claimBoundary": (
                 "RPC capture proves only one provider observation. Receipt normalization is limited to reviewed mappings. "
-                "Static, runtime, authority/time/evidence, canonical-chain and finality claims remain distinct."
+                "Static, runtime, authority/time/evidence, race, canonical-chain and finality claims remain distinct."
             ),
         }
         print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
