@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import hashlib
 import io
 import json
 import sys
@@ -14,8 +15,24 @@ if str(ROOT) not in sys.path:
 
 from contractgraph_qa.ancestral_validity import run_ancestral_validity  # noqa: E402
 from contractgraph_qa.cli import EXIT_OK, EXIT_VALIDATION, main as cli_main  # noqa: E402
-from contractgraph_qa.orientation_center import evaluate_orientation_center  # noqa: E402
-from contractgraph_qa.transition_geometry import run_transition_geometry_model  # noqa: E402
+from contractgraph_qa.orientation_center import (  # noqa: E402
+    OrientationCenterError,
+    evaluate_orientation_center,
+)
+from contractgraph_qa.transition_geometry import (  # noqa: E402
+    TransitionGeometryError,
+    run_transition_geometry_model,
+)
+
+
+def _canonical_hash(value: object) -> str:
+    payload = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 class TransitionGeometryTest(unittest.TestCase):
@@ -75,6 +92,51 @@ class TransitionGeometryTest(unittest.TestCase):
         self.assertEqual(result["loop"]["classification"], "CURVATURE_DETECTED")
         self.assertEqual(result["status"], "hold")
 
+    def test_identical_loop_is_flat(self) -> None:
+        endpoint = {"state": {"balance": 0}, "effects": {"fees": 0}, "history": {"generation": 1}}
+        model = {
+            "schema": "cgqa/transition-geometry/v0.1",
+            "subject": {"commit": "abc"},
+            "operators": {"a": "pause", "b": "resume"},
+            "origin": copy.deepcopy(endpoint),
+            "aThenB": copy.deepcopy(endpoint),
+            "bThenA": copy.deepcopy(endpoint),
+            "loop": {"operators": ["pause", "resume"], "returned": copy.deepcopy(endpoint)},
+        }
+        result = run_transition_geometry_model(model)
+        self.assertEqual(result["loop"]["classification"], "FLAT_LOOP")
+        self.assertEqual(result["status"], "pass")
+
+    def test_strict_endpoint_subject_binding_rejects_foreign_endpoint(self) -> None:
+        subject = {"commit": "abc"}
+        subject_hash = _canonical_hash(subject)
+        endpoint = {"state": {}, "effects": {}, "history": {}, "subjectHash": subject_hash}
+        model = {
+            "schema": "cgqa/transition-geometry/v0.1",
+            "subject": subject,
+            "requirements": {"requireEndpointSubjectBinding": True},
+            "operators": {"a": "a", "b": "b"},
+            "origin": copy.deepcopy(endpoint),
+            "aThenB": copy.deepcopy(endpoint),
+            "bThenA": copy.deepcopy(endpoint),
+        }
+        model["bThenA"]["subjectHash"] = "foreign-subject"
+        with self.assertRaises(TransitionGeometryError):
+            run_transition_geometry_model(model)
+
+    def test_strict_endpoint_subject_binding_requires_all_receipts(self) -> None:
+        model = {
+            "schema": "cgqa/transition-geometry/v0.1",
+            "subject": {"commit": "abc"},
+            "requirements": {"requireEndpointSubjectBinding": True},
+            "operators": {"a": "a", "b": "b"},
+            "origin": {"state": {}, "effects": {}, "history": {}},
+            "aThenB": {"state": {}, "effects": {}, "history": {}},
+            "bThenA": {"state": {}, "effects": {}, "history": {}},
+        }
+        with self.assertRaises(TransitionGeometryError):
+            run_transition_geometry_model(model)
+
 
 class AncestralValidityTest(unittest.TestCase):
     def _base(self) -> dict[str, object]:
@@ -114,6 +176,9 @@ class AncestralValidityTest(unittest.TestCase):
         self.assertEqual(result["localValidity"], "valid")
         self.assertEqual(result["effectiveValidity"], "invalid")
         self.assertIn("REJECTED_BRANCH_REUSE", {row["code"] for row in result["findings"]})
+        self.assertEqual(result["firstInvalidity"]["code"], "REJECTED_BRANCH_REUSE")
+        self.assertEqual(result["firstInvalidity"]["boundaryRef"], "rejection-001")
+        self.assertEqual(result["affectedDescendants"], ["retry-001"])
 
     def test_stale_parent_negative_control(self) -> None:
         model = self._base()
@@ -141,7 +206,10 @@ class AncestralValidityTest(unittest.TestCase):
     def test_invalid_root_inheritance_negative_control(self) -> None:
         model = self._base()
         model["events"][0]["localValid"] = False
-        self.assertIn("INVALID_ROOT_INHERITANCE", self._codes(model))
+        result = run_ancestral_validity(model)
+        self.assertIn("INVALID_ROOT_INHERITANCE", {row["code"] for row in result["findings"]})
+        self.assertEqual(result["firstInvalidity"]["boundaryRef"], "root")
+        self.assertEqual(result["affectedDescendants"], ["target"])
 
     def test_memory_without_evidence_origin_negative_control(self) -> None:
         model = self._base()
@@ -165,10 +233,19 @@ class AncestralValidityTest(unittest.TestCase):
         model["events"][-1]["kind"] = "REMEDIATION"
         self.assertIn("REMEDIATION_WITHOUT_FAULT_LINK", self._codes(model))
 
+    def test_foreign_scope_ancestor_fails_closed(self) -> None:
+        model = self._base()
+        model["events"][0]["scope"] = "foreign-workflow"
+        result = run_ancestral_validity(model)
+        self.assertIn("FOREIGN_SCOPE_ANCESTOR", {row["code"] for row in result["findings"]})
+        self.assertEqual(result["firstInvalidity"]["boundaryRef"], "root")
+
     def test_clean_trace_passes(self) -> None:
         result = run_ancestral_validity(self._base())
         self.assertEqual(result["status"], "pass")
         self.assertEqual(result["findings"], [])
+        self.assertIsNone(result["firstInvalidity"])
+        self.assertEqual(result["affectedDescendants"], [])
 
 
 class OrientationCenterTest(unittest.TestCase):
@@ -192,6 +269,50 @@ class OrientationCenterTest(unittest.TestCase):
             },
         }
 
+    def _geometry(self, subject: dict[str, object], *, torsion: bool) -> dict[str, object]:
+        left = {"state": {"active": False}, "effects": {"payout": 100}, "history": {"path": ["a", "b"]}}
+        right = copy.deepcopy(left)
+        if torsion:
+            right["effects"]["payout"] = 99
+        return run_transition_geometry_model(
+            {
+                "schema": "cgqa/transition-geometry/v0.1",
+                "subject": subject,
+                "operators": {"a": "settle", "b": "cancel"},
+                "origin": {"state": {}, "effects": {}, "history": {}},
+                "aThenB": left,
+                "bThenA": right,
+            }
+        )
+
+    def _invalid_ancestry(self, subject: dict[str, object]) -> dict[str, object]:
+        return run_ancestral_validity(
+            {
+                "schema": "cgqa/ancestral-validity/v0.1",
+                "subject": subject,
+                "targetEventId": "target",
+                "events": [
+                    {
+                        "id": "root",
+                        "kind": "ROOT",
+                        "actor": "user",
+                        "occurredAt": 1,
+                        "scope": "wf",
+                        "localValid": False,
+                    },
+                    {
+                        "id": "target",
+                        "kind": "ACTION",
+                        "actor": "agent",
+                        "occurredAt": 2,
+                        "scope": "wf",
+                        "parentId": "root",
+                        "localValid": True,
+                    },
+                ],
+            }
+        )
+
     def test_unresolved_verification_debt_is_indeterminate(self) -> None:
         bundle = json.loads(
             (ROOT / "scenarios" / "orientation-unresolved-debt.json").read_text()
@@ -204,6 +325,7 @@ class OrientationCenterTest(unittest.TestCase):
         result = evaluate_orientation_center(self._balanced())
         self.assertEqual(result["status"], "pass")
         self.assertEqual(result["readiness"], "BALANCED")
+        self.assertFalse(result["securityVerdictAuthorized"])
         self.assertIn("not a truth", result["claimBoundary"])
 
     def test_confirmed_counterevidence_is_unstable(self) -> None:
@@ -217,6 +339,63 @@ class OrientationCenterTest(unittest.TestCase):
         bundle["requirements"]["requireIndependentWitness"] = True
         result = evaluate_orientation_center(bundle)
         self.assertEqual(result["readiness"], "INDETERMINATE")
+
+    def test_geometry_torsion_is_indeterminate_not_security_fail(self) -> None:
+        bundle = self._balanced()
+        bundle["geometryResults"] = [self._geometry(bundle["subject"], torsion=True)]
+        bundle["requirements"]["requireGeometry"] = True
+        result = evaluate_orientation_center(bundle)
+        self.assertEqual(result["readiness"], "INDETERMINATE")
+        self.assertIn("GEOMETRY_TORSION", {row["code"] for row in result["unresolved"]})
+        self.assertFalse(result["securityVerdictAuthorized"])
+
+    def test_invalid_ancestry_receipt_is_unstable(self) -> None:
+        bundle = self._balanced()
+        bundle["ancestryResults"] = [self._invalid_ancestry(bundle["subject"])]
+        bundle["requirements"]["requireAncestryReceipt"] = True
+        result = evaluate_orientation_center(bundle)
+        self.assertEqual(result["readiness"], "UNSTABLE")
+        self.assertIn("ANCESTRY_EFFECTIVE_INVALID", {row["code"] for row in result["hardFindings"]})
+
+    def test_foreign_subject_child_receipt_fails_closed(self) -> None:
+        bundle = self._balanced()
+        geometry = self._geometry(bundle["subject"], torsion=False)
+        geometry["subjectHash"] = "foreign-subject"
+        bundle["geometryResults"] = [geometry]
+        with self.assertRaises(OrientationCenterError):
+            evaluate_orientation_center(bundle)
+
+    def test_expected_counterevidence_cannot_be_silently_dropped(self) -> None:
+        bundle = self._balanced()
+        bundle["requirements"]["expectedCounterevidenceIds"] = ["counter-expected"]
+        result = evaluate_orientation_center(bundle)
+        self.assertEqual(result["readiness"], "UNSTABLE")
+        self.assertIn("COUNTEREVIDENCE_OMITTED", {row["code"] for row in result["hardFindings"]})
+
+    def test_clean_cross_capability_receipts_can_balance(self) -> None:
+        bundle = self._balanced()
+        subject = bundle["subject"]
+        bundle["geometryResults"] = [self._geometry(subject, torsion=False)]
+        ancestry = run_ancestral_validity(
+            {
+                "schema": "cgqa/ancestral-validity/v0.1",
+                "subject": subject,
+                "targetEventId": "target",
+                "events": [
+                    {"id": "root", "kind": "ROOT", "actor": "user", "occurredAt": 1, "scope": "wf", "localValid": True},
+                    {"id": "target", "kind": "ACTION", "actor": "agent", "occurredAt": 2, "scope": "wf", "parentId": "root", "localValid": True},
+                ],
+            }
+        )
+        bundle["ancestryResults"] = [ancestry]
+        bundle["requirements"]["requireGeometry"] = True
+        bundle["requirements"]["requireAncestryReceipt"] = True
+        result = evaluate_orientation_center(bundle)
+        self.assertEqual(result["readiness"], "BALANCED")
+        self.assertEqual(
+            {row["capability"] for row in result["contributingCapabilities"]},
+            {"Transition Geometry", "Ancestral Validity"},
+        )
 
 
 class DeepCapabilityCliTest(unittest.TestCase):
@@ -243,6 +422,7 @@ class DeepCapabilityCliTest(unittest.TestCase):
         )
         self.assertEqual(code, EXIT_VALIDATION)
         self.assertEqual(payload["effectiveValidity"], "invalid")
+        self.assertEqual(payload["firstInvalidity"]["code"], "REJECTED_BRANCH_REUSE")
 
     def test_orient_cli_surfaces_unresolved_debt(self) -> None:
         code, payload = self._run(
