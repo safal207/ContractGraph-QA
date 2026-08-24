@@ -19,6 +19,7 @@ Use this order unless a step is genuinely not applicable:
 ```text
 Discover
 → Exact Subject / Artifact Gate
+→ Preregister Verification Plan
 → Orientation Center
 → Native Mapping / Reviewed Adapter
 → Model
@@ -29,10 +30,16 @@ Discover
 → Negative Control
 → Adversarial Sequences
 → Independent Witness / Pre-Post Evidence
+→ Trace Integrity
+→ Evidence Readiness
 → Counterexample Minimization
+→ Root-Cause Collapse
 → Deterministic Replay
+→ Metamorphic / Round-Trip Verification
 → Native Regression
+→ Durable Evidence Reopen / Integrity
 → Verification Debt Review
+→ Active Verification Planning
 → Meaning Trajectory
 → Dormant Watchpoints
 → Temporal / External Replication where applicable
@@ -422,6 +429,7 @@ Every final agent report MUST classify all applicable rows. No silent omissions.
 | Capability | Status |
 |---|---|
 | Exact Subject / Artifact Gate | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+| Preregistered Verification Plan | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Orientation Center | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Native Mapping / Adapter Review | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Safety Invariants | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
@@ -436,14 +444,22 @@ Every final agent report MUST classify all applicable rows. No silent omissions.
 | Negative Control | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Stateful / Property Search | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Independent Witness | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+| Trace Integrity | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+| Evidence Type / Readiness | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Counterexample Minimization | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+| Root-Cause Collapse | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Deterministic Replay | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+| Metamorphic / Round-Trip Verification | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Native Regression | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+| Durable Evidence Reopen / Integrity | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Verification Debt | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+| Active Verification Planning | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Meaning Trajectory | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Dormant Patterns / Watchpoints | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Temporal / External Replication | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
 | Forward Remediation | RUN / NOT_APPLICABLE / BLOCKED / SKIPPED_WITH_REASON / NOT_RUN |
+
+The vNext rows above are executable repository capabilities, but `RUN` still means the capability was actually exercised for the current subject. Implemented does not mean executed, and selected does not mean verified.
 
 ## Verdict discipline
 
