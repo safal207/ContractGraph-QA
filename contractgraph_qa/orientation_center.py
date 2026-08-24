@@ -42,12 +42,29 @@ def _list(value: object, name: str) -> list[Any]:
     return value
 
 
+def _text(value: object, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise OrientationCenterError(f"{name} must be a non-empty string")
+    return value
+
+
 def _status_item(value: object, name: str) -> dict[str, Any]:
     item = _object(value, name)
-    if "id" not in item or not isinstance(item["id"], str) or not item["id"].strip():
-        raise OrientationCenterError(f"{name}.id must be a non-empty string")
-    if "status" not in item or not isinstance(item["status"], str) or not item["status"].strip():
-        raise OrientationCenterError(f"{name}.status must be a non-empty string")
+    _text(item.get("id"), f"{name}.id")
+    _text(item.get("status"), f"{name}.status")
+    if "subjectHash" in item and item["subjectHash"] is not None:
+        _text(item["subjectHash"], f"{name}.subjectHash")
+    return item
+
+
+def _geometry_item(value: object, name: str) -> dict[str, Any]:
+    item = _status_item(value, name)
+    _text(item.get("subjectHash"), f"{name}.subjectHash")
+    pair = _object(item.get("pair"), f"{name}.pair")
+    _text(pair.get("classification"), f"{name}.pair.classification")
+    if item.get("loop") is not None:
+        loop = _object(item["loop"], f"{name}.loop")
+        _text(loop.get("classification"), f"{name}.loop.classification")
     return item
 
 
@@ -61,9 +78,19 @@ def validate_orientation_center(data: object) -> dict[str, Any]:
     _object(bundle.get("state"), "state")
     ancestry = _object(bundle.get("ancestry"), "ancestry")
     authority = _object(bundle.get("authorityNow"), "authorityNow")
-    for name, value in (("ancestry.status", ancestry.get("status")), ("authorityNow.status", authority.get("status"))):
-        if not isinstance(value, str) or not value:
-            raise OrientationCenterError(f"{name} must be a non-empty string")
+    for name, value in (
+        ("ancestry.status", ancestry.get("status")),
+        ("authorityNow.status", authority.get("status")),
+    ):
+        _text(value, name)
+    if "subjectHash" in ancestry and ancestry["subjectHash"] is not None:
+        _text(ancestry["subjectHash"], "ancestry.subjectHash")
+    if "effectiveValidity" in ancestry and ancestry["effectiveValidity"] is not None:
+        _text(ancestry["effectiveValidity"], "ancestry.effectiveValidity")
+
+    geometry_results = _list(bundle.get("geometryResults", []), "geometryResults")
+    for index, item in enumerate(geometry_results):
+        _geometry_item(item, f"geometryResults[{index}]")
 
     for field in (
         "supportingEvidence",
@@ -82,6 +109,8 @@ def validate_orientation_center(data: object) -> dict[str, Any]:
         "requireIndependentWitness",
         "requireAncestry",
         "requireAuthority",
+        "requireGeometry",
+        "requireChildSubjectBinding",
     ):
         if key in requirements and not isinstance(requirements[key], bool):
             raise OrientationCenterError(f"requirements.{key} must be boolean")
@@ -96,16 +125,43 @@ def _reason(code: str, message: str, refs: list[str] | None = None) -> dict[str,
     return {"code": code, "message": message, "refs": sorted(set(refs or []))}
 
 
+def _subject_mismatch_ids(items: list[dict[str, Any]], subject_hash: str) -> list[str]:
+    return [
+        item["id"]
+        for item in items
+        if item.get("subjectHash") is not None and item.get("subjectHash") != subject_hash
+    ]
+
+
 def evaluate_orientation_center(bundle: dict[str, Any]) -> dict[str, object]:
     validated = validate_orientation_center(bundle)
     hard: list[dict[str, object]] = []
     unresolved: list[dict[str, object]] = []
     requirements = validated.get("requirements", {})
-    ancestry_status = str(validated["ancestry"]["status"]).upper()
+    subject_hash = _sha256(validated["subject"])
+    ancestry = validated["ancestry"]
+    ancestry_status = str(ancestry["status"]).upper()
+    effective_validity = str(ancestry.get("effectiveValidity", "")).upper()
     authority_status = str(validated["authorityNow"]["status"]).upper()
 
+    ancestry_subject_hash = ancestry.get("subjectHash")
+    if ancestry_subject_hash is not None and ancestry_subject_hash != subject_hash:
+        hard.append(
+            _reason(
+                "ANCESTRY_SUBJECT_MISMATCH",
+                "ancestry receipt is bound to a different exact subject",
+            )
+        )
+    elif requirements.get("requireChildSubjectBinding", False) and ancestry_subject_hash is None:
+        unresolved.append(
+            _reason(
+                "ANCESTRY_SUBJECT_BINDING_MISSING",
+                "ancestry receipt lacks required exact-subject binding",
+            )
+        )
+
     if requirements.get("requireAncestry", True):
-        if ancestry_status in {"INVALID", "FAIL", "UNSTABLE"}:
+        if effective_validity == "INVALID" or ancestry_status in {"INVALID", "FAIL", "UNSTABLE"}:
             hard.append(_reason("ANCESTRY_INVALID", "causal ancestry is invalid"))
         elif ancestry_status not in {"VALID", "VALID_WITHIN_TRACE", "PASS"}:
             unresolved.append(_reason("ANCESTRY_UNRESOLVED", "causal ancestry is not resolved"))
@@ -116,9 +172,42 @@ def evaluate_orientation_center(bundle: dict[str, Any]) -> dict[str, object]:
         elif authority_status not in {"VALID", "PASS", "CURRENT"}:
             unresolved.append(_reason("AUTHORITY_UNRESOLVED", "current authority is not resolved"))
 
+    geometry_results = validated.get("geometryResults", [])
+    geometry_mismatch = _subject_mismatch_ids(geometry_results, subject_hash)
+    if geometry_mismatch:
+        hard.append(
+            _reason(
+                "GEOMETRY_SUBJECT_MISMATCH",
+                "Transition Geometry receipt is bound to a different exact subject",
+                geometry_mismatch,
+            )
+        )
+    if requirements.get("requireGeometry", False) and not geometry_results:
+        unresolved.append(
+            _reason("GEOMETRY_MISSING", "required Transition Geometry evidence is not available")
+        )
+    for item in geometry_results:
+        pair_classification = str(item["pair"]["classification"]).upper()
+        loop = item.get("loop")
+        loop_classification = (
+            str(loop.get("classification", "")).upper() if isinstance(loop, dict) else ""
+        )
+        if pair_classification == "TORSION_DETECTED" or loop_classification == "CURVATURE_DETECTED":
+            unresolved.append(
+                _reason(
+                    "GEOMETRY_PATH_DEPENDENCE",
+                    "material path dependence requires explicit review before orientation is balanced",
+                    [item["id"]],
+                )
+            )
+
     supporting = validated.get("supportingEvidence", [])
-    supporting_valid = [item for item in supporting if str(item["status"]).upper() in {"VALID", "PASS", "WITNESSED"}]
-    supporting_invalid = [item for item in supporting if str(item["status"]).upper() in {"INVALID", "FAIL"}]
+    supporting_valid = [
+        item for item in supporting if str(item["status"]).upper() in {"VALID", "PASS", "WITNESSED"}
+    ]
+    supporting_invalid = [
+        item for item in supporting if str(item["status"]).upper() in {"INVALID", "FAIL"}
+    ]
     if supporting_invalid:
         hard.append(
             _reason(
@@ -128,11 +217,17 @@ def evaluate_orientation_center(bundle: dict[str, Any]) -> dict[str, object]:
             )
         )
     if requirements.get("requireSupportingEvidence", True) and not supporting_valid:
-        unresolved.append(_reason("SUPPORTING_EVIDENCE_MISSING", "no valid supporting evidence is available"))
+        unresolved.append(
+            _reason("SUPPORTING_EVIDENCE_MISSING", "no valid supporting evidence is available")
+        )
 
     counterevidence = validated.get("counterevidence", [])
-    confirmed_counter = [item for item in counterevidence if str(item["status"]).upper() in {"CONFIRMED", "VALID", "FAIL"}]
-    open_counter = [item for item in counterevidence if str(item["status"]).upper() in {"OPEN", "UNRESOLVED", "PENDING"}]
+    confirmed_counter = [
+        item for item in counterevidence if str(item["status"]).upper() in {"CONFIRMED", "VALID", "FAIL"}
+    ]
+    open_counter = [
+        item for item in counterevidence if str(item["status"]).upper() in {"OPEN", "UNRESOLVED", "PENDING"}
+    ]
     if confirmed_counter:
         hard.append(
             _reason(
@@ -183,8 +278,12 @@ def evaluate_orientation_center(bundle: dict[str, Any]) -> dict[str, object]:
         )
 
     witnesses = validated.get("independentWitnesses", [])
-    valid_witnesses = [item for item in witnesses if str(item["status"]).upper() in {"VALID", "PASS", "WITNESSED"}]
-    invalid_witnesses = [item for item in witnesses if str(item["status"]).upper() in {"INVALID", "FAIL", "MISMATCH"}]
+    valid_witnesses = [
+        item for item in witnesses if str(item["status"]).upper() in {"VALID", "PASS", "WITNESSED"}
+    ]
+    invalid_witnesses = [
+        item for item in witnesses if str(item["status"]).upper() in {"INVALID", "FAIL", "MISMATCH"}
+    ]
     if invalid_witnesses:
         hard.append(
             _reason(
@@ -194,10 +293,40 @@ def evaluate_orientation_center(bundle: dict[str, Any]) -> dict[str, object]:
             )
         )
     if requirements.get("requireIndependentWitness", False) and not valid_witnesses:
-        unresolved.append(_reason("INDEPENDENT_WITNESS_MISSING", "a required independent witness is not available"))
+        unresolved.append(
+            _reason("INDEPENDENT_WITNESS_MISSING", "a required independent witness is not available")
+        )
 
-    hard.sort(key=lambda row: str(row["code"]))
-    unresolved.sort(key=lambda row: str(row["code"]))
+    if requirements.get("requireChildSubjectBinding", False):
+        for field in (
+            "supportingEvidence",
+            "counterevidence",
+            "verificationDebt",
+            "independentWitnesses",
+            "watchpoints",
+        ):
+            items = validated.get(field, [])
+            missing = [item["id"] for item in items if item.get("subjectHash") is None]
+            mismatched = _subject_mismatch_ids(items, subject_hash)
+            if missing:
+                unresolved.append(
+                    _reason(
+                        "CHILD_SUBJECT_BINDING_MISSING",
+                        f"{field} contains receipts without required exact-subject binding",
+                        missing,
+                    )
+                )
+            if mismatched:
+                hard.append(
+                    _reason(
+                        "CHILD_SUBJECT_MISMATCH",
+                        f"{field} contains receipts for another exact subject",
+                        mismatched,
+                    )
+                )
+
+    hard.sort(key=lambda row: (str(row["code"]), tuple(row["refs"])))
+    unresolved.sort(key=lambda row: (str(row["code"]), tuple(row["refs"])))
     if hard:
         readiness = READINESS_UNSTABLE
     elif unresolved:
@@ -210,10 +339,17 @@ def evaluate_orientation_center(bundle: dict[str, Any]) -> dict[str, object]:
         "status": "pass" if readiness == READINESS_BALANCED else "hold",
         "readiness": readiness,
         "centerHash": _sha256(validated),
-        "subjectHash": _sha256(validated["subject"]),
+        "subjectHash": subject_hash,
+        "contributingCapabilities": {
+            "ancestry": ancestry_status,
+            "geometry": [item["pair"]["classification"] for item in geometry_results],
+            "verificationDebtItems": len(debt),
+            "independentWitnessItems": len(witnesses),
+        },
         "hardFindings": hard,
         "unresolved": unresolved,
         "watchpoints": list(validated.get("watchpoints", [])),
+        "securityVerdictAuthorized": False,
         "claimBoundary": (
             "Orientation readiness describes whether the declared causal context is resolved enough to proceed. "
             "BALANCED is not a truth, safety, or security verdict."
