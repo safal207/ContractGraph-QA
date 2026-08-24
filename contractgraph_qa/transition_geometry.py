@@ -45,10 +45,30 @@ def _require_non_empty_string(value: object, name: str) -> str:
     return value
 
 
-def _validate_endpoint(value: object, name: str) -> dict[str, Any]:
+def _validate_endpoint(
+    value: object,
+    name: str,
+    *,
+    expected_subject_hash: str,
+    require_subject_binding: bool,
+) -> dict[str, Any]:
     endpoint = _require_object(value, name)
     for key in ("state", "effects", "history"):
         _require_object(endpoint.get(key), f"{name}.{key}")
+
+    declared_subject_hash = endpoint.get("subjectHash")
+    if declared_subject_hash is not None:
+        declared_subject_hash = _require_non_empty_string(
+            declared_subject_hash, f"{name}.subjectHash"
+        )
+        if declared_subject_hash != expected_subject_hash:
+            raise TransitionGeometryError(
+                f"{name}.subjectHash does not match the model subject"
+            )
+    elif require_subject_binding:
+        raise TransitionGeometryError(
+            f"{name}.subjectHash is required when requirements.requireEndpointSubjectBinding=true"
+        )
     return endpoint
 
 
@@ -124,12 +144,36 @@ def validate_transition_geometry_model(data: object) -> dict[str, Any]:
     subject = _require_object(model.get("subject"), "subject")
     if not subject:
         raise TransitionGeometryError("subject must not be empty")
+    subject_hash = _sha256(subject)
+
+    requirements = _require_object(model.get("requirements", {}), "requirements")
+    require_endpoint_binding = requirements.get("requireEndpointSubjectBinding", False)
+    if not isinstance(require_endpoint_binding, bool):
+        raise TransitionGeometryError(
+            "requirements.requireEndpointSubjectBinding must be boolean"
+        )
+
     operators = _require_object(model.get("operators"), "operators")
     _require_non_empty_string(operators.get("a"), "operators.a")
     _require_non_empty_string(operators.get("b"), "operators.b")
-    _validate_endpoint(model.get("origin"), "origin")
-    _validate_endpoint(model.get("aThenB"), "aThenB")
-    _validate_endpoint(model.get("bThenA"), "bThenA")
+    _validate_endpoint(
+        model.get("origin"),
+        "origin",
+        expected_subject_hash=subject_hash,
+        require_subject_binding=require_endpoint_binding,
+    )
+    _validate_endpoint(
+        model.get("aThenB"),
+        "aThenB",
+        expected_subject_hash=subject_hash,
+        require_subject_binding=require_endpoint_binding,
+    )
+    _validate_endpoint(
+        model.get("bThenA"),
+        "bThenA",
+        expected_subject_hash=subject_hash,
+        require_subject_binding=require_endpoint_binding,
+    )
     if "loop" in model:
         loop = _require_object(model["loop"], "loop")
         sequence = loop.get("operators")
@@ -137,7 +181,12 @@ def validate_transition_geometry_model(data: object) -> dict[str, Any]:
             raise TransitionGeometryError("loop.operators must be a non-empty list")
         for index, value in enumerate(sequence):
             _require_non_empty_string(value, f"loop.operators[{index}]")
-        _validate_endpoint(loop.get("returned"), "loop.returned")
+        _validate_endpoint(
+            loop.get("returned"),
+            "loop.returned",
+            expected_subject_hash=subject_hash,
+            require_subject_binding=require_endpoint_binding,
+        )
     return model
 
 
@@ -152,11 +201,18 @@ def run_transition_geometry_model(model: dict[str, Any]) -> dict[str, object]:
     hold = pair["classification"] == PAIR_TORSION or (
         loop_result is not None and loop_result["classification"] == LOOP_CURVATURE
     )
+    require_endpoint_binding = bool(
+        validated.get("requirements", {}).get("requireEndpointSubjectBinding", False)
+    )
     return {
         "schema": "cgqa/transition-geometry-result/v0.1",
         "status": "hold" if hold else "pass",
         "modelHash": _sha256(validated),
         "subjectHash": _sha256(validated["subject"]),
+        "subjectBinding": {
+            "endpointBindingRequired": require_endpoint_binding,
+            "status": "BOUND" if require_endpoint_binding else "MODEL_SCOPED",
+        },
         "operators": dict(validated["operators"]),
         "pair": pair,
         "loop": loop_result,
