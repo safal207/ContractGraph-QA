@@ -53,6 +53,7 @@ def validate_ancestral_trace(data: object) -> dict[str, Any]:
     subject = _object(trace.get("subject"), "subject")
     if not subject:
         raise AncestralValidityError("subject must not be empty")
+    subject_hash = _sha256(subject)
     target_id = _text(trace.get("targetEventId"), "targetEventId")
     events = trace.get("events")
     if not isinstance(events, list) or not events:
@@ -71,9 +72,21 @@ def validate_ancestral_trace(data: object) -> dict[str, Any]:
         local_valid = event.get("localValid", True)
         if not isinstance(local_valid, bool):
             raise AncestralValidityError(f"event {event_id!r}.localValid must be boolean")
-        for key in ("parentId", "scope", "authorityRef", "evidenceParentId", "faultRef", "grantsTo"):
+        for key in (
+            "parentId",
+            "scope",
+            "authorityRef",
+            "evidenceParentId",
+            "faultRef",
+            "grantsTo",
+            "subjectHash",
+        ):
             if key in event and event[key] is not None:
                 _text(event[key], f"event {event_id!r}.{key}")
+        if event.get("subjectHash") is not None and event["subjectHash"] != subject_hash:
+            raise AncestralValidityError(
+                f"event {event_id!r}.subjectHash does not match the trace subject"
+            )
         if "expiresAt" in event and event["expiresAt"] is not None:
             value = event["expiresAt"]
             if not isinstance(value, int) or isinstance(value, bool):
@@ -93,11 +106,28 @@ def load_ancestral_trace(path: Path) -> dict[str, Any]:
     return validate_ancestral_trace(json.loads(path.read_text(encoding="utf-8")))
 
 
-def _finding(code: str, message: str, refs: list[str]) -> dict[str, object]:
-    return {"code": code, "severity": "FAIL", "message": message, "refs": sorted(set(refs))}
+def _finding(
+    code: str,
+    message: str,
+    refs: list[str],
+    *,
+    at_event_id: str | None = None,
+) -> dict[str, object]:
+    finding: dict[str, object] = {
+        "code": code,
+        "severity": "FAIL",
+        "message": message,
+        "refs": sorted(set(refs)),
+    }
+    if at_event_id is not None:
+        finding["atEventId"] = at_event_id
+    return finding
 
 
-def _ancestry(target: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, object]]]:
+def _ancestry(
+    target: dict[str, Any],
+    by_id: dict[str, dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, object]]]:
     chain = [target]
     findings: list[dict[str, object]] = []
     seen = {target["id"]}
@@ -111,18 +141,35 @@ def _ancestry(target: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> tuple
                     "ANCESTRY_GAP",
                     f"parent {parent_id!r} is missing from the trace",
                     [cursor["id"], parent_id],
+                    at_event_id=cursor["id"],
                 )
             )
             break
         if parent_id in seen:
             findings.append(
-                _finding("ANCESTRY_CYCLE", "causal ancestry contains a cycle", list(seen) + [parent_id])
+                _finding(
+                    "ANCESTRY_CYCLE",
+                    "causal ancestry contains a cycle",
+                    list(seen) + [parent_id],
+                    at_event_id=cursor["id"],
+                )
             )
             break
         seen.add(parent_id)
         chain.append(parent)
         cursor = parent
     return chain, findings
+
+
+def _finding_time(
+    finding: dict[str, object],
+    by_id: dict[str, dict[str, Any]],
+    target_time: int,
+) -> int:
+    event_id = finding.get("atEventId")
+    if isinstance(event_id, str) and event_id in by_id:
+        return _event_time(by_id[event_id])
+    return target_time
 
 
 def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
@@ -136,7 +183,14 @@ def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
     target_scope = target.get("scope")
 
     if not target.get("localValid", True):
-        findings.append(_finding("LOCAL_INVALID", "target event is locally invalid", [target["id"]]))
+        findings.append(
+            _finding(
+                "LOCAL_INVALID",
+                "target event is locally invalid",
+                [target["id"]],
+                at_event_id=target["id"],
+            )
+        )
 
     root = chain[-1]
     if not root.get("localValid", True):
@@ -145,17 +199,28 @@ def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
                 "INVALID_ROOT_INHERITANCE",
                 "target inherits from a locally invalid causal root",
                 [root["id"], target["id"]],
+                at_event_id=root["id"],
             )
         )
 
     for event in chain[1:]:
+        event_scope = event.get("scope")
+        if target_scope is not None and event_scope is not None and event_scope != target_scope:
+            findings.append(
+                _finding(
+                    "FOREIGN_SCOPE_ANCESTOR",
+                    "causal ancestor belongs to a different workflow scope",
+                    [event["id"], target["id"]],
+                    at_event_id=event["id"],
+                )
+            )
         if event.get("kind") != "APPROVAL":
             continue
         expired = event.get("expiresAt") is not None and int(event["expiresAt"]) < target_time
         scope_mismatch = (
             target_scope is not None
-            and event.get("scope") is not None
-            and event.get("scope") != target_scope
+            and event_scope is not None
+            and event_scope != target_scope
         )
         if expired or scope_mismatch:
             reason = "expired" if expired else "belongs to a different workflow scope"
@@ -164,6 +229,7 @@ def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
                     "STALE_PARENT",
                     f"approval ancestor is {reason} for the target action",
                     [event["id"], target["id"]],
+                    at_event_id=event["id"],
                 )
             )
 
@@ -191,6 +257,7 @@ def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
                     "REJECTED_BRANCH_REUSE",
                     "target re-enters an ancestor branch superseded by rejection without fresh approval",
                     [rejection["id"], target["id"], *sorted(superseded)],
+                    at_event_id=rejection["id"],
                 )
             )
 
@@ -213,6 +280,7 @@ def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
                     "MISSING_AUTHORITY_HANDOFF",
                     "target requires an explicit authority handoff to its actor",
                     refs,
+                    at_event_id=target["id"],
                 )
             )
 
@@ -229,6 +297,7 @@ def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
                     "MEMORY_WITHOUT_EVIDENCE_ORIGIN",
                     "memory-derived causal ancestor has no resolvable evidence origin",
                     refs,
+                    at_event_id=event["id"],
                 )
             )
 
@@ -244,21 +313,52 @@ def run_ancestral_validity(trace: dict[str, Any]) -> dict[str, object]:
                     "REMEDIATION_WITHOUT_FAULT_LINK",
                     "remediation is not bound to a resolvable FAULT event",
                     refs,
+                    at_event_id=target["id"],
                 )
             )
 
-    findings.sort(key=lambda row: (str(row["code"]), tuple(row["refs"])))
+    findings.sort(
+        key=lambda row: (
+            _finding_time(row, by_id, target_time),
+            str(row["code"]),
+            tuple(row["refs"]),
+        )
+    )
     effective = "invalid" if findings else "valid_within_trace"
+    first_invalidity = findings[0] if findings else None
+    affected_descendants: list[str] = []
+    if first_invalidity is not None:
+        first_time = _finding_time(first_invalidity, by_id, target_time)
+        affected_descendants = [
+            event["id"]
+            for event in reversed(chain)
+            if _event_time(event) >= first_time
+        ]
+        if target["id"] not in affected_descendants:
+            affected_descendants.append(target["id"])
+
+    subject_hash = _sha256(validated["subject"])
+    explicit_subject_events = sum(
+        1 for event in events if event.get("subjectHash") == subject_hash
+    )
     return {
         "schema": "cgqa/ancestral-validity-result/v0.1",
         "status": "pass" if effective == "valid_within_trace" else "fail",
         "traceHash": _sha256(validated),
-        "subjectHash": _sha256(validated["subject"]),
+        "subjectHash": subject_hash,
+        "subjectBinding": (
+            "EXPLICIT_EVENT_BINDING"
+            if explicit_subject_events == len(events)
+            else "TRACE_LEVEL_BINDING"
+        ),
         "targetEventId": target["id"],
         "localValidity": "valid" if target.get("localValid", True) else "invalid",
         "effectiveValidity": effective,
         "ancestry": [event["id"] for event in chain],
+        "firstInvalidity": first_invalidity,
+        "affectedDescendants": affected_descendants,
         "findings": findings,
+        "securityVerdictAuthorized": False,
         "claimBoundary": (
             "Effective validity is derived only from the normalized trace fields supplied to this evaluator; "
             "it does not prove that the trace is complete or independently witnessed."
