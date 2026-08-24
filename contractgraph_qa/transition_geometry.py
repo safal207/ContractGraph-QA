@@ -45,10 +45,21 @@ def _require_non_empty_string(value: object, name: str) -> str:
     return value
 
 
-def _validate_endpoint(value: object, name: str) -> dict[str, Any]:
+def _validate_endpoint(
+    value: object,
+    name: str,
+    *,
+    expected_subject_hash: str,
+) -> dict[str, Any]:
     endpoint = _require_object(value, name)
     for key in ("state", "effects", "history"):
         _require_object(endpoint.get(key), f"{name}.{key}")
+    if "subjectHash" in endpoint:
+        subject_hash = _require_non_empty_string(endpoint.get("subjectHash"), f"{name}.subjectHash")
+        if subject_hash != expected_subject_hash:
+            raise TransitionGeometryError(
+                f"{name}.subjectHash does not match the model subject"
+            )
     return endpoint
 
 
@@ -124,12 +135,13 @@ def validate_transition_geometry_model(data: object) -> dict[str, Any]:
     subject = _require_object(model.get("subject"), "subject")
     if not subject:
         raise TransitionGeometryError("subject must not be empty")
+    subject_hash = _sha256(subject)
     operators = _require_object(model.get("operators"), "operators")
     _require_non_empty_string(operators.get("a"), "operators.a")
     _require_non_empty_string(operators.get("b"), "operators.b")
-    _validate_endpoint(model.get("origin"), "origin")
-    _validate_endpoint(model.get("aThenB"), "aThenB")
-    _validate_endpoint(model.get("bThenA"), "bThenA")
+    _validate_endpoint(model.get("origin"), "origin", expected_subject_hash=subject_hash)
+    _validate_endpoint(model.get("aThenB"), "aThenB", expected_subject_hash=subject_hash)
+    _validate_endpoint(model.get("bThenA"), "bThenA", expected_subject_hash=subject_hash)
     if "loop" in model:
         loop = _require_object(model["loop"], "loop")
         sequence = loop.get("operators")
@@ -137,29 +149,43 @@ def validate_transition_geometry_model(data: object) -> dict[str, Any]:
             raise TransitionGeometryError("loop.operators must be a non-empty list")
         for index, value in enumerate(sequence):
             _require_non_empty_string(value, f"loop.operators[{index}]")
-        _validate_endpoint(loop.get("returned"), "loop.returned")
+        _validate_endpoint(
+            loop.get("returned"),
+            "loop.returned",
+            expected_subject_hash=subject_hash,
+        )
     return model
 
 
 def run_transition_geometry_model(model: dict[str, Any]) -> dict[str, object]:
     validated = validate_transition_geometry_model(model)
+    subject_hash = _sha256(validated["subject"])
     pair = _compare_endpoints(validated["aThenB"], validated["bThenA"])
     loop_result: dict[str, object] | None = None
+    endpoints = [validated["origin"], validated["aThenB"], validated["bThenA"]]
     if "loop" in validated:
         loop_result = _compare_loop(validated["origin"], validated["loop"]["returned"])
         loop_result["operators"] = list(validated["loop"]["operators"])
+        endpoints.append(validated["loop"]["returned"])
 
     hold = pair["classification"] == PAIR_TORSION or (
         loop_result is not None and loop_result["classification"] == LOOP_CURVATURE
     )
+    explicit_bindings = sum(1 for endpoint in endpoints if endpoint.get("subjectHash") == subject_hash)
     return {
         "schema": "cgqa/transition-geometry-result/v0.1",
         "status": "hold" if hold else "pass",
         "modelHash": _sha256(validated),
-        "subjectHash": _sha256(validated["subject"]),
+        "subjectHash": subject_hash,
+        "subjectBinding": (
+            "EXPLICIT_ENDPOINT_BINDING"
+            if explicit_bindings == len(endpoints)
+            else "MODEL_LEVEL_BINDING"
+        ),
         "operators": dict(validated["operators"]),
         "pair": pair,
         "loop": loop_result,
+        "securityVerdictAuthorized": False,
         "claimBoundary": (
             "Transition geometry classifies observed endpoint/path dependence. "
             "TORSION_DETECTED or CURVATURE_DETECTED is a HOLD signal, not automatic invalidity."
