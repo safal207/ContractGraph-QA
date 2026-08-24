@@ -1,0 +1,35 @@
+{
+  "schema": "cgqa/transition-geometry/v0.1",
+  "subject": {
+    "repository": "fixture/escrow",
+    "commit": "fixture-v1",
+    "objectId": "stream-1"
+  },
+  "operators": {
+    "a": "settle",
+    "b": "cancel"
+  },
+  "origin": {
+    "state": {"active": true, "terminal": null},
+    "effects": {"sellerPayout": 0, "refund": 0},
+    "history": {"branch": "main", "generation": 1}
+  },
+  "aThenB": {
+    "state": {"active": false, "terminal": "closed"},
+    "effects": {"sellerPayout": 100, "refund": 0},
+    "history": {"branch": "main", "generation": 3, "path": ["settle", "cancel"]}
+  },
+  "bThenA": {
+    "state": {"active": false, "terminal": "closed"},
+    "effects": {"sellerPayout": 0, "refund": 100},
+    "history": {"branch": "main", "generation": 3, "path": ["cancel", "settle"]}
+  },
+  "loop": {
+    "operators": ["pause", "resume"],
+    "returned": {
+      "state": {"active": true, "terminal": null},
+      "effects": {"sellerPayout": 0, "refund": 0},
+      "history": {"branch": "main", "generation": 3}
+    }
+  }
+}

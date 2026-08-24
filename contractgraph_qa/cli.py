@@ -11,6 +11,7 @@ from contractgraph_qa.agent_payment_decision import (
     AgentPaymentDecisionError,
     evaluate_agent_payment_decision_file,
 )
+from contractgraph_qa.ancestral_validity import load_ancestral_trace, run_ancestral_validity
 from contractgraph_qa.contract_lattice import load_contract_lattice, run_contract_lattice
 from contractgraph_qa.economic_cardinality import (
     load_economic_cardinality_model,
@@ -21,6 +22,7 @@ from contractgraph_qa.lifecycle_liveness import (
     load_lifecycle_liveness_model,
     run_lifecycle_liveness_model,
 )
+from contractgraph_qa.orientation_center import load_orientation_center, evaluate_orientation_center
 from contractgraph_qa.payment_evidence_pack import (
     PaymentEvidencePackError,
     build_payment_evidence_pack,
@@ -34,6 +36,10 @@ from contractgraph_qa.solidity_lattice import check_target, load_profile
 from contractgraph_qa.successor_consistency import (
     load_successor_consistency_model,
     run_successor_consistency_model,
+)
+from contractgraph_qa.transition_geometry import (
+    load_transition_geometry_model,
+    run_transition_geometry_model,
 )
 from contractgraph_qa import legacy_cli
 
@@ -352,6 +358,72 @@ def _verify_evidence_pack_main(argv: list[str]) -> int:
         return EXIT_INTERNAL
 
 
+def _geometry_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa geometry",
+        description="Compare operation order and closed-loop path dependence over observed endpoints.",
+    )
+    parser.add_argument("--model", type=Path, required=True, help="Transition Geometry v0.1 JSON")
+    args = parser.parse_args(argv)
+    try:
+        result = run_transition_geometry_model(load_transition_geometry_model(args.model.resolve()))
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
+def _ancestry_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa ancestry",
+        description="Evaluate local versus effective validity across one normalized causal ancestry trace.",
+    )
+    parser.add_argument("--trace", type=Path, required=True, help="Ancestral Validity v0.1 JSON")
+    args = parser.parse_args(argv)
+    try:
+        result = run_ancestral_validity(load_ancestral_trace(args.trace.resolve()))
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
+def _orient_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa orient",
+        description="Evaluate whether a declared causal context is BALANCED, INDETERMINATE, or UNSTABLE.",
+    )
+    parser.add_argument("--bundle", type=Path, required=True, help="Orientation Center v0.1 JSON")
+    args = parser.parse_args(argv)
+    try:
+        result = evaluate_orientation_center(load_orientation_center(args.bundle.resolve()))
+        _emit(result)
+        return EXIT_OK if result["status"] == "pass" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
 def main(argv: list[str] | None = None) -> int:
     effective = list(sys.argv[1:] if argv is None else argv)
     if effective and effective[0] == "agent-payment-decision":
@@ -374,6 +446,12 @@ def main(argv: list[str] | None = None) -> int:
         return _evidence_pack_main(effective[1:])
     if effective and effective[0] == "verify-agent-payment-evidence-pack":
         return _verify_evidence_pack_main(effective[1:])
+    if effective and effective[0] == "geometry":
+        return _geometry_main(effective[1:])
+    if effective and effective[0] == "ancestry":
+        return _ancestry_main(effective[1:])
+    if effective and effective[0] == "orient":
+        return _orient_main(effective[1:])
     return legacy_cli.main(effective)
 
 
