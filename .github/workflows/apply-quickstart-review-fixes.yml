@@ -28,6 +28,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
+          import textwrap
 
           path = Path("contractgraph_qa/project_quickstart_hardened.py")
           text = path.read_text(encoding="utf-8")
@@ -56,7 +57,8 @@ jobs:
 
           start = text.index("def _run_command(\n")
           end = text.index("\n\ndef _git_command", start)
-          replacement = '''def _run_command(
+          replacement = textwrap.dedent('''\
+          def _run_command(
               project_root: Path,
               plan: dict[str, Any],
               timeout_seconds: int,
@@ -180,8 +182,7 @@ jobs:
                   "strippedSensitiveEnvironmentNames": stripped,
                   "isolatedHomeUsed": isolated_home is not None,
               }
-          '''
-          replacement = re.sub(r"^          ", "", replacement, flags=re.M)
+          ''')
           text = text[:start] + replacement.rstrip() + text[end:]
 
           path.write_text(text, encoding="utf-8")
