@@ -36,12 +36,15 @@ jobs:
               '    "PATHEXT",\n}',
               '    "PATHEXT",\n    "APPDATA",\n    "LOCALAPPDATA",\n}',
           )
-          text = re.sub(
-              r'RUST_NEAR_CONTRACT = re\.compile\(\n.*?\n\)',
+          near_replacement = (
               'RUST_NEAR_CONTRACT = re.compile(\n'
               '    r"#\\s*\\[\\s*(?:near_bindgen|near(?:_sdk)?::near|near\\s*(?:\\(\\s*contract_state\\s*\\))?)\\s*\\]"\n'
               '    r"\\s*(?:pub\\s+)?struct\\s+([A-Za-z_][A-Za-z0-9_]*)"\n'
-              ')',
+              ')'
+          )
+          text = re.sub(
+              r'RUST_NEAR_CONTRACT = re\.compile\(\n.*?\n\)',
+              lambda _match: near_replacement,
               text,
               count=1,
               flags=re.S,
