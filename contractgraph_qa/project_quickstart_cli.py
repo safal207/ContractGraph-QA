@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
             timeout_seconds=args.timeout,
         )
         print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
-        return 0 if result["status"] != "fail" else 10
+        return 0 if result["status"] == "pass" else 10
     except (ProjectQuickstartError, OSError, ValueError) as exc:
         print(f"cgqa quickstart: {exc}", file=sys.stderr)
         return 10
