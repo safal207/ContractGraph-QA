@@ -86,6 +86,34 @@ CONFIG_NAMES = {
     "bun.lockb",
     "sui.lock",
     "Move.lock",
+    ".gitmodules",
+    "rust-toolchain",
+    "rust-toolchain.toml",
+    "soldeer.lock",
+    "tsconfig.json",
+}
+
+SUPPORT_DIRECTORIES = {
+    "test",
+    "tests",
+    "script",
+    "scripts",
+    "deploy",
+    "deployments",
+    "migrations",
+}
+SUPPORT_EXTENSIONS = {
+    ".js",
+    ".cjs",
+    ".mjs",
+    ".ts",
+    ".py",
+    ".sh",
+    ".ps1",
+    ".toml",
+    ".json",
+    ".yaml",
+    ".yml",
 }
 
 FRAMEWORK_PRIORITY = {
@@ -145,7 +173,9 @@ ENV_ALLOWLIST = {
 
 TACT_CONTRACT = re.compile(r"\bcontract\s+([A-Za-z_][A-Za-z0-9_]*)")
 LIGO_MODULE = re.compile(r"\bmodule\s+([A-Za-z_][A-Za-z0-9_]*)")
-RUST_INK_CONTRACT = re.compile(r"#\s*\[\s*ink::contract\s*\]\s*mod\s+([A-Za-z_][A-Za-z0-9_]*)")
+RUST_INK_CONTRACT = re.compile(
+    r"#\s*\[\s*ink::contract\s*\]\s*mod\s+([A-Za-z_][A-Za-z0-9_]*)"
+)
 RUST_NEAR_CONTRACT = re.compile(
     r"#\s*\[\s*near(?:_sdk)?::near\s*\]\s*(?:pub\s+)?struct\s+([A-Za-z_][A-Za-z0-9_]*)"
 )
@@ -226,7 +256,9 @@ def _walk_candidate_files(
             try:
                 resolved = child.resolve()
             except OSError:
-                skipped.append({"path": _relative(child, root), "reason": "DIRECTORY_UNREADABLE"})
+                skipped.append(
+                    {"path": _relative(child, root), "reason": "DIRECTORY_UNREADABLE"}
+                )
                 continue
             if output_resolved is not None and resolved == output_resolved:
                 continue
@@ -242,7 +274,10 @@ def _walk_candidate_files(
             relative = _relative(path, root)
             suffix = path.suffix.lower()
             is_source = suffix in SOURCE_LANGUAGES
-            is_config = name in CONFIG_NAMES
+            is_harness = suffix in SUPPORT_EXTENSIONS and any(
+                part in SUPPORT_DIRECTORIES for part in current_relative.parts
+            )
+            is_config = name in CONFIG_NAMES or is_harness
             if not is_source and not is_config:
                 continue
             try:
@@ -347,7 +382,12 @@ def _declarations_and_signals(
                     )
         elif language == "vyper":
             declarations.append(
-                {"path": relative, "line": 1, "kind": "vyper contract", "name": Path(relative).stem}
+                {
+                    "path": relative,
+                    "line": 1,
+                    "kind": "vyper contract",
+                    "name": Path(relative).stem,
+                }
             )
         elif language == "move":
             for match in base.MOVE_MODULE.finditer(cleaned):
@@ -459,15 +499,20 @@ def _parse_toml(path: Path) -> dict[str, Any]:
 def _cargo_dependencies(path: Path) -> set[str]:
     data = _parse_toml(path)
     names: set[str] = set()
+
+    def collect(section: object) -> None:
+        if not isinstance(section, dict):
+            return
+        names.update(str(key) for key in section)
+        for value in section.values():
+            if isinstance(value, dict) and isinstance(value.get("package"), str):
+                names.add(value["package"])
+
     for section_name in ("dependencies", "dev-dependencies", "build-dependencies"):
-        section = data.get(section_name, {})
-        if isinstance(section, dict):
-            names.update(str(key) for key in section)
+        collect(data.get(section_name, {}))
     workspace = data.get("workspace", {})
     if isinstance(workspace, dict):
-        section = workspace.get("dependencies", {})
-        if isinstance(section, dict):
-            names.update(str(key) for key in section)
+        collect(workspace.get("dependencies", {}))
     return names
 
 
@@ -516,10 +561,17 @@ def _project_roots(root: Path, config_inventory: list[dict[str, Any]]) -> list[P
             relative_parent = path.parent.relative_to(root)
             if len(relative_parent.parts) <= MAX_WORKSPACE_DEPTH:
                 roots.add(path.parent)
-    return sorted(roots, key=lambda path: (_depth(_relative(path, root)), _relative(path, root)))
+    return sorted(
+        roots,
+        key=lambda path: (_depth(_relative(path, root)), _relative(path, root)),
+    )
 
 
-def _languages_under(project_root: Path, root: Path, source_inventory: list[dict[str, Any]]) -> set[str]:
+def _languages_under(
+    project_root: Path,
+    root: Path,
+    source_inventory: list[dict[str, Any]],
+) -> set[str]:
     project_relative = _relative(project_root, root)
     prefix = "" if project_relative == "." else f"{project_relative}/"
     return {
@@ -529,16 +581,27 @@ def _languages_under(project_root: Path, root: Path, source_inventory: list[dict
     }
 
 
-def _detect_at(project_root: Path, root: Path, languages: set[str]) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
+def _detect_at(
+    project_root: Path,
+    root: Path,
+    languages: set[str],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
 
-    def add(framework: str, ecosystem: str, marker: str) -> None:
+    def add(
+        framework: str,
+        ecosystem: str,
+        marker: str,
+        *,
+        explicit: bool = True,
+    ) -> None:
         rows.append(
             {
                 "framework": framework,
                 "ecosystem": ecosystem,
                 "marker": marker,
                 "projectRoot": _relative(project_root, root),
+                "explicitProject": explicit,
             }
         )
 
@@ -569,7 +632,9 @@ def _detect_at(project_root: Path, root: Path, languages: set[str]) -> list[dict
         add("scarb", "starknet", "Scarb.toml")
     if (project_root / "Forc.toml").is_file():
         add("fuel", "fuel", "Forc.toml")
-    if (project_root / "Tact.config.ts").is_file() or (project_root / "tact.config.ts").is_file():
+    if (project_root / "Tact.config.ts").is_file() or (
+        project_root / "tact.config.ts"
+    ).is_file():
         add("tact", "ton", "Tact.config.ts")
 
     package_path = project_root / "package.json"
@@ -598,22 +663,32 @@ def _detect_at(project_root: Path, root: Path, languages: set[str]) -> list[dict
     if "solana-program" in cargo_deps and "anchor-lang" not in cargo_deps:
         add("solana-rust", "solana", "Cargo.toml:solana-program")
 
-    if "solidity" in languages and not any(row["ecosystem"] == "evm" for row in rows):
-        add("standalone-solidity", "evm", "*.sol")
+    if "solidity" in languages and not any(
+        row["ecosystem"] == "evm" for row in rows
+    ):
+        add("standalone-solidity", "evm", "*.sol", explicit=False)
     if "vyper" in languages and not any(
         row["framework"] in {"brownie", "ape"} for row in rows
     ):
-        add("standalone-vyper", "evm", "*.vy")
-    if "move" in languages and not any(row["ecosystem"] == "move" for row in rows):
-        add("move", "move", "*.move")
-    if "cairo" in languages and not any(row["ecosystem"] == "starknet" for row in rows):
-        add("standalone-cairo", "starknet", "*.cairo")
-    if "sway" in languages and not any(row["framework"] == "fuel" for row in rows):
-        add("fuel", "fuel", "*.sw")
-    if "tact" in languages and not any(row["framework"] == "tact" for row in rows):
-        add("tact", "ton", "*.tact")
+        add("standalone-vyper", "evm", "*.vy", explicit=False)
+    if "move" in languages and not any(
+        row["ecosystem"] == "move" for row in rows
+    ):
+        add("move", "move", "*.move", explicit=False)
+    if "cairo" in languages and not any(
+        row["ecosystem"] == "starknet" for row in rows
+    ):
+        add("standalone-cairo", "starknet", "*.cairo", explicit=False)
+    if "sway" in languages and not any(
+        row["framework"] == "fuel" for row in rows
+    ):
+        add("fuel", "fuel", "*.sw", explicit=False)
+    if "tact" in languages and not any(
+        row["framework"] == "tact" for row in rows
+    ):
+        add("tact", "ton", "*.tact", explicit=False)
     if "ligo" in languages:
-        add("ligo", "tezos", "*.ligo")
+        add("ligo", "tezos", "*.ligo", explicit=False)
     return rows
 
 
@@ -621,20 +696,31 @@ def _detect_frameworks(
     root: Path,
     source_inventory: list[dict[str, Any]],
     config_inventory: list[dict[str, Any]],
-) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     for project_root in _project_roots(root, config_inventory):
-        rows.extend(_detect_at(project_root, root, _languages_under(project_root, root, source_inventory)))
+        rows.extend(
+            _detect_at(
+                project_root,
+                root,
+                _languages_under(project_root, root, source_inventory),
+            )
+        )
 
-    deduped: dict[tuple[str, str, str], dict[str, str]] = {}
+    deduped: dict[tuple[str, str], dict[str, Any]] = {}
     for row in rows:
-        key = (row["framework"], row["projectRoot"], row["marker"])
-        deduped[key] = row
+        key = (row["framework"], row["projectRoot"])
+        existing = deduped.get(key)
+        if existing is None or (
+            bool(row["explicitProject"]) and not bool(existing["explicitProject"])
+        ):
+            deduped[key] = row
     return sorted(
         deduped.values(),
         key=lambda row: (
-            FRAMEWORK_PRIORITY.get(row["framework"], 100),
+            not bool(row["explicitProject"]),
             _depth(row["projectRoot"]),
+            FRAMEWORK_PRIORITY.get(row["framework"], 100),
             row["projectRoot"],
             row["marker"],
         ),
@@ -652,7 +738,7 @@ def _tool_path(project_root: Path, name: str) -> str | None:
     return shutil.which(name)
 
 
-def _native_plan(root: Path, detections: list[dict[str, str]]) -> dict[str, Any]:
+def _native_plan(root: Path, detections: list[dict[str, Any]]) -> dict[str, Any]:
     primary = detections[0] if detections else {
         "framework": "unknown",
         "projectRoot": ".",
@@ -688,7 +774,14 @@ def _native_plan(root: Path, detections: list[dict[str, str]]) -> dict[str, Any]
             command = [tool, "test"]
     elif framework == "standalone-vyper":
         required_tool = "project-specific Vyper test runner"
-    elif framework in {"soroban", "cosmwasm", "near", "ink", "stylus", "solana-rust"}:
+    elif framework in {
+        "soroban",
+        "cosmwasm",
+        "near",
+        "ink",
+        "stylus",
+        "solana-rust",
+    }:
         required_tool = "cargo"
         if tool := executable("cargo"):
             command = [tool, "test"]
@@ -731,7 +824,10 @@ def _native_plan(root: Path, detections: list[dict[str, str]]) -> dict[str, Any]
     }
 
 
-def _safe_environment(*, inherit_environment: bool) -> tuple[dict[str, str], list[str], list[str]]:
+def _safe_environment(
+    *,
+    inherit_environment: bool,
+) -> tuple[dict[str, str], list[str], list[str]]:
     if inherit_environment:
         env = dict(os.environ)
         inherited = sorted(env)
@@ -775,7 +871,9 @@ def _run_command(
             "strippedSensitiveEnvironmentNames": [],
         }
 
-    env, inherited, stripped = _safe_environment(inherit_environment=inherit_environment)
+    env, inherited, stripped = _safe_environment(
+        inherit_environment=inherit_environment
+    )
     isolated_home: str | None = None
     if not inherit_environment:
         isolated_home = tempfile.mkdtemp(prefix="cgqa-native-home-")
@@ -809,7 +907,13 @@ def _run_command(
         if process is not None:
             try:
                 if os.name == "nt":
-                    process.kill()
+                    subprocess.run(
+                        ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                        capture_output=True,
+                        check=False,
+                    )
+                    if process.poll() is None:
+                        process.kill()
                 else:
                     os.killpg(process.pid, signal.SIGKILL)
             except OSError:
@@ -836,7 +940,9 @@ def _run_command(
         "durationSeconds": round(time.monotonic() - started, 3),
         "stdout": stdout_bytes[-MAX_LOG_BYTES:].decode("utf-8", errors="replace"),
         "stderr": stderr_bytes[-MAX_LOG_BYTES:].decode("utf-8", errors="replace"),
-        "environmentPolicy": "INHERITED" if inherit_environment else "SANITIZED_ISOLATED_HOME",
+        "environmentPolicy": (
+            "INHERITED" if inherit_environment else "SANITIZED_ISOLATED_HOME"
+        ),
         "inheritedEnvironmentNames": inherited,
         "strippedSensitiveEnvironmentNames": stripped,
         "isolatedHomeUsed": isolated_home is not None,
@@ -857,6 +963,10 @@ def _git_command(git: str, root: Path, args: list[str]) -> str:
         *args,
     ]
     env, _, _ = _safe_environment(inherit_environment=False)
+    null_config = "NUL" if os.name == "nt" else "/dev/null"
+    env["GIT_CONFIG_NOSYSTEM"] = "1"
+    env["GIT_CONFIG_GLOBAL"] = null_config
+    env["GIT_OPTIONAL_LOCKS"] = "0"
     return subprocess.run(
         command,
         cwd=root,
@@ -920,7 +1030,9 @@ def _fingerprints(
     ]
     source_hash = _sha256(source_material)
     config_hash = _sha256(config_material)
-    project_hash = _sha256({"sources": source_material, "configuration": config_material})
+    project_hash = _sha256(
+        {"sources": source_material, "configuration": config_material}
+    )
     return source_hash, config_hash, project_hash
 
 
@@ -928,10 +1040,16 @@ def _scan_project(
     root: Path,
     output_directory: Path | None,
 ) -> dict[str, Any]:
-    source_paths, config_paths, walk_skipped = _walk_candidate_files(root, output_directory)
-    sources, source_skipped, text_by_path = _inventory(root, source_paths, source=True)
+    source_paths, config_paths, walk_skipped = _walk_candidate_files(
+        root, output_directory
+    )
+    sources, source_skipped, text_by_path = _inventory(
+        root, source_paths, source=True
+    )
     configs, config_skipped, _ = _inventory(root, config_paths, source=False)
-    declarations, signals = _declarations_and_signals(root, sources, text_by_path)
+    declarations, signals = _declarations_and_signals(
+        root, sources, text_by_path
+    )
     detections = _detect_frameworks(root, sources, configs)
     source_hash, config_hash, project_hash = _fingerprints(sources, configs)
     return {
@@ -950,7 +1068,11 @@ def _scan_project(
     }
 
 
-def _next_steps(framework: str, native_plan: dict[str, Any], has_declarations: bool) -> list[str]:
+def _next_steps(
+    framework: str,
+    native_plan: dict[str, Any],
+    has_declarations: bool,
+) -> list[str]:
     steps: list[str] = []
     if native_plan.get("command") is None:
         tool = native_plan.get("requiredTool") or "native project test runner"
@@ -985,7 +1107,10 @@ def inspect_project(
 ) -> dict[str, Any]:
     root = target.expanduser().resolve()
     _require(root.is_dir(), f"target project directory not found: {root}")
-    _require(1 <= timeout_seconds <= 3600, "timeout must be between 1 and 3600 seconds")
+    _require(
+        1 <= timeout_seconds <= 3600,
+        "timeout must be between 1 and 3600 seconds",
+    )
 
     pre = _scan_project(root, output_directory)
     git_before = _git_subject(root)
@@ -996,9 +1121,14 @@ def inspect_project(
         "ecosystem": "unknown",
         "marker": "none",
         "projectRoot": ".",
+        "explicitProject": False,
     }
     native_plan = _native_plan(root, detections)
-    project_root = root if native_plan["projectRoot"] == "." else root / native_plan["projectRoot"]
+    project_root = (
+        root
+        if native_plan["projectRoot"] == "."
+        else root / native_plan["projectRoot"]
+    )
     native_result = (
         _run_command(
             project_root,
@@ -1086,12 +1216,18 @@ def inspect_project(
         {
             "capability": "Source inventory",
             "applicable": bool(pre["sourceFiles"]),
-            "status": "incomplete" if pre["skippedFiles"] else ("pass" if pre["sourceFiles"] else "blocked"),
+            "status": (
+                "incomplete"
+                if pre["skippedFiles"]
+                else ("pass" if pre["sourceFiles"] else "blocked")
+            ),
         },
         {
             "capability": "Static review signals",
             "applicable": "solidity" in languages,
-            "status": "review" if pre["reviewSignals"] else "no_signals_observed",
+            "status": (
+                "review" if pre["reviewSignals"] else "no_signals_observed"
+            ),
         },
         {
             "capability": "Deep stateful ContractGraph-QA",
@@ -1118,7 +1254,11 @@ def inspect_project(
         "nativePlan": native_plan,
         "nativeResult": native_result,
         "capabilityPlan": capabilities,
-        "nextSteps": _next_steps(primary["framework"], native_plan, bool(pre["declarations"])),
+        "nextSteps": _next_steps(
+            primary["framework"],
+            native_plan,
+            bool(pre["declarations"]),
+        ),
         "securityVerdictAuthorized": False,
         "claimBoundary": (
             "Quickstart performs local project/config discovery, exact-subject binding, review-signal "
@@ -1159,7 +1299,9 @@ def _render_markdown(result: dict[str, Any]) -> str:
     ]
     if result["declarations"]:
         for row in result["declarations"]:
-            lines.append(f"- `{row['kind']} {row['name']}` — `{row['path']}:{row['line']}`")
+            lines.append(
+                f"- `{row['kind']} {row['name']}` — `{row['path']}:{row['line']}`"
+            )
     else:
         lines.append("- None detected.")
 
@@ -1176,9 +1318,15 @@ def _render_markdown(result: dict[str, Any]) -> str:
     lines.extend(["", "## Native test plan", ""])
     command = result["nativePlan"].get("command")
     lines.append(f"- Available: `{result['nativePlan']['available']}`")
-    lines.append(f"- Working directory: `{result['nativePlan'].get('projectRoot', '.')}`")
-    lines.append(f"- Command: `{command if command is not None else 'not available'}`")
-    lines.append(f"- Environment policy: `{result['nativeResult']['environmentPolicy']}`")
+    lines.append(
+        f"- Working directory: `{result['nativePlan'].get('projectRoot', '.')}`"
+    )
+    lines.append(
+        f"- Command: `{command if command is not None else 'not available'}`"
+    )
+    lines.append(
+        f"- Environment policy: `{result['nativeResult']['environmentPolicy']}`"
+    )
     lines.append(f"- Execution result: `{result['nativeResult']['status']}`")
 
     if result["skippedOversizedOrUnreadable"]:
@@ -1219,18 +1367,30 @@ def _write_stage(destination: Path, result: dict[str, Any]) -> Path:
             json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        (stage / "REPORT.md").write_text(_render_markdown(result), encoding="utf-8")
+        (stage / "REPORT.md").write_text(
+            _render_markdown(result),
+            encoding="utf-8",
+        )
         return stage
     except Exception:
         shutil.rmtree(stage, ignore_errors=True)
         raise
 
 
-def _install_stage(stage: Path, destination: Path, *, force: bool, root: Path) -> None:
+def _install_stage(
+    stage: Path,
+    destination: Path,
+    *,
+    force: bool,
+    root: Path,
+) -> None:
     if not destination.exists():
         stage.rename(destination)
         return
-    _require(force, f"output directory already exists: {destination}; use --force to replace it")
+    _require(
+        force,
+        f"output directory already exists: {destination}; use --force to replace it",
+    )
     _require(
         _is_inside(destination, root),
         "--force may only replace an output directory inside the target project",
