@@ -214,6 +214,55 @@ class QuickstartHardeningTest(unittest.TestCase):
                 {row["path"] for row in result["skippedOversizedOrUnreadable"]},
             )
 
+    def test_explicit_root_project_beats_nested_project_of_another_framework(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "contracts").mkdir()
+            (root / "contracts" / "Root.sol").write_text("contract Root {}\n", encoding="utf-8")
+            (root / "hardhat.config.js").write_text("module.exports = {};\n", encoding="utf-8")
+            nested = root / "packages" / "nested"
+            (nested / "src").mkdir(parents=True)
+            (nested / "foundry.toml").write_text("[profile.default]\n", encoding="utf-8")
+            (nested / "src" / "Nested.sol").write_text("contract Nested {}\n", encoding="utf-8")
+            result = inspect_project(root)
+            self.assertEqual(result["primary"]["framework"], "hardhat")
+            self.assertEqual(result["primary"]["projectRoot"], ".")
+
+    def test_renamed_cargo_dependency_is_detected_by_package_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "src").mkdir()
+            (root / "src" / "lib.rs").write_text(
+                "#[contract]\npub struct AliasContract;\n",
+                encoding="utf-8",
+            )
+            (root / "Cargo.toml").write_text(
+                '[package]\nname="alias-contract"\nversion="0.1.0"\n'
+                '[dependencies]\nstellar = { package = "soroban-sdk", version = "22" }\n',
+                encoding="utf-8",
+            )
+            result = inspect_project(root)
+            self.assertEqual(result["primary"]["framework"], "soroban")
+
+    def test_native_harness_change_updates_configuration_fingerprint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._foundry(root)
+            (root / "test").mkdir()
+            harness = root / "test" / "integration.js"
+            harness.write_text("module.exports = 1;\n", encoding="utf-8")
+            first = inspect_project(root)
+            harness.write_text("module.exports = 2;\n", encoding="utf-8")
+            second = inspect_project(root)
+            self.assertEqual(
+                first["subject"]["sourceFingerprint"],
+                second["subject"]["sourceFingerprint"],
+            )
+            self.assertNotEqual(
+                first["subject"]["configurationFingerprint"],
+                second["subject"]["configurationFingerprint"],
+            )
+
     def test_quickstart_parser_error_uses_public_validation_exit(self) -> None:
         self.assertEqual(project_quickstart_cli.main(["--unknown"]), cli.EXIT_VALIDATION)
 
