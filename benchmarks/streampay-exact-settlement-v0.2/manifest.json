@@ -1,6 +1,11 @@
 {
   "entries": [
     {
+      "path": ".gitattributes",
+      "sha256": "a1d7fa407b46938a4c6c501125ab57c7b88ae19e4f423a43134de2bc6bb233ee",
+      "size": 51
+    },
+    {
       "path": "CAPABILITY_MATRIX.md",
       "sha256": "70dddcb43c16640eb76d99fbf4fbc0858e483d5ae89fc8f3292b610254db5d95",
       "size": 4613
@@ -126,6 +131,6 @@
       "size": 43822
     }
   ],
-  "manifestHash": "83a5553ef2e44886140542f8ed8ea549810937943025493cbbaf498ce5c5388d",
+  "manifestHash": "6b063abf1dc4b8ef84e48d19087fc1efcfd300ff1cd9187241b2570209bc0e8d",
   "schema": "cgqa/durable-evidence-manifest/v0.1"
 }
