@@ -4,6 +4,32 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.9.0 — Universal smart-contract quickstart and unified CLI
+
+### Added
+
+- `cgqa quickstart --target <project>` as a safe zero-config front door for local smart-contract repositories;
+- deterministic project fingerprints, framework/ecosystem detection, source inventory, contract/program declarations, review signals, native test planning, and a Markdown starter report;
+- detection and routing for Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban, Anchor, Move, and Cairo/Scarb projects;
+- optional `--run-native` execution that uses only a detected local command and remains disabled by default;
+- installed-wheel access to causal-temporal vNext capabilities through the main `cgqa` command, including witness, debt, watchpoints, replication, proof-integrity, durable reopen, and active-verification planning;
+- unified top-level help that makes the previously hidden vNext surface discoverable.
+
+### Fixed
+
+- an installed wheel no longer requires users to know or invoke internal `python -m contractgraph_qa.*_cli` modules for vNext capabilities;
+- Phase 2/3/4 sub-CLI validation exits are normalized to the stable public `cgqa` exit-code contract;
+- onboarding no longer begins with a blank manual adapter: quickstart first identifies the project, contracts, tools, and exact local next step;
+- comments and string literals are removed before Solidity review-signal matching to avoid obvious false positives;
+- dependency/build directories and symlinked trees are excluded from source inventory by default.
+
+### Claim boundary
+
+- quickstart review signals are investigation prompts, not vulnerability findings;
+- native test success is not a security proof;
+- deep stateful ContractGraph-QA analysis still requires a reviewed state/action/invariant model or adapter;
+- native project code is never executed unless the operator explicitly passes `--run-native`.
+
 ## 1.8.0 — Measurement provenance and source-bound engagement evidence
 
 ### Added

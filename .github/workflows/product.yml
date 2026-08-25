@@ -37,6 +37,15 @@ jobs:
         run: python -m pip install .product-wheel/contractgraph_qa-*.whl
       - name: Product version outside checkout
         run: cd /tmp && cgqa --version
+      - name: Unified CLI help exposes universal and vNext routes
+        shell: bash
+        run: |
+          cd /tmp
+          cgqa --help > /tmp/cgqa-help.txt
+          grep -q "quickstart" /tmp/cgqa-help.txt
+          grep -q "subject-freeze" /tmp/cgqa-help.txt
+          grep -q "trace-integrity" /tmp/cgqa-help.txt
+          grep -q "plan-verification" /tmp/cgqa-help.txt
       - name: Runtime doctor outside checkout
         run: cd /tmp && cgqa doctor --require-forge
       - name: Run self-serve demo outside checkout without Forge usage
@@ -48,6 +57,40 @@ jobs:
           cgqa verify-bundle /tmp/cgqa-self-demo/CGQA-005.evidence.zip
           test -f /tmp/cgqa-self-demo/CGQA-005.finding.json
           test -f /tmp/cgqa-self-demo/CGQA-005.md
+      - name: Run universal quickstart against an unfamiliar project outside checkout
+        shell: bash
+        run: |
+          rm -rf /tmp/cgqa-unknown-project /tmp/cgqa-unknown-report
+          mkdir -p /tmp/cgqa-unknown-project/src
+          cat > /tmp/cgqa-unknown-project/foundry.toml <<'EOF'
+          [profile.default]
+          src = "src"
+          EOF
+          cat > /tmp/cgqa-unknown-project/src/Vault.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.24;
+          contract Vault {
+              function deadline() external view returns (uint256) {
+                  return block.timestamp;
+              }
+          }
+          EOF
+          cd /tmp
+          cgqa quickstart \
+            --target /tmp/cgqa-unknown-project \
+            --output-dir /tmp/cgqa-unknown-report
+          test -f /tmp/cgqa-unknown-report/quickstart.json
+          test -f /tmp/cgqa-unknown-report/REPORT.md
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/cgqa-unknown-report/quickstart.json').read_text(encoding='utf-8'))
+          assert data['primary']['framework'] == 'foundry'
+          assert data['nativeResult']['status'] == 'not_requested'
+          assert data['securityVerdictAuthorized'] is False
+          assert {item['name'] for item in data['declarations']} == {'Vault'}
+          assert {item['id'] for item in data['reviewSignals']} == {'TIMESTAMP_DEPENDENCE'}
+          PY
       - name: Create fail-closed client scaffold outside checkout
         shell: bash
         run: |

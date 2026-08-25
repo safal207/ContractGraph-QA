@@ -8,12 +8,38 @@ The core question is:
 
 > Can an allowed sequence of actors, transactions, parameter values, and time changes drive the contract into a state that violates an explicit business or security invariant?
 
-## Try the product first
+## Test your project in one command
 
-The fastest proof path needs only Python 3.11+ and the installed wheel:
+Start from any local smart-contract repository without writing an adapter first:
 
 ```bash
 python -m pip install contractgraph-qa
+cgqa quickstart --target /path/to/project
+```
+
+The default quickstart is read-only with respect to project code. It detects common ecosystems and frameworks, inventories contract/program declarations, computes a source fingerprint, surfaces bounded Solidity review signals, plans the native test command, and writes:
+
+```text
+<project>/.cgqa/quickstart/
+  quickstart.json
+  REPORT.md
+```
+
+Detected front doors include Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban, Anchor, Move, and Cairo/Scarb. Run local project tests only after reviewing the command:
+
+```bash
+cgqa quickstart --target /path/to/project --run-native
+```
+
+`--run-native` is never implied. Review signals are investigation prompts, not vulnerability findings; native test success is not a security proof. Deep stateful analysis still requires a reviewed action/state/invariant model or adapter.
+
+See [`docs/UNIVERSAL_QUICKSTART.md`](docs/UNIVERSAL_QUICKSTART.md).
+
+## Try the product demo
+
+The fastest repository-owned proof path needs only Python 3.11+ and the installed wheel:
+
+```bash
 cgqa demo --output-dir cgqa-demo
 cgqa verify-bundle cgqa-demo/CGQA-005.evidence.zip
 ```
@@ -38,6 +64,8 @@ See [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
 The full engine is exposed through the installable `cgqa` CLI and turns a reviewed adapter model plus deterministic Foundry search into a client-verifiable evidence bundle.
 
 ```text
+PROJECT QUICKSTART / EXACT SUBJECT
+      ↓
 AUTHORIZED SCOPE
       ↓
 REVIEWED ADAPTER MANIFEST
@@ -63,9 +91,10 @@ PROVENANCE-BOUND EVIDENCE ZIP
 INDEPENDENT VERIFICATION
 ```
 
-For engine execution, install Foundry and run:
+For deep Foundry execution, run:
 
 ```bash
+cgqa quickstart --target .
 cgqa doctor --require-forge
 cgqa init-engagement acme-escrow
 # Replace every generated TODO only after explicit scope/authorization review.
@@ -75,7 +104,7 @@ cgqa verify-engagement-bundle engagements/acme-escrow/evidence/engagement.eviden
 
 The generated scaffold deliberately starts fail-closed and is not execution-ready until the operator replaces the authorization, target, state-hash, action, invariant, and capture-adapter TODOs.
 
-### Measurement provenance in v1.8
+### Measurement provenance in v1.8+
 
 For multi-invariant engagement evidence, ContractGraph-QA derives the eligible measurement population from the invariant IDs declared in the reviewed manifest and the observed population from the checks actually emitted by the engagement result.
 
@@ -232,6 +261,11 @@ The runtime then produces deterministic findings, Markdown, engagement summaries
 ## `cgqa` commands
 
 ```bash
+# Universal project front door
+cgqa quickstart --target /path/to/project
+cgqa quickstart --target /path/to/project --run-native
+
+# Product/evidence pipeline
 cgqa demo --output-dir cgqa-demo
 cgqa doctor --require-forge
 cgqa init-engagement acme-escrow
@@ -243,13 +277,23 @@ cgqa run --config cgqa.toml --clean
 cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
 cgqa verify-bundle dist/client.evidence.zip
 cgqa verify-engagement-bundle dist/client.engagement.zip
+
+# Causal-temporal vNext examples
+cgqa geometry --model geometry.json
+cgqa witness --input witness.json
+cgqa subject-freeze --input freeze.json
+cgqa trace-integrity --input trace.json
+cgqa evidence-readiness --input evidence.json
+cgqa plan-verification --input campaign.json
 ```
 
-Automation-facing exit codes are documented in [`docs/CLI.md`](docs/CLI.md).
+Run `cgqa --help` for the full unified command surface. Automation-facing exit codes are documented in [`docs/CLI.md`](docs/CLI.md).
 
 ## Recommended commercial workflow
 
 ```text
+zero-config quickstart
+  ↓
 self-serve demo
   ↓
 client proof pack
@@ -280,6 +324,8 @@ The repository includes a client proof pack under [`docs/client-proof/`](docs/cl
 ```text
 contractgraph_qa/
   cli.py
+  project_quickstart.py
+  project_quickstart_cli.py
   demo.py
   product.py
   engagement.py
@@ -318,6 +364,7 @@ scenarios/
 
 tools/
 docs/
+  UNIVERSAL_QUICKSTART.md
   PRODUCT.md
   CLI.md
   ENGAGEMENT.md
@@ -343,6 +390,7 @@ forge build --sizes
 forge test -vvv
 python -m unittest discover -s tools/tests -p 'test_*.py' -v
 python -m pip wheel . --no-deps --wheel-dir .product-wheel
+cgqa quickstart --target .
 cgqa demo --output-dir /tmp/cgqa-demo
 cgqa verify-bundle /tmp/cgqa-demo/CGQA-005.evidence.zip
 cgqa engagement-run --config cgqa.engagement.example.toml
@@ -359,6 +407,8 @@ ContractGraph-QA provides reproducible evidence **within an explicit bounded mod
 
 It does not claim that:
 
+- quickstart review signals are confirmed vulnerabilities;
+- native unit-test success is a security proof;
 - bounded graph exploration proves an arbitrary protocol secure;
 - the chosen invariants are complete;
 - the state hash is automatically complete;
@@ -380,6 +430,7 @@ Security conclusions remain limited to the modeled actors, actions, parameters, 
 - **v1.6** — packaged self-serve demo and verified distribution artifact workflow.
 - **v1.7** — Linux/Windows portability, deterministic SBOM, checksums, and GitHub/Sigstore release attestations.
 - **v1.8** — measurement provenance, independent coverage populations, source receipts, and provenance-bound engagement evidence.
+- **v1.9** — universal smart-contract quickstart, framework routing, source inventory, review signals, and one unified vNext CLI.
 
 Earlier v0.x engine milestones remain documented in Git history and the changelog.
 

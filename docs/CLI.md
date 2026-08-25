@@ -2,13 +2,55 @@
 
 The installable command is `cgqa`.
 
+Run the unified command list with:
+
+```bash
+cgqa --help
+```
+
 ## Exit codes
 
 - `0` — success;
-- `10` — validation / verification failure;
+- `10` — validation, bounded HOLD, or verification failure;
 - `20` — expected runtime failure;
 - `70` — unexpected internal failure;
 - `130` — interrupted.
+
+The causal-temporal Phase 2/3/4 commands use the same public exit-code contract even though their internal Python modules historically returned `2` for validation/HOLD results.
+
+## `cgqa quickstart`
+
+Inspect an unfamiliar local smart-contract repository without executing project code by default.
+
+```bash
+cgqa quickstart --target /path/to/project
+```
+
+Default output:
+
+```text
+<project>/.cgqa/quickstart/
+  quickstart.json
+  REPORT.md
+```
+
+Use another destination:
+
+```bash
+cgqa quickstart --target . --output-dir /tmp/cgqa-report
+```
+
+Run the detected native local test command only after explicit review:
+
+```bash
+cgqa quickstart --target . --run-native --timeout 600
+```
+
+An existing output directory is never overwritten implicitly. `--force` may replace an output directory only when it is inside the target project.
+
+Quickstart detects common Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban, Anchor, Move, and Cairo/Scarb routes. It writes a deterministic source inventory and project fingerprint, contract/program declaration inventory, bounded Solidity review signals, native test plan/result, and next-step recommendations.
+
+Review signals are prompts, not confirmed vulnerabilities. Native test success is not a security proof. See [`UNIVERSAL_QUICKSTART.md`](UNIVERSAL_QUICKSTART.md).
 
 ## `cgqa demo`
 
@@ -40,7 +82,7 @@ cgqa init-engagement acme-escrow
 cgqa init-engagement acme-escrow --directory ./work/acme-escrow
 ```
 
-The scaffold intentionally contains blocking TODO values for authorization, target, state model, actions, invariants, and capture adapters. It is not execution-ready until a human reviews and replaces them.
+The scaffold intentionally contains blocking TODO values for authorization, target, state model, actions, invariants, and capture adapters. It is not execution-ready until a human reviews and replaces them. Run `cgqa quickstart` first to identify the framework, declarations, tools, and likely target surface.
 
 ## `cgqa validate`
 
@@ -79,27 +121,6 @@ The command requires no Forge and performs no network access. It:
 
 A successful command can still return `not_found_within_bound`; this means no target capability was found within the declared model and search bound. It is not a safety certification.
 
-Representative output:
-
-```json
-{
-  "maxDepth": 4,
-  "modelSha256": "...",
-  "path": {
-    "crossedBoundaries": ["settlement-idempotency"],
-    "impact": "duplicate financial settlement",
-    "initialCapability": "request-spend",
-    "invariantIds": ["settlement-at-most-once"],
-    "targetCapability": "duplicate-settlement",
-    "transitions": [],
-    "violatedAssumptions": ["fresh-policy-state", "unique-settlement"]
-  },
-  "status": "reachable",
-  "targetCapabilities": ["duplicate-settlement", "overspend"],
-  "violatedAssumptions": ["fresh-policy-state", "unique-settlement"]
-}
-```
-
 Model semantics and schema are documented in [`ADVERSARIAL_REACHABILITY.md`](ADVERSARIAL_REACHABILITY.md).
 
 ## `cgqa control-bundle-build`
@@ -123,7 +144,7 @@ Independently verify a control evidence bundle v3.
 cgqa verify-control-bundle dist/client.control.evidence.zip
 ```
 
-Verification reconstructs the exact embedded v2 bundle, checks its SHA-256, runs the existing v2 semantic verifier, then independently re-runs both reachability and post-impact models. The command fails closed on artifact tampering, model/result drift, target-capability mismatch, invalid recovery semantics, or a broken base evidence chain.
+Verification reconstructs the exact embedded v2 bundle, checks its SHA-256, runs the existing v2 semantic verifier, then independently re-runs both reachability and post-impact models.
 
 ## `cgqa payment-recovery-evaluate`
 
@@ -134,9 +155,7 @@ cgqa payment-recovery-evaluate \
   --scenario benchmarks/agent-payment-recovery-v0.1/cases/pass_committed_stop.json
 ```
 
-The evaluator checks whether an ambiguous financial execution is reconciled before another monetary action occurs. It keeps `logicalOperationId`, concrete `executionId`, and idempotency identity separate, treats `pending` / `unknown` as unresolved, and emits deterministic invariant violations. Passing traces exit `0`; valid traces with benchmark violations exit `10`.
-
-This command is local and provider-neutral. It performs no network call or financial action.
+The evaluator checks whether an ambiguous financial execution is reconciled before another monetary action occurs. Passing traces exit `0`; valid traces with benchmark violations exit `10`.
 
 ## `cgqa run`
 
@@ -203,8 +222,62 @@ cgqa verify-engagement-bundle dist/client.engagement.zip
 
 Verification reconstructs the semantic chain from the included manifest and engagement result and compares canonical generated artifacts with the bundle contents.
 
+## Causal-temporal vNext commands
+
+The main installed `cgqa` command directly exposes all vNext layers.
+
+### Transition reasoning
+
+```bash
+cgqa geometry --model geometry.json
+cgqa ancestry --trace ancestry.json
+cgqa orient --bundle orientation.json
+```
+
+### Temporal evidence and continuity
+
+```bash
+cgqa witness --input witness.json
+cgqa debt --input debt.json
+cgqa watch --input watchpoints.json
+cgqa replicate --input replication.json
+cgqa remediate --input remediation.json
+```
+
+### Verification-of-verification
+
+```bash
+cgqa subject-freeze --input freeze.json
+cgqa verification-plan --input plan.json
+cgqa trace-integrity --input trace.json
+cgqa evidence-readiness --input evidence.json
+cgqa root-cause --input findings.json
+cgqa metamorphic --input roundtrip.json
+cgqa durable-build --root evidence --path finding.json --path trace.json
+cgqa durable-verify --root evidence --manifest manifest.json
+```
+
+### Active verification planning
+
+```bash
+cgqa plan-verification --input campaign.json
+cgqa record-verification-cost --input cost.json
+```
+
+These commands preserve the core non-equivalences:
+
+```text
+BALANCED != security verdict
+Completed != PASS
+Selected != Verified
+ExpectedInformationGain != Truth
+Confirmed_t != Confirmed_t+1
+ForwardRollback != HistoryRewrite
+InMemoryVerified != DurableEvidenceVerified
+```
+
 ## Automation
 
 All successful commands emit JSON except argparse help/version text and Markdown files written to disk. Error details are emitted on stderr.
 
-For CI, prefer checking both the process exit code and the explicit semantic status in generated JSON. In particular, bounded search outcomes such as `not_found_within_bound` are evidence about the declared bound, not a security guarantee.
+For CI, check both the process exit code and the explicit semantic status in generated JSON. In particular, bounded search outcomes such as `not_found_within_bound` are evidence about the declared bound, not a security guarantee.
