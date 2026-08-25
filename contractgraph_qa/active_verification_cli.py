@@ -10,7 +10,6 @@ from pathlib import Path
 from contractgraph_qa.active_verification import (
     evaluate_active_verification,
     evaluate_cost_observation,
-    load_active_verification,
 )
 
 
@@ -29,7 +28,11 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
+    try:
+        args = _parser().parse_args(argv)
+    except SystemExit as exc:
+        return int(exc.code or 0)
+
     try:
         payload = json.loads(args.input.resolve().read_text(encoding="utf-8"))
         if args.command == "plan":
