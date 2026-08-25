@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -227,14 +228,15 @@ def _walk_source_files(root: Path, output_directory: Path | None) -> tuple[list[
         current_path = Path(current)
         kept_directories: list[str] = []
         for name in sorted(directories):
-            candidate = (current_path / name).resolve()
+            child = current_path / name
+            candidate = child.resolve()
             if name in EXCLUDED_DIRECTORIES:
                 continue
-            if output_resolved is not None and (
-                candidate == output_resolved or output_resolved.is_relative_to(candidate)
-            ):
+            # Exclude exactly the generated output tree. Do not exclude an ancestor
+            # such as src/ merely because an operator selected src/.cgqa-report.
+            if output_resolved is not None and candidate == output_resolved:
                 continue
-            if (current_path / name).is_symlink():
+            if child.is_symlink():
                 continue
             kept_directories.append(name)
         directories[:] = kept_directories
@@ -263,9 +265,9 @@ def _walk_source_files(root: Path, output_directory: Path | None) -> tuple[list[
 
 def _read_package_json(root: Path) -> dict[str, Any]:
     source = root / "package.json"
-    if not source.is_file() or source.stat().st_size > MAX_SOURCE_BYTES:
-        return {}
     try:
+        if not source.is_file() or source.stat().st_size > MAX_SOURCE_BYTES:
+            return {}
         value = json.loads(source.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return {}
@@ -274,9 +276,9 @@ def _read_package_json(root: Path) -> dict[str, Any]:
 
 def _cargo_text(root: Path) -> str:
     source = root / "Cargo.toml"
-    if not source.is_file() or source.stat().st_size > MAX_SOURCE_BYTES:
-        return ""
     try:
+        if not source.is_file() or source.stat().st_size > MAX_SOURCE_BYTES:
+            return ""
         return source.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return ""
@@ -430,9 +432,17 @@ def _native_plan(root: Path, detections: list[dict[str, str]]) -> dict[str, Any]
 
 def _git_subject(root: Path) -> dict[str, Any]:
     git = shutil.which("git")
-    if git is None or not (root / ".git").exists():
-        return {"available": False, "commit": None, "dirty": None}
+    if git is None:
+        return {"available": False, "repositoryRoot": None, "commit": None, "dirty": None}
     try:
+        repository_root = subprocess.run(
+            [git, "rev-parse", "--show-toplevel"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        ).stdout.strip()
         commit = subprocess.run(
             [git, "rev-parse", "HEAD"],
             cwd=root,
@@ -443,7 +453,7 @@ def _git_subject(root: Path) -> dict[str, Any]:
         ).stdout.strip()
         dirty = bool(
             subprocess.run(
-                [git, "status", "--porcelain", "--untracked-files=no"],
+                [git, "status", "--porcelain", "--untracked-files=normal", "--", "."],
                 cwd=root,
                 capture_output=True,
                 text=True,
@@ -451,9 +461,14 @@ def _git_subject(root: Path) -> dict[str, Any]:
                 check=True,
             ).stdout.strip()
         )
-        return {"available": True, "commit": commit, "dirty": dirty}
+        return {
+            "available": True,
+            "repositoryRoot": repository_root,
+            "commit": commit,
+            "dirty": dirty,
+        }
     except (OSError, subprocess.SubprocessError):
-        return {"available": False, "commit": None, "dirty": None}
+        return {"available": False, "repositoryRoot": None, "commit": None, "dirty": None}
 
 
 def _declarations_and_signals(
@@ -569,6 +584,7 @@ def _run_native(root: Path, plan: dict[str, Any], timeout_seconds: int) -> dict[
         }
     env = os.environ.copy()
     env.setdefault("NO_COLOR", "1")
+    started = time.monotonic()
     try:
         completed = subprocess.run(
             [str(part) for part in command],
@@ -578,13 +594,14 @@ def _run_native(root: Path, plan: dict[str, Any], timeout_seconds: int) -> dict[
             timeout=timeout_seconds,
             check=False,
         )
+        duration = round(time.monotonic() - started, 3)
         stdout = completed.stdout[-MAX_LOG_BYTES:].decode("utf-8", errors="replace")
         stderr = completed.stderr[-MAX_LOG_BYTES:].decode("utf-8", errors="replace")
         return {
             "requested": True,
             "status": "pass" if completed.returncode == 0 else "fail",
             "returnCode": completed.returncode,
-            "durationSeconds": None,
+            "durationSeconds": duration,
             "stdout": stdout,
             "stderr": stderr,
         }
@@ -604,7 +621,7 @@ def _run_native(root: Path, plan: dict[str, Any], timeout_seconds: int) -> dict[
             "requested": True,
             "status": "error",
             "returnCode": None,
-            "durationSeconds": None,
+            "durationSeconds": round(time.monotonic() - started, 3),
             "stdout": "",
             "stderr": str(exc),
         }
@@ -813,15 +830,17 @@ def write_quickstart(
             "--force may only replace an output directory inside the target project",
         )
         shutil.rmtree(destination)
-    destination.mkdir(parents=True, exist_ok=False)
 
     try:
+        # Inspect before creating generated output so the source fingerprint and
+        # git dirty state cannot be contaminated by our own report files.
         result = inspect_project(
             root,
             output_directory=destination,
             run_native=run_native,
             timeout_seconds=timeout_seconds,
         )
+        destination.mkdir(parents=True, exist_ok=False)
         native = result["nativeResult"]
         stdout = native.pop("stdout", "")
         stderr = native.pop("stderr", "")
@@ -843,7 +862,7 @@ def write_quickstart(
         raise
 
     return {
-        "ok": result["status"] != "fail",
+        "ok": result["status"] == "pass",
         "status": result["status"],
         "readiness": result["readiness"],
         "projectFingerprint": result["subject"]["projectFingerprint"],
