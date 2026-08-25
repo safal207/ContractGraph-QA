@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "contractgraph-qa"
-version = "1.8.0"
+version = "1.9.0"
 description = "Causal-temporal state-transition QA and deterministic evidence pipelines for smart contracts"
 readme = "README.md"
 requires-python = ">=3.11"
