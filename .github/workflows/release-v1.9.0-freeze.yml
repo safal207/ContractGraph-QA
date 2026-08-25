@@ -1,0 +1,200 @@
+name: Release v1.9.0 freeze
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/release-v1.9.0-freeze.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-v1.9.0-freeze
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: 6ab1f8b79a3211a7139e6f52da6b3fb7a75c0fb9
+      RELEASE_TAG: v1.9.0
+      RELEASE_VERSION: 1.9.0
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify frozen subject and package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${TARGET_SHA}^{commit}"
+          actual_version="$(git show "${TARGET_SHA}:pyproject.toml" | sed -n 's/^version = "\([^"]*\)"$/\1/p' | head -n1)"
+          runtime_version="$(git show "${TARGET_SHA}:contractgraph_qa/__init__.py" | sed -n 's/^__version__ = "\([^"]*\)"$/\1/p' | head -n1)"
+          test "${actual_version}" = "${RELEASE_VERSION}"
+          test "${runtime_version}" = "${RELEASE_VERSION}"
+          echo "Frozen subject: ${TARGET_SHA}"
+          echo "Package/runtime version: ${actual_version}"
+
+      - name: Verify or create exact annotated tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force origin
+          if git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"; then
+            tagged_commit="$(git rev-list -n1 "${RELEASE_TAG}")"
+            if [ "${tagged_commit}" != "${TARGET_SHA}" ]; then
+              echo "${RELEASE_TAG} already exists but points to ${tagged_commit}, expected ${TARGET_SHA}" >&2
+              exit 1
+            fi
+            echo "Existing tag is correctly frozen to ${TARGET_SHA}."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${RELEASE_TAG}" "${TARGET_SHA}" -m "ContractGraph-QA ${RELEASE_TAG} — Universal Smart-Contract Quickstart"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
+      - name: Build wheel from exact frozen subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "${TARGET_SHA}"
+          python -m pip install --disable-pip-version-check --no-input build==1.2.2.post1
+          python -m build --wheel
+          wheel_count="$(find dist -maxdepth 1 -type f -name "contractgraph_qa-${RELEASE_VERSION}-*.whl" | wc -l)"
+          test "${wheel_count}" -eq 1
+          sha256sum dist/*.whl > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Verify installed-wheel quickstart from outside checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --force-reinstall dist/contractgraph_qa-${RELEASE_VERSION}-*.whl
+          rm -rf /tmp/cgqa-release-project /tmp/cgqa-release-report
+          mkdir -p /tmp/cgqa-release-project/src
+          cat > /tmp/cgqa-release-project/foundry.toml <<'EOF'
+          [profile.default]
+          src = "src"
+          EOF
+          cat > /tmp/cgqa-release-project/src/Escrow.sol <<'EOF'
+          // SPDX-License-Identifier: MIT
+          pragma solidity ^0.8.24;
+          contract Escrow {
+              function deadline() external view returns (uint256) {
+                  return block.timestamp;
+              }
+          }
+          EOF
+          cd /tmp
+          cgqa --version
+          cgqa --help | grep -q quickstart
+          cgqa quickstart \
+            --target /tmp/cgqa-release-project \
+            --output-dir /tmp/cgqa-release-report
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/cgqa-release-report/quickstart.json').read_text(encoding='utf-8'))
+          assert data['primary']['framework'] == 'foundry'
+          assert data['nativeResult']['status'] == 'not_requested'
+          assert data['securityVerdictAuthorized'] is False
+          assert {row['name'] for row in data['declarations']} == {'Escrow'}
+          assert {row['id'] for row in data['reviewSignals']} == {'TIMESTAMP_DEPENDENCE'}
+          PY
+
+      - name: Prepare release notes
+        shell: bash
+        run: |
+          cat > RELEASE_NOTES.md <<'EOF'
+          # ContractGraph-QA v1.9.0 — Universal Smart-Contract Quickstart
+
+          Frozen exact subject:
+
+          `6ab1f8b79a3211a7139e6f52da6b3fb7a75c0fb9`
+
+          ## One-command project entry
+
+          ```bash
+          cgqa quickstart --target /path/to/project
+          ```
+
+          The safe default performs no project-code execution. It detects common smart-contract ecosystems/frameworks, inventories source and declarations, computes an exact source fingerprint, surfaces bounded review prompts, plans the native test command, and writes machine-readable JSON plus a Markdown report.
+
+          Native tests remain explicit:
+
+          ```bash
+          cgqa quickstart --target /path/to/project --run-native
+          ```
+
+          ## Supported routes
+
+          - Foundry, Hardhat, Truffle, Ape/Brownie/Vyper;
+          - Soroban and Anchor;
+          - Move;
+          - Cairo/Scarb;
+          - standalone Solidity/Vyper/Cairo discovery with an explicit adapter-required boundary.
+
+          ## Unified vNext CLI
+
+          The installed `cgqa` command now directly exposes witness/debt/watch/replication/remediation, proof-integrity, durable-reopen, and active-verification planning commands. Validation/HOLD exits are normalized to the public exit code `10`.
+
+          ## Bugs closed
+
+          - no safe first-mile path for an unfamiliar project;
+          - hidden causal-temporal commands requiring internal Python modules;
+          - Product CI did not exercise installed-wheel → unknown repository → report;
+          - a nested output directory could hide an ancestor source tree;
+          - a repository with no recognized contract source returned a success exit instead of bounded HOLD;
+          - generated output could contaminate git/source subject capture.
+
+          ## Verification evidence
+
+          PR #133 passed:
+
+          - CI
+          - Product
+          - Portability
+          - Measurement provenance gate
+          - Finding report
+          - CodeRabbit
+
+          Product E2E built and installed the wheel, verified unified help, and ran quickstart against an unfamiliar Foundry-style project outside the repository checkout without executing that project.
+
+          ## Claim boundary
+
+          Quickstart is a safe discovery and routing layer, not a universal automatic security audit. Review prompts are not findings, native tests are not a proof of security, and deep stateful analysis still requires a reviewed state/action/invariant model or adapter.
+          EOF
+
+      - name: Publish GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists; verifying tag and refreshing assets."
+          else
+            gh release create "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --verify-tag \
+              --title "ContractGraph-QA v1.9.0 — Universal Smart-Contract Quickstart" \
+              --notes-file RELEASE_NOTES.md
+          fi
+          gh release upload "${RELEASE_TAG}" dist/*.whl SHA256SUMS \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber
+
+      - name: Verify published release
+        shell: bash
+        run: |
+          set -euo pipefail
+          tagged_commit="$(git rev-list -n1 "${RELEASE_TAG}")"
+          test "${tagged_commit}" = "${TARGET_SHA}"
+          gh release view "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json tagName,name,isDraft,isPrerelease,url
