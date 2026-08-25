@@ -169,6 +169,8 @@ ENV_ALLOWLIST = {
     "RUSTUP_HOME",
     "COMSPEC",
     "PATHEXT",
+    "APPDATA",
+    "LOCALAPPDATA",
 }
 
 TACT_CONTRACT = re.compile(r"\bcontract\s+([A-Za-z_][A-Za-z0-9_]*)")
@@ -177,7 +179,8 @@ RUST_INK_CONTRACT = re.compile(
     r"#\s*\[\s*ink::contract\s*\]\s*mod\s+([A-Za-z_][A-Za-z0-9_]*)"
 )
 RUST_NEAR_CONTRACT = re.compile(
-    r"#\s*\[\s*near(?:_sdk)?::near\s*\]\s*(?:pub\s+)?struct\s+([A-Za-z_][A-Za-z0-9_]*)"
+    r"#\s*\[\s*(?:near_bindgen|near(?:_sdk)?::near|near\s*(?:\(\s*contract_state\s*\))?)\s*\]"
+    r"\s*(?:pub\s+)?struct\s+([A-Za-z_][A-Za-z0-9_]*)"
 )
 
 
@@ -857,6 +860,7 @@ def _run_command(
     *,
     inherit_environment: bool,
 ) -> dict[str, Any]:
+    """Run one reviewed native command with bounded cleanup and redacted environment."""
     command = plan.get("command")
     if not isinstance(command, list) or not command:
         return {
@@ -883,7 +887,13 @@ def _run_command(
         env["GIT_CONFIG_NOSYSTEM"] = "1"
         env["GIT_CONFIG_GLOBAL"] = null_config
         env["NPM_CONFIG_USERCONFIG"] = null_config
+
     started = time.monotonic()
+    stdout_bytes = b""
+    stderr_bytes = b""
+    return_code: int | None = None
+    status = "error"
+    process: subprocess.Popen[bytes] | None = None
     kwargs: dict[str, Any] = {
         "cwd": project_root,
         "env": env,
@@ -891,66 +901,82 @@ def _run_command(
         "stderr": subprocess.PIPE,
     }
     if os.name == "nt":
-        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        kwargs["creationflags"] = getattr(
+            subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+        )
     else:
         kwargs["start_new_session"] = True
 
-    process: subprocess.Popen[bytes] | None = None
     try:
         process = subprocess.Popen([str(part) for part in command], **kwargs)
-        stdout_bytes, stderr_bytes = process.communicate(timeout=timeout_seconds)
-        return_code = process.returncode
-        status = "pass" if return_code == 0 else "fail"
-    except subprocess.TimeoutExpired as exc:
-        stdout_bytes = exc.stdout or b""
-        stderr_bytes = exc.stderr or b""
-        if process is not None:
-            try:
-                if os.name == "nt":
-                    subprocess.run(
-                        ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                        capture_output=True,
-                        check=False,
-                    )
-                    if process.poll() is None:
-                        process.kill()
-                else:
-                    os.killpg(process.pid, signal.SIGKILL)
-            except OSError:
-                process.kill()
-            trailing_out, trailing_err = process.communicate()
-            stdout_bytes += trailing_out or b""
-            stderr_bytes += trailing_err or b""
-        return_code = None
-        status = "timeout"
-    except OSError as exc:
-        stdout_bytes = b""
-        stderr_bytes = str(exc).encode("utf-8", errors="replace")
-        return_code = None
-        status = "error"
-    except BaseException:
+        try:
+            stdout_bytes, stderr_bytes = process.communicate(
+                timeout=timeout_seconds
+            )
+            return_code = process.returncode
+            status = "pass" if return_code == 0 else "fail"
+        except subprocess.TimeoutExpired as exc:
+            stdout_bytes = exc.stdout or b""
+            stderr_bytes = exc.stderr or b""
+            if process is not None:
+                try:
+                    if os.name == "nt":
+                        subprocess.run(
+                            [
+                                "taskkill",
+                                "/PID",
+                                str(process.pid),
+                                "/T",
+                                "/F",
+                            ],
+                            capture_output=True,
+                            timeout=10,
+                            check=False,
+                        )
+                    else:
+                        os.killpg(process.pid, signal.SIGKILL)
+                except (OSError, subprocess.SubprocessError):
+                    process.kill()
+                try:
+                    trailing_out, trailing_err = process.communicate(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    try:
+                        trailing_out, trailing_err = process.communicate(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        trailing_out, trailing_err = b"", b""
+                stdout_bytes += trailing_out or b""
+                stderr_bytes += trailing_err or b""
+            return_code = None
+            status = "timeout"
+        except OSError as exc:
+            stderr_bytes = str(exc).encode("utf-8", errors="replace")
+            return_code = None
+            status = "error"
+    finally:
         if isolated_home is not None:
             shutil.rmtree(isolated_home, ignore_errors=True)
-        raise
 
-    result = {
+    return {
         "requested": True,
         "status": status,
         "returnCode": return_code,
         "durationSeconds": round(time.monotonic() - started, 3),
-        "stdout": stdout_bytes[-MAX_LOG_BYTES:].decode("utf-8", errors="replace"),
-        "stderr": stderr_bytes[-MAX_LOG_BYTES:].decode("utf-8", errors="replace"),
+        "stdout": stdout_bytes[-MAX_LOG_BYTES:].decode(
+            "utf-8", errors="replace"
+        ),
+        "stderr": stderr_bytes[-MAX_LOG_BYTES:].decode(
+            "utf-8", errors="replace"
+        ),
         "environmentPolicy": (
-            "INHERITED" if inherit_environment else "SANITIZED_ISOLATED_HOME"
+            "INHERITED"
+            if inherit_environment
+            else "SANITIZED_ISOLATED_HOME"
         ),
         "inheritedEnvironmentNames": inherited,
         "strippedSensitiveEnvironmentNames": stripped,
         "isolatedHomeUsed": isolated_home is not None,
     }
-    if isolated_home is not None:
-        shutil.rmtree(isolated_home, ignore_errors=True)
-    return result
-
 
 def _git_command(git: str, root: Path, args: list[str]) -> str:
     null_path = "NUL" if os.name == "nt" else "/dev/null"
@@ -995,7 +1021,7 @@ def _git_subject(root: Path) -> dict[str, Any]:
         status_text = _git_command(
             git,
             root,
-            ["status", "--porcelain", "--untracked-files=normal", "--", "."],
+            ["status", "--porcelain", "--untracked-files=no", "--", "."],
         )
         return {
             "available": True,
