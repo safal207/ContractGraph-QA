@@ -41,25 +41,6 @@ jobs:
           echo "Frozen subject: ${TARGET_SHA}"
           echo "Package/runtime version: ${actual_version}"
 
-      - name: Verify or create exact annotated tag
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --tags --force origin
-          if git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"; then
-            tagged_commit="$(git rev-list -n1 "${RELEASE_TAG}")"
-            if [ "${tagged_commit}" != "${TARGET_SHA}" ]; then
-              echo "${RELEASE_TAG} already exists but points to ${tagged_commit}, expected ${TARGET_SHA}" >&2
-              exit 1
-            fi
-            echo "Existing tag is correctly frozen to ${TARGET_SHA}."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "${RELEASE_TAG}" "${TARGET_SHA}" -m "ContractGraph-QA ${RELEASE_TAG} — Universal Smart-Contract Quickstart"
-            git push origin "refs/tags/${RELEASE_TAG}"
-          fi
-
       - name: Build wheel from exact frozen subject
         shell: bash
         run: |
@@ -109,6 +90,25 @@ jobs:
           assert {row['id'] for row in data['reviewSignals']} == {'TIMESTAMP_DEPENDENCE'}
           PY
 
+      - name: Verify or create exact annotated tag after artifact proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force origin
+          if git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"; then
+            tagged_commit="$(git rev-list -n1 "${RELEASE_TAG}")"
+            if [ "${tagged_commit}" != "${TARGET_SHA}" ]; then
+              echo "${RELEASE_TAG} already exists but points to ${tagged_commit}, expected ${TARGET_SHA}" >&2
+              exit 1
+            fi
+            echo "Existing tag is correctly frozen to ${TARGET_SHA}."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${RELEASE_TAG}" "${TARGET_SHA}" -m "ContractGraph-QA ${RELEASE_TAG} — Universal Smart-Contract Quickstart"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
       - name: Prepare release notes
         shell: bash
         run: |
@@ -152,7 +152,8 @@ jobs:
           - Product CI did not exercise installed-wheel → unknown repository → report;
           - a nested output directory could hide an ancestor source tree;
           - a repository with no recognized contract source returned a success exit instead of bounded HOLD;
-          - generated output could contaminate git/source subject capture.
+          - generated output could contaminate git/source subject capture;
+          - release tag publication previously preceded artifact smoke testing in the one-shot pattern.
 
           ## Verification evidence
 
