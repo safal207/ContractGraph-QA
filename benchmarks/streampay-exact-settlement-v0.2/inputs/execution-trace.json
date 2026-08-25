@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "execution-trace-v0.1",
+  "traceId": "streampay-153-v0.2-settle-repeat",
+  "scope": "StreamPay 2baa37b / normalized model trace, not raw Soroban receipt",
+  "events": [
+    {
+      "eventId": "settle-first",
+      "sourceRef": "verify.py:H5.direct-repeat-settle",
+      "economicEffect": {"actionId": "settle-interval-1-3", "effectKey": "stream-1-recipient-credit", "occurrenceId": "credit-2", "applied": true},
+      "stateCommit": {"commitId": "commit-v1", "conflictKey": "stream-1", "parentState": "active-cursor-1", "parentVersion": 0, "operation": "settle@3", "successorState": "active-cursor-3", "successorVersion": 1, "committed": true}
+    },
+    {
+      "eventId": "settle-repeat",
+      "sourceRef": "verify.py:H5.direct-repeat-settle",
+      "economicEffect": {"actionId": "settle-repeat-at-3", "effectKey": "stream-1-recipient-credit", "occurrenceId": "zero-no-effect", "applied": false},
+      "stateCommit": {"commitId": "commit-v2", "conflictKey": "stream-1", "parentState": "active-cursor-3", "parentVersion": 1, "operation": "settle@3", "successorState": "active-cursor-3", "successorVersion": 2, "committed": true}
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "cgqa/active-verification/v0.1",
+  "subject": {"repository": "Streampay-Org/StreamPay-Contracts", "issue": 153, "pullRequest": 161, "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f", "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"},
+  "policy": {
+    "capacityUnits": 3,
+    "budget": 3,
+    "requireInformationGain": true,
+    "weights": {"risk": 3, "priority": 2, "age": 1, "informationGain": 2, "cost": 1}
+  },
+  "completedWorkIds": ["native-h1-h10", "cgqa-v0.2"],
+  "work": [
+    {"id": "github-ci-jobs", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "capability": "GitHub CI", "required": true, "riskWeight": 5, "priority": 5, "age": 1, "capacityUnits": 1, "cost": {"estimated": 1}, "expectedInformationGain": 5, "prerequisites": []},
+    {"id": "independent-witness", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "capability": "Independent Witness", "required": false, "riskWeight": 2, "priority": 2, "age": 1, "capacityUnits": 2, "cost": {"estimated": 2}, "expectedInformationGain": 3, "prerequisites": []}
+  ]
+}

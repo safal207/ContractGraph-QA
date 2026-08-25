@@ -1,0 +1,20 @@
+{
+  "states": [
+    {"id": "created-funded", "description": "created stream with retained principal", "holdsValue": true, "safeTerminal": false},
+    {"id": "active-funded", "description": "active stream with remaining custody", "holdsValue": true, "safeTerminal": false},
+    {"id": "paused-funded", "description": "paused stream with remaining custody", "holdsValue": true, "safeTerminal": false},
+    {"id": "terminal-allocated", "description": "recipient earned amount and payer remainder are allocated", "holdsValue": false, "safeTerminal": true}
+  ],
+  "transitions": [
+    {"id": "start", "source": "created-funded", "target": "active-funded"},
+    {"id": "pause", "source": "active-funded", "target": "paused-funded"},
+    {"id": "resume", "source": "paused-funded", "target": "active-funded"},
+    {"id": "cancel-active", "source": "active-funded", "target": "terminal-allocated"},
+    {"id": "stop-active", "source": "active-funded", "target": "terminal-allocated"},
+    {"id": "cancel-paused", "source": "paused-funded", "target": "terminal-allocated"},
+    {"id": "stop-paused", "source": "paused-funded", "target": "terminal-allocated"},
+    {"id": "natural-end", "source": "active-funded", "target": "terminal-allocated"}
+  ],
+  "initialState": "created-funded",
+  "invariantId": "STREAM-LIVE-001"
+}

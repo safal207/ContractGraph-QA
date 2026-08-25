@@ -1,0 +1,25 @@
+{
+  "schema": "cgqa/replication-drift/v0.1",
+  "mode": "TEMPORAL",
+  "target": {
+    "subject": {"repository": "Streampay-Org/StreamPay-Contracts", "issue": 153, "pullRequest": 161, "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f", "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4", "generation": 0},
+    "generation": 0,
+    "sourceId": "cgqa-v0.1-replay",
+    "evidenceHash": "8fda74ce7be7ea55a8ba8838bbb8ef4b7e9221f64f56db4c69911f8be1e8d1f8",
+    "evidenceHashAlgorithm": "sha256(raw verifier stdout bytes)",
+    "evidenceArtifact": "historical v0.1 replay output, 141749 bytes, twice byte-identical",
+    "structureSignature": "active-interval-union:absolute-end:balance-cap",
+    "performance": {"productionCounterexamples": 0, "mutantsKilled": 2}
+  },
+  "replication": {
+    "subject": {"repository": "Streampay-Org/StreamPay-Contracts", "issue": 153, "pullRequest": 161, "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f", "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4", "generation": 1},
+    "generation": 1,
+    "sourceId": "cgqa-v0.2-second-audit",
+    "evidenceHash": "f2ce20ad065483afe606670ea41c4c0ab15c7c56dd01ed9799de6d0ae636c2a2",
+    "structureSignature": "active-interval-union:absolute-end:balance-cap",
+    "performance": {"productionCounterexamples": 0, "mutantsKilled": 9}
+  },
+  "refitOnReplication": false,
+  "currentGeneration": 1,
+  "performanceThresholds": {"productionCounterexamples": 0, "mutantsKilled": 7}
+}

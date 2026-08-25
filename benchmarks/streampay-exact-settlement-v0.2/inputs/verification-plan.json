@@ -1,0 +1,18 @@
+{
+  "schema": "cgqa/verification-plan/v0.1",
+  "plan": {
+    "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1",
+    "invariants": ["earned-time exactness", "principal conservation", "rejected-action atomicity", "authorization parity", "terminal immutability", "batch all-or-nothing"],
+    "forbiddenStates": ["recipient paid above active-time entitlement", "recipient paid below active-time entitlement after value action", "wrong actor terminalizes", "rejected batch mutates prefix", "terminal accrual resurrects"],
+    "capabilities": ["subject-freeze", "verification-plan", "orient", "ancestry", "geometry", "witness", "debt", "watch", "replicate", "remediate", "trace-integrity", "evidence-readiness", "root-cause", "metamorphic", "reachability", "lifecycle-liveness", "economic-cardinality", "execution-trace-check", "plan-verification", "record-verification-cost", "durable-build", "durable-verify"],
+    "negativeControls": ["no end cap", "stale pause cursor", "ignore legacy cursor", "stop without earned accounting", "late resume accrual resurrection", "duplicate interval pay", "partial batch mutation", "wrong actor terminalization", "pause/resume underpayment"],
+    "bounds": {"scenarioChecks": 47, "mutants": 9, "maxBatch": 25, "randomSeed": "none", "hypotheses": "H1-H10 supplemental bound"}
+  },
+  "amendments": [],
+  "result": {
+    "planHash": "06251e8eb6e6b3f65458da971e427c49499123bbffb981b9301d77480e410c51",
+    "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1",
+    "executedCapabilities": ["subject-freeze", "verification-plan", "orient", "ancestry", "geometry", "debt", "watch", "replicate", "trace-integrity", "evidence-readiness", "root-cause", "metamorphic", "reachability", "lifecycle-liveness", "economic-cardinality", "execution-trace-check", "plan-verification", "record-verification-cost"],
+    "bounds": {"scenarioChecks": 47, "mutants": 9, "maxBatch": 25, "randomSeed": "none", "hypotheses": "H1-H10 supplemental bound"}
+  }
+}

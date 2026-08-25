@@ -1,0 +1,131 @@
+{
+  "entries": [
+    {
+      "path": "CAPABILITY_MATRIX.md",
+      "sha256": "70dddcb43c16640eb76d99fbf4fbc0858e483d5ae89fc8f3292b610254db5d95",
+      "size": 4613
+    },
+    {
+      "path": "README.md",
+      "sha256": "caa32b76948aae7b2f38a6a29e4180e0656d59519c09e3f1ef87d14a1073c018",
+      "size": 8384
+    },
+    {
+      "path": "inputs/ancestry.json",
+      "sha256": "180aea68f368642d1444a9a5dece6d547c41d56da470d91bee94729b02a64e4f",
+      "size": 792
+    },
+    {
+      "path": "inputs/debt.json",
+      "sha256": "de491d5a3507917a83cff84881a8b86d8ca0777c11b584236dc7a4bdeef701d5",
+      "size": 1114
+    },
+    {
+      "path": "inputs/economic-cardinality.json",
+      "sha256": "0c728e173ad13046dce3f61e3d68d6d46770cc3ffd32e99ab927f68c2a1eb885",
+      "size": 698
+    },
+    {
+      "path": "inputs/evidence-readiness.json",
+      "sha256": "387bf30fc07d38427b0a865a5a297fa3539a28d1d715c1bf360380aa32001953",
+      "size": 1393
+    },
+    {
+      "path": "inputs/execution-trace.json",
+      "sha256": "b858ce6702acfe1dfa2c83e7487cb64214dbda490f8f637c29d088681c7e2ae0",
+      "size": 1166
+    },
+    {
+      "path": "inputs/geometry.json",
+      "sha256": "455bf71d17591d7242f7a23edccc9ccd3189142b01d942cc0bb34e9ba2a362f8",
+      "size": 1299
+    },
+    {
+      "path": "inputs/lifecycle-liveness.json",
+      "sha256": "c1c95a986990260407db384179889223a1a8bb06f184c437cab877cc2c37f8c5",
+      "size": 1314
+    },
+    {
+      "path": "inputs/metamorphic.json",
+      "sha256": "d28feb53498ad91b381302d0415ec5ae738b20d820ab2e69e335443a7b2029f4",
+      "size": 1323
+    },
+    {
+      "path": "inputs/orient.json",
+      "sha256": "103deb8e0c6e153dd70cb67dd1808040191a15249d80b4c13321f7a8bd4cba64",
+      "size": 1855
+    },
+    {
+      "path": "inputs/plan-verification.json",
+      "sha256": "378278a1a70041ab82d313f69dd8349fa50b41258aad95228790dcc9da944c72",
+      "size": 1115
+    },
+    {
+      "path": "inputs/reachability.json",
+      "sha256": "2adf72fd8e6a505010754af59bf9b87699ee02f4d813307b0ac67e1d6c899c41",
+      "size": 1076
+    },
+    {
+      "path": "inputs/record-verification-cost.json",
+      "sha256": "e18654c30eaba754fb613ee301cee056d474fac79e1bf4f823a85112210ee35f",
+      "size": 621
+    },
+    {
+      "path": "inputs/remediate.json",
+      "sha256": "9664bdb34ca59e89524c4b2743e6910c5625f32c0d0d5ed3e1186948a1b5951a",
+      "size": 756
+    },
+    {
+      "path": "inputs/replicate.json",
+      "sha256": "276a478415eea18721333ec4614c07239318094ded033c310312169f137030a6",
+      "size": 1450
+    },
+    {
+      "path": "inputs/root-cause.json",
+      "sha256": "29a89d1dab31a345cf56966dfbb10cc4d3a14304fdb53efc9b9146ea0361ca95",
+      "size": 1345
+    },
+    {
+      "path": "inputs/subject-freeze.json",
+      "sha256": "5a30c9b2bd63f454acf5262115a83d24a717044708420a7eccd8cbd853900a2f",
+      "size": 514
+    },
+    {
+      "path": "inputs/trace-integrity.json",
+      "sha256": "f0a4f1677cf35221a79bded4399fbeaff9ff2a7d23fadec2e159023ffde29941",
+      "size": 1874
+    },
+    {
+      "path": "inputs/verification-plan.json",
+      "sha256": "058a206452d908f4449f9fdcc50d1d45d33b859c9f24bf0d05819370a94d7edc",
+      "size": 2026
+    },
+    {
+      "path": "inputs/watch.json",
+      "sha256": "f46872941e2dcfd379ffb1a7f8d8f2081eeac06c60fd46dccdf42c7cb568229f",
+      "size": 936
+    },
+    {
+      "path": "inputs/witness-blocked.json",
+      "sha256": "0525e0a7bb08bb0db5f086c02d80fb4897e6ad73aeb7421148887be74ebb6d61",
+      "size": 445
+    },
+    {
+      "path": "native/issue153_second_audit.rs",
+      "sha256": "ec2f8c41b5986e78b9d37d9c654b9628c4a9b063e5ad60303d930597b3c2053f",
+      "size": 40852
+    },
+    {
+      "path": "native/native-regression-receipt.json",
+      "sha256": "9b88366f8d6066df4559426e65027b6601870e73bc67386011a31b746fffb27d",
+      "size": 1731
+    },
+    {
+      "path": "verify.py",
+      "sha256": "4754e27953056ca88d2928c03ebe992ee069ed595f6907ba178372cbd8206ad1",
+      "size": 43822
+    }
+  ],
+  "manifestHash": "83a5553ef2e44886140542f8ed8ea549810937943025493cbbaf498ce5c5388d",
+  "schema": "cgqa/durable-evidence-manifest/v0.1"
+}

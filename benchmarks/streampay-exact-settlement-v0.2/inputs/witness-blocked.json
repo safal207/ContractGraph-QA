@@ -1,0 +1,7 @@
+{
+  "schema": "cgqa/capability-status/v0.1",
+  "capability": "Independent Witness",
+  "status": "BLOCKED",
+  "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1",
+  "reason": "No genuinely independent external observation source with exact StreamPay object/event coverage was supplied. The model, native host, and repository cannot witness their own completeness. Do not run `cgqa witness` on fabricated sources."
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "cgqa/verification-cost-observation/v0.1",
+  "subject": {"repository": "Streampay-Org/StreamPay-Contracts", "issue": 153, "pullRequest": 161, "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f", "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"},
+  "work": {"id": "cgqa-v0.2", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "workHash": "06251e8eb6e6b3f65458da971e427c49499123bbffb981b9301d77480e410c51"},
+  "observation": {"sourceId": "deterministic-local-replay", "receiptHash": "f2ce20ad065483afe606670ea41c4c0ab15c7c56dd01ed9799de6d0ae636c2a2", "measuredCost": 1}
+}

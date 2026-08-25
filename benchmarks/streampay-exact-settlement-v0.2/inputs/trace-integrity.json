@@ -1,0 +1,15 @@
+{
+  "schema": "cgqa/trace-integrity/v0.1",
+  "subject": {"repository": "Streampay-Org/StreamPay-Contracts", "issue": 153, "pullRequest": 161, "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f", "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"},
+  "completeExpected": false,
+  "events": [
+    {"eventId": "freeze", "sequence": 0, "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "SUBJECT_FREEZE"},
+    {"eventId": "native-h1-h10-18-tests", "sequence": 1, "predecessorId": "freeze", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "NATIVE"},
+    {"eventId": "model-h1-h10-supplemental", "sequence": 2, "predecessorId": "native-h1-h10-18-tests", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "MODEL"},
+    {"eventId": "mutants-9-of-9", "sequence": 3, "predecessorId": "model-h1-h10-supplemental", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "NEGATIVE_CONTROL"},
+    {"eventId": "h2-pause-zero", "sequence": 4, "predecessorId": "mutants-9-of-9", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "COUNTEREVIDENCE"},
+    {"eventId": "h2-terminal-end-zero", "sequence": 5, "predecessorId": "h2-pause-zero", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "COUNTEREVIDENCE"},
+    {"eventId": "declared-observation-gap", "sequence": 6, "predecessorId": "h2-terminal-end-zero", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "GAP", "gapFrom": 6, "gapTo": 6},
+    {"eventId": "h10-activated-watchpoint", "sequence": 7, "predecessorId": "declared-observation-gap", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "kind": "WATCHPOINT"}
+  ]
+}

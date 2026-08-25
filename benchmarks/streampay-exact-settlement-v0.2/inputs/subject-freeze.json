@@ -1,0 +1,17 @@
+{
+  "schema": "cgqa/subject-freeze/v0.1",
+  "subjectBefore": {
+    "repository": "Streampay-Org/StreamPay-Contracts",
+    "issue": 153,
+    "pullRequest": 161,
+    "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f",
+    "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"
+  },
+  "subjectAfter": {
+    "repository": "Streampay-Org/StreamPay-Contracts",
+    "issue": 153,
+    "pullRequest": 161,
+    "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f",
+    "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"
+  }
+}

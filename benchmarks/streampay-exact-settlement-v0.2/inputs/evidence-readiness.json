@@ -1,0 +1,11 @@
+{
+  "schema": "cgqa/evidence-readiness/v0.1",
+  "subject": {"repository": "Streampay-Org/StreamPay-Contracts", "issue": 153, "pullRequest": 161, "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f", "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"},
+  "evidence": [
+    {"id": "native-h1-h10-18-tests-16-pass-2-test-host-red", "class": "REPORTED", "sourceType": "LOCAL_NATIVE_TEST_OUTPUT", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "replayable": true, "fresh": true, "independent": false},
+    {"id": "v0.2-action-history-model", "class": "MODEL_OUTPUT", "sourceType": "DETERMINISTIC_REPLAY", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "replayable": true, "fresh": true, "independent": false},
+    {"id": "h2-pause-zero", "class": "COUNTEREVIDENCE", "sourceType": "NATIVE_TEST_HOST", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "replayable": true, "fresh": true, "independent": false},
+    {"id": "h2-terminal-end-zero", "class": "COUNTEREVIDENCE", "sourceType": "NATIVE_TEST_HOST", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "replayable": true, "fresh": true, "independent": false}
+  ],
+  "requirements": {"requireFresh": true, "requireReplayable": true, "expectedCounterevidenceIds": ["h2-pause-zero", "h2-terminal-end-zero"]}
+}

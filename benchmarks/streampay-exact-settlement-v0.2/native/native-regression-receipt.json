@@ -1,0 +1,37 @@
+{
+  "schema": "cgqa/streampay-native-regression-receipt/v0.1",
+  "subject": {
+    "repository": "Streampay-Org/StreamPay-Contracts",
+    "issue": 153,
+    "pullRequest": 161,
+    "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f",
+    "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"
+  },
+  "harness": {
+    "path": "native/issue153_second_audit.rs",
+    "sha256": "ec2f8c41b5986e78b9d37d9c654b9628c4a9b063e5ad60303d930597b3c2053f",
+    "size": 40852,
+    "copiedByteForByteFromExecutedAuditWorktree": true
+  },
+  "replay": {
+    "instruction": "Copy native/issue153_second_audit.rs to tests/issue153_second_audit.rs in a clean checkout of the bound StreamPay commit, then run the command below.",
+    "command": "cargo test --test issue153_second_audit -- --test-threads=1",
+    "exitCode": 1,
+    "counts": {"total": 18, "passed": 16, "failed": 2, "ignored": 0, "measured": 0, "filteredOut": 0},
+    "failedTests": [
+      "h2_cancel_and_stop_at_zero_must_not_resurrect_as_unlimited",
+      "h2_pause_at_timestamp_zero_must_actually_freeze_accrual"
+    ]
+  },
+  "environment": {
+    "rustc": "1.93.0 (254b59607 2026-01-19)",
+    "cargo": "1.93.0 (083ac5135 2025-12-15)",
+    "host": "x86_64-pc-windows-msvc"
+  },
+  "classification": {
+    "productionApplicableFailures": 0,
+    "testHostBoundaryFailures": 2,
+    "boundary": "Stellar Core requires a proposed ledger close time to be strictly later than the prior close time; timestamp-zero contract execution is therefore classified as a test-host representation boundary, not a deployed-production counterexample."
+  },
+  "claimBoundary": "This receipt binds the retained source and observed native result. It is not GitHub CI, a production execution, or a formal proof."
+}

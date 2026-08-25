@@ -1,0 +1,16 @@
+{
+  "schema": "cgqa/verification-debt/v0.1",
+  "subject": {
+    "repository": "Streampay-Org/StreamPay-Contracts",
+    "issue": 153,
+    "pullRequest": 161,
+    "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f",
+    "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"
+  },
+  "work": [
+    {"id": "native-h1-h10-18-tests-16-pass-2-test-host-red", "capability": "Native Regression", "required": true, "status": "COMPLETED", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1"},
+    {"id": "cgqa-hold-test-host-boundary", "capability": "Supplemental bounded scenario model", "required": true, "status": "COMPLETED", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1"},
+    {"id": "github-ci-jobs", "capability": "GitHub CI", "required": true, "status": "BLOCKED", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1"},
+    {"id": "independent-world-witness", "capability": "Independent Witness", "required": false, "status": "BLOCKED", "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1"}
+  ]
+}

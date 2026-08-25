@@ -1,0 +1,20 @@
+{
+  "schema": "cgqa/root-cause-collapse/v0.1",
+  "findings": [
+    {"id": "timestamp-zero-sentinel-collision", "invariant": "zero-valued timestamp must not alias inactive/unlimited sentinel semantics"},
+    {"id": "pause-zero-alias", "invariant": "paused representation must distinguish paused-at-zero"},
+    {"id": "resume-rejects", "invariant": "valid paused stream remains resumable"},
+    {"id": "post-pause-accrual", "invariant": "paused interval earns zero"},
+    {"id": "terminal-end-zero-alias", "invariant": "bounded terminal end must not alias unlimited"},
+    {"id": "terminal-restart-accepted", "invariant": "terminal stream cannot restart"},
+    {"id": "terminal-accrual-resurrection", "invariant": "terminal stream cannot accrue again"}
+  ],
+  "edges": [
+    {"from": "timestamp-zero-sentinel-collision", "to": "pause-zero-alias", "relation": "CAUSES"},
+    {"from": "pause-zero-alias", "to": "resume-rejects", "relation": "CAUSES"},
+    {"from": "pause-zero-alias", "to": "post-pause-accrual", "relation": "CAUSES"},
+    {"from": "timestamp-zero-sentinel-collision", "to": "terminal-end-zero-alias", "relation": "CAUSES"},
+    {"from": "terminal-end-zero-alias", "to": "terminal-restart-accepted", "relation": "CAUSES"},
+    {"from": "terminal-restart-accepted", "to": "terminal-accrual-resurrection", "relation": "CAUSES"}
+  ]
+}

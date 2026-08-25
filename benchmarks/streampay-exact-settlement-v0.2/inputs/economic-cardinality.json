@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "economic-cardinality-v0.1",
+  "modelId": "streampay-153-v0.2-once-only",
+  "invariantId": "STREAM-SAFE-ONCE-ONLY",
+  "scope": "StreamPay 2baa37b / stream generation 1",
+  "events": [
+    {"eventId": "observe-settle-1a", "actionId": "settle-interval-1-3", "effectKey": "stream-1-recipient-credit", "occurrenceId": "credit-2", "applied": true},
+    {"eventId": "observe-settle-1b", "actionId": "settle-interval-1-3", "effectKey": "stream-1-recipient-credit", "occurrenceId": "credit-2", "applied": true},
+    {"eventId": "observe-repeat-zero", "actionId": "settle-repeat-at-3", "effectKey": "stream-1-recipient-credit", "occurrenceId": "zero-no-effect", "applied": false}
+  ]
+}

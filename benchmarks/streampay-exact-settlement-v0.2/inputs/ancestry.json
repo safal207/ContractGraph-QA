@@ -1,0 +1,31 @@
+{
+  "schema": "cgqa/ancestral-validity/v0.1",
+  "subject": {
+    "repository": "Streampay-Org/StreamPay-Contracts",
+    "issue": 153,
+    "pullRequest": 161,
+    "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f",
+    "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"
+  },
+  "targetEventId": "permissionless-settle",
+  "events": [
+    {
+      "id": "stream-create-authority",
+      "kind": "APPROVAL",
+      "actor": "payer",
+      "occurredAt": 1,
+      "scope": "stream-generation-1",
+      "localValid": true,
+      "expiresAt": 100
+    },
+    {
+      "id": "permissionless-settle",
+      "kind": "SETTLEMENT",
+      "actor": "public-caller",
+      "occurredAt": 3,
+      "scope": "stream-generation-1",
+      "parentId": "stream-create-authority",
+      "localValid": true
+    }
+  ]
+}

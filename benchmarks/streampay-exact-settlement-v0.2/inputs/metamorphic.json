@@ -1,0 +1,18 @@
+{
+  "schema": "cgqa/metamorphic-roundtrip/v0.1",
+  "subject": {"repository": "Streampay-Org/StreamPay-Contracts", "issue": 153, "pullRequest": 161, "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f", "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"},
+  "cases": [
+    {
+      "id": "time-translation",
+      "before": {"subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "state": {"activeSeconds": 6}, "effects": {"paid": 18, "custody": 82}, "history": {"normalizedDurations": [6]}},
+      "after": {"subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "state": {"activeSeconds": 6}, "effects": {"paid": 18, "custody": 82}, "history": {"normalizedDurations": [6]}},
+      "preserve": {"state": true, "effects": true, "history": true}
+    },
+    {
+      "id": "split-versus-one-shot",
+      "before": {"subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "state": {"cursor": 11}, "effects": {"paid": 18, "custody": 82}, "history": {"settlements": 1}},
+      "after": {"subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "state": {"cursor": 11}, "effects": {"paid": 18, "custody": 82}, "history": {"settlements": 2}},
+      "preserve": {"state": true, "effects": true, "history": false}
+    }
+  ]
+}

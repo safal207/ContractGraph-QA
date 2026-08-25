@@ -1,0 +1,30 @@
+{
+  "schema": "cgqa/transition-geometry/v0.1",
+  "subject": {
+    "repository": "Streampay-Org/StreamPay-Contracts",
+    "issue": 153,
+    "pullRequest": 161,
+    "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f",
+    "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"
+  },
+  "requirements": {"requireEndpointSubjectBinding": true},
+  "operators": {"a": "permissionless settle at t=3", "b": "payer pause at t=3"},
+  "origin": {
+    "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1",
+    "state": {"lifecycle": "active", "cursor": 1, "pausedAt": 0},
+    "effects": {"recipientAccounted": 0, "remainingCustody": 100},
+    "history": {"actions": ["start@1"]}
+  },
+  "aThenB": {
+    "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1",
+    "state": {"lifecycle": "paused", "cursor": 3, "pausedAt": 3},
+    "effects": {"recipientAccounted": 2, "remainingCustody": 98},
+    "history": {"actions": ["start@1", "settle@3", "pause@3"]}
+  },
+  "bThenA": {
+    "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1",
+    "state": {"lifecycle": "paused", "cursor": 3, "pausedAt": 3},
+    "effects": {"recipientAccounted": 2, "remainingCustody": 98},
+    "history": {"actions": ["start@1", "pause@3", "settle@3"]}
+  }
+}

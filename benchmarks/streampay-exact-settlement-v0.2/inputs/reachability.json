@@ -1,0 +1,18 @@
+{
+  "assumptions": [
+    {"id": "PAUSE_CURSOR_STALE", "description": "pause pays earned time without advancing or flooring the cursor"}
+  ],
+  "capabilities": [
+    {"id": "stream-active", "description": "one authorized active stream", "forbidden": false},
+    {"id": "stream-paused-accounted", "description": "pause has accounted the eligible interval", "forbidden": false},
+    {"id": "duplicate-interval-payment", "description": "the same active interval moves value twice", "forbidden": true}
+  ],
+  "transitions": [
+    {"id": "pause", "source": "stream-active", "target": "stream-paused-accounted", "invariantId": "earned-time-exactness", "boundary": "pause"},
+    {"id": "replay-paused-interval", "source": "stream-paused-accounted", "target": "duplicate-interval-payment", "requiresViolations": ["PAUSE_CURSOR_STALE"], "invariantId": "once-only-accrual", "boundary": "settlement", "impact": "recipient overpayment"}
+  ],
+  "initialCapabilities": ["stream-active"],
+  "targetCapabilities": ["duplicate-interval-payment"],
+  "violatedAssumptions": [],
+  "maxDepth": 3
+}

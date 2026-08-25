@@ -1,0 +1,17 @@
+{
+  "schema": "cgqa/causal-watchpoints/v0.1",
+  "subject": {
+    "repository": "Streampay-Org/StreamPay-Contracts",
+    "issue": 153,
+    "pullRequest": 161,
+    "commit": "2baa37b533c07790d6aa38ab0a5c0170fcbbb44f",
+    "tree": "3eb31ad4643617d37e07ac0ad03412bf7f237aa4"
+  },
+  "currentStep": 1,
+  "evidence": [
+    {"id": "h10-native-watchpoint", "step": 1, "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "facts": {"archive": {"watchpointObserved": true, "terminalBalance": 90, "repeatSettle": 0, "restartRejected": true, "archiveRejected": true, "tokenCustodyLockProven": false, "ttlTested": false}}}
+  ],
+  "watchpoints": [
+    {"id": "archive-retained-balance", "status": "ACTIVATED", "startStep": 1, "endStep": 100, "generation": 0, "subjectHash": "76c49eb595bcc1437aab689f16e42a4d7aa77e1c4c6821865e4d8b393e2379b1", "conditions": [{"field": "archive.watchpointObserved", "equals": true}]}
+  ]
+}
