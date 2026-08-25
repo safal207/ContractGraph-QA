@@ -159,7 +159,7 @@ class ProjectQuickstartTest(unittest.TestCase):
                     "requested": True,
                     "status": "fail",
                     "returnCode": 1,
-                    "durationSeconds": None,
+                    "durationSeconds": 0.2,
                     "stdout": "",
                     "stderr": "failing test",
                 },
@@ -167,6 +167,16 @@ class ProjectQuickstartTest(unittest.TestCase):
                 result = inspect_project(root, run_native=True)
             self.assertEqual(result["status"], "fail")
             self.assertEqual(result["readiness"], "NATIVE_TESTS_FAILED")
+
+    def test_output_nested_under_source_does_not_hide_source_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._foundry_project(root)
+            output = root / "src" / ".review-output"
+            result = write_quickstart(root, output_directory=output)
+            self.assertEqual(result["sourceFiles"], 1)
+            payload = json.loads((output / "quickstart.json").read_text(encoding="utf-8"))
+            self.assertEqual([row["path"] for row in payload["sourceFiles"]], ["src/Vault.sol"])
 
     def test_write_quickstart_is_deterministic_and_refuses_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -176,6 +186,7 @@ class ProjectQuickstartTest(unittest.TestCase):
             first = write_quickstart(root, output_directory=output)
             payload = json.loads((output / "quickstart.json").read_text(encoding="utf-8"))
             self.assertEqual(first["projectFingerprint"], payload["subject"]["projectFingerprint"])
+            self.assertTrue(first["ok"])
             self.assertTrue((output / "REPORT.md").is_file())
             with self.assertRaises(ProjectQuickstartError):
                 write_quickstart(root, output_directory=output)
@@ -188,6 +199,9 @@ class ProjectQuickstartTest(unittest.TestCase):
             result = inspect_project(root)
             self.assertEqual(result["status"], "hold")
             self.assertEqual(result["readiness"], "BLOCKED_NO_CONTRACT_SOURCES")
+            written = write_quickstart(root)
+            self.assertFalse(written["ok"])
+            self.assertEqual(written["status"], "hold")
 
 
 class UnifiedCliTest(unittest.TestCase):
@@ -222,6 +236,26 @@ class UnifiedCliTest(unittest.TestCase):
             result = json.loads(stdout.getvalue())
             self.assertEqual(result["framework"], "standalone-solidity")
             self.assertTrue((output / "quickstart.json").is_file())
+
+    def test_quickstart_hold_returns_public_validation_exit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "report"
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                code = cli.main(
+                    [
+                        "quickstart",
+                        "--target",
+                        str(root),
+                        "--output-dir",
+                        str(output),
+                    ]
+                )
+            self.assertEqual(code, cli.EXIT_VALIDATION)
+            result = json.loads(stdout.getvalue())
+            self.assertEqual(result["status"], "hold")
+            self.assertFalse(result["ok"])
 
     def test_phase2_exit_code_is_normalized(self) -> None:
         with mock.patch.object(cli.causal_temporal_cli, "main", return_value=2) as subcli:
