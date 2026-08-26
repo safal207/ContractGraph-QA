@@ -2,7 +2,20 @@
 
 **One financial operation. One ambiguous result. One bounded proof of whether retry is safe.**
 
-This fixed-scope pilot is for payment, wallet, payout, stablecoin, on/off-ramp, ledger, and agentic-commerce teams that need a deterministic answer after a timeout, lost response, delayed webhook, or conflicting state.
+This fixed-scope pilot is for payment, wallet, payout, stablecoin, on/off-ramp, ledger, and agentic-commerce teams that need a deterministic answer after a timeout, lost response, delayed webhook, conflicting state, or fallback.
+
+## Design-partner terms
+
+| Item | Terms |
+|---|---|
+| Price | **$750 fixed** |
+| Scope | One named recovery boundary |
+| Delivery target | Five business days after accepted scope and inputs |
+| Communication | Async by default |
+| Retest | One bounded retest for an in-scope fix delivered within 14 calendar days |
+| Production access | Not required for the initial synthetic or sandbox-backed fixture |
+
+The price applies only to the bounded scope below. A second provider, rail, wallet, ledger, or independently modeled business operation requires a separate scope.
 
 ## The decision the pilot verifies
 
@@ -46,17 +59,88 @@ Examples:
 - fiat debit plus irreversible crypto delivery;
 - mint, burn, bridge, or cross-chain execution with delayed off-chain reconciliation.
 
-## What is delivered
+## Included
 
-- a compact expected-state contract;
-- an evidence-precedence map;
-- one local or sandbox-backed executable fixture;
-- positive, negative, duplicate, delayed, out-of-order, and retry cases;
-- deterministic pass/fail output with violation codes;
-- a minimized counterexample if an unsafe path is reachable;
-- bounded remediation guidance.
+1. Map the declared states, identities, and evidence contract.
+2. Identify authoritative evidence surfaces and their precedence.
+3. Define the `ZERO / ONE / UNKNOWN` recovery state machine.
+4. Implement or adapt one local or sandbox-backed executable fixture.
+5. Run positive, negative, duplicate, delayed, out-of-order, retry, and identity-drift cases.
+6. Produce deterministic results and a bounded findings report.
+7. Provide one in-scope retest when a fix is supplied within the retest window.
 
-The initial fixture can start from public documentation, synthetic traces, status definitions, webhook schemas, and a declared authoritative-evidence rule. Production credentials, customer data, and real-value transactions are not required.
+## Minimum test matrix
+
+| Case | Expected result |
+|---|---|
+| Dispatch never occurred | `ZERO`; retry may be allowed |
+| Dispatch occurred; committed evidence arrives | `ONE`; retry blocked |
+| Provider proves explicit failure with no economic effect | `ZERO`; retry may be allowed |
+| Timeout with no authoritative close-out evidence | `UNKNOWN`; retry blocked |
+| Duplicate webhook or event delivery | No duplicate economic side effect |
+| Out-of-order evidence | Arrival order must not incorrectly override evidence authority |
+| Retry under a new logical operation identity | Reject or classify as a separately authorized operation |
+| Retry with changed idempotency identity where continuity is required | Reject |
+| Internal ledger says success while the external leg remains unresolved | `UNKNOWN` unless the declared contract makes the ledger authoritative |
+| External leg succeeds while local state remains stale | `ONE`; local state must converge without another payment |
+
+## Deliverables
+
+- **Expected-state contract** — the smallest state machine preserving the recovery guarantee;
+- **Evidence map** — what each status, webhook, receipt, chain event, or ledger record can and cannot prove;
+- **Executable fixture** — one local or sandbox-backed scenario;
+- **Invariant report** — deterministic outcomes and violation codes;
+- **Counterexample** — minimized trace for a reachable unsafe retry or false-finality path;
+- **Remediation guidance** — bounded changes to identity, hold, reconciliation, or evidence precedence rules;
+- **Retest evidence** — exact-path replay plus alternate-path review for one in-scope fix.
+
+## Inputs required
+
+The pilot can begin with public or non-sensitive material:
+
+- API or product documentation;
+- state and status definitions;
+- webhook or event schemas;
+- idempotency and retry contract;
+- synthetic traces or sandbox examples;
+- a short statement of which system is intended to be authoritative.
+
+Production credentials, customer data, and real-value transactions are not required for the initial fixture.
+
+## Acceptance criteria
+
+The pilot is complete when:
+
+- every retry decision maps to explicit evidence;
+- `UNKNOWN` is represented as a first-class state rather than inferred from silence;
+- the same trace produces the same classification and verdict on replay;
+- one logical operation cannot create a second economic effect through an unresolved retry path;
+- identity continuity and authority ancestry are preserved across attempts;
+- all claims remain bounded to the supplied model, evidence, adapter, and environment.
+
+## Good fit
+
+- The team can name one disputed retry, fallback, wallet, payout, settlement, or reconciliation boundary.
+- At least one public, synthetic, sandbox, or authorized evidence surface is available.
+- The desired result is a reproducible fixture and bounded evidence, not a blanket certification.
+
+## Not a fit
+
+- The request is for an unbounded audit of the entire platform.
+- No explicit testing authorization exists for active production access.
+- The goal is live exploitation, fund movement, or collection of customer data.
+- The team expects a webhook or internal status to be treated as authoritative without declaring why.
+
+## Existing executable foundation
+
+The pilot is backed by the vendor-neutral [Agent Payment Recovery Benchmark v0.1](benchmarks/agent-payment-recovery-v0.1/README.md), including seed cases for:
+
+- committed outcome followed by stop;
+- failed outcome followed by retry under the same logical operation identity;
+- retry before reconciliation;
+- idempotency drift across retry.
+
+See the [synthetic buyer-readable case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md).
 
 ## Start with one question
 
@@ -64,7 +148,7 @@ The initial fixture can start from public documentation, synthetic traces, statu
 
 A one-line answer is enough to define the first boundary.
 
-[Read the full pilot contract](docs/AMBIGUOUS_OUTCOME_RECOVERY_PILOT.md) · [See the executable benchmark](benchmarks/agent-payment-recovery-v0.1/README.md) · [Discuss one bounded pilot](mailto:safal0645@gmail.com?subject=Ambiguous%20Outcome%20Recovery%20Pilot)
+[Discuss one bounded pilot](mailto:safal0645@gmail.com?subject=Ambiguous%20Outcome%20Recovery%20Pilot) · [View the engine](README.md)
 
 ## Scope and assurance boundary
 
