@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use ContractGraph-QA in research or engineering work, please cite this repository."
+title: "ContractGraph-QA: Causal-Temporal Smart Contract QA"
+type: software
+authors:
+  - family-names: "Safonov"
+    given-names: "Aleksei"
+repository-code: "https://github.com/safal207/ContractGraph-QA"
+url: "https://github.com/safal207/ContractGraph-QA"
+license: "Apache-2.0"
+keywords:
+  - smart contract QA
+  - state transition testing
+  - Solidity
+  - Foundry
+  - invariant testing
+  - reproducible evidence

@@ -1,12 +1,31 @@
-# ContractGraph-QA
+<!-- seo-product-intro:start -->
+# ContractGraph-QA — Smart Contract QA & State-Transition Testing
 
-**Causal-temporal smart-contract QA with reproducible evidence.**
+**Causal-temporal smart-contract testing for Solidity, Foundry, escrow, settlement, payouts, DeFi, and other stateful financial workflows.**
 
-ContractGraph-QA treats a smart contract as a reachable state space rather than a collection of isolated functions.
+ContractGraph-QA finds **reachable economic failures** that isolated function tests can miss: stuck funds, duplicate settlement, broken value conservation, unsafe retries, transaction-ordering races, stale authorization, and exact-time boundary defects.
 
-The core question is:
+> Can an allowed sequence of actors, transactions, parameter values, retries, concurrency, and time changes drive the contract into a state that violates an explicit business or security invariant?
 
-> Can an allowed sequence of actors, transactions, parameter values, and time changes drive the contract into a state that violates an explicit business or security invariant?
+```text
+actor → action → pre-state → transition → post-state → effect
+                        ↓
+               invariant + replayable evidence
+```
+
+## Why teams use ContractGraph-QA
+
+| Need | ContractGraph-QA provides |
+|---|---|
+| Smart-contract QA before release | Bounded state-space exploration and native framework test planning |
+| Solidity / Foundry invariant testing | Reviewed action, state, and invariant models with deterministic replay |
+| Escrow, payout, vesting, or settlement review | Economic-path pressure tests across retries, concurrency, and timing boundaries |
+| Reproducible findings | Minimal violating paths, observed pre/post state, source receipts, and verifiable evidence bundles |
+| Honest assurance language | `violated`, `not_found_within_bound`, or `inconclusive` — never an unsupported security certification |
+
+**Open for fixed-scope verification engagements:** start with one critical workflow and one economic promise.  
+[Request a review](mailto:safal0645@gmail.com?subject=ContractGraph-QA%20fixed-scope%20review) · [Run the quickstart](#test-your-project-in-one-command) · [See the product demo](#try-the-product-demo)
+<!-- seo-product-intro:end -->
 
 ## Test your project in one command
 
