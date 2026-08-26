@@ -1,21 +1,67 @@
 # ContractGraph-QA Client Proof Pack
 
-This pack is the shortest path from **technical capability** to a **client-understandable proof of value**.
+This pack is the shortest path from **technical capability** to a **buyer-understandable proof of value**.
 
-It does not claim a completed third-party security audit. The worked cases are repository-owned local fixtures designed to show exactly what ContractGraph-QA produces and how the evidence can be independently recomputed.
+It contains repository-owned demonstrations and product materials. It does not claim a completed third-party security audit.
 
-## The client question
+## Start with the buyer problem
 
-> What do I get if I pay for a ContractGraph-QA pilot?
+For payment, wallet, payout, stablecoin, ledger, and agentic-commerce teams:
 
-You get a bounded, reproducible Smart Contract / agent-payment QA engagement focused on explicit business/security invariants, reachable state transitions, containment/recovery, and fix verification.
+> After an ambiguous execution result, what evidence proves `ZERO`, `ONE`, or `UNKNOWN` economic effects before retry?
 
-Typical evidence chain:
+For smart-contract teams:
+
+> Can an allowed sequence of actors, calls, values, retries, ordering, and time changes reach a state that violates an explicit business or security invariant?
+
+## Primary product route
+
+The [Ambiguous Outcome Recovery Pilot](../../PILOT.md) verifies one named recovery boundary for a design-partner price of **$750 fixed**.
+
+It produces:
+
+- an expected-state contract;
+- an evidence-precedence map;
+- one executable local or sandbox-backed fixture;
+- deterministic recovery verdicts;
+- a minimized unsafe trace where applicable;
+- bounded remediation and one retest.
+
+See the [synthetic payment-recovery case study](../case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md).
+
+## Repository-owned engine proof
+
+The sample engagement `CGQA-E-001` demonstrates three distinct evidence outcomes in one bounded session:
+
+- **violated** — a shortest replayable path reaches the forbidden state;
+- **not_found_within_bound** — no violation was found inside the declared model and search bound;
+- **inconclusive** — missing evidence remains unresolved instead of becoming a fake PASS.
+
+See [SAMPLE_ENGAGEMENT.md](SAMPLE_ENGAGEMENT.md).
+
+The causal fixture in `proof.json` separately demonstrates:
 
 ```text
-AUTHORIZED SCOPE
+broken assumption
+→ capability
+→ control boundary / invariant
+→ forbidden capability
+→ modeled impact
+→ containment
+→ recovery
+→ exact replay
+→ alternate-path search
+→ fix verification
+```
+
+These are repository-local demonstrations of workflow and evidence semantics, not claims about an external provider.
+
+## Evidence chain
+
+```text
+AUTHORIZED SCOPE / EXACT SUBJECT
       ↓
-REVIEWED MANIFEST / MODEL
+REVIEWED MODEL
       ↓
 BOUNDED SEARCH
       ↓
@@ -23,130 +69,42 @@ VIOLATED / NOT_FOUND_WITHIN_BOUND / INCONCLUSIVE
       ↓
 MINIMAL REPLAYABLE PATH
       ↓
-FORBIDDEN CAPABILITY + IMPACT
-      ↓
-CONTAINMENT → RECOVERY → VERIFICATION
+EVIDENCE MAP + PROVENANCE
       ↓
 FIX
       ↓
-EXACT HISTORICAL PATH REPLAY
-      ↓
-ALTERNATE-PATH SEARCH
-      ↓
-PR CHANGE GATE RESULT
+EXACT RETEST
       ↓
 CONTENT-ADDRESSED CLIENT EVIDENCE
 ```
 
-## Proof case
-
-The repository-owned demo engagement `CGQA-E-001` checks three invariants in one bounded search session and records three distinct evidence outcomes:
-
-- **1 violated** — the terminal-state invariant is broken by the shortest path `advance → advance → advance`;
-- **1 not_found_within_bound** — no negative phase is found inside the declared action corpus and `maxDepth=4` model;
-- **1 inconclusive** — an intentionally unresolved property remains unresolved instead of being misreported as clean.
-
-See [`SAMPLE_ENGAGEMENT.md`](SAMPLE_ENGAGEMENT.md).
-
-## Causal security proof
-
-`proof.json` now also carries a separate repository-owned causal fixture. It is intentionally labeled separately from `CGQA-E-001` so the engagement evidence is not conflated with the reachability/control demo.
-
-The causal proof binds one client-readable chain:
-
-```text
-broken assumption
-→ cross-terminal-state-boundary
-→ adapter-terminal-state invariant
-→ terminal-state-boundary
-→ terminal-state-reachable (forbidden)
-→ modeled impact
-→ contained_by
-→ recovered_by
-→ restores_to advance-state-machine
-→ verified_by
-→ proposed fix
-→ exact historical path blocked by restored assumption guard
-→ no alternate path to the same forbidden capability
-→ fix_verified
-```
-
-The checked-in proof is regression-tested against the live reachability, post-impact, and replay engines. If the machine semantics drift, the proof-pack tests fail rather than leaving a stale client narrative.
-
-The claim boundary remains explicit: this is an authorized repository-local model demonstration. It is not proof of production exploitability and not an exhaustive security certification.
-
-## Bind PR change-gate evidence
-
-The pull-request gate already emits one canonical machine result: `.cgqa/causal-security-gate.json`. Client proof packs consume that **same object** instead of reconstructing targets, invariants, paths, or fix conclusions a second time.
-
-Bind an exact gate artifact into a proof pack with:
-
-```bash
-python tools/bind_change_gate_client_proof.py \
-  --proof docs/client-proof/proof.json \
-  --gate-result .cgqa/causal-security-gate.json \
-  --output .cgqa/client-proof.with-gate.json
-```
-
-The resulting `changeGateEvidence` contains:
-
-- `schema = cgqa.client-change-gate-evidence.v1`;
-- the complete gate result, preserved verbatim as JSON semantics;
-- a canonical SHA-256 over that exact result.
-
-The client-proof layer validates only the result envelope needed for identity binding: schema version, `PASS / REVIEW / BLOCK`, exact base commit SHA, exact head commit SHA, and the model-result array. It deliberately does **not** re-derive forbidden targets, invariants, shortest paths, or replay status. Those claims remain owned by the gate JSON itself.
-
-`verify_change_gate_evidence(...)` recomputes the canonical digest and rejects nested tampering. Rebinding a proof pack to a different gate result also fails closed instead of silently replacing historical review evidence. A `blocked` gate result is still valid client evidence; a fatal runner/config error without explicit commit identity is not.
-
-This gives one continuous delivery-to-client chain:
-
-```text
-PR base/head
-→ causal security gate JSON
-→ introduced forbidden path OR exact verified fix replay
-→ CI decision
-→ canonical gate-result digest
-→ client proof pack
-```
-
-## Reproduce the proof
-
-From the repository root:
+## Reproduce the sample engagement
 
 ```bash
 cgqa engagement-run --config cgqa.engagement.example.toml
-cgqa verify-engagement-bundle dist/CGQA-E-001-run/CGQA-E-001.engagement.zip
-
-cgqa reachability --model scenarios/adversarial-adapter-fixture.json
-cgqa reachability-replay \
-  --prior-model scenarios/adversarial-adapter-fixture.json \
-  --fixed-model scenarios/adversarial-adapter-fixture-fixed.json
+cgqa verify-engagement-bundle \
+  dist/CGQA-E-001-run/CGQA-E-001.engagement.zip
 ```
 
-The Product E2E workflow runs the installed `cgqa` wheel outside the checkout, performs the engagement twice, requires byte-for-byte identical ZIP output, and verifies the final bundle independently. Unit regressions also recompute the client proof's causal path, control graph, exact fix replay, and content-addressed change-gate binding.
+The Product workflow runs the installed wheel outside the checkout, repeats the engagement, checks deterministic output, and independently verifies the final bundle.
 
-## Commercial pilot
+## Commercial materials
 
-See [`PILOT_OFFER.md`](PILOT_OFFER.md) for a fixed-scope offer designed to reduce buying friction without presenting ContractGraph-QA as a replacement for a formal protocol security audit.
-
-Default pilot anchor:
-
-**$200 fixed** for a small authorized contract/feature slice, including modeled invariants, bounded state-transition search, reproducible findings, evidence bundle, and one retest pass.
-
-## Outreach
-
-See [`OUTREACH.md`](OUTREACH.md) for concise messages suitable for founders, protocol teams, Solidity developers, agent-payment teams, and audit-readiness leads.
+- [Primary Recovery Pilot](../../PILOT.md)
+- [Design-Partner Pilot Offer](PILOT_OFFER.md)
+- [Question-First Outreach](OUTREACH.md)
+- [Synthetic Recovery Case Study](../case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
+- [Sample Smart-Contract Engagement](SAMPLE_ENGAGEMENT.md)
 
 ## Positioning boundary
 
 ContractGraph-QA is strongest as:
 
-- Smart Contract and programmable-wallet QA;
-- stateful functional/invariant testing;
+- ambiguous-outcome recovery verification;
+- payment, wallet, payout, and ledger state-machine QA;
+- smart-contract stateful/invariant testing;
 - adversarial capability reachability;
-- containment/recovery evidence;
-- Foundry regression/fuzz/invariant readiness;
-- audit-readiness evidence;
+- containment and recovery evidence;
 - reproducible defect discovery and exact-path retest.
 
-A successful run means the **declared bounded model and evidence chain verified**. It does **not** mean the target is exhaustively secure.
+A successful run means the **declared bounded model and evidence chain verified**. It does not mean the target is exhaustively secure.
