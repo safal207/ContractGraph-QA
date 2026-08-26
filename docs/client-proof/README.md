@@ -88,6 +88,10 @@ cgqa verify-engagement-bundle \
 
 The Product workflow runs the installed wheel outside the checkout, repeats the engagement, checks deterministic output, and independently verifies the final bundle.
 
+## Advanced evidence binding
+
+The pull-request causal security gate, exact historical path replay, and client-proof binding remain documented separately in [Causal Security Change Gate](../CHANGE_GATE.md). This buyer-facing pack links to that authoritative technical contract instead of re-deriving the gate semantics here.
+
 ## Commercial materials
 
 - [Primary Recovery Pilot](../../PILOT.md)
