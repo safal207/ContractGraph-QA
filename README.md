@@ -1,3 +1,4 @@
+<!-- seo-product-intro:start -->
 # ContractGraph-QA
 
 ## Bounded verification for stateful financial systems
@@ -17,6 +18,7 @@ UNKNOWN outcome → no new financial action
 ```
 
 [Read the Recovery Pilot](PILOT.md) · [See the synthetic case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Run the local demo](#run-a-local-proof) · [Discuss one bounded pilot](mailto:safal0645@gmail.com?subject=ContractGraph-QA%20Recovery%20Pilot)
+<!-- seo-product-intro:end -->
 
 ---
 
@@ -112,9 +114,12 @@ cgqa verify-bundle cgqa-demo/CGQA-005.evidence.zip
 
 The demo is repository-owned, performs no external financial action, and is not presented as a third-party audit.
 
-For the recovery benchmark:
+From a repository checkout, run the recovery benchmark:
 
 ```bash
+git clone https://github.com/safal207/ContractGraph-QA.git
+cd ContractGraph-QA
+
 cgqa payment-recovery-evaluate \
   --scenario benchmarks/agent-payment-recovery-v0.1/cases/pass_committed_stop.json
 ```
