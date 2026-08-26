@@ -1,0 +1,158 @@
+name: Refresh ContractGraph-QA SEO and SMM layer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/seo-smm-refresh.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Improve discovery, first-screen clarity, and share assets
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          readme = Path("README.md")
+          text = readme.read_text(encoding="utf-8")
+          marker = "<!-- seo-product-intro:start -->"
+          next_heading = "## Test your project in one command"
+
+          intro = dedent(r'''
+          <!-- seo-product-intro:start -->
+          # ContractGraph-QA — Smart Contract QA & State-Transition Testing
+
+          **Causal-temporal smart-contract testing for Solidity, Foundry, escrow, settlement, payouts, DeFi, and other stateful financial workflows.**
+
+          ContractGraph-QA finds **reachable economic failures** that isolated function tests can miss: stuck funds, duplicate settlement, broken value conservation, unsafe retries, transaction-ordering races, stale authorization, and exact-time boundary defects.
+
+          > Can an allowed sequence of actors, transactions, parameter values, retries, concurrency, and time changes drive the contract into a state that violates an explicit business or security invariant?
+
+          ```text
+          actor → action → pre-state → transition → post-state → effect
+                                  ↓
+                         invariant + replayable evidence
+          ```
+
+          ## Why teams use ContractGraph-QA
+
+          | Need | ContractGraph-QA provides |
+          |---|---|
+          | Smart-contract QA before release | Bounded state-space exploration and native framework test planning |
+          | Solidity / Foundry invariant testing | Reviewed action, state, and invariant models with deterministic replay |
+          | Escrow, payout, vesting, or settlement review | Economic-path pressure tests across retries, concurrency, and timing boundaries |
+          | Reproducible findings | Minimal violating paths, observed pre/post state, source receipts, and verifiable evidence bundles |
+          | Honest assurance language | `violated`, `not_found_within_bound`, or `inconclusive` — never an unsupported security certification |
+
+          **Open for fixed-scope verification engagements:** start with one critical workflow and one economic promise.  
+          [Request a review](mailto:safal0645@gmail.com?subject=ContractGraph-QA%20fixed-scope%20review) · [Run the quickstart](#test-your-project-in-one-command) · [See the product demo](#try-the-product-demo)
+          <!-- seo-product-intro:end -->
+          ''').strip()
+
+          if marker not in text:
+              heading_index = text.find(next_heading)
+              if heading_index == -1:
+                  raise SystemExit(f"Missing heading: {next_heading}")
+              text = intro + "\n\n" + text[heading_index:]
+              readme.write_text(text, encoding="utf-8")
+
+          docs = Path("docs")
+          docs.mkdir(exist_ok=True)
+          social = dedent(r'''
+          # ContractGraph-QA Social & Distribution Kit
+
+          ## Canonical one-liner
+
+          > ContractGraph-QA is causal-temporal smart-contract QA for finding reachable economic failures and producing independently verifiable evidence bundles.
+
+          ## Search intent
+
+          Primary: smart contract QA, smart contract testing, state transition testing, Solidity testing, Foundry invariant testing.
+
+          Secondary: escrow testing, settlement testing, value conservation, idempotency, concurrency, temporal boundaries, reproducible security evidence.
+
+          ## Short share copy
+
+          ### LinkedIn
+
+          A smart contract can pass every isolated function test and still fail as a financial state machine.
+
+          ContractGraph-QA searches allowed sequences of actors, calls, values, retries, concurrency, and time changes for reachable invariant violations — then preserves the shortest failing path as replayable evidence.
+
+          The useful question is not only “Does this function work?” It is: “Can an allowed sequence lose, duplicate, strand, or misallocate value?”
+
+          Repository: https://github.com/safal207/ContractGraph-QA
+
+          ### X
+
+          Function tests ask whether one call works.
+
+          ContractGraph-QA asks whether an allowed sequence of calls can lose, duplicate, strand, or misallocate value.
+
+          Smart-contract QA → minimal failing path → deterministic replay → verifiable evidence.
+
+          https://github.com/safal207/ContractGraph-QA
+
+          ### Telegram / Russian
+
+          ContractGraph-QA проверяет смарт-контракт как финансовый автомат состояний, а не как набор отдельных функций. Ищет минимальный путь, который нарушает инвариант: зависшие средства, двойной settlement, retry, concurrency, точная временная граница — и сохраняет воспроизводимые доказательства.
+
+          ## Reusable launch formula
+
+          ```text
+          Promise → minimal adversarial path → observed state delta → broken invariant → fix → regression proof → remaining boundary
+          ```
+
+          ## Recommended GitHub metadata
+
+          Description:
+
+          > Smart-contract QA for state transitions, invariants, retries, concurrency, settlement, and reproducible evidence.
+
+          Topics:
+
+          `smart-contract-testing`, `smart-contract-security`, `solidity`, `foundry`, `web3`, `defi`, `qa`, `invariant-testing`, `state-machine`, `property-based-testing`, `escrow`, `payments`, `idempotency`, `concurrency`, `fintech`
+          ''').strip() + "\n"
+          (docs / "SOCIAL_KIT.md").write_text(social, encoding="utf-8")
+
+          citation = dedent(r'''
+          cff-version: 1.2.0
+          message: "If you use ContractGraph-QA in research or engineering work, please cite this repository."
+          title: "ContractGraph-QA: Causal-Temporal Smart Contract QA"
+          type: software
+          authors:
+            - family-names: "Safonov"
+              given-names: "Aleksei"
+          repository-code: "https://github.com/safal207/ContractGraph-QA"
+          url: "https://github.com/safal207/ContractGraph-QA"
+          license: "Apache-2.0"
+          keywords:
+            - smart contract QA
+            - state transition testing
+            - Solidity
+            - Foundry
+            - invariant testing
+            - reproducible evidence
+          ''').strip() + "\n"
+          Path("CITATION.cff").write_text(citation, encoding="utf-8")
+          PY
+
+          rm -f .github/seo-smm-refresh.trigger
+          rm -f .github/workflows/seo-smm-refresh-once.yml
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "docs: improve ContractGraph-QA SEO and social discovery"
+          git push
