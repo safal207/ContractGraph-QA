@@ -4,6 +4,8 @@ This playbook describes the product workflow for a real smart-contract QA / audi
 
 It is intentionally conservative: ContractGraph-QA should fail closed when authorization, provenance, adapter mapping, measurement coverage, or evidence is ambiguous.
 
+If work begins from an assigned issue or source-only investigation before an executable target is ready, first use the [External Investigation Gate](EXTERNAL_INVESTIGATION_GATE.md). Its validated journal is an intake artifact and does not replace the written scope, native regression, bounded execution, or evidence bundle required below.
+
 ## 1. Establish written scope
 
 Before any fork or target-specific test:

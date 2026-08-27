@@ -46,6 +46,7 @@ Good targets:
 ## Included
 
 - explicit authorization and scope boundary;
+- chain-neutral source investigation record when executable access is not ready;
 - action, actor, identity, and state-transition model;
 - up to five prioritized invariants or recovery obligations;
 - one executable local or sandbox-backed fixture;
@@ -65,6 +66,8 @@ Good targets:
 - the highest-value property the team wants protected.
 
 Production credentials, customer data, and real-value transactions are not required for an initial documentation, local-fixture, or sandbox-backed pilot.
+
+A source-bound investigation record may establish the exact property, finding, evidence readiness, blocker, and next transition before the executable fixture is ready. It does not replace the included fixture, bounded execution, and retest unless scope is explicitly redefined.
 
 ## Not included
 
