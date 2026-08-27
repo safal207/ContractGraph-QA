@@ -1,0 +1,34 @@
+{
+  "schema": "cgqa/orientation-center/v0.1",
+  "subject": {
+    "repository": "fixture/escrow",
+    "commit": "fixture-v1",
+    "objectId": "stream-1"
+  },
+  "state": {
+    "lifecycle": "active"
+  },
+  "ancestry": {
+    "status": "VALID_WITHIN_TRACE"
+  },
+  "authorityNow": {
+    "status": "VALID"
+  },
+  "supportingEvidence": [
+    {"id": "native-regression", "status": "PASS"}
+  ],
+  "counterevidence": [],
+  "verificationDebt": [
+    {"id": "restart-replay", "status": "DEFERRED", "required": true}
+  ],
+  "independentWitnesses": [],
+  "watchpoints": [
+    {"id": "wp-restart-replay", "status": "WATCHING"}
+  ],
+  "requirements": {
+    "requireSupportingEvidence": true,
+    "requireIndependentWitness": false,
+    "requireAncestry": true,
+    "requireAuthority": true
+  }
+}

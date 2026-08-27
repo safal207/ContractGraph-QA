@@ -12,6 +12,7 @@ __pycache__/
 build/
 dist/
 .product-wheel/
+.cgqa/
 
 # Direct capture output is generated evidence; keep only the directory marker.
 results/generated/*

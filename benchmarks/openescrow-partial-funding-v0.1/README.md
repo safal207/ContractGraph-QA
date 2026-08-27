@@ -7,7 +7,19 @@ This benchmark captures a source-grounded reachability finding against the publi
 - Upstream: `omslice/OpenEscrow`
 - Commit: `0ed38ea3192e0248ba8d1d77e85f0a8b83192a3e`
 - Contract: `contracts/OpenEscrow.sol`
+- Git blob: `07d47a2fc7ef94bf0a2f29400fba3a8ace3224e6` (`40,609` bytes)
 - Public testnet/demo scope only in the upstream project.
+
+## Verification boundary
+
+This is a source-reviewed, deterministic reachability model for the exact
+commit and blob above. The model was checked against the contract's funding,
+proposal-cancellation, no-claim, and withdrawal entry points. It does not embed
+or execute the upstream Foundry suite, prove deployed bytecode identity, observe
+live funds, or claim a full audit. "Permanent" is bounded to the transitions
+available to the funded tenant in this pinned lifecycle when the remaining
+tenant and landlord both stop progressing it; upgrades or external intervention
+are outside the model.
 
 ## Observed lifecycle
 

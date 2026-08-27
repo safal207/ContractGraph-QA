@@ -10,6 +10,7 @@ Repository-owned benchmark suites for reproducible verification research and pro
 - [`agent-payment-recovery-v0.1`](agent-payment-recovery-v0.1/) — agent payment recovery and evidence scenarios.
 - [`crewai-tool-event-conformance-v0.1`](crewai-tool-event-conformance-v0.1/) — source-pinned CrewAI native tool-event witness projection benchmark.
 - [`langgraph-checkpoint-state-conformance-v0.1`](langgraph-checkpoint-state-conformance-v0.1/) — source-pinned LangGraph hosted checkpoint/state benchmark.
+- [`langgraph-recovery-safety-v0.1`](langgraph-recovery-safety-v0.1/) — live SIGKILL + resume RS1–RS3 benchmark with stable logical-action identity and receiver-dedup control.
 - [`autogen-saved-state-conformance-v0.1`](autogen-saved-state-conformance-v0.1/) — source-pinned AutoGen save/load-state benchmark.
 - [`ms-agent-framework-checkpoint-conformance-v0.1`](ms-agent-framework-checkpoint-conformance-v0.1/) — source-pinned Microsoft Agent Framework workflow-checkpoint benchmark.
 - [`openai-agents-session-conformance-v0.1`](openai-agents-session-conformance-v0.1/) — source-pinned OpenAI Agents SDK SQLiteSession hosted benchmark with native mutation caveat.
