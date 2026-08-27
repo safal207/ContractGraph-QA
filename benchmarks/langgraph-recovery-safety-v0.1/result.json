@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "evidence": [
+        "put-delay",
+        "writes-delay"
+      ],
+      "name": "Input determinism",
+      "property": "RS1",
+      "rationale": "Equal mapped durable inputs and logical actions recovered to different observable states.",
+      "status": "FAIL"
+    },
+    {
+      "evidence": [
+        "put-delay",
+        "writes-delay"
+      ],
+      "name": "Crash independence",
+      "property": "RS2",
+      "rationale": "Changing only the forced persistence interleaving changed recovery.",
+      "status": "FAIL"
+    },
+    {
+      "evidence": [
+        "writes-delay"
+      ],
+      "name": "At-most-once identity",
+      "property": "RS3",
+      "rationale": "At least one stable logical-action identity was admitted more than once.",
+      "status": "FAIL"
+    }
+  ],
+  "conformant": false,
+  "schema": "cgqa.langgraph.recovery-safety-report/v0.1",
+  "subject": {
+    "issue": 8039,
+    "langgraph_version": "1.2.4",
+    "mapping": "received[n] = explicit graph input durable before worker execution; State(n) = recovered graph state plus worker attempt counts and externally admitted action counts",
+    "observed_profiles": [
+      {
+        "langgraph_version": "1.2.4",
+        "sqlite_checkpointer_version": "3.1.0"
+      }
+    ],
+    "property_commit": "22e34841226c41d80c8646b33f1439a87e8549af",
+    "property_license": "CC BY 4.0",
+    "property_source": "vasilisnasopoulos/recovery-safety-property",
+    "runtime": "langchain-ai/langgraph",
+    "sqlite_checkpointer_version": "3.1.0"
+  }
+}
