@@ -161,6 +161,12 @@ Detected routes include Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban, A
 
 [Universal quickstart documentation →](docs/UNIVERSAL_QUICKSTART.md)
 
+For end-to-end request, transaction-attempt, receipt/event, indexer, backend,
+and API continuity, see the
+[Smart Contract Continuity Bridge v0.1](docs/SMART_CONTRACT_CONTINUITY_BRIDGE.md).
+ContractGraph-QA produces reviewed evidence envelopes; the existing LTP verifier
+remains the only source of continuity verdicts.
+
 ---
 
 ## What the engine produces

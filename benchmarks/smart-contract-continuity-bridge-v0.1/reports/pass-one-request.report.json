@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "profile": "org.ltp.request-outcome-continuity-report.v0.1",
+  "as_of": "2026-08-27T10:10:00Z",
+  "overall_status": "CONTINUOUS",
+  "requests": [
+    {
+      "request_id": "release-escrow-42",
+      "trace_id": "escrow-42-lifecycle",
+      "status": "CONTINUOUS",
+      "attempt_ids": [
+        "release-attempt-2"
+      ],
+      "effective_deadline_at": "2026-08-27T10:05:00Z",
+      "canonical_outcome_id": "release-receipt-42",
+      "terminal_status": "COMPLETED",
+      "replay_outcome_ids": [],
+      "findings": []
+    }
+  ],
+  "orphan_outcome_ids": [],
+  "findings": [],
+  "verifier": {
+    "id": "ltp:request-outcome-continuity",
+    "version": "0.1"
+  },
+  "claim_boundary": "This report evaluates continuity only across the supplied request and outcome envelopes as of the declared time. It does not prove authorization, response truth, external side effects, complete pre-observation history, or universal exactly-once execution."
+}

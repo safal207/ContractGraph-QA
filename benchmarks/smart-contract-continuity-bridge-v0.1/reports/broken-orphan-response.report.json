@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": "org.ltp.request-outcome-continuity-report.v0.1",
+  "as_of": "2026-08-27T10:10:00Z",
+  "overall_status": "BROKEN",
+  "requests": [],
+  "orphan_outcome_ids": [
+    "orphan-release-event"
+  ],
+  "findings": [
+    {
+      "code": "BROKEN_ORPHAN_RESPONSE",
+      "request_id": "release-without-request",
+      "record_ids": [
+        "orphan-release-event"
+      ],
+      "detail": "Outcome orphan-release-event references unknown request release-without-request."
+    }
+  ],
+  "verifier": {
+    "id": "ltp:request-outcome-continuity",
+    "version": "0.1"
+  },
+  "claim_boundary": "This report evaluates continuity only across the supplied request and outcome envelopes as of the declared time. It does not prove authorization, response truth, external side effects, complete pre-observation history, or universal exactly-once execution."
+}

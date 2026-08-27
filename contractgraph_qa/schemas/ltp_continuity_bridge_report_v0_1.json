@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cgqa:schema:ltp-continuity-bridge-report:v0.1",
+  "title": "ContractGraph-QA LTP Continuity Bridge Report v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "bridgeProfile",
+    "bridgeStatus",
+    "asOf",
+    "requestEnvelopeCount",
+    "outcomeEnvelopeCount",
+    "limitedRootRequestIds",
+    "mappingDecisions",
+    "inputDigests",
+    "ltpContract",
+    "ltpInputSha256",
+    "nonClaims",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "cgqa-ltp-continuity-bridge-report-v0.1" },
+    "bridgeProfile": { "const": "cgqa-smart-contract-continuity-bridge-v0.1" },
+    "bridgeStatus": { "enum": ["BRIDGE_READY", "BRIDGE_READY_WITH_LIMITATIONS"] },
+    "asOf": { "type": "string", "format": "date-time" },
+    "requestEnvelopeCount": { "type": "integer", "minimum": 0 },
+    "outcomeEnvelopeCount": { "type": "integer", "minimum": 0 },
+    "limitedRootRequestIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "mappingDecisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requestId", "attemptId", "requestProjection", "outcomeProjection", "reasons"],
+        "properties": {
+          "requestId": { "type": "string", "minLength": 1 },
+          "attemptId": { "type": "string", "minLength": 1 },
+          "requestProjection": { "const": "EXPORTED" },
+          "outcomeProjection": { "enum": ["EXPORTED", "NOT_EXPORTED"] },
+          "reasons": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "inputDigests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "logicalId", "sha256"],
+        "properties": {
+          "role": { "enum": ["intent", "rpcCapture", "receiptTrace", "observation"] },
+          "logicalId": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "ltpContract": { "type": "object" },
+    "ltpInputSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "nonClaims": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+    "claimBoundary": { "type": "string", "minLength": 1 }
+  }
+}

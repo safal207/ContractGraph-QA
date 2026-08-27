@@ -1,0 +1,41 @@
+{
+  "chainId": 8453,
+  "claimBoundary": "Exact only for the reviewed PaymentReleased event mapping.",
+  "executionTrace": {
+    "events": [
+      {
+        "economicEffect": {
+          "actionId": "release-escrow-42",
+          "applied": true,
+          "effectKey": "escrow-42:payout",
+          "occurrenceId": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0"
+        },
+        "eventId": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0",
+        "sourceRef": "evm:8453:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:log:0",
+        "stateCommit": {
+          "commitId": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0",
+          "committed": true,
+          "conflictKey": "escrow:42",
+          "operation": "releasePayment",
+          "parentState": "DeliveryAccepted",
+          "parentVersion": 7,
+          "successorState": "Released",
+          "successorVersion": 8
+        }
+      }
+    ],
+    "schemaVersion": "execution-trace-v0.1",
+    "scope": "offline-synthetic-escrow-fixture",
+    "traceId": "evm-receipt:0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "filteredAddressLogCount": 0,
+  "matchedEventCount": 1,
+  "profileSha256": "8888888888888888888888888888888888888888888888888888888888888888",
+  "receiptSha256": "e2ef9cb60924d1c91f31de676e2372237239d85484b0221c2b0e41578e180755",
+  "receiptStatus": "success",
+  "removedLogCount": 0,
+  "schemaVersion": "evm-receipt-adapter-result-v0.1",
+  "status": "pass",
+  "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "unmatchedLogCount": 0
+}

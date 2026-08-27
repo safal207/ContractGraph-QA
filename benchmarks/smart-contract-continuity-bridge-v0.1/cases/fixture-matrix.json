@@ -1,0 +1,105 @@
+{
+  "cases": [
+    {
+      "caseId": "one_request_completed",
+      "expectedExit": 0,
+      "expectedFindingCodes": [],
+      "expectedStatus": "CONTINUOUS",
+      "file": "pass-one-request.json"
+    },
+    {
+      "caseId": "timeout_retry_one_outcome",
+      "expectedExit": 0,
+      "expectedFindingCodes": [],
+      "expectedStatus": "CONTINUOUS",
+      "file": "pass-timeout-retry.json"
+    },
+    {
+      "caseId": "missing_outcome",
+      "expectedExit": 2,
+      "expectedFindingCodes": [
+        "BROKEN_MISSING_OUTCOME"
+      ],
+      "expectedStatus": "BROKEN",
+      "file": "broken-missing-outcome.json"
+    },
+    {
+      "caseId": "orphan_response",
+      "expectedExit": 2,
+      "expectedFindingCodes": [
+        "BROKEN_ORPHAN_RESPONSE"
+      ],
+      "expectedStatus": "BROKEN",
+      "file": "broken-orphan-response.json"
+    },
+    {
+      "caseId": "conflicting_outcomes",
+      "expectedExit": 2,
+      "expectedFindingCodes": [
+        "BROKEN_CONFLICTING_OUTCOMES"
+      ],
+      "expectedStatus": "BROKEN",
+      "file": "broken-conflicting-outcomes.json"
+    },
+    {
+      "caseId": "retry_gap",
+      "expectedExit": 2,
+      "expectedFindingCodes": [
+        "BROKEN_RETRY_GAP"
+      ],
+      "expectedStatus": "BROKEN",
+      "file": "broken-retry-gap.json"
+    },
+    {
+      "caseId": "trace_mismatch",
+      "expectedExit": 2,
+      "expectedFindingCodes": [
+        "BROKEN_TRACE_MISMATCH"
+      ],
+      "expectedStatus": "BROKEN",
+      "file": "broken-trace-mismatch.json"
+    },
+    {
+      "caseId": "indexer_missing_outcome",
+      "expectedExit": 2,
+      "expectedFindingCodes": [
+        "BROKEN_MISSING_OUTCOME"
+      ],
+      "expectedStatus": "BROKEN",
+      "file": "broken-indexer-missing-outcome.json"
+    },
+    {
+      "caseId": "both_attempts_paid",
+      "expectedExit": 2,
+      "expectedFindingCodes": [
+        "BROKEN_CONFLICTING_OUTCOMES"
+      ],
+      "expectedStatus": "BROKEN",
+      "file": "broken-double-payment-attempts.json"
+    },
+    {
+      "caseId": "exact_replay",
+      "expectedExit": 0,
+      "expectedFindingCodes": [
+        "REPLAY_DETECTED"
+      ],
+      "expectedStatus": "CONTINUOUS",
+      "file": "replay-detected.json"
+    },
+    {
+      "caseId": "attempt_reused_by_two_requests",
+      "expectedExit": 1,
+      "expectedFindingCodes": [],
+      "expectedStatus": null,
+      "file": "invalid-duplicate-attempt-owner.json"
+    },
+    {
+      "caseId": "invalid_schema",
+      "expectedExit": 1,
+      "expectedFindingCodes": [],
+      "expectedStatus": null,
+      "file": "invalid-schema.json"
+    }
+  ],
+  "schemaVersion": "cgqa-smart-contract-continuity-fixture-matrix-v0.1"
+}

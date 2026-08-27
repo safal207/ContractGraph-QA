@@ -1,0 +1,8 @@
+{
+  "claimBoundary": "InMemoryVerified != DurableEvidenceVerified; durable reopen does not prove external authenticity without an independent anchor.",
+  "manifestHash": "986fb59f8884911a5de99b820a299ca9517970d6f51227c66223696804e1a84e",
+  "reasons": [],
+  "schema": "cgqa/durable-evidence-verification/v0.1",
+  "status": "pass",
+  "verifiedEntryCount": 39
+}
