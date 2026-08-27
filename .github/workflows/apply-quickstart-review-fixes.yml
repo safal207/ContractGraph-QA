@@ -1,0 +1,202 @@
+name: Apply quickstart review fixes
+
+on:
+  push:
+    branches:
+      - "fix/quickstart-hardening-v1.9.1"
+    paths:
+      - ".github/workflows/apply-quickstart-review-fixes.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: "fix/quickstart-hardening-v1.9.1"
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+      - name: Apply reviewed fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import textwrap
+
+          path = Path("contractgraph_qa/project_quickstart_hardened.py")
+          text = path.read_text(encoding="utf-8")
+
+          text = text.replace(
+              '    "PATHEXT",\n}',
+              '    "PATHEXT",\n    "APPDATA",\n    "LOCALAPPDATA",\n}',
+          )
+          near_replacement = (
+              'RUST_NEAR_CONTRACT = re.compile(\n'
+              '    r"#\\s*\\[\\s*(?:near_bindgen|near(?:_sdk)?::near|near\\s*(?:\\(\\s*contract_state\\s*\\))?)\\s*\\]"\n'
+              '    r"\\s*(?:pub\\s+)?struct\\s+([A-Za-z_][A-Za-z0-9_]*)"\n'
+              ')'
+          )
+          text = re.sub(
+              r'RUST_NEAR_CONTRACT = re\.compile\(\n.*?\n\)',
+              lambda _match: near_replacement,
+              text,
+              count=1,
+              flags=re.S,
+          )
+          text = text.replace(
+              '["status", "--porcelain", "--untracked-files=normal", "--", "."],',
+              '["status", "--porcelain", "--untracked-files=no", "--", "."],',
+          )
+
+          start = text.index("def _run_command(\n")
+          end = text.index("\n\ndef _git_command", start)
+          replacement = textwrap.dedent('''\
+          def _run_command(
+              project_root: Path,
+              plan: dict[str, Any],
+              timeout_seconds: int,
+              *,
+              inherit_environment: bool,
+          ) -> dict[str, Any]:
+              """Run one reviewed native command with bounded cleanup and redacted environment."""
+              command = plan.get("command")
+              if not isinstance(command, list) or not command:
+                  return {
+                      "requested": True,
+                      "status": "not_available",
+                      "returnCode": None,
+                      "durationSeconds": None,
+                      "stdout": "",
+                      "stderr": "",
+                      "environmentPolicy": "INHERITED" if inherit_environment else "SANITIZED",
+                      "inheritedEnvironmentNames": [],
+                      "strippedSensitiveEnvironmentNames": [],
+                  }
+
+              env, inherited, stripped = _safe_environment(
+                  inherit_environment=inherit_environment
+              )
+              isolated_home: str | None = None
+              if not inherit_environment:
+                  isolated_home = tempfile.mkdtemp(prefix="cgqa-native-home-")
+                  env["HOME"] = isolated_home
+                  env["USERPROFILE"] = isolated_home
+                  null_config = "NUL" if os.name == "nt" else "/dev/null"
+                  env["GIT_CONFIG_NOSYSTEM"] = "1"
+                  env["GIT_CONFIG_GLOBAL"] = null_config
+                  env["NPM_CONFIG_USERCONFIG"] = null_config
+
+              started = time.monotonic()
+              stdout_bytes = b""
+              stderr_bytes = b""
+              return_code: int | None = None
+              status = "error"
+              process: subprocess.Popen[bytes] | None = None
+              kwargs: dict[str, Any] = {
+                  "cwd": project_root,
+                  "env": env,
+                  "stdout": subprocess.PIPE,
+                  "stderr": subprocess.PIPE,
+              }
+              if os.name == "nt":
+                  kwargs["creationflags"] = getattr(
+                      subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+                  )
+              else:
+                  kwargs["start_new_session"] = True
+
+              try:
+                  process = subprocess.Popen([str(part) for part in command], **kwargs)
+                  try:
+                      stdout_bytes, stderr_bytes = process.communicate(
+                          timeout=timeout_seconds
+                      )
+                      return_code = process.returncode
+                      status = "pass" if return_code == 0 else "fail"
+                  except subprocess.TimeoutExpired as exc:
+                      stdout_bytes = exc.stdout or b""
+                      stderr_bytes = exc.stderr or b""
+                      if process is not None:
+                          try:
+                              if os.name == "nt":
+                                  subprocess.run(
+                                      [
+                                          "taskkill",
+                                          "/PID",
+                                          str(process.pid),
+                                          "/T",
+                                          "/F",
+                                      ],
+                                      capture_output=True,
+                                      timeout=10,
+                                      check=False,
+                                  )
+                              else:
+                                  os.killpg(process.pid, signal.SIGKILL)
+                          except (OSError, subprocess.SubprocessError):
+                              process.kill()
+                          try:
+                              trailing_out, trailing_err = process.communicate(timeout=10)
+                          except subprocess.TimeoutExpired:
+                              process.kill()
+                              try:
+                                  trailing_out, trailing_err = process.communicate(timeout=5)
+                              except subprocess.TimeoutExpired:
+                                  trailing_out, trailing_err = b"", b""
+                          stdout_bytes += trailing_out or b""
+                          stderr_bytes += trailing_err or b""
+                      return_code = None
+                      status = "timeout"
+                  except OSError as exc:
+                      stderr_bytes = str(exc).encode("utf-8", errors="replace")
+                      return_code = None
+                      status = "error"
+              finally:
+                  if isolated_home is not None:
+                      shutil.rmtree(isolated_home, ignore_errors=True)
+
+              return {
+                  "requested": True,
+                  "status": status,
+                  "returnCode": return_code,
+                  "durationSeconds": round(time.monotonic() - started, 3),
+                  "stdout": stdout_bytes[-MAX_LOG_BYTES:].decode(
+                      "utf-8", errors="replace"
+                  ),
+                  "stderr": stderr_bytes[-MAX_LOG_BYTES:].decode(
+                      "utf-8", errors="replace"
+                  ),
+                  "environmentPolicy": (
+                      "INHERITED"
+                      if inherit_environment
+                      else "SANITIZED_ISOLATED_HOME"
+                  ),
+                  "inheritedEnvironmentNames": inherited,
+                  "strippedSensitiveEnvironmentNames": stripped,
+                  "isolatedHomeUsed": isolated_home is not None,
+              }
+          ''')
+          text = text[:start] + replacement.rstrip() + text[end:]
+
+          path.write_text(text, encoding="utf-8")
+          PY
+      - name: Syntax and targeted tests
+        run: |
+          python -m py_compile contractgraph_qa/project_quickstart_hardened.py
+          python -m unittest discover -s tools/tests -p "test_project_quickstart_hardening.py" -v
+      - name: Commit reviewed fixes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add contractgraph_qa/project_quickstart_hardened.py
+          git diff --cached --check
+          git commit -m "fix: address quickstart review boundaries"
+          git push origin HEAD:fix/quickstart-hardening-v1.9.1

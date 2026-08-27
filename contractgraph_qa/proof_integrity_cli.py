@@ -43,7 +43,11 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
+    try:
+        args = _parser().parse_args(argv)
+    except SystemExit as exc:
+        return int(exc.code or 0)
+
     try:
         if args.command == "freeze":
             result = evaluate_subject_freeze(_load(args.input.resolve()))
