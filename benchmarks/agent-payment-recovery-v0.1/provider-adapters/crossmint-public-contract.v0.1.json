@@ -4,7 +4,7 @@
   "profileVersion": "0.2",
   "create": {
     "supportsIdempotencyKey": true,
-    "sameKeyReplayDocumented": true
+    "sameKeyReplayDocumented": false
   },
   "stateMap": {
     "awaiting-approval": "pending",

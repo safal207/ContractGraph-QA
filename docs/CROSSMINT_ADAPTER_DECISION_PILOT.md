@@ -4,19 +4,19 @@ This pilot composes the repository's reviewed **Crossmint public-contract provid
 
 It carries provider-normalized evidence into a monetary-action decision without treating a documentation gap, timeout, missing webhook, or terminal failure as permission to create another payment.
 
-## Clarified public-contract shape
+## Reviewed public-contract shape
 
-The reviewed Crossmint profile now records the following public guarantees and externally clarified interpretation boundary:
+The reviewed Crossmint profile records the following public-contract facts and conservative interpretation boundaries:
 
 - transaction creation supports `x-idempotency-key`;
-- same-key replay is documented as returning the existing transaction rather than creating a duplicate;
+- the public Create Transaction page describes that key as preventing duplicate transaction creation, but does not specify the exact response returned by a same-key replay;
 - `GET transaction` is the authoritative finality surface used for transaction status reconciliation;
 - terminal transaction states are `success` and `failed`;
 - transfer webhooks are at-least-once notification evidence and must be deduplicated, so webhook delivery is not promoted to canonical state;
 - `onChain.txId` is settlement/confirmation material once broadcast, not a reliable discovery mechanism before broadcast;
 - Crossmint does not publish a complete normative precedence rule for the timeout-recovery case.
 
-The operational sequence `same-key replay → lookup until terminal → settlement evidence` is therefore modeled as a **derived integration composition**, not as a separate normative provider guarantee.
+The profile therefore does not use same-key replay as a documented discovery guarantee. When a transaction ID is already known, `GET transaction → lookup until terminal → settlement evidence` is a **derived integration composition**, not a separate normative provider guarantee.
 
 ## Causal path
 
@@ -46,8 +46,9 @@ A lost HTTP response is not evidence that no transaction exists.
 create transaction with idempotency key K
 → timeout / response lost
 → preserve the same logical operation
-→ same-key replay may discover the existing transaction
-→ canonical transaction lookup establishes current state
+→ do not infer the response shape of a same-key replay
+→ if a transaction ID was captured, canonical lookup establishes current state
+→ otherwise remain RECONCILE / HOLD pending documented discovery
 → nonterminal state remains RECONCILE
 → no new monetary operation is authorized by ambiguity alone
 ```
@@ -85,7 +86,7 @@ get-transaction:success
 
 Provider Adapter Contract v0.3 explicitly separates **reconciliation finality** from **retry authority**.
 
-The reviewed Crossmint profile records same-key replay as documented, but it does not invent a public rule authorizing a new monetary operation after terminal `failed`.
+The reviewed Crossmint profile records idempotency-key support but keeps exact same-key replay semantics unresolved. It also does not invent a public rule authorizing a new monetary operation after terminal `failed`.
 
 ```text
 get-transaction:failed
@@ -105,7 +106,7 @@ The profile preserves three different evidence classes:
 ```text
 provider-documented primitive
         ↓
-provider clarification of public semantics
+conservative adapter classification
         ↓
 derived integration composition
 ```
@@ -118,6 +119,6 @@ Provider success, failure, idempotency support, transaction finality, or settlem
 
 ## Claim boundary
 
-This is a **public-contract composition test**, not a live Crossmint audit.
+This is a **public-contract composition test**, not a live Crossmint audit. The linked mutable public pages were re-reviewed on 2026-08-27 UTC; no archived provider snapshot or private clarification is treated as evidence.
 
-No Crossmint credentials, API calls, wallet operations, testnet/mainnet writes, production authorization, vulnerability claim, compliance claim, endorsement, or security certification are involved. The Crossmint semantics used here are limited to the reviewed public-contract profile, public documentation, bounded external clarification, and deterministic repository fixtures.
+No Crossmint credentials, API calls, wallet operations, testnet/mainnet writes, production authorization, vulnerability claim, compliance claim, endorsement, or security certification are involved. The Crossmint semantics used here are limited to the reviewed public-contract profile, public documentation, and deterministic repository fixtures.

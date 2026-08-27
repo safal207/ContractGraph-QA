@@ -75,6 +75,38 @@ jobs:
             exit "${gate_exit}"
           fi
 
+      - name: Derive source-bound model-result coverage from independent configs
+        working-directory: trusted
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/trusted
+        run: |
+          python tools/build_change_gate_measurement_input.py \
+            --gate-result .cgqa/causal-security-gate.json \
+            --base-config causal-security-gate.toml \
+            --head-config ../candidate/causal-security-gate.toml \
+            --output .cgqa/measurement-provenance-input.json \
+            --source-output .cgqa/measurement-source.json
+
+      - name: Run measurement provenance gate on actual change-gate coverage
+        id: provenance
+        working-directory: trusted
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/trusted
+        run: |
+          set +e
+          python tools/run_measurement_provenance_gate.py \
+            --input .cgqa/measurement-provenance-input.json \
+            > .cgqa/measurement-provenance.json
+          provenance_exit=$?
+          set -e
+          echo "exit_code=${provenance_exit}" >> "${GITHUB_OUTPUT}"
+          if [[ "${provenance_exit}" != "0" && "${provenance_exit}" != "10" ]]; then
+            echo "Unexpected provenance exit code: ${provenance_exit}" >&2
+            exit "${provenance_exit}"
+          fi
+
       - name: Render causal security job summary from trusted code
         if: always()
         working-directory: trusted
@@ -86,8 +118,7 @@ jobs:
             --input .cgqa/causal-security-gate.json \
             >> "${GITHUB_STEP_SUMMARY}"
 
-      - name: Bind gate result into client proof with trusted code
-        if: always()
+      - name: Bind change-gate result into client proof with trusted code
         working-directory: trusted
         shell: bash
         env:
@@ -96,21 +127,53 @@ jobs:
           python tools/bind_change_gate_client_proof.py \
             --proof ../candidate/docs/client-proof/proof.json \
             --gate-result .cgqa/causal-security-gate.json \
-            --output .cgqa/client-proof.with-gate.json
+            --output .cgqa/client-proof.with-change-gate.json
 
-      - name: Upload causal security evidence
+      - name: Re-derive and bind passing measurement provenance into authoritative proof
+        working-directory: trusted
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/trusted
+        run: |
+          python tools/bind_measurement_provenance_client_proof.py \
+            --proof .cgqa/client-proof.with-change-gate.json \
+            --provenance-result .cgqa/measurement-provenance.json \
+            --source .cgqa/measurement-source.json \
+            --base-config causal-security-gate.toml \
+            --head-config ../candidate/causal-security-gate.toml \
+            --output .cgqa/client-proof.with-gates.json
+
+      - name: Upload causal security and measurement provenance evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: causal-security-gate-${{ github.event.pull_request.number }}
           path: |
             trusted/.cgqa/causal-security-gate.json
-            trusted/.cgqa/client-proof.with-gate.json
+            trusted/.cgqa/measurement-provenance-input.json
+            trusted/.cgqa/measurement-source.json
+            trusted/.cgqa/measurement-provenance.json
+            trusted/.cgqa/client-proof.with-change-gate.json
+            trusted/.cgqa/client-proof.with-gates.json
           if-no-files-found: error
           retention-days: 14
 
-      - name: Enforce causal security gate decision
+      - name: Enforce measurement provenance before causal gate decision
         if: always()
         shell: bash
+        env:
+          GATE_EXIT: ${{ steps.gate.outputs.exit_code }}
+          PROVENANCE_EXIT: ${{ steps.provenance.outputs.exit_code }}
         run: |
-          exit "${{ steps.gate.outputs.exit_code }}"
+          if [[ -z "${PROVENANCE_EXIT}" ]]; then
+            echo "Measurement provenance did not produce an exit code" >&2
+            exit 10
+          fi
+          if [[ "${PROVENANCE_EXIT}" != "0" ]]; then
+            exit "${PROVENANCE_EXIT}"
+          fi
+          if [[ -z "${GATE_EXIT}" ]]; then
+            echo "Causal security gate did not produce an exit code" >&2
+            exit 10
+          fi
+          exit "${GATE_EXIT}"

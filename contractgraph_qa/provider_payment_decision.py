@@ -23,7 +23,8 @@ _REVIEWED_PROFILES: dict[str, dict[str, Any]] = {
     "crossmint-wallet-transactions-public": {
         "label": "Crossmint",
         "profileVersion": "0.2",
-        "requiresIdempotentCreation": True,
+        "supportsIdempotencyKey": True,
+        "sameKeyReplayDocumented": False,
         "evidenceRoles": {
             "get-transaction": True,
             "wallet-transfer-webhook": False,
@@ -36,7 +37,8 @@ _REVIEWED_PROFILES: dict[str, dict[str, Any]] = {
     "stripe-payment-intents-public": {
         "label": "Stripe PaymentIntents",
         "profileVersion": "0.1",
-        "requiresIdempotentCreation": True,
+        "supportsIdempotencyKey": True,
+        "sameKeyReplayDocumented": True,
         "evidenceRoles": {
             "get-payment-intent": True,
             "payment-intent-webhook": False,
@@ -49,7 +51,8 @@ _REVIEWED_PROFILES: dict[str, dict[str, Any]] = {
     "coinbase-x402-v2-public": {
         "label": "Coinbase x402 v2",
         "profileVersion": "0.1",
-        "requiresIdempotentCreation": False,
+        "supportsIdempotencyKey": False,
+        "sameKeyReplayDocumented": False,
         "evidenceRoles": {
             "facilitator-settle": True,
             "facilitator-verify": False,
@@ -107,24 +110,23 @@ def _validate_reviewed_profile(adapter: dict[str, Any]) -> None:
     create = adapter.get("create")
     if not isinstance(create, dict):
         raise ProviderPaymentDecisionError(f"reviewed {label} create contract must be an object")
-    if profile["requiresIdempotentCreation"]:
-        if create.get("supportsIdempotencyKey") is not True:
-            raise ProviderPaymentDecisionError(
-                f"reviewed {label} profile requires documented idempotent creation"
-            )
-        if create.get("sameKeyReplayDocumented") is not True:
-            raise ProviderPaymentDecisionError(
-                f"reviewed {label} profile requires documented same-key replay"
-            )
-    else:
-        if create.get("supportsIdempotencyKey") is not False:
-            raise ProviderPaymentDecisionError(
-                f"reviewed {label} core profile must not invent an idempotency key"
-            )
-        if create.get("sameKeyReplayDocumented") is not False:
-            raise ProviderPaymentDecisionError(
-                f"reviewed {label} core profile must not invent same-key replay semantics"
-            )
+    supports_idempotency_key = bool(profile["supportsIdempotencyKey"])
+    if create.get("supportsIdempotencyKey") is not supports_idempotency_key:
+        requirement = (
+            "requires documented idempotency-key support"
+            if supports_idempotency_key
+            else "must not invent an idempotency key"
+        )
+        raise ProviderPaymentDecisionError(f"reviewed {label} profile {requirement}")
+
+    same_key_replay_documented = bool(profile["sameKeyReplayDocumented"])
+    if create.get("sameKeyReplayDocumented") is not same_key_replay_documented:
+        requirement = (
+            "requires documented same-key replay"
+            if same_key_replay_documented
+            else "must not invent documented same-key replay semantics"
+        )
+        raise ProviderPaymentDecisionError(f"reviewed {label} profile {requirement}")
 
     if adapter.get("evidencePrecedenceStatus") != "unresolved":
         raise ProviderPaymentDecisionError(

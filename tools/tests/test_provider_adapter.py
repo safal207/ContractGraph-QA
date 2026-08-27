@@ -103,7 +103,7 @@ class ProviderAdapterTest(unittest.TestCase):
         self.assertEqual(summary["retrySemanticsStatus"], "unresolved")
         self.assertEqual(summary["retryAllowedAfterProviderStates"], [])
         self.assertTrue(adapter["create"]["supportsIdempotencyKey"])
-        self.assertTrue(adapter["create"]["sameKeyReplayDocumented"])
+        self.assertFalse(adapter["create"]["sameKeyReplayDocumented"])
 
     def test_crossmint_get_transaction_success_is_final(self) -> None:
         adapter = load_provider_adapter(CROSSMINT)

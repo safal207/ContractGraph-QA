@@ -52,11 +52,13 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
             "evidenceRef": "fixture://authority/coinbase-x402/test",
         }
 
-    def test_reviewed_profile_records_same_key_replay_without_inventing_retry_authority(self) -> None:
+    def test_crossmint_profile_preserves_idempotency_without_inventing_replay_contract(
+        self,
+    ) -> None:
         self.assertEqual(self.adapter["schema"], "cgqa.payment-provider-adapter.v0.3")
         self.assertEqual(self.adapter["profileVersion"], "0.2")
         self.assertTrue(self.adapter["create"]["supportsIdempotencyKey"])
-        self.assertTrue(self.adapter["create"]["sameKeyReplayDocumented"])
+        self.assertFalse(self.adapter["create"]["sameKeyReplayDocumented"])
         self.assertEqual(self.adapter["evidencePrecedenceStatus"], "unresolved")
         self.assertEqual(self.adapter["retrySemanticsStatus"], "unresolved")
         self.assertEqual(self.adapter["retryAllowedAfterProviderStates"], [])
@@ -263,11 +265,28 @@ class ProviderPaymentDecisionTest(unittest.TestCase):
                 self._x402_authority(),
             )
 
-    def test_rejects_profile_that_downgrades_documented_same_key_replay(self) -> None:
+    def test_rejects_crossmint_profile_that_invents_documented_same_key_replay(self) -> None:
         adapter = copy.deepcopy(self.adapter)
-        adapter["create"]["sameKeyReplayDocumented"] = False
+        adapter["create"]["sameKeyReplayDocumented"] = True
 
-        with self.assertRaisesRegex(ProviderPaymentDecisionError, "same-key replay"):
+        with self.assertRaisesRegex(
+            ProviderPaymentDecisionError,
+            "must not invent documented same-key replay",
+        ):
+            evaluate_provider_payment_decision(
+                adapter,
+                self._observations("crossmint-observations-get-success.json"),
+                self._authority(),
+            )
+
+    def test_rejects_crossmint_profile_that_drops_idempotency_key_support(self) -> None:
+        adapter = copy.deepcopy(self.adapter)
+        adapter["create"]["supportsIdempotencyKey"] = False
+
+        with self.assertRaisesRegex(
+            ProviderPaymentDecisionError,
+            "requires documented idempotency-key support",
+        ):
             evaluate_provider_payment_decision(
                 adapter,
                 self._observations("crossmint-observations-get-success.json"),

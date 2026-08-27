@@ -1,163 +1,191 @@
+<!-- seo-product-intro:start -->
 # ContractGraph-QA
 
-**Causal-temporal smart-contract QA with reproducible evidence.**
+## Bounded verification for stateful financial systems
 
-ContractGraph-QA treats a smart contract as a reachable state space rather than a collection of isolated functions.
+**ContractGraph-QA verifies the failure paths between intent, authorization, execution, external evidence, ledger state, reconciliation, and retry.**
 
-The core question is:
+It is built for payment, wallet, payout, stablecoin, agentic-commerce, and smart-contract teams that need reproducible evidence for one high-risk financial promise.
 
-> Can an allowed sequence of actors, transactions, parameter values, and time changes drive the contract into a state that violates an explicit business or security invariant?
+The primary recovery question is:
 
-## Try the product first
+> After an execution returns an ambiguous result, can the system prove whether the economic effect happened `ZERO` times, `ONE` time, or remains `UNKNOWN` before another monetary action is permitted?
 
-The fastest proof path needs only Python 3.11+ and the installed wheel:
+```text
+one authorized intent → at most one economic effect
+
+UNKNOWN outcome → no new financial action
+```
+
+[Read the Recovery Pilot](PILOT.md) · [See the synthetic case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Run the local demo](#run-a-local-proof) · [Discuss one bounded pilot](mailto:safal0645@gmail.com?subject=ContractGraph-QA%20Recovery%20Pilot)
+<!-- seo-product-intro:end -->
+
+---
+
+## Choose the right product route
+
+| Team / trigger | Product route | What gets verified |
+|---|---|---|
+| Payment, wallet, payout, stablecoin, or agentic-commerce team | **Ambiguous Outcome Recovery Pilot** | timeout, lost response, duplicate or delayed webhook, retry, fallback, reconciliation, policy continuity, ledger divergence |
+| Smart-contract or protocol team | **State-Machine Review** | escrow, settlement, release/refund, conservation, authorization, time boundaries, terminal states, ordering, replay |
+| Engineering or audit-readiness team | **CGQA evidence pipeline** | reviewed model, bounded search, minimal counterexample, deterministic replay, provenance-bound evidence bundle |
+
+ContractGraph-QA is currently delivered **productized-service first**: the client buys a bounded verification result; the open-source engine produces the fixture, evidence map, verdict, and replay artifacts underneath.
+
+---
+
+## Ambiguous Outcome Recovery Pilot
+
+**Design-partner price:** **$750 fixed**  
+**Scope:** one named recovery boundary  
+**Target delivery window:** five business days after the scope and inputs are accepted  
+**Communication:** async by default  
+**Retest:** one bounded retest for an in-scope fix delivered within 14 calendar days
+
+A typical boundary looks like:
+
+```text
+intent / mandate
+→ policy or authorization ALLOW
+→ execution dispatched
+→ timeout or ambiguous acknowledgement
+→ provider / rail / wallet / chain / ledger evidence arrives
+→ classify ZERO / ONE / UNKNOWN
+→ retry, stop, or hold
+→ deterministic evidence pack
+```
+
+The pilot includes:
+
+- a compact expected-state contract;
+- an evidence-precedence map;
+- one local or sandbox-backed executable fixture;
+- positive, negative, duplicate, delayed, out-of-order, and retry cases;
+- deterministic pass/fail output with violation codes;
+- a minimized counterexample when an unsafe path is reachable;
+- bounded remediation guidance;
+- one retest inside the agreed scope.
+
+The initial fixture can start from public documentation, synthetic traces, status definitions, webhook schemas, and a declared authoritative-evidence rule. Production credentials, customer data, and real-value transactions are not required.
+
+[Full scope and acceptance criteria →](PILOT.md)
+
+---
+
+## Why ordinary local signals are not enough
+
+A component can be locally correct while the economic result remains unresolved:
+
+- a policy engine can prove that an action was allowed;
+- a credential layer can prove that capacity was reserved;
+- an API can prove that a request was accepted;
+- a webhook can prove that a provider state changed;
+- a ledger can prove that one internal posting exists.
+
+None of those signals alone necessarily proves the full cross-system outcome.
+
+ContractGraph-QA therefore preserves the distinctions between:
+
+```text
+logical operation identity
+≠ concrete execution attempt
+≠ idempotency / replay identity
+≠ policy decision
+≠ provider state
+≠ external economic evidence
+≠ internal ledger state
+≠ reconciliation state
+≠ retry permission
+```
+
+---
+
+## Run a local proof
+
+The latest verified release is distributed as a GitHub release wheel.
 
 ```bash
-python -m pip install contractgraph-qa
+python -m pip install \
+  https://github.com/safal207/ContractGraph-QA/releases/download/v1.9.0/contractgraph_qa-1.9.0-py3-none-any.whl
+
 cgqa demo --output-dir cgqa-demo
 cgqa verify-bundle cgqa-demo/CGQA-005.evidence.zip
 ```
 
-`cgqa demo` uses only repository-owned packaged evidence. It makes no external RPC call and is **not** presented as a third-party audit.
+The demo is repository-owned, performs no external financial action, and is not presented as a third-party audit.
 
-It produces:
+From a repository checkout, run the recovery benchmark:
 
-```text
-cgqa-demo/
-  inputs/manifest.json
-  inputs/result.json
-  CGQA-005.finding.json
-  CGQA-005.md
-  CGQA-005.evidence.zip
+```bash
+git clone https://github.com/safal207/ContractGraph-QA.git
+cd ContractGraph-QA
+
+cgqa payment-recovery-evaluate \
+  --scenario benchmarks/agent-payment-recovery-v0.1/cases/pass_committed_stop.json
 ```
 
-See [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
+The vendor-neutral benchmark includes seed cases for:
 
-## Product runtime
+- committed outcome followed by stop;
+- explicit failure followed by retry under the same logical operation;
+- retry before reconciliation;
+- idempotency drift across retry.
 
-The full engine is exposed through the installable `cgqa` CLI and turns a reviewed adapter model plus deterministic Foundry search into a client-verifiable evidence bundle.
+[See Agent Payment Recovery Benchmark v0.1 →](benchmarks/agent-payment-recovery-v0.1/README.md)
+
+---
+
+## Smart-contract quickstart
+
+For an unfamiliar local smart-contract repository:
+
+```bash
+cgqa quickstart --target /path/to/project
+```
+
+The safe default does not execute project code. It inventories recognized sources and frameworks, computes a source fingerprint, surfaces bounded review prompts, plans the native test command, and writes:
 
 ```text
-AUTHORIZED SCOPE
+<project>/.cgqa/quickstart/
+  quickstart.json
+  REPORT.md
+```
+
+Native tests remain explicit:
+
+```bash
+cgqa quickstart --target /path/to/project --run-native
+```
+
+Detected routes include Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban, Anchor, Move, and Cairo/Scarb.
+
+[Universal quickstart documentation →](docs/UNIVERSAL_QUICKSTART.md)
+
+---
+
+## What the engine produces
+
+```text
+AUTHORIZED SCOPE / EXACT SUBJECT
       ↓
-REVIEWED ADAPTER MANIFEST
+REVIEWED STATE + ACTION + AUTHORITY MODEL
       ↓
-FOUNDRY SEARCH
+EXPLICIT INVARIANTS / FORBIDDEN STATES
       ↓
-MULTI-INVARIANT OUTCOMES
+BOUNDED SEARCH + NEGATIVE CONTROLS
       ↓
-MINIMAL VIOLATING PATHS
+MINIMAL VIOLATING PATH OR BOUNDED NO-FINDING
       ↓
 DETERMINISTIC REPLAY
       ↓
-OBSERVED PRE/POST STATE
+OBSERVED PRE/POST EVIDENCE
       ↓
-PROVENANCE VALIDATION
-      ↓
-CLIENT FINDINGS / ENGAGEMENT REPORT
-      ↓
-DETERMINISTIC EVIDENCE ZIP
+PROVENANCE-BOUND FINDING + REPORT + ZIP
       ↓
 INDEPENDENT VERIFICATION
+      ↓
+FIX → EXACT RETEST
 ```
-
-For engine execution, install Foundry and run:
-
-```bash
-cgqa doctor --require-forge
-cgqa init-engagement acme-escrow
-# Replace every generated TODO only after explicit scope/authorization review.
-cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
-cgqa verify-engagement-bundle engagements/acme-escrow/evidence/engagement.evidence.zip
-```
-
-The generated scaffold deliberately starts fail-closed and is not execution-ready until the operator replaces the authorization, target, state-hash, action, invariant, and capture-adapter TODOs.
-
-See [`docs/PRODUCT.md`](docs/PRODUCT.md), [`docs/CLI.md`](docs/CLI.md), and [`docs/ENGAGEMENT.md`](docs/ENGAGEMENT.md).
-
-## Adversarial capability reachability
-
-The experimental reachability layer models a second question:
-
-> Can a broken assumption make a previously forbidden capability reachable, cross a control boundary, and produce a bounded, reproducible impact path?
-
-Repository-owned models can be executed without network access or Forge:
-
-```bash
-cgqa reachability --model scenarios/adversarial-wallet-replay.json
-```
-
-The current model is:
-
-```text
-ASSUMPTION
-    ↓ violation
-CAPABILITY
-    ↓ transition
-CONTROL BOUNDARY / INVARIANT
-    ↓
-FORBIDDEN CAPABILITY
-    ↓
-IMPACT
-```
-
-The command emits deterministic JSON containing a canonical model SHA-256, the declared violated assumptions, and the shortest reachable impact path within the configured bound. `not_found_within_bound` is bounded evidence only, not a safety certification.
-
-A reachability model can also be bound into the single-finding product pipeline. The repository-owned binding fixture uses:
-
-```toml
-reachabilityModel = "scenarios/adversarial-adapter-fixture.json"
-```
-
-Product binding is fail-closed: the selected target capability must be marked forbidden, every path invariant must exist in the reviewed manifest, and the path must include the exact invariant identified by the explorer result. An unrelated reachability model is rejected rather than silently attached to a finding.
-
-`cgqa run` then emits a backward-compatible **bundle v2** containing canonical `reachability-model.json` and recomputable `reachability.json`, and binds the result into `finding.json -> evidence.reachability`. `cgqa verify-bundle` independently re-runs the bundled model and rejects any mismatch in the model hash, impact path, finding invariant binding, or artifact bytes. Configs without `reachabilityModel` continue to produce the existing bundle v1.
-
-See [`docs/ADVERSARIAL_REACHABILITY.md`](docs/ADVERSARIAL_REACHABILITY.md).
-
-## Mental model
-
-```text
-CAUSE
-  ↓
-ACTOR
-  ↓
-ACTION / TRANSACTION
-  ↓
-PARAMETER / TIME INPUT
-  ↓
-PRE-STATE
-  ↓
-STATE TRANSITION
-  ↓
-POST-STATE
-  ↓
-STATE HASH
-  ↓
-EFFECT
-  ↓
-FUTURE REACHABLE STATES
-```
-
-A finding should remain traceable as:
-
-```text
-Finding → Cause → Path → Evidence → Replay → Fix → Retest
-```
-
-## What the engine supports
-
-### Functional and security-invariant QA
-
-- positive and negative contract flows;
-- role/access-control paths;
-- state transitions and terminal states;
-- custom errors/reverts and events;
-- asset/accounting invariants;
-- temporal/deadline conditions;
-- multiple invariants in one bounded exploration session.
-
-### Explicit outcome semantics
 
 Every declared invariant is classified as exactly one of:
 
@@ -167,199 +195,103 @@ not_found_within_bound
 inconclusive
 ```
 
-`not_found_within_bound` is bounded evidence only. `inconclusive` stays unresolved and fails closed; neither is converted into a security certification.
+`not_found_within_bound` is bounded evidence, not a security certification. `inconclusive` remains unresolved and fails closed.
 
-### Automatic path exploration
+---
 
-The bounded breadth-first explorer searches shortest paths first. Parameterized steps can model contract calls, business values, actor choices, or time deltas.
+## What makes ContractGraph-QA different
 
-Repository fixtures demonstrate findings such as:
+- **Stateful, not function-by-function.** It searches sequences of actors, actions, retries, ordering, and time changes.
+- **Economic-effect oriented.** It tracks the reachable effect, not only the local return value.
+- **Evidence first.** Findings carry minimal paths, observed state, identity, provenance, and replay instructions.
+- **Honest assurance language.** Missing coverage does not silently become a clean PASS.
+- **Retestable.** The same historical path can be replayed after a fix, followed by alternate-path search.
+- **Authorization bounded.** Public code or an address is not treated as permission to test a production target.
 
-```text
-fund → release → refund → payout conservation violated
-```
+---
 
-```text
-fund(101) → deposit-cap invariant violated
-```
-
-```text
-fund(1) → wait(1 day) → refund → timing invariant violated
-```
-
-### State hashing and deduplication
-
-Equivalent reachable states can be pruned while preserving a shortest representative path.
-
-The state hash is part of the QA model. It must include every modeled value that can change future behavior; an incomplete hash can make pruning unsound.
-
-The engine caps retained unique states and attempted transitions so bounded search fails closed rather than consuming unbounded resources.
-
-### Authorized fixed-block fork testing
-
-The fork layer requires explicit authorization metadata, exact chain/block/target provenance, and a secret RPC alias.
-
-A public address, public ABI, source repository, or RPC endpoint is not treated as authorization.
-
-The default CI does not open an external fork. Real target execution remains behind the dedicated authorization and adapter gates documented in [`docs/FORK_TESTING.md`](docs/FORK_TESTING.md) and [`docs/FORK_ADAPTER_TEMPLATE.md`](docs/FORK_ADAPTER_TEMPLATE.md).
-
-### Deterministic capture, reporting, and evidence
-
-Foundry can capture actual discovered/replayed paths into strict machine-readable result JSON. Results are cryptographically bound to the reviewed manifest fingerprint.
-
-The runtime then produces deterministic findings, Markdown, engagement summaries, and evidence ZIPs with independent semantic verification.
-
-## `cgqa` commands
+## Advanced operator workflow
 
 ```bash
-cgqa demo --output-dir cgqa-demo
 cgqa doctor --require-forge
-cgqa init-engagement acme-escrow
-cgqa fingerprint --manifest manifests/client.json
-cgqa validate --manifest manifests/client.json
-cgqa validate --manifest manifests/client.json --result results/client.result.json
-cgqa reachability --model scenarios/adversarial-wallet-replay.json
-cgqa run --config cgqa.toml --clean
-cgqa engagement-run --config engagements/acme-escrow/cgqa.toml
-cgqa verify-bundle dist/client.evidence.zip
-cgqa verify-engagement-bundle dist/client.engagement.zip
+cgqa init-engagement acme-financial-flow
+# Replace generated TODOs only after explicit scope and authorization review.
+cgqa engagement-run --config engagements/acme-financial-flow/cgqa.toml
+cgqa verify-engagement-bundle \
+  engagements/acme-financial-flow/evidence/engagement.evidence.zip
 ```
 
-Automation-facing exit codes are documented in [`docs/CLI.md`](docs/CLI.md).
+The generated scaffold starts fail-closed until the operator supplies the authorization, target, state hash, action model, invariants, and capture adapter.
 
-## Recommended commercial workflow
+Key documents:
+
+- [Recovery Pilot](PILOT.md)
+- [Synthetic Recovery Case Study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
+- [Product runtime](docs/PRODUCT.md)
+- [CLI reference](docs/CLI.md)
+- [Engagement workflow](docs/ENGAGEMENT.md)
+- [Adapter manifest](docs/ADAPTER_MANIFEST.md)
+- [Evidence distribution](docs/DISTRIBUTION.md)
+- [Client proof pack](docs/client-proof/README.md)
+- [Agent verification protocol](AGENTS.md)
+
+---
+
+## Commercial workflow
 
 ```text
-self-serve demo
-  ↓
-client proof pack
-  ↓
-fixed-scope pilot
-  ↓
-written authorization / safe-harbor scope
-  ↓
-init-engagement
-  ↓
-review adapter + state hash + invariants
-  ↓
-one-command engagement-run
-  ↓
-human severity/impact review
-  ↓
-client report + independently verifiable evidence ZIP
-  ↓
-fix → exact replay → retest bundle
+one painful technical question
+→ boundary confirmed
+→ permission to map one fixture
+→ fixed-scope pilot
+→ evidence pack
+→ fix / retest
+→ broader regression or integration engagement
 ```
 
-The repository includes a client proof pack under [`docs/client-proof/`](docs/client-proof/) that is regression-bound to repository-owned evidence and explicitly separated from a completed external audit claim.
+A good first question is:
 
-## Repository layout
+> After dispatch returns an ambiguous result, which evidence is authoritative before another monetary attempt is permitted: platform state, external rail, processor or wallet receipt, customer ledger, or an explicit `UNKNOWN` reconciliation hold?
 
-```text
-contractgraph_qa/
-  cli.py
-  demo.py
-  product.py
-  engagement.py
-  engagement_run.py
-  scaffold.py
-  finding.py
-  report.py
-  reachability.py
-  demo_assets/
+A one-line answer is enough to define the first boundary.
 
-src/harness/
-  CausalGraphHarness.sol
-  PathExplorerHarness.sol
-  ParameterizedPathExplorerHarness.sol
-  StateDedupPathExplorerHarness.sol
-  MultiInvariantStateExplorerHarness.sol
-  ForkAuthorization.sol
-  ForkContextHarness.sol
-  ForkAdapterTemplate.sol
-  DirectResultCaptureHarness.sol
-  DirectEngagementCaptureHarness.sol
+---
 
-src/examples/
-test/
-capture-test/
-fork-test/
-engagements/
-manifests/examples/
-results/examples/
-results/generated/
-reports/examples/
-graph/schema/
-scenarios/
+## Product status
 
-tools/
-docs/
-  PRODUCT.md
-  CLI.md
-  ENGAGEMENT.md
-  ADVERSARIAL_REACHABILITY.md
-  DISTRIBUTION.md
-  RELEASE.md
-  client-proof/
+- Python 3.11+
+- Apache-2.0
+- Installable `cgqa` CLI
+- Deterministic evidence bundles
+- Independent bundle verification
+- Universal smart-contract quickstart
+- Agent-payment recovery benchmark
+- Current release: `v1.9.0`
 
-.github/workflows/
-  ci.yml
-  reporting.yml
-  product.yml
-  distribution.yml
-  authorized-fork.yml
-```
+Release artifacts, checksums, and release notes are published under [GitHub Releases](https://github.com/safal207/ContractGraph-QA/releases).
 
-## Development and release gates
+---
 
-```bash
-forge fmt --check
-forge build --sizes
-forge test -vvv
-python -m unittest discover -s tools/tests -p 'test_*.py' -v
-python -m pip wheel . --no-deps --wheel-dir .product-wheel
-cgqa demo --output-dir /tmp/cgqa-demo
-cgqa verify-bundle /tmp/cgqa-demo/CGQA-005.evidence.zip
-```
+## Scope and safety
 
-Release/version policy: [`CHANGELOG.md`](CHANGELOG.md) and [`docs/RELEASE.md`](docs/RELEASE.md).
-Distribution instructions: [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md).
-Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+ContractGraph-QA may be used on:
 
-## What ContractGraph-QA proves — and what it does not
-
-ContractGraph-QA provides reproducible evidence **within an explicit bounded model**.
+- repositories and fixtures you own;
+- client systems with explicit written authorization;
+- public bug-bounty assets strictly within their published scope and rules;
+- public documentation for non-invasive modeling and synthetic fixture design.
 
 It does not claim that:
 
-- bounded graph exploration proves an arbitrary protocol secure;
-- the chosen invariants are complete;
-- the state hash is automatically complete;
-- a finite parameter corpus covers every possible value;
-- `not_found_within_bound` means no vulnerability exists;
-- a QA engagement is equivalent to formal verification or an independent full security audit.
+- bounded search proves an arbitrary system secure;
+- selected invariants are complete;
+- a webhook, status endpoint, receipt, ledger record, or chain observation is authoritative without a declared contract;
+- a clean bounded result means no vulnerability exists;
+- a QA engagement is equivalent to a formal full-platform security audit.
 
-Security conclusions remain limited to the modeled actors, actions, parameters, time assumptions, search depth, state-hash completeness, authorization scope, fork snapshot, adapter mapping, manifest correctness, capture mapping, and explicit invariants.
+Never commit RPC secrets, private keys, seed phrases, customer data, or client credentials.
 
-## Product evolution
-
-- **v1.0** — installable runtime, deterministic evidence bundles, independent verification.
-- **v1.1** — schema/runtime contract parity gate.
-- **v1.2** — multi-invariant engagement engine.
-- **v1.3** — direct multi-invariant Foundry capture.
-- **v1.4** — one-command `engagement-run`.
-- **v1.5** — fail-closed client engagement scaffold.
-- **v1.6** — packaged self-serve demo and verified distribution artifact workflow.
-
-Earlier v0.x engine milestones remain documented in Git history and the changelog.
-
-## Safety
-
-Use ContractGraph-QA only on contracts you own, repository-local/open-source test fixtures, systems where you have explicit authorization, or public bug-bounty assets strictly within their published scope and rules.
-
-Never commit RPC secrets, private keys, seed phrases, or client credentials.
-
-See [`SECURITY.md`](SECURITY.md).
+See [SECURITY.md](SECURITY.md).
 
 ## License
 

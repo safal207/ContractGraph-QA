@@ -81,12 +81,14 @@ That gap is exactly where AFSP applies: ambiguity remains `RECONCILE`/`HOLD`, ne
 
 ## Public references
 
-- https://docs.cdp.coinbase.com/x402/core-concepts/how-it-works
-- https://docs.cdp.coinbase.com/x402/core-concepts/facilitator
+Reviewed on 2026-08-27 UTC. Coinbase pages are mutable; the x402 Foundation specification is pinned to upstream commit `8468e3ad331a277379a3e48441eac3259fe75a60`.
+
+- https://docs.cdp.coinbase.com/x402/how-it-works
+- https://docs.cdp.coinbase.com/x402/seller/facilitator
 - https://docs.cdp.coinbase.com/api-reference/v2/rest-api/x402-facilitator/verify-payment
 - https://docs.cdp.coinbase.com/api-reference/v2/rest-api/x402-facilitator/settle-payment
 - https://docs.cdp.coinbase.com/x402/support/faq
-- https://github.com/x402-foundation/x402/blob/main/specs/x402-specification-v2.md
+- https://github.com/x402-foundation/x402/blob/8468e3ad331a277379a3e48441eac3259fe75a60/specs/x402-specification-v2.md
 
 ## Claim boundary
 

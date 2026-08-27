@@ -1,0 +1,31 @@
+{
+  "states": [
+    {
+      "id": "Funded",
+      "description": "Escrow is funded and holds locked value before the deadline.",
+      "holdsValue": true,
+      "safeTerminal": false
+    },
+    {
+      "id": "DeadlineExceeded",
+      "description": "Business deadline expired while escrow still holds value.",
+      "holdsValue": true,
+      "safeTerminal": false
+    },
+    {
+      "id": "Refunded",
+      "description": "Escrow value returned to the buyer.",
+      "holdsValue": false,
+      "safeTerminal": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "deadline-expires",
+      "source": "Funded",
+      "target": "DeadlineExceeded"
+    }
+  ],
+  "initialState": "Funded",
+  "invariantId": "CGQ-LIVE-002"
+}

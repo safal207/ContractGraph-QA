@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/contract-lattice.schema.json",
+  "title": "ContractGraph-QA Contract Lattice Model v0.1",
+  "type": "object",
+  "required": ["schemaVersion", "modelId", "initialPoint", "safeTerminals", "points", "transitions"],
+  "properties": {
+    "schemaVersion": { "const": "contract-lattice-v0.1" },
+    "modelId": { "type": "string", "minLength": 1 },
+    "initialPoint": { "type": "string", "minLength": 1 },
+    "safeTerminals": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "scope": { "type": "string", "minLength": 1 },
+    "points": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "state", "version", "lockedValue", "authorityRefs", "evidenceRefs", "timeWitnessRefs"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "state": { "type": "string", "minLength": 1 },
+          "version": { "type": "integer", "minimum": 0 },
+          "lockedValue": { "type": "integer", "minimum": 0 },
+          "authorityRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+          "evidenceRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+          "timeWitnessRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+        },
+        "additionalProperties": false
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "target", "action", "authorityRef", "evidenceRefs", "timeSensitive", "timeWitnessRefs"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "source": { "type": "string", "minLength": 1 },
+          "target": { "type": "string", "minLength": 1 },
+          "action": { "type": "string", "minLength": 1 },
+          "authorityRef": { "type": ["string", "null"] },
+          "evidenceRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+          "timeSensitive": { "type": "boolean" },
+          "timeWitnessRefs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

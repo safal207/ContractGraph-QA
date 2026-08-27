@@ -1,0 +1,47 @@
+{
+  "schema": "cgqa/ancestral-validity/v0.1",
+  "subject": {
+    "repository": "fixture/agent-workflow",
+    "commit": "fixture-v1",
+    "objectId": "workflow-1"
+  },
+  "targetEventId": "retry-001",
+  "events": [
+    {
+      "id": "root-001",
+      "kind": "ROOT",
+      "actor": "user",
+      "occurredAt": 1,
+      "scope": "workflow-1",
+      "localValid": true
+    },
+    {
+      "id": "approval-001",
+      "kind": "APPROVAL",
+      "actor": "reviewer",
+      "occurredAt": 2,
+      "scope": "workflow-1",
+      "parentId": "root-001",
+      "localValid": true
+    },
+    {
+      "id": "rejection-001",
+      "kind": "REJECTION",
+      "actor": "reviewer",
+      "occurredAt": 3,
+      "scope": "workflow-1",
+      "parentId": "approval-001",
+      "supersedes": ["approval-001"],
+      "localValid": true
+    },
+    {
+      "id": "retry-001",
+      "kind": "ACTION",
+      "actor": "agent",
+      "occurredAt": 4,
+      "scope": "workflow-1",
+      "parentId": "approval-001",
+      "localValid": true
+    }
+  ]
+}

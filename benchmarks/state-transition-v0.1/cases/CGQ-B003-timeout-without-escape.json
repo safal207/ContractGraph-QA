@@ -1,0 +1,23 @@
+{
+  "id": "CGQ-B003",
+  "name": "Timeout Without Escape",
+  "class": "temporal_liveness",
+  "function_verification": "PASS",
+  "state_transition_verification": "FAIL",
+  "economic_verification": "FAIL",
+  "invariant": "CGQ-LIVE-002",
+  "invariant_name": "TIMEOUT_REQUIRES_RECOVERY_PATH",
+  "initial_state": "Funded",
+  "counterexample": ["Funded", "DeadlineExceeded", "NO_VALID_TRANSITION"],
+  "preconditions": [
+    "the escrow is funded",
+    "the business deadline expires",
+    "late delivery is correctly rejected",
+    "no valid refund, release, or resolver path remains after expiry"
+  ],
+  "economic_consequence": "Value remains locked even though deadline enforcement itself behaves correctly.",
+  "risk": "timeout_fund_lock",
+  "suggested_severity": "high",
+  "confidence": "high",
+  "expected_verdict": "FAIL"
+}

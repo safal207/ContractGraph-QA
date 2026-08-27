@@ -1,0 +1,26 @@
+{
+  "benchmark": "autogen-saved-state-conformance-v0.1",
+  "source": {
+    "repository": "microsoft/autogen",
+    "commit": "027ecf0a379bcc1d09956d46d12d44a3ad9cee14",
+    "agentProtocolSource": "python/packages/autogen-core/src/autogen_core/_agent.py",
+    "chatContextSource": "python/packages/autogen-core/src/autogen_core/model_context/_chat_completion_context.py",
+    "assistantAgentSource": "python/packages/autogen-agentchat/src/autogen_agentchat/agents/_assistant_agent.py"
+  },
+  "projectStatus": "maintenance mode as of pinned upstream README update",
+  "boundary": "hosted JSON-serializable save_state/load_state agent state; not a claimed native authorization reducer",
+  "spec": "witness-projection-conformance/v0.1",
+  "expectedConformant": true,
+  "expectedPassedChecks": [
+    "deterministic_across_evaluator_time",
+    "explicit_absence_enables_transition",
+    "replay_stability",
+    "prefix_stability",
+    "non_monotone_state_over_monotone_evidence",
+    "deadline_bound_to_evidence",
+    "missing_deadline_fails_closed",
+    "projection_does_not_mutate_evidence"
+  ],
+  "expectedFailedChecks": [],
+  "interpretation": "AutoGen's explicit JSON-serializable save_state/load_state contract can host an append-only witness log containing absence/deadline evidence. A thin adapter can therefore replay the frozen projection without consulting ambient evaluator time. This is a hosted-adapter capability result, not a claim that AutoGen applications automatically conform."
+}

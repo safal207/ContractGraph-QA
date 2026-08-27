@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/safal207/ContractGraph-QA/blob/main/contractgraph_qa/schemas/agent-runtime-conformance-profile-v0.1.schema.json",
+  "title": "Agent Runtime Conformance Profile v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "projectionSpec",
+    "id",
+    "name",
+    "source",
+    "boundaryType",
+    "projection",
+    "replay",
+    "explicitAbsence",
+    "deadlineBinding",
+    "persistence",
+    "appendOnly",
+    "destructiveMutations",
+    "evidenceRefs",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "agent-runtime-conformance-profile/v0.1"},
+    "projectionSpec": {"const": "witness-projection-conformance/v0.1"},
+    "id": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$"},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "boundaryType": {"type": "string", "minLength": 1},
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "passed", "total"],
+      "properties": {
+        "status": {"enum": ["pass", "fail"]},
+        "passed": {"type": "integer", "minimum": 0, "maximum": 8},
+        "total": {"const": 8}
+      },
+      "oneOf": [
+        {"properties": {"status": {"const": "pass"}, "passed": {"const": 8}}},
+        {"properties": {"status": {"const": "fail"}, "passed": {"type": "integer", "minimum": 0, "maximum": 7}}}
+      ]
+    },
+    "replay": {"$ref": "#/$defs/capabilityStatus"},
+    "explicitAbsence": {"$ref": "#/$defs/capabilityStatus"},
+    "deadlineBinding": {"$ref": "#/$defs/capabilityStatus"},
+    "persistence": {"$ref": "#/$defs/capabilityStatus"},
+    "appendOnly": {"$ref": "#/$defs/capabilityStatus"},
+    "destructiveMutations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "operations"],
+      "properties": {
+        "status": {"enum": ["present", "absent", "not_measured"]},
+        "operations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "claimBoundary": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "capabilityStatus": {
+      "enum": ["pass", "fail", "adapter_required", "not_measured"]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"projection": {"properties": {"status": {"const": "pass"}}}}},
+      "then": {
+        "properties": {
+          "replay": {"const": "pass"},
+          "explicitAbsence": {"const": "pass"},
+          "deadlineBinding": {"const": "pass"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"destructiveMutations": {"properties": {"status": {"const": "present"}}}}},
+      "then": {
+        "properties": {
+          "appendOnly": {"const": "fail"},
+          "destructiveMutations": {
+            "properties": {"operations": {"minItems": 1}}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "destructiveMutations": {
+            "properties": {"status": {"enum": ["absent", "not_measured"]}}
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "destructiveMutations": {
+            "properties": {"operations": {"maxItems": 0}}
+          }
+        }
+      }
+    }
+  ]
+}

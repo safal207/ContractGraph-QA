@@ -124,8 +124,9 @@ Crossmint provides the first reviewed AFSP profile in this repository:
 create with x-idempotency-key
 → timeout
 → preserve same logical operation
-→ same-key replay for discovery
-→ GET transaction for canonical state
+→ do not assume a same-key replay returns the existing transaction
+→ if transaction ID is known, GET transaction for canonical state
+→ otherwise remain RECONCILE / HOLD pending documented discovery
 → poll until terminal
 → webhook only triggers reconciliation
 → onChain.txId is settlement evidence after broadcast
@@ -134,13 +135,14 @@ create with x-idempotency-key
 
 The reviewed profile records:
 
-- same-key replay: documented;
+- duplicate-prevention idempotency key: documented;
+- exact same-key replay response and discovery behavior: unresolved;
 - GET transaction: authoritative for finality;
 - webhook: non-authoritative notification evidence;
 - complete timeout precedence: not published as a normative standalone rule;
 - new-operation retry authority after terminal failure: unresolved.
 
-Therefore Crossmint timeout recovery can be modeled without treating the derived composition as a provider guarantee.
+Therefore Crossmint timeout recovery remains fail-closed and does not present same-key replay as a discovery guarantee.
 
 ## Stripe PaymentIntents profile — external instantiation 002
 

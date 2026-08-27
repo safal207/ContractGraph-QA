@@ -1,0 +1,22 @@
+{
+  "id": "CGQ-B004",
+  "name": "Valid Functions, Invalid Composition",
+  "class": "transition_consistency",
+  "function_verification": "PASS",
+  "state_transition_verification": "FAIL",
+  "economic_verification": "FAIL",
+  "invariant": "CGQ-CONS-001",
+  "invariant_name": "SINGLE_VALID_SUCCESSOR_PER_STATE_VERSION",
+  "initial_state": "Funded@v7",
+  "counterexample": ["Funded@v7", "Delivered@v8 || Disputed@v8", "CONFLICTING_SUCCESSORS"],
+  "preconditions": [
+    "deliver and raiseDispute are each valid when independently authorized against Funded@v7",
+    "the operations are mutually exclusive",
+    "authorization is not strongly bound to the committed parent state version"
+  ],
+  "economic_consequence": "Two locally valid operations can create incompatible committed state or duplicate/conflicting side effects.",
+  "risk": "conflicting_successors",
+  "suggested_severity": "high",
+  "confidence": "high",
+  "expected_verdict": "FAIL"
+}

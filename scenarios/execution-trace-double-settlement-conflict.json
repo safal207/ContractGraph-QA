@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "execution-trace-v0.1",
+  "traceId": "escrow-race-001",
+  "scope": "synthetic-local-only",
+  "events": [
+    {
+      "eventId": "evt-release",
+      "sourceRef": "tx:0xaaa",
+      "economicEffect": {
+        "actionId": "escrow-42:settle",
+        "effectKey": "escrow-payout",
+        "occurrenceId": "settlement:aaa",
+        "applied": true
+      },
+      "stateCommit": {
+        "commitId": "commit:aaa",
+        "conflictKey": "escrow:42",
+        "parentState": "Funded",
+        "parentVersion": 7,
+        "operation": "release",
+        "successorState": "Released",
+        "successorVersion": 8,
+        "committed": true
+      }
+    },
+    {
+      "eventId": "evt-dispute",
+      "sourceRef": "tx:0xbbb",
+      "economicEffect": {
+        "actionId": "escrow-42:settle",
+        "effectKey": "escrow-payout",
+        "occurrenceId": "settlement:bbb",
+        "applied": true
+      },
+      "stateCommit": {
+        "commitId": "commit:bbb",
+        "conflictKey": "escrow:42",
+        "parentState": "Funded",
+        "parentVersion": 7,
+        "operation": "raiseDispute",
+        "successorState": "Disputed",
+        "successorVersion": 8,
+        "committed": true
+      }
+    }
+  ]
+}

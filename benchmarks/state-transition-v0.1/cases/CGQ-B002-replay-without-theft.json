@@ -1,0 +1,22 @@
+{
+  "id": "CGQ-B002",
+  "name": "Replay Without Theft",
+  "class": "economic_safety",
+  "function_verification": "PASS",
+  "state_transition_verification": "FAIL",
+  "economic_verification": "FAIL",
+  "invariant": "CGQ-SAFE-001",
+  "invariant_name": "AT_MOST_ONCE_ECONOMIC_EFFECT",
+  "initial_state": "Delivered",
+  "counterexample": ["Delivered", "release(action=A)", "Released", "release(action=A)", "DUPLICATE_EFFECT"],
+  "preconditions": [
+    "action A is valid for the first release",
+    "the first release finalizes the business action",
+    "the same business action can be accepted again or can trigger a second external effect"
+  ],
+  "economic_consequence": "A finalized settlement may be duplicated or the external ledger may diverge from contract state.",
+  "risk": "duplicate_settlement",
+  "suggested_severity": "high",
+  "confidence": "high",
+  "expected_verdict": "FAIL"
+}

@@ -1,53 +1,142 @@
 # ContractGraph-QA Outreach
 
-Use these as short starting points. Keep the first message about the buyer's risk, not about the tool architecture.
+## Operating rule
 
-## Founder / protocol team
+The first contact is **one buyer-specific technical question**, not a product pitch.
 
-Hi — I’m running a small Smart Contract QA pilot focused on stateful bugs that are easy to miss in function-by-function testing: role transitions, release/refund sequences, accounting invariants, deadlines, and terminal states.
+```text
+public signal
+→ one bounded failure scenario
+→ one question about authoritative evidence or invariant
+→ wait for a substantive reply
+```
 
-I model the contract as a reachable state graph, search bounded transaction paths in Foundry, and return the shortest reproducible path for each violated invariant plus a verifiable evidence bundle.
+Keep the first message under roughly 80 words. Do not attach a deck, ask for a call, or explain the whole engine.
 
-I’m offering a **$200 fixed pilot** for one small authorized contract/feature, up to 5 prioritized invariants, with one retest pass. I can send a repository-owned sample showing exactly what the deliverable looks like.
+Use one active thread per company. A second route is justified only by a hard bounce or an explicit instruction to contact another team.
 
-## Solidity developer
+## Payment / wallet / ledger first question
 
-Hi — if you have a contract that is already implemented but you want stronger regression evidence before audit/release, I can take one narrow slice and turn its business rules into state/invariant tests.
+```text
+Hi [Name / Team],
 
-The output is not just “test failed”: it includes the minimal action sequence, pre/post states, coverage status for every declared invariant, and a deterministic evidence bundle you can keep with the fix.
+In [talk, product, or documentation], you described [specific public signal].
 
-Current pilot: **$200 fixed**, one small authorized scope, up to 5 invariants + one retest.
+One recovery-boundary question:
 
-## Audit-readiness lead
+If [concrete dispatch / timeout / retry scenario], which evidence is authoritative before another monetary attempt is permitted: platform state, the external rail, a processor or wallet receipt, the customer ledger, or an explicit UNKNOWN reconciliation hold?
 
-Hi — I’m testing a narrow audit-readiness service for smart contracts: explicit invariant model → bounded Foundry state exploration → reproducible findings → retest evidence.
+A one-line answer is enough.
 
-It is designed to complement, not replace, a security audit. The useful part is that unresolved coverage stays explicitly `inconclusive`, while violations carry a shortest replayable path.
+Best,
+Alexey Safonov
+```
 
-I’m taking small authorized pilots at **$200 fixed**. If useful, I can share the complete sample engagement and evidence format first.
+## Policy-controlled agent payment
 
-## Follow-up after interest
+```text
+If an agent receives a valid policy ALLOW, the payment request times out after dispatch, and the agent retries under the same policy, can the system prove whether zero, one, or two economic effects occurred — not merely that both attempts were policy-compliant?
+```
 
-Great. For the pilot I need only:
+## Wallet / credential allowance
 
-- repo/source;
-- exact contract or feature in scope;
-- authorization boundary;
-- expected roles/business rules;
-- ideally the 3–5 properties you most want protected.
+```text
+If an allowance creates a single-use payment credential, checkout is dispatched, and the processor result is ambiguous, can the system prove both whether the authority was consumed and whether the payment actually happened before permitting another credential or retry?
+```
 
-I’ll turn that into a reviewed manifest of actors/actions/state/invariants, run the bounded search, and deliver findings + coverage + a verifiable evidence ZIP. If a fix is made inside the pilot scope, one retest is included.
+## Payout / vendor transfer
 
-## Proof-first reply
+```text
+If a vendor transfer is dispatched, the response is lost, and the workflow retries, what evidence proves ZERO, ONE, or UNKNOWN vendor credits across the provider, destination rail, and accounting ledger before another transfer is released?
+```
 
-Here is the key distinction in the sample: one search checks three invariants and returns three different evidence states — one real violation with the shortest path, one `not_found_within_bound`, and one `inconclusive`.
+## Smart-contract state-machine question
 
-That matters because the tool does not turn incomplete coverage into a fake PASS. The bundle can also be independently reopened and verified from the CLI.
+```text
+After [specific terminal or value-moving transition], what invariant prevents [duplicate settlement, trapped funds, terminal resurrection, stale authority, or order-dependent outcome] across the next allowed sequence of calls?
+```
 
-## One-line positioning
+## After a substantive answer
 
-I test smart contracts as **stateful financial systems**, turning business rules into actor/state/invariant models, Foundry regression evidence, shortest reproducible failure paths, and retestable QA artifacts.
+Reflect the boundary before offering anything:
 
-## Qualification boundary
+```text
+Thanks — that clarifies the boundary.
 
-Do not pitch unauthorized testing. Before active testing of a non-local target, confirm written scope or a clearly applicable bounty/safe-harbor program. A public contract address alone is not authorization.
+So the platform can prove [A], while [B] remains unresolved until [C]. That makes the critical state:
+
+dispatch accepted
+→ external outcome unresolved
+→ retry held
+→ reconciliation closes ZERO / ONE / UNKNOWN
+```
+
+Do not ask three more architecture questions. Convert the answer into one proposed fixture.
+
+## Ask permission to map one fixture
+
+```text
+I have a vendor-neutral executable recovery model for exactly this boundary.
+
+Would it be useful if I mapped one synthetic or sandbox flow against:
+
+- ZERO → retry may proceed;
+- ONE → stop;
+- UNKNOWN → retry remains blocked?
+
+I can send the one-page expected-state contract first.
+```
+
+## Paid pilot offer
+
+Use only after the team confirms the boundary or asks what the work would involve.
+
+```text
+I can turn this into a fixed-scope design-partner pilot:
+
+- one named recovery boundary;
+- one executable local or sandbox-backed fixture;
+- duplicate, delayed, out-of-order, retry, and identity-drift cases;
+- evidence-precedence map;
+- deterministic findings and one in-scope retest.
+
+Price: $750 fixed.
+Target: five business days after accepted scope and inputs.
+Communication can remain fully async.
+```
+
+## Smart-contract pilot offer
+
+```text
+For one authorized contract or state-machine slice, I can model up to five prioritized invariants, run bounded sequence exploration, return minimal replayable counterexamples, and include one retest.
+
+Design-partner price: $750 fixed.
+```
+
+## Qualification discipline
+
+Prioritize a lead only when:
+
+- the company owns a payment, wallet, ledger, payout, or contract-state boundary;
+- a public signal identifies a concrete reliability or control problem;
+- one bounded scenario can be written before contact;
+- a technical, product, reliability, or developer-relations route exists;
+- the company has not already received a recent active-thread outreach.
+
+Stop after one bot escalation request. Do not keep debating an automated support agent.
+
+## Positioning
+
+ContractGraph-QA is an **independent bounded-verification layer for stateful financial systems**.
+
+The primary commercial wedge is:
+
+> prove `ZERO / ONE / UNKNOWN` before retry.
+
+The smart-contract route remains:
+
+> turn business rules into stateful invariants, minimal counterexamples, reproducible evidence, and exact retests.
+
+## Safety boundary
+
+Do not pitch or perform unauthorized active testing. Public documentation may support non-invasive modeling and synthetic fixture design, but a public endpoint, repository, ABI, or contract address is not production-testing authorization.

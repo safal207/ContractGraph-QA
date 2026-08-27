@@ -1,0 +1,26 @@
+{
+  "benchmark": "openai-agents-session-conformance-v0.1",
+  "source": {
+    "repository": "openai/openai-agents-python",
+    "commit": "7f7a44f8dc0650296bd5ab6c745c9bcbaa6ac3b7",
+    "sessionSource": "src/agents/memory/session.py",
+    "sqliteSessionSource": "src/agents/memory/sqlite_session.py"
+  },
+  "boundary": "restricted hosted witness envelope over SQLiteSession JSON conversation-item persistence",
+  "spec": "witness-projection-conformance/v0.1",
+  "expectedConformant": true,
+  "expectedPassedChecks": [
+    "deterministic_across_evaluator_time",
+    "explicit_absence_enables_transition",
+    "replay_stability",
+    "prefix_stability",
+    "non_monotone_state_over_monotone_evidence",
+    "deadline_bound_to_evidence",
+    "missing_deadline_fails_closed",
+    "projection_does_not_mutate_evidence"
+  ],
+  "expectedFailedChecks": [],
+  "nativeSessionAppendOnly": false,
+  "nativeMutationOperations": ["pop_item", "clear_session"],
+  "interpretation": "The pinned OpenAI Agents SDK SQLiteSession stores response input items as JSON and restores them in insertion order. A restricted hosted adapter can preserve the complete witness contract and replay it without ambient time. The native Session protocol is conversational memory, not an append-only evidence log, because it explicitly permits pop_item() and clear_session()."
+}

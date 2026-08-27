@@ -27,12 +27,12 @@
   "retrySemanticsStatus": "unresolved",
   "retryAllowedAfterProviderStates": [],
   "publicContractRefs": [
-    "https://docs.cdp.coinbase.com/x402/core-concepts/how-it-works",
-    "https://docs.cdp.coinbase.com/x402/core-concepts/facilitator",
+    "https://docs.cdp.coinbase.com/x402/how-it-works",
+    "https://docs.cdp.coinbase.com/x402/seller/facilitator",
     "https://docs.cdp.coinbase.com/api-reference/v2/rest-api/x402-facilitator/verify-payment",
     "https://docs.cdp.coinbase.com/api-reference/v2/rest-api/x402-facilitator/settle-payment",
     "https://docs.cdp.coinbase.com/x402/support/faq",
-    "https://github.com/x402-foundation/x402/blob/main/specs/x402-specification-v2.md"
+    "https://github.com/x402-foundation/x402/blob/8468e3ad331a277379a3e48441eac3259fe75a60/specs/x402-specification-v2.md"
   ],
   "openQuestions": [
     "If settlement succeeds but the client loses the HTTP resource response and PAYMENT-RESPONSE header, what public read-after-settle discovery mechanism should the client use before authorizing another economic action?",

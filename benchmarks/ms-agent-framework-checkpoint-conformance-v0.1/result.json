@@ -1,0 +1,24 @@
+{
+  "benchmark": "ms-agent-framework-checkpoint-conformance-v0.1",
+  "source": {
+    "repository": "microsoft/agent-framework",
+    "commit": "d9d3fb6252f7ae9e7f8104edce7266f0782a813c",
+    "checkpointSource": "python/packages/core/agent_framework/_workflows/_checkpoint.py",
+    "checkpointEncodingSource": "python/packages/core/agent_framework/_workflows/_checkpoint_encoding.py"
+  },
+  "boundary": "framework-native WorkflowCheckpoint.state hosting the frozen domain witness projection",
+  "spec": "witness-projection-conformance/v0.1",
+  "expectedConformant": true,
+  "expectedPassedChecks": [
+    "deterministic_across_evaluator_time",
+    "explicit_absence_enables_transition",
+    "replay_stability",
+    "prefix_stability",
+    "non_monotone_state_over_monotone_evidence",
+    "deadline_bound_to_evidence",
+    "missing_deadline_fails_closed",
+    "projection_does_not_mutate_evidence"
+  ],
+  "expectedFailedChecks": [],
+  "interpretation": "The pinned Microsoft Agent Framework workflow checkpoint stores committed user state and supports checkpoint save/load/lineage. A thin hosted-domain adapter can preserve the exact append-only witness sequence, including explicit absence/deadline evidence, and replay the frozen projection without consulting checkpoint timestamps or ambient wall-clock time. This does not mean arbitrary Agent Framework applications automatically conform."
+}

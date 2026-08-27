@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "repair-search-v0.1",
+  "searchId": "milepact-mp01-mp05-repair-search",
+  "invariantId": "CGQ-CAUSAL-002",
+  "targetInvariantIds": ["CGQ-RACE-001", "CGQ-LIVE-001"],
+  "guardInvariantIds": ["CGQ-SAFE-001", "CGQ-CONS-001"],
+  "scope": "Reviewed counterfactual repair search for the MilePact Delivered/Disputed lifecycle. Candidate-set assessments are evidence inputs, not inferred patch effects.",
+  "baseline": {
+    "assessmentId": "milepact-baseline",
+    "evidenceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "invariantResults": [
+      {"invariantId": "CGQ-RACE-001", "status": "fail"},
+      {"invariantId": "CGQ-LIVE-001", "status": "fail"},
+      {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+      {"invariantId": "CGQ-CONS-001", "status": "pass"}
+    ]
+  },
+  "repairs": [
+    {
+      "repairId": "explicit-dispute-cutoff",
+      "description": "Make raiseDispute invalid once auto-release eligibility begins.",
+      "changedElements": ["MilepactEscrow.raiseDispute.timeGuard"]
+    },
+    {
+      "repairId": "resolve-disputed-state",
+      "description": "Add an explicit value-releasing resolution path from Disputed.",
+      "changedElements": ["MilepactEscrow.Disputed.transitions", "MilepactEscrow.resolveDispute"]
+    },
+    {
+      "repairId": "ui-hide-late-dispute",
+      "description": "Hide the dispute control in the client UI after the review threshold without changing contract validity.",
+      "changedElements": ["ClientUI.disputeVisibility"]
+    }
+  ],
+  "candidateSets": [
+    {
+      "candidateSetId": "cutoff-only",
+      "repairIds": ["explicit-dispute-cutoff"],
+      "assessment": {
+        "assessmentId": "assessment-cutoff-only",
+        "evidenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "invariantResults": [
+          {"invariantId": "CGQ-RACE-001", "status": "pass"},
+          {"invariantId": "CGQ-LIVE-001", "status": "fail"},
+          {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+          {"invariantId": "CGQ-CONS-001", "status": "pass"}
+        ]
+      }
+    },
+    {
+      "candidateSetId": "resolve-only",
+      "repairIds": ["resolve-disputed-state"],
+      "assessment": {
+        "assessmentId": "assessment-resolve-only",
+        "evidenceSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "invariantResults": [
+          {"invariantId": "CGQ-RACE-001", "status": "fail"},
+          {"invariantId": "CGQ-LIVE-001", "status": "pass"},
+          {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+          {"invariantId": "CGQ-CONS-001", "status": "pass"}
+        ]
+      }
+    },
+    {
+      "candidateSetId": "ui-only",
+      "repairIds": ["ui-hide-late-dispute"],
+      "assessment": {
+        "assessmentId": "assessment-ui-only",
+        "evidenceSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "invariantResults": [
+          {"invariantId": "CGQ-RACE-001", "status": "fail"},
+          {"invariantId": "CGQ-LIVE-001", "status": "fail"},
+          {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+          {"invariantId": "CGQ-CONS-001", "status": "pass"}
+        ]
+      }
+    },
+    {
+      "candidateSetId": "cutoff-plus-resolve",
+      "repairIds": ["explicit-dispute-cutoff", "resolve-disputed-state"],
+      "assessment": {
+        "assessmentId": "assessment-cutoff-plus-resolve",
+        "evidenceSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "invariantResults": [
+          {"invariantId": "CGQ-RACE-001", "status": "pass"},
+          {"invariantId": "CGQ-LIVE-001", "status": "pass"},
+          {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+          {"invariantId": "CGQ-CONS-001", "status": "pass"}
+        ]
+      }
+    },
+    {
+      "candidateSetId": "cutoff-plus-ui",
+      "repairIds": ["explicit-dispute-cutoff", "ui-hide-late-dispute"],
+      "assessment": {
+        "assessmentId": "assessment-cutoff-plus-ui",
+        "evidenceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "invariantResults": [
+          {"invariantId": "CGQ-RACE-001", "status": "pass"},
+          {"invariantId": "CGQ-LIVE-001", "status": "fail"},
+          {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+          {"invariantId": "CGQ-CONS-001", "status": "pass"}
+        ]
+      }
+    },
+    {
+      "candidateSetId": "resolve-plus-ui",
+      "repairIds": ["resolve-disputed-state", "ui-hide-late-dispute"],
+      "assessment": {
+        "assessmentId": "assessment-resolve-plus-ui",
+        "evidenceSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "invariantResults": [
+          {"invariantId": "CGQ-RACE-001", "status": "fail"},
+          {"invariantId": "CGQ-LIVE-001", "status": "pass"},
+          {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+          {"invariantId": "CGQ-CONS-001", "status": "pass"}
+        ]
+      }
+    },
+    {
+      "candidateSetId": "all-three",
+      "repairIds": ["explicit-dispute-cutoff", "resolve-disputed-state", "ui-hide-late-dispute"],
+      "assessment": {
+        "assessmentId": "assessment-all-three",
+        "evidenceSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+        "invariantResults": [
+          {"invariantId": "CGQ-RACE-001", "status": "pass"},
+          {"invariantId": "CGQ-LIVE-001", "status": "pass"},
+          {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+          {"invariantId": "CGQ-CONS-001", "status": "pass"}
+        ]
+      }
+    }
+  ]
+}

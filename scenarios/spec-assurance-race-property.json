@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "spec-assurance-v0.1",
+  "assuranceId": "race-property-reviewed-fault-model-v0.1",
+  "assuranceInvariantId": "CGQ-SPEC-001",
+  "propertyInvariantId": "CGQ-RACE-001",
+  "propertyDescription": "A declared protective right must remain preserved across both reviewed serialized orderings when both actions are jointly enabled and the guarantee applies.",
+  "baseline": {
+    "assessmentId": "safe-two-ordering-control",
+    "evidenceSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "status": "pass"
+  },
+  "activationWitness": {
+    "observed": true,
+    "evidenceSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "description": "The reviewed safe control exercises both serialized orderings with the protective-right predicate evaluated in both outcomes."
+  },
+  "requiredFaultClasses": [
+    "joint-enablement-overlap",
+    "ordering-outcome-divergence",
+    "protective-right-defeat"
+  ],
+  "mutations": [
+    {
+      "mutationId": "M-RACE-OVERLAP-001",
+      "description": "Introduce a state/time overlap in which protective and competing actions are jointly enabled.",
+      "faultClass": "joint-enablement-overlap",
+      "evidenceSha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "result": "detected"
+    },
+    {
+      "mutationId": "M-RACE-OUTCOME-001",
+      "description": "Make the two serialized orderings terminate in distinct economic outcomes.",
+      "faultClass": "ordering-outcome-divergence",
+      "evidenceSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "result": "detected"
+    },
+    {
+      "mutationId": "M-RACE-RIGHT-001",
+      "description": "Mark the protective right as defeated in the competing-action-first ordering.",
+      "faultClass": "protective-right-defeat",
+      "evidenceSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "result": "detected"
+    }
+  ],
+  "scope": "Repository-owned reviewed specification benchmark; not a claim of exhaustive source mutation coverage."
+}

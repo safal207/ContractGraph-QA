@@ -1,0 +1,136 @@
+name: Release v1.8.0 freeze
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/release-v1.8.0-freeze.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-v1.8.0-freeze
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: 51c8e81a42e53ea8b26b396f0c1df4f64418c351
+      RELEASE_TAG: v1.8.0
+      RELEASE_VERSION: 1.8.0
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify frozen subject and package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${TARGET_SHA}^{commit}"
+          actual_version="$(git show "${TARGET_SHA}:pyproject.toml" | sed -n 's/^version = "\([^"]*\)"$/\1/p' | head -n1)"
+          test "${actual_version}" = "${RELEASE_VERSION}"
+          echo "Frozen subject: ${TARGET_SHA}"
+          echo "Package version: ${actual_version}"
+
+      - name: Verify or create exact annotated tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force origin
+          if git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"; then
+            tagged_commit="$(git rev-list -n1 "${RELEASE_TAG}")"
+            if [ "${tagged_commit}" != "${TARGET_SHA}" ]; then
+              echo "${RELEASE_TAG} already exists but points to ${tagged_commit}, expected ${TARGET_SHA}" >&2
+              exit 1
+            fi
+            echo "Existing tag is correctly frozen to ${TARGET_SHA}."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${RELEASE_TAG}" "${TARGET_SHA}" -m "ContractGraph-QA ${RELEASE_TAG} — Causal-Temporal Verification Core vNext"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
+      - name: Build wheel from exact frozen subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "${TARGET_SHA}"
+          python -m pip install --disable-pip-version-check --no-input build==1.2.2.post1
+          python -m build --wheel
+          wheel_count="$(find dist -maxdepth 1 -type f -name "contractgraph_qa-${RELEASE_VERSION}-*.whl" | wc -l)"
+          test "${wheel_count}" -eq 1
+          sha256sum dist/*.whl > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Prepare release notes
+        shell: bash
+        run: |
+          cat > RELEASE_NOTES.md <<'EOF'
+          # ContractGraph-QA v1.8.0 — Causal-Temporal Verification Core vNext
+
+          Frozen exact subject:
+
+          `51c8e81a42e53ea8b26b396f0c1df4f64418c351`
+
+          Roadmap #117 is complete.
+
+          ## What landed
+
+          - Phase 1: Transition Geometry, Ancestral Validity, Orientation Center, exact-subject receipt binding, negative controls.
+          - Phase 2: Independent Witness, Verification Debt, Dormant Watchpoints, Temporal/External Replication + Drift, Forward Remediation.
+          - Phase 3: Exact-Subject Freeze, preregistered verification plans, Trace Integrity, Evidence Readiness, Root-Cause Collapse, Metamorphic/Round-Trip checks, Durable Evidence Reopen.
+          - Phase 4: deterministic Active Verification Planning with cost provenance, risk/priority/aging, information-gain inputs, prerequisite blocking, anti-starvation, and explicit debt preservation.
+
+          ## End-to-end invariant
+
+          The final integration gate exercises:
+
+          `fresh drift → SELECTED work → still unverified → verification debt → Orientation INDETERMINATE → explicit COMPLETED_PASS → Orientation BALANCED → durable reopen/hash verification`
+
+          `BALANCED` remains readiness only: `securityVerdictAuthorized=false`.
+
+          ## Verification evidence
+
+          Final integration PR #129 and final protocol/capability-matrix PR #130 each passed the repository's five standard GitHub Actions gates:
+
+          - CI
+          - Product
+          - Portability
+          - Measurement provenance gate
+          - Finding report
+
+          ## Claim boundary
+
+          ContractGraph-QA produces bounded, reproducible verification evidence. A PASS-like or BALANCED result is not a formal proof of production correctness, and independent external authenticity still requires an independent anchor/witness where the claim depends on it.
+          EOF
+
+      - name: Publish GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists; verifying tag and refreshing assets."
+          else
+            gh release create "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --verify-tag \
+              --title "ContractGraph-QA v1.8.0 — Causal-Temporal Verification Core vNext" \
+              --notes-file RELEASE_NOTES.md
+          fi
+          gh release upload "${RELEASE_TAG}" dist/*.whl SHA256SUMS \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber
+
+      - name: Verify published release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --json tagName,name,isDraft,isPrerelease,url

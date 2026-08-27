@@ -19,6 +19,8 @@ The reviewed public documentation establishes:
 
 Public references:
 
+Reviewed on 2026-08-27 UTC. These vendor pages are mutable; the profile is bounded to the documented semantics observed on that date and the deterministic local fixtures.
+
 - https://docs.stripe.com/api/idempotent_requests
 - https://docs.stripe.com/api/payment_intents
 - https://docs.stripe.com/payments/payment-intents

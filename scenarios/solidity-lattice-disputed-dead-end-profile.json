@@ -1,0 +1,10 @@
+{
+  "contractName": "DisputedDeadEndEscrow",
+  "enumName": "State",
+  "stateSelector": "state",
+  "selectorKind": "identifier",
+  "initialState": "Created",
+  "valueHoldingStates": ["Funded", "Disputed"],
+  "safeTerminalStates": ["Released", "Refunded"],
+  "invariantId": "CGQ-LIVE-001"
+}

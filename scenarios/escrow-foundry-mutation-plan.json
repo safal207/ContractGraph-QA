@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "solidity-mutation-plan-v0.1",
+  "acquisitionId": "escrow-foundry-mutation-v0.1",
+  "sourcePath": "src/examples/Escrow.sol",
+  "sourceSha256": "25fc095313ee81ec6c433aa12697b602374e8f8dc3752fd5b6e92fc822b13498",
+  "propertyInvariantId": "EXAMPLE-ESCROW-BEHAVIOR-001",
+  "propertyDescription": "Escrow behavioral specification requires the buyer release path to remain valid and refund to remain unavailable before the configured deadline.",
+  "activationWitness": {
+    "observed": true,
+    "evidenceSha256": "0a00a77cd7a328c1e72712b598b638457e8298c157f0843fe8aabd0266eebce9",
+    "description": "Repository-owned EscrowGraph.t.sol directly exercises the release and pre-deadline refund behaviors selected by this mutation plan."
+  },
+  "requiredFaultClasses": [
+    "authorization-inversion",
+    "deadline-guard-removal"
+  ],
+  "foundry": {
+    "profile": "default",
+    "timeoutSeconds": 120
+  },
+  "mutations": [
+    {
+      "mutationId": "release-auth-inversion",
+      "faultClass": "authorization-inversion",
+      "description": "Invert the buyer authorization guard on release so the legitimate buyer path reverts.",
+      "match": "    function release() external {\n        if (msg.sender != buyer) revert Unauthorized();",
+      "replacement": "    function release() external {\n        if (msg.sender == buyer) revert Unauthorized();",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_CausalPath_FundThenRelease"
+    },
+    {
+      "mutationId": "refund-deadline-removed",
+      "faultClass": "deadline-guard-removal",
+      "description": "Remove the effective refund deadline guard while keeping the mutant compilable.",
+      "match": "        if (block.timestamp < refundAfter) revert TooEarly();",
+      "replacement": "        if (false) revert TooEarly();",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_TemporalPath_RefundOnlyAfterDeadline"
+    }
+  ],
+  "scope": "Repository-owned Escrow.sol mutation acquisition fixture; not a third-party audit."
+}

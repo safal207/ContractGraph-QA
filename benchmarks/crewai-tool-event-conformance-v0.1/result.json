@@ -1,0 +1,25 @@
+{
+  "benchmark": "crewai-tool-event-conformance-v0.1",
+  "source": {
+    "repository": "crewAIInc/crewAI",
+    "commit": "f4731f5025f861c78e3af0487cc80bf5e7c64782",
+    "toolEventSource": "lib/crewai/src/crewai/events/types/tool_usage_events.py",
+    "toolsHandlerSource": "lib/crewai/src/crewai/agents/tools_handler.py"
+  },
+  "boundary": "current native tool-event evidence vocabulary; not a claimed CrewAI authorization reducer",
+  "spec": "witness-projection-conformance/v0.1",
+  "expectedConformant": false,
+  "expectedPassedChecks": [
+    "deterministic_across_evaluator_time",
+    "replay_stability",
+    "prefix_stability",
+    "non_monotone_state_over_monotone_evidence",
+    "missing_deadline_fails_closed",
+    "projection_does_not_mutate_evidence"
+  ],
+  "expectedFailedChecks": [
+    "explicit_absence_enables_transition",
+    "deadline_bound_to_evidence"
+  ],
+  "interpretation": "The pinned CrewAI tool lifecycle can represent start/finish/error/failure, but this boundary has no native recorded absence observation carrying the inspected window and deadline. Time-dependent replay semantics therefore cannot be derived from this event vocabulary alone without adding an explicit observation witness or another persisted decision record."
+}
