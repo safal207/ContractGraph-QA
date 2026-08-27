@@ -30,6 +30,8 @@ from contractgraph_qa.hydrated_lattice import (
 PACK_SCHEMA = "cgqa.hydrated-lattice-evidence-pack.v0.1"
 MANIFEST_SCHEMA = "cgqa.hydrated-lattice-evidence-pack-manifest.v0.1"
 _FIXED_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
+_FIXED_ZIP_CREATE_VERSION = 20
+_FIXED_ZIP_EXTRACT_VERSION = 20
 _CONTENT_NAMES = [
     "static-result.json",
     "execution-trace.json",
@@ -86,6 +88,8 @@ def _load_json_object(path: Path, label: str) -> dict[str, Any]:
 def _zip_entry(name: str) -> zipfile.ZipInfo:
     info = zipfile.ZipInfo(name, date_time=_FIXED_ZIP_TIME)
     info.compress_type = zipfile.ZIP_STORED
+    info.create_version = _FIXED_ZIP_CREATE_VERSION
+    info.extract_version = _FIXED_ZIP_EXTRACT_VERSION
     info.create_system = 3
     info.external_attr = 0o100644 << 16
     return info
@@ -238,6 +242,10 @@ def _read_pack(pack_path: Path) -> tuple[bytes, dict[str, bytes]]:
                     raise HydratedLatticeEvidencePackError(f"non-canonical ZIP timestamp: {info.filename}")
                 if info.compress_type != zipfile.ZIP_STORED:
                     raise HydratedLatticeEvidencePackError(f"non-canonical ZIP compression: {info.filename}")
+                if info.create_version != _FIXED_ZIP_CREATE_VERSION:
+                    raise HydratedLatticeEvidencePackError(f"non-canonical ZIP create version: {info.filename}")
+                if info.extract_version != _FIXED_ZIP_EXTRACT_VERSION:
+                    raise HydratedLatticeEvidencePackError(f"non-canonical ZIP extract version: {info.filename}")
                 if info.create_system != 3 or info.external_attr != 0o100644 << 16:
                     raise HydratedLatticeEvidencePackError(f"non-canonical ZIP file mode: {info.filename}")
                 if info.extra != b"":

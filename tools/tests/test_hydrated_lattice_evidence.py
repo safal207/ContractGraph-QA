@@ -25,6 +25,8 @@ PACK_ORDER = [
     "manifest.json",
 ]
 FIXED_TIME = (1980, 1, 1, 0, 0, 0)
+FIXED_CREATE_VERSION = 20
+FIXED_EXTRACT_VERSION = 20
 
 
 def static_result() -> dict[str, object]:
@@ -145,6 +147,10 @@ class HydratedLatticeEvidencePackTests(unittest.TestCase):
             second, second_result = self._build(root, "second.zip")
             self.assertEqual(first.read_bytes(), second.read_bytes())
             self.assertEqual(first_result["sha256"], second_result["sha256"])
+            with zipfile.ZipFile(first, "r") as archive:
+                for info in archive.infolist():
+                    self.assertEqual(FIXED_CREATE_VERSION, info.create_version)
+                    self.assertEqual(FIXED_EXTRACT_VERSION, info.extract_version)
             verified = verify_hydrated_lattice_evidence_pack(first)
             self.assertEqual("verified", verified["status"])
             self.assertEqual("pass", verified["assessmentStatus"])
@@ -273,6 +279,30 @@ class HydratedLatticeEvidencePackTests(unittest.TestCase):
                 HydratedLatticeEvidencePackError, "non-canonical ZIP timestamp"
             ):
                 verify_hydrated_lattice_evidence_pack(pack)
+
+    def test_noncanonical_zip_version_metadata_is_rejected(self) -> None:
+        mutations = (
+            ("create_version", "non-canonical ZIP create version"),
+            ("extract_version", "non-canonical ZIP extract version"),
+        )
+        for field, reason in mutations:
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as tmp:
+                pack, _ = self._build(Path(tmp))
+                with zipfile.ZipFile(pack, "r") as archive:
+                    blobs = {name: archive.read(name) for name in PACK_ORDER}
+                with zipfile.ZipFile(pack, "w", compression=zipfile.ZIP_STORED) as archive:
+                    for index, name in enumerate(PACK_ORDER):
+                        info = zipfile.ZipInfo(name, date_time=FIXED_TIME)
+                        info.compress_type = zipfile.ZIP_STORED
+                        info.create_version = FIXED_CREATE_VERSION
+                        info.extract_version = FIXED_EXTRACT_VERSION
+                        info.create_system = 3
+                        info.external_attr = 0o100644 << 16
+                        if index == 0:
+                            setattr(info, field, 21)
+                        archive.writestr(info, blobs[name])
+                with self.assertRaisesRegex(HydratedLatticeEvidencePackError, reason):
+                    verify_hydrated_lattice_evidence_pack(pack)
 
     def test_noncanonical_archive_comment_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
