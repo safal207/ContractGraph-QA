@@ -84,9 +84,7 @@ contract ExecutionBindingInvariantTest {
         assert(dispatchCount[authorityId] == 1);
     }
 
-    function testFuzz_AnyEscapedExternalDecisionRequiresRebind(
-        uint8 transitSeed
-    ) public pure {
+    function testFuzz_AnyEscapedExternalDecisionRequiresRebind(uint8 transitSeed) public pure {
         Transit transit = Transit((transitSeed % 6) + 1);
 
         assert(!_reusableExternalDispatchAllowed(transit, false));
@@ -98,11 +96,9 @@ contract ExecutionBindingInvariantTest {
         assert(_reusableExternalDispatchAllowed(transit, true));
     }
 
-    function consumeAndDispatch(
-        bytes32 authorityId,
-        Transit transit,
-        bool reboundAtDispatch
-    ) external {
+    function consumeAndDispatch(bytes32 authorityId, Transit transit, bool reboundAtDispatch)
+        external
+    {
         bool escapedProducingCallStack = transit != Transit.ImmediateSync;
         if (escapedProducingCallStack && !reboundAtDispatch) {
             revert RebindRequired();
@@ -116,10 +112,11 @@ contract ExecutionBindingInvariantTest {
         dispatchCount[authorityId] += 1;
     }
 
-    function _reusableExternalDispatchAllowed(
-        Transit transit,
-        bool reboundAtDispatch
-    ) internal pure returns (bool) {
+    function _reusableExternalDispatchAllowed(Transit transit, bool reboundAtDispatch)
+        internal
+        pure
+        returns (bool)
+    {
         return transit == Transit.ImmediateSync || reboundAtDispatch;
     }
 }
