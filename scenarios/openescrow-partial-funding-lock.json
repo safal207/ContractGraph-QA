@@ -1,0 +1,58 @@
+{
+  "assumptions": [
+    {
+      "id": "remaining-tenant-completes-funding",
+      "description": "After one tenant funds a multi-tenant agreement, every remaining tenant eventually funds the share required to move the agreement from ReadyToFund to Active."
+    },
+    {
+      "id": "landlord-cancels-stalled-funding",
+      "description": "If multi-tenant funding stalls in ReadyToFund, the landlord eventually calls cancelProposal so already-funded tenants are credited for withdrawal."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "ready-to-fund",
+      "description": "The multi-tenant agreement is in ReadyToFund and no tenant principal has yet been deposited.",
+      "forbidden": false
+    },
+    {
+      "id": "partial-principal-locked",
+      "description": "At least one tenant has deposited a positive share, depositAmount and locked are positive, and the agreement remains ReadyToFund because not all tenant shares are funded.",
+      "forbidden": false
+    },
+    {
+      "id": "permanent-principal-lock",
+      "description": "An already-funded tenant has no unilateral transition that credits or withdraws its deposited principal while the agreement remains below Active/Closed/Cancelled.",
+      "forbidden": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "first-tenant-funds",
+      "source": "ready-to-fund",
+      "target": "partial-principal-locked",
+      "requiresViolations": [],
+      "boundary": "multi-tenant-funding",
+      "impact": "tenant principal enters escrow before the agreement becomes Active"
+    },
+    {
+      "id": "funding-stalls-without-unilateral-exit",
+      "source": "partial-principal-locked",
+      "target": "permanent-principal-lock",
+      "requiresViolations": [
+        "remaining-tenant-completes-funding",
+        "landlord-cancels-stalled-funding"
+      ],
+      "invariantId": "funded-tenant-unilateral-recovery",
+      "boundary": "escrow-liveness",
+      "impact": "previously deposited tenant principal can remain locked indefinitely when a co-tenant and landlord stop progressing the agreement"
+    }
+  ],
+  "initialCapabilities": ["ready-to-fund"],
+  "targetCapabilities": ["permanent-principal-lock"],
+  "violatedAssumptions": [
+    "remaining-tenant-completes-funding",
+    "landlord-cancels-stalled-funding"
+  ],
+  "maxDepth": 3
+}
