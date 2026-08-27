@@ -269,6 +269,7 @@ class QuickstartHardeningTest(unittest.TestCase):
             self.assertTrue((root / "out" / "Vault.json").is_file())
 
     def test_windows_timeout_kills_process_tree_with_bounded_drain(self) -> None:
+        project_root = Path(".")
         process = mock.Mock()
         process.pid = 4242
         process.returncode = None
@@ -297,7 +298,7 @@ class QuickstartHardeningTest(unittest.TestCase):
             "contractgraph_qa.project_quickstart_hardened.shutil.rmtree",
         ) as rmtree:
             result = _run_command(
-                Path("."),
+                project_root,
                 {"command": ["npm", "test"]},
                 1,
                 inherit_environment=False,
