@@ -83,6 +83,14 @@ RS2 FAIL — forced persistence timing changes recovery
 RS3 FAIL — the stable `step2` fixture-action identity is admitted twice
 ```
 
+RS2 is the primary runtime-local finding. With the explicit input, ordered
+logical-action plan, runtime profile, append receiver, and injected crash boundary
+held fixed, changing only the forced persistence interleaving changes the recovered
+observable state. This finding requires no cooperating receiver and no assumption
+about how an external system interprets idempotency. RS3 remains useful as the
+cross-system boundary and receiver control, but a passing dedup control does not
+repair or weaken the RS2 failure.
+
 The committed result is reconstructed from the public issue output. ContractGraph-QA adds the semantic identity mapping to the declared actions; it does not claim that the original probe recorded action IDs.
 
 ## Stable semantic identity
@@ -102,6 +110,23 @@ It does not derive identity from checkpoint namespace, runtime position, process
 This matters because recovery bookkeeping is the disputed state in #8039. A safety key derived from that bookkeeping can change after recovery and inherit the failure it is intended to prevent.
 
 Here `logical_action` is the declared effect payload carried across recovery, not a checkpoint namespace, scheduler position, process-local attempt number, or wall-clock value. The observation also retains the issue's human-readable `step` field for trace review.
+
+### Identity-granularity boundary
+
+The v0.1 live fixture's canonical action contains only `kind`, `logical_action`,
+and `workflow_instance`. That projection is sufficient for the declared plan of
+three fixed actions, but it is not a general idempotency-key design. Two genuinely
+distinct effects emitted from the same logical step in the same workflow instance
+would receive the same identity if no business-distinguishing fields were added,
+and a deduplicating receiver would suppress the second effect.
+
+For a payload-bearing action, the mapping must declare which business-semantic
+fields distinguish one intended effect from another and exercise both failure
+directions: a retry of the same action must retain its identity, while a distinct
+action must receive a different identity. Runtime position, attempt number, PID,
+and wall-clock time remain unsuitable discriminators because recovery can change
+them. Selecting and validating a production payload-identity policy is outside the
+scope of this fixture.
 
 ## Observation integrity
 
