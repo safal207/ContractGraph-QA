@@ -227,6 +227,7 @@ Key documents:
 
 - [Recovery Pilot](PILOT.md)
 - [Synthetic Recovery Case Study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
+- [Soroban Dice-Duel Investigation Journal](docs/case-studies/STELLAR_DICE_DUEL_PREDICTABLE_RANDOMNESS.md)
 - [Product runtime](docs/PRODUCT.md)
 - [CLI reference](docs/CLI.md)
 - [Engagement workflow](docs/ENGAGEMENT.md)
