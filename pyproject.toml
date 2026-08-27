@@ -45,6 +45,7 @@ Issues = "https://github.com/safal207/ContractGraph-QA/issues"
 [project.scripts]
 cgqa = "contractgraph_qa.cli:main"
 cgqa-hydrated = "contractgraph_qa.hydrated_lattice_cli:main"
+cgqa-hydrated-evidence = "contractgraph_qa.hydrated_lattice_evidence_cli:main"
 cgqa-evm-receipt = "contractgraph_qa.evm_receipt_cli:main"
 cgqa-evm-hydrated = "contractgraph_qa.evm_hydrated_cli:main"
 cgqa-rpc-capture = "contractgraph_qa.rpc_capture_cli:main"
