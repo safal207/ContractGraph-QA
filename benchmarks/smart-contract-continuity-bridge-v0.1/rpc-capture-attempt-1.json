@@ -1,0 +1,14 @@
+{
+  "capture": {
+    "blockWitness": null,
+    "chainId": 8453,
+    "receipt": null,
+    "schemaVersion": "rpc-capture-v0.1",
+    "transactionHash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "captureSha256": "40c48340360565df421bb12f90a08fdcd3954db9a95016928ba250b513d39706",
+  "claimBoundary": "The configured RPC endpoint did not return a receipt; no mined/finality claim is made.",
+  "reason": "transaction_receipt_not_observed",
+  "schemaVersion": "rpc-capture-result-v0.1",
+  "status": "inconclusive"
+}

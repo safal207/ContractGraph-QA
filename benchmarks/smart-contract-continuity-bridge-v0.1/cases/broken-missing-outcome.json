@@ -1,0 +1,33 @@
+{
+  "as_of": "2026-08-27T10:10:00Z",
+  "outcomes": [],
+  "requests": [
+    {
+      "attempt_id": "release-attempt-1",
+      "continuation_id": null,
+      "deadline_at": "2026-08-27T10:00:20Z",
+      "metadata": {
+        "args_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "bridge_profile": "cgqa-smart-contract-continuity-bridge-v0.1",
+        "chain_family": "evm",
+        "chain_id": 8453,
+        "contract_address": "0x1111111111111111111111111111111111111111",
+        "function_name": "releasePayment",
+        "function_selector": "0x12345678",
+        "nonce": 42,
+        "producer": "ContractGraph-QA",
+        "sender": "0x2222222222222222222222222222222222222222"
+      },
+      "occurred_at": "2026-08-27T10:00:00Z",
+      "parent_request_id": null,
+      "payload_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "profile": "org.ltp.request-envelope.v0.1",
+      "record_type": "REQUEST",
+      "request_id": "release-escrow-42",
+      "retry_of_attempt_id": null,
+      "schema_version": 1,
+      "state": "PENDING",
+      "trace_id": "escrow-42-lifecycle"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "candidate": {
+    "contractGraphQaBranch": "feat/smart-contract-continuity-bridge-v0.1",
+    "ltpBranch": "docs/contractgraph-continuity-integration-v0.1",
+    "stateAtCollectionEnd": "UNCOMMITTED_LOCAL_WORKING_TREE",
+    "subsequentPublication": "SEPARATELY_AUTHORIZED_AFTER_COLLECTION",
+    "writeAuthorityDuringCollection": "LOCAL_ONLY_NO_PUSH_NO_PR"
+  },
+  "collectionWindow": {
+    "endedAt": "2026-08-27T15:54:48Z",
+    "startedAt": "2026-08-27T15:00:52Z"
+  },
+  "publicationRevalidation": {
+    "candidateRebased": true,
+    "changeClassification": "UNRELATED_DOCUMENTATION_ONLY",
+    "changedSinceFrozenSourcePaths": [
+      "docs/LANGGRAPH_RECOVERY_SAFETY.md"
+    ],
+    "endedAt": "2026-08-27T16:07:38Z",
+    "publicationBaseCommitSha": "ff617b3cbbf29ad6a0e5bdee5760e44f30d77ab7",
+    "publicationBaseTreeSha": "bd9bf9f2243c3251c1c0040276c1c85c299f0aee",
+    "startedAt": "2026-08-27T16:06:20Z",
+    "testResult": "661_PASSED_14_SKIPPED_31_SUBTESTS"
+  },
+  "repositories": [
+    {
+      "branchAtSource": "main",
+      "initialWorktreeClean": true,
+      "publicationBaseCommitSha": "ff617b3cbbf29ad6a0e5bdee5760e44f30d77ab7",
+      "publicationBaseTreeSha": "bd9bf9f2243c3251c1c0040276c1c85c299f0aee",
+      "repository": "safal207/ContractGraph-QA",
+      "remoteMainAtCollectionEnd": "007c1fa68dac5b19b73e6ab1b4f606727e620ed7",
+      "sourceCommitShaAtCollectionStart": "007c1fa68dac5b19b73e6ab1b4f606727e620ed7",
+      "sourceTreeShaAtCollectionStart": "4abd38371fdedc907825b17f27d6ccbd3ee2519c"
+    },
+    {
+      "branchAtSource": "main",
+      "initialWorktreeClean": true,
+      "publicationBaseCommitSha": "08734d248c24dfb2ee8e4f4a3f689887ead0ea24",
+      "publicationBaseTreeSha": "5eb684d990701fa959f0b2a87125ebd765df70cd",
+      "repository": "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-",
+      "remoteMainAtCollectionEnd": "08734d248c24dfb2ee8e4f4a3f689887ead0ea24",
+      "sourceCommitShaAtCollectionStart": "08734d248c24dfb2ee8e4f4a3f689887ead0ea24",
+      "sourceTreeShaAtCollectionStart": "5eb684d990701fa959f0b2a87125ebd765df70cd"
+    }
+  ],
+  "schemaVersion": "cgqa-smart-contract-continuity-exact-subject-v0.1",
+  "status": "EXACT_SUBJECT_REVALIDATED_AFTER_MAIN_MOVED"
+}

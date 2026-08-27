@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "cgqa-ltp-continuity-external-contract-v0.1",
+  "repository": "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-",
+  "commitSha": "08734d248c24dfb2ee8e4f4a3f689887ead0ea24",
+  "treeSha": "5eb684d990701fa959f0b2a87125ebd765df70cd",
+  "validationCommand": "pnpm -w ltp:continuity -- <input.json> --out <report.json>",
+  "vendored": false,
+  "schemas": [
+    {
+      "path": "docs/contracts/ltp-request-envelope.v0.1.schema.json",
+      "sha256": "721d2482c88abf91c7e511614b4c81d39a8b0408ccc2fd41d014d356b3f9a86e"
+    },
+    {
+      "path": "docs/contracts/ltp-outcome-envelope.v0.1.schema.json",
+      "sha256": "9a6b2cdb88e8ad82dd71c8a82cb0cea2f68fdc07f3b68ed2b129fd4534f01be7"
+    },
+    {
+      "path": "docs/contracts/ltp-request-outcome-continuity-input.v0.1.schema.json",
+      "sha256": "e12b9ed0d5127b45d53e4168fdd9a911c577dad24abdaa0db918b091886045aa"
+    },
+    {
+      "path": "docs/contracts/ltp-request-outcome-continuity-report.v0.1.schema.json",
+      "sha256": "f826852ed6170651f66b1e274c8cd8b2632bc84f5ad58d0720fa989a9bb4d4ac"
+    }
+  ],
+  "claimBoundary": "These hashes pin the external normative schema contract. ContractGraph-QA does not vendor or reimplement the LTP continuity verifier."
+}

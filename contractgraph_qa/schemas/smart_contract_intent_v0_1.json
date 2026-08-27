@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cgqa:schema:smart-contract-intent:v0.1",
+  "title": "ContractGraph-QA Smart Contract Intent v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "traceId",
+    "attemptId",
+    "occurredAt",
+    "deadlineAt",
+    "state",
+    "chainFamily",
+    "chainId",
+    "contractAddress",
+    "functionSelector",
+    "functionName",
+    "argsDigest",
+    "sender",
+    "nonce",
+    "payloadDigest",
+    "retryOfAttemptId",
+    "parentRequestId"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "cgqa-smart-contract-intent-v0.1" },
+    "requestId": {
+      "allOf": [
+        { "$ref": "#/$defs/identifier" },
+        {
+          "not": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{64}$"
+          }
+        }
+      ]
+    },
+    "traceId": { "$ref": "#/$defs/identifier" },
+    "attemptId": { "$ref": "#/$defs/identifier" },
+    "occurredAt": { "$ref": "#/$defs/timestamp" },
+    "deadlineAt": {
+      "anyOf": [
+        { "$ref": "#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "state": { "enum": ["CREATED", "ACCEPTED", "PENDING", "DEFERRED"] },
+    "chainFamily": { "const": "evm" },
+    "chainId": { "type": "integer", "minimum": 1 },
+    "contractAddress": { "$ref": "#/$defs/address" },
+    "functionSelector": { "type": "string", "pattern": "^0x[0-9a-fA-F]{8}$" },
+    "functionName": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+    "argsDigest": { "$ref": "#/$defs/digest" },
+    "sender": { "$ref": "#/$defs/address" },
+    "nonce": { "type": "integer", "minimum": 0 },
+    "payloadDigest": { "$ref": "#/$defs/digest" },
+    "retryOfAttemptId": {
+      "anyOf": [
+        { "$ref": "#/$defs/identifier" },
+        { "type": "null" }
+      ]
+    },
+    "parentRequestId": {
+      "anyOf": [
+        { "$ref": "#/$defs/identifier" },
+        { "type": "null" }
+      ]
+    },
+    "continuationId": {
+      "anyOf": [
+        { "$ref": "#/$defs/identifier" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "state": { "const": "DEFERRED" } },
+        "required": ["state"]
+      },
+      "then": {
+        "required": ["continuationId"],
+        "properties": { "continuationId": { "$ref": "#/$defs/identifier" } }
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@-]{0,255}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]{40}$"
+    }
+  }
+}

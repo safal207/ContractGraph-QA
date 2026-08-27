@@ -1,0 +1,259 @@
+{
+  "schemaVersion": "cgqa-external-observations-v0.1",
+  "observations": [
+    {
+      "attemptId": "deposit-attempt-1",
+      "claimBoundary": "Synthetic offline record that the escrow deposit request was created.",
+      "ltpProjection": {
+        "continuationId": null,
+        "deadlineAt": "2026-08-27T09:51:00Z",
+        "parentRequestId": null,
+        "payloadDigest": "sha256:1010101010101010101010101010101010101010101010101010101010101010",
+        "recordType": "REQUEST",
+        "retryOfAttemptId": null,
+        "state": "PENDING"
+      },
+      "metadata": {},
+      "observationId": "deposit-request-42",
+      "occurredAt": "2026-08-27T09:50:00Z",
+      "parentObservationId": null,
+      "requestId": "escrow-42:deposit",
+      "resultDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "BACKEND_STATE",
+      "subjectDigest": "sha256:1010101010101010101010101010101010101010101010101010101010101010",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "deposit-attempt-1",
+      "claimBoundary": "Synthetic offline deposit completion record; no live-chain claim.",
+      "ltpProjection": {
+        "recordType": "OUTCOME",
+        "replayOfOutcomeId": null,
+        "terminalStatus": "COMPLETED"
+      },
+      "metadata": {},
+      "observationId": "deposit-completed-42",
+      "occurredAt": "2026-08-27T09:50:30Z",
+      "parentObservationId": "deposit-request-42",
+      "requestId": "escrow-42:deposit",
+      "resultDigest": "sha256:1212121212121212121212121212121212121212121212121212121212121212",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "CONTRACT_EVENT",
+      "subjectDigest": "sha256:1010101010101010101010101010101010101010101010101010101010101010",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "delivery-attempt-1",
+      "claimBoundary": "Synthetic offline delivery-acceptance request record.",
+      "ltpProjection": {
+        "continuationId": null,
+        "deadlineAt": "2026-08-27T09:56:00Z",
+        "parentRequestId": "escrow-42:deposit",
+        "payloadDigest": "sha256:2020202020202020202020202020202020202020202020202020202020202020",
+        "recordType": "REQUEST",
+        "retryOfAttemptId": null,
+        "state": "PENDING"
+      },
+      "metadata": {},
+      "observationId": "delivery-request-42",
+      "occurredAt": "2026-08-27T09:55:00Z",
+      "parentObservationId": "deposit-completed-42",
+      "requestId": "escrow-42:delivery",
+      "resultDigest": "sha256:2121212121212121212121212121212121212121212121212121212121212121",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "BACKEND_STATE",
+      "subjectDigest": "sha256:2020202020202020202020202020202020202020202020202020202020202020",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "delivery-attempt-1",
+      "claimBoundary": "Synthetic offline record that delivery acceptance completed.",
+      "ltpProjection": {
+        "recordType": "OUTCOME",
+        "replayOfOutcomeId": null,
+        "terminalStatus": "COMPLETED"
+      },
+      "metadata": {},
+      "observationId": "delivery-accepted-42",
+      "occurredAt": "2026-08-27T09:55:20Z",
+      "parentObservationId": "delivery-request-42",
+      "requestId": "escrow-42:delivery",
+      "resultDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "BACKEND_STATE",
+      "subjectDigest": "sha256:2020202020202020202020202020202020202020202020202020202020202020",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "release-attempt-2",
+      "claimBoundary": "Reviewed binding to one RPC capture and one PaymentReleased adapter event; not canonical finality proof.",
+      "evmBinding": {
+        "argsDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "chainId": 8453,
+        "contractAddress": "0x1111111111111111111111111111111111111111",
+        "functionName": "releasePayment",
+        "functionSelector": "0x12345678",
+        "mappedEventIds": [
+          "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:0"
+        ],
+        "nonce": 42,
+        "payloadDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+        "sender": "0x2222222222222222222222222222222222222222",
+        "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "ltpProjection": {
+        "recordType": "OUTCOME",
+        "replayOfOutcomeId": null,
+        "terminalStatus": "COMPLETED"
+      },
+      "metadata": {},
+      "observationId": "release-receipt-42",
+      "occurredAt": "2026-08-27T10:01:00Z",
+      "parentObservationId": "delivery-accepted-42",
+      "requestId": "release-escrow-42",
+      "resultDigest": "sha256:acee6ad05869c42dc42d5f7d16febae8dab4e6a3d93cb611fac5f4172f6607a8",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "CONTRACT_RECEIPT",
+      "subjectDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "indexer-attempt-1",
+      "claimBoundary": "Reviewed expectation that PaymentReleased schedules a separate indexer operation.",
+      "ltpProjection": {
+        "continuationId": null,
+        "deadlineAt": "2026-08-27T10:02:00Z",
+        "parentRequestId": "release-escrow-42",
+        "payloadDigest": "sha256:3030303030303030303030303030303030303030303030303030303030303030",
+        "recordType": "REQUEST",
+        "retryOfAttemptId": null,
+        "state": "PENDING"
+      },
+      "metadata": {},
+      "observationId": "indexer-request-42",
+      "occurredAt": "2026-08-27T10:01:01Z",
+      "parentObservationId": "release-receipt-42",
+      "requestId": "release-escrow-42:indexer",
+      "resultDigest": "sha256:3131313131313131313131313131313131313131313131313131313131313131",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "CONTRACT_EVENT",
+      "subjectDigest": "sha256:3030303030303030303030303030303030303030303030303030303030303030",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "indexer-attempt-1",
+      "claimBoundary": "Reviewed synthetic indexer completion record; it does not strengthen receipt truth.",
+      "ltpProjection": {
+        "recordType": "OUTCOME",
+        "replayOfOutcomeId": null,
+        "terminalStatus": "COMPLETED"
+      },
+      "metadata": {},
+      "observationId": "indexer-updated-42",
+      "occurredAt": "2026-08-27T10:01:10Z",
+      "parentObservationId": "indexer-request-42",
+      "requestId": "release-escrow-42:indexer",
+      "resultDigest": "sha256:3232323232323232323232323232323232323232323232323232323232323232",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "INDEXER_RECORD",
+      "subjectDigest": "sha256:3030303030303030303030303030303030303030303030303030303030303030",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "backend-attempt-1",
+      "claimBoundary": "Reviewed expectation that indexer completion schedules backend state reconciliation.",
+      "ltpProjection": {
+        "continuationId": null,
+        "deadlineAt": "2026-08-27T10:03:00Z",
+        "parentRequestId": "release-escrow-42:indexer",
+        "payloadDigest": "sha256:4040404040404040404040404040404040404040404040404040404040404040",
+        "recordType": "REQUEST",
+        "retryOfAttemptId": null,
+        "state": "PENDING"
+      },
+      "metadata": {},
+      "observationId": "backend-request-42",
+      "occurredAt": "2026-08-27T10:01:11Z",
+      "parentObservationId": "indexer-updated-42",
+      "requestId": "release-escrow-42:backend",
+      "resultDigest": "sha256:4141414141414141414141414141414141414141414141414141414141414141",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "INDEXER_RECORD",
+      "subjectDigest": "sha256:4040404040404040404040404040404040404040404040404040404040404040",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "backend-attempt-1",
+      "claimBoundary": "Reviewed synthetic backend reconciliation record.",
+      "ltpProjection": {
+        "recordType": "OUTCOME",
+        "replayOfOutcomeId": null,
+        "terminalStatus": "COMPLETED"
+      },
+      "metadata": {},
+      "observationId": "backend-released-42",
+      "occurredAt": "2026-08-27T10:01:20Z",
+      "parentObservationId": "backend-request-42",
+      "requestId": "release-escrow-42:backend",
+      "resultDigest": "sha256:4242424242424242424242424242424242424242424242424242424242424242",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "BACKEND_STATE",
+      "subjectDigest": "sha256:4040404040404040404040404040404040404040404040404040404040404040",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "api-attempt-1",
+      "claimBoundary": "Reviewed expectation that backend state is exposed by a separate API operation.",
+      "ltpProjection": {
+        "continuationId": null,
+        "deadlineAt": "2026-08-27T10:04:00Z",
+        "parentRequestId": "release-escrow-42:backend",
+        "payloadDigest": "sha256:5050505050505050505050505050505050505050505050505050505050505050",
+        "recordType": "REQUEST",
+        "retryOfAttemptId": null,
+        "state": "PENDING"
+      },
+      "metadata": {},
+      "observationId": "api-request-42",
+      "occurredAt": "2026-08-27T10:01:21Z",
+      "parentObservationId": "backend-released-42",
+      "requestId": "release-escrow-42:api",
+      "resultDigest": "sha256:5151515151515151515151515151515151515151515151515151515151515151",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "BACKEND_STATE",
+      "subjectDigest": "sha256:5050505050505050505050505050505050505050505050505050505050505050",
+      "traceId": "escrow-42-lifecycle"
+    },
+    {
+      "attemptId": "api-attempt-1",
+      "claimBoundary": "Reviewed synthetic API response; it is not on-chain completion evidence.",
+      "ltpProjection": {
+        "recordType": "OUTCOME",
+        "replayOfOutcomeId": null,
+        "terminalStatus": "COMPLETED"
+      },
+      "metadata": {},
+      "observationId": "api-released-42",
+      "occurredAt": "2026-08-27T10:01:25Z",
+      "parentObservationId": "api-request-42",
+      "requestId": "release-escrow-42:api",
+      "resultDigest": "sha256:5252525252525252525252525252525252525252525252525252525252525252",
+      "reviewStatus": "REVIEWED",
+      "schemaVersion": "cgqa-external-observation-v0.1",
+      "sourceKind": "API_RESPONSE",
+      "subjectDigest": "sha256:5050505050505050505050505050505050505050505050505050505050505050",
+      "traceId": "escrow-42-lifecycle"
+    }
+  ]
+}

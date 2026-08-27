@@ -11,6 +11,7 @@ from contractgraph_qa import (
     active_verification_cli,
     causal_temporal_cli,
     legacy_cli,
+    ltp_continuity_bridge_cli,
     proof_integrity_cli,
     project_quickstart_cli,
 )
@@ -90,6 +91,9 @@ def _print_unified_help() -> None:
 
 Universal onboarding:
   quickstart                 Detect a local smart-contract project and create a safe starter report
+
+Smart-contract continuity:
+  continuity-export         Export reviewed CGQA evidence to the normative LTP v0.1 input contract
 
 Causal-temporal vNext:
   geometry                   Compare operation-order and loop path dependence
@@ -494,6 +498,8 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_OK
     if effective[0] == "quickstart":
         return project_quickstart_cli.main(effective[1:])
+    if effective[0] == "continuity-export":
+        return ltp_continuity_bridge_cli.main(effective[1:])
     if effective[0] in PHASE2_COMMANDS:
         return _normalize_subcli_exit(causal_temporal_cli.main(effective))
     if effective[0] in PROOF_COMMANDS:

@@ -52,6 +52,28 @@ Quickstart detects common Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban,
 
 Review signals are prompts, not confirmed vulnerabilities. Native test success is not a security proof. See [`UNIVERSAL_QUICKSTART.md`](UNIVERSAL_QUICKSTART.md).
 
+## `cgqa continuity-export`
+
+Project reviewed smart-contract intent, capture, receipt/event, and downstream
+observations into the pinned LTP request/outcome input contract.
+
+```bash
+cgqa continuity-export \
+  --intent intent-attempt-1.json \
+  --intent intent-attempt-2.json \
+  --capture rpc-capture.json \
+  --receipt-trace receipt-adapter-result.json \
+  --observations observations.json \
+  --as-of 2026-08-27T12:00:00Z \
+  --out continuity-input.json \
+  --bridge-report-out bridge-report.json
+```
+
+The command computes no continuity verdict. Validate the result with the
+normative LTP CLI. `--force` is required for existing outputs, and output/input
+aliases through direct paths, symbolic links, or hard links are rejected. See
+[`SMART_CONTRACT_CONTINUITY_BRIDGE.md`](SMART_CONTRACT_CONTINUITY_BRIDGE.md).
+
 ## `cgqa demo`
 
 Generate a repository-owned demonstration finding and deterministic evidence bundle without Forge or external RPC access.

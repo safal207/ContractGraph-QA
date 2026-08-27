@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "profile": "org.ltp.request-outcome-continuity-report.v0.1",
+  "as_of": "2026-08-27T10:10:00Z",
+  "overall_status": "BROKEN",
+  "requests": [
+    {
+      "request_id": "escrow-42:delivery",
+      "trace_id": "escrow-42-lifecycle",
+      "status": "CONTINUOUS",
+      "attempt_ids": [
+        "delivery-attempt-1"
+      ],
+      "effective_deadline_at": "2026-08-27T09:56:00Z",
+      "canonical_outcome_id": "delivery-accepted-42",
+      "terminal_status": "COMPLETED",
+      "replay_outcome_ids": [],
+      "findings": []
+    },
+    {
+      "request_id": "escrow-42:deposit",
+      "trace_id": "escrow-42-lifecycle",
+      "status": "CONTINUOUS",
+      "attempt_ids": [
+        "deposit-attempt-1"
+      ],
+      "effective_deadline_at": "2026-08-27T09:51:00Z",
+      "canonical_outcome_id": "deposit-completed-42",
+      "terminal_status": "COMPLETED",
+      "replay_outcome_ids": [],
+      "findings": []
+    },
+    {
+      "request_id": "release-escrow-42",
+      "trace_id": "escrow-42-lifecycle",
+      "status": "CONTINUOUS",
+      "attempt_ids": [
+        "release-attempt-1",
+        "release-attempt-2"
+      ],
+      "effective_deadline_at": "2026-08-27T10:05:00Z",
+      "canonical_outcome_id": "release-receipt-42",
+      "terminal_status": "COMPLETED",
+      "replay_outcome_ids": [],
+      "findings": []
+    },
+    {
+      "request_id": "release-escrow-42:api",
+      "trace_id": "escrow-42-lifecycle",
+      "status": "CONTINUOUS",
+      "attempt_ids": [
+        "api-attempt-1"
+      ],
+      "effective_deadline_at": "2026-08-27T10:04:00Z",
+      "canonical_outcome_id": "api-released-42",
+      "terminal_status": "COMPLETED",
+      "replay_outcome_ids": [],
+      "findings": []
+    },
+    {
+      "request_id": "release-escrow-42:backend",
+      "trace_id": "escrow-42-lifecycle",
+      "status": "CONTINUOUS",
+      "attempt_ids": [
+        "backend-attempt-1"
+      ],
+      "effective_deadline_at": "2026-08-27T10:03:00Z",
+      "canonical_outcome_id": "backend-released-42",
+      "terminal_status": "COMPLETED",
+      "replay_outcome_ids": [],
+      "findings": []
+    },
+    {
+      "request_id": "release-escrow-42:indexer",
+      "trace_id": "escrow-42-lifecycle",
+      "status": "BROKEN",
+      "attempt_ids": [
+        "indexer-attempt-1"
+      ],
+      "effective_deadline_at": "2026-08-27T10:02:00Z",
+      "canonical_outcome_id": null,
+      "terminal_status": null,
+      "replay_outcome_ids": [],
+      "findings": [
+        {
+          "code": "BROKEN_MISSING_OUTCOME",
+          "request_id": "release-escrow-42:indexer",
+          "record_ids": [
+            "indexer-attempt-1"
+          ],
+          "detail": "Request release-escrow-42:indexer has no terminal outcome after its declared deadline."
+        }
+      ]
+    }
+  ],
+  "orphan_outcome_ids": [],
+  "findings": [
+    {
+      "code": "BROKEN_MISSING_OUTCOME",
+      "request_id": "release-escrow-42:indexer",
+      "record_ids": [
+        "indexer-attempt-1"
+      ],
+      "detail": "Request release-escrow-42:indexer has no terminal outcome after its declared deadline."
+    }
+  ],
+  "verifier": {
+    "id": "ltp:request-outcome-continuity",
+    "version": "0.1"
+  },
+  "claim_boundary": "This report evaluates continuity only across the supplied request and outcome envelopes as of the declared time. It does not prove authorization, response truth, external side effects, complete pre-observation history, or universal exactly-once execution."
+}

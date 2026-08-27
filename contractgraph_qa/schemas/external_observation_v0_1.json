@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cgqa:schema:external-observation:v0.1",
+  "title": "ContractGraph-QA External Observation v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "observationId",
+    "requestId",
+    "traceId",
+    "attemptId",
+    "occurredAt",
+    "sourceKind",
+    "subjectDigest",
+    "resultDigest",
+    "parentObservationId",
+    "reviewStatus",
+    "metadata",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "cgqa-external-observation-v0.1" },
+    "observationId": { "$ref": "#/$defs/identifier" },
+    "requestId": { "$ref": "#/$defs/identifier" },
+    "traceId": { "$ref": "#/$defs/identifier" },
+    "attemptId": { "$ref": "#/$defs/identifier" },
+    "occurredAt": { "$ref": "#/$defs/timestamp" },
+    "sourceKind": {
+      "enum": [
+        "CONTRACT_RECEIPT",
+        "CONTRACT_EVENT",
+        "INDEXER_RECORD",
+        "BACKEND_STATE",
+        "API_RESPONSE"
+      ]
+    },
+    "subjectDigest": { "$ref": "#/$defs/digest" },
+    "resultDigest": { "$ref": "#/$defs/digest" },
+    "parentObservationId": {
+      "anyOf": [
+        { "$ref": "#/$defs/identifier" },
+        { "type": "null" }
+      ]
+    },
+    "reviewStatus": { "const": "REVIEWED" },
+    "ltpProjection": {
+      "oneOf": [
+        { "$ref": "#/$defs/requestProjection" },
+        { "$ref": "#/$defs/outcomeProjection" }
+      ]
+    },
+    "evmBinding": { "$ref": "#/$defs/evmBinding" },
+    "metadata": { "type": "object", "additionalProperties": true },
+    "claimBoundary": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@-]{0,255}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]{40}$"
+    },
+    "requestProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordType",
+        "state",
+        "deadlineAt",
+        "parentRequestId",
+        "retryOfAttemptId",
+        "continuationId",
+        "payloadDigest"
+      ],
+      "properties": {
+        "recordType": { "const": "REQUEST" },
+        "state": { "enum": ["CREATED", "ACCEPTED", "PENDING", "DEFERRED"] },
+        "deadlineAt": {
+          "anyOf": [
+            { "$ref": "#/$defs/timestamp" },
+            { "type": "null" }
+          ]
+        },
+        "parentRequestId": {
+          "anyOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "retryOfAttemptId": {
+          "anyOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "continuationId": {
+          "anyOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "payloadDigest": {
+          "anyOf": [
+            { "$ref": "#/$defs/digest" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "outcomeProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordType", "terminalStatus", "replayOfOutcomeId"],
+      "properties": {
+        "recordType": { "const": "OUTCOME" },
+        "terminalStatus": {
+          "enum": ["COMPLETED", "FAILED", "REJECTED", "CANCELLED", "TIMED_OUT"]
+        },
+        "replayOfOutcomeId": {
+          "anyOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "evmBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chainId",
+        "transactionHash",
+        "contractAddress",
+        "functionSelector",
+        "functionName",
+        "argsDigest",
+        "sender",
+        "nonce",
+        "payloadDigest",
+        "mappedEventIds"
+      ],
+      "properties": {
+        "chainId": { "type": "integer", "minimum": 1 },
+        "transactionHash": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" },
+        "contractAddress": { "$ref": "#/$defs/address" },
+        "functionSelector": { "type": "string", "pattern": "^0x[0-9a-fA-F]{8}$" },
+        "functionName": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+        "argsDigest": { "$ref": "#/$defs/digest" },
+        "sender": { "$ref": "#/$defs/address" },
+        "nonce": { "type": "integer", "minimum": 0 },
+        "payloadDigest": { "$ref": "#/$defs/digest" },
+        "mappedEventIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    }
+  }
+}

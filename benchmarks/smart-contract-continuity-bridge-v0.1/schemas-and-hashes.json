@@ -1,0 +1,45 @@
+{
+  "contractGraphQaSchemas": [
+    {
+      "path": "contractgraph_qa/schemas/external_observation_v0_1.json",
+      "sha256": "ddabec2b4c6be22c2875bd4642ace5afe73a6bdfab0bfa89e70dbe7973c19514"
+    },
+    {
+      "path": "contractgraph_qa/schemas/ltp_continuity_bridge_report_v0_1.json",
+      "sha256": "7e149f2bbc96d9bf6175ffc17f914e8b7a1e2d14919431fa9bcc59fa974082d5"
+    },
+    {
+      "path": "contractgraph_qa/schemas/ltp_continuity_external_contract_v0_1.json",
+      "sha256": "13c9a56c4948b2d98f588012104d167b7897ce141cfb10a71b02d790dc49eea3"
+    },
+    {
+      "path": "contractgraph_qa/schemas/smart_contract_intent_v0_1.json",
+      "sha256": "db657b1713225bd08791d95516e4c701a4e21f032b4883263ec3f7f73c8cfdc8"
+    }
+  ],
+  "ltpExternalContract": {
+    "commitSha": "08734d248c24dfb2ee8e4f4a3f689887ead0ea24",
+    "repository": "safal207/L-THREAD-Liminal-Thread-Secure-Protocol-LTP-",
+    "schemas": [
+      {
+        "path": "docs/contracts/ltp-outcome-envelope.v0.1.schema.json",
+        "sha256": "9a6b2cdb88e8ad82dd71c8a82cb0cea2f68fdc07f3b68ed2b129fd4534f01be7"
+      },
+      {
+        "path": "docs/contracts/ltp-request-envelope.v0.1.schema.json",
+        "sha256": "721d2482c88abf91c7e511614b4c81d39a8b0408ccc2fd41d014d356b3f9a86e"
+      },
+      {
+        "path": "docs/contracts/ltp-request-outcome-continuity-input.v0.1.schema.json",
+        "sha256": "e12b9ed0d5127b45d53e4168fdd9a911c577dad24abdaa0db918b091886045aa"
+      },
+      {
+        "path": "docs/contracts/ltp-request-outcome-continuity-report.v0.1.schema.json",
+        "sha256": "f826852ed6170651f66b1e274c8cd8b2632bc84f5ad58d0720fa989a9bb4d4ac"
+      }
+    ],
+    "treeSha": "5eb684d990701fa959f0b2a87125ebd765df70cd",
+    "vendored": false
+  },
+  "schemaVersion": "cgqa-smart-contract-continuity-schema-hashes-v0.1"
+}

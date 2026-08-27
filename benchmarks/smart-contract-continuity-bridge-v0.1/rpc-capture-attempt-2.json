@@ -1,0 +1,42 @@
+{
+  "capture": {
+    "blockWitness": {
+      "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "blockNumber": 100,
+      "blockTimestamp": 1787824860,
+      "observedConfirmationCount": 4,
+      "observedHeadNumber": 103,
+      "parentHash": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "chainId": 8453,
+    "receipt": {
+      "blockHash": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "blockNumber": "0x64",
+      "logs": [
+        {
+          "address": "0x1111111111111111111111111111111111111111",
+          "data": "0x",
+          "logIndex": "0x0",
+          "removed": false,
+          "topics": [
+            "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          ]
+        }
+      ],
+      "status": "0x1",
+      "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "rpcResponseDigests": {
+      "blockResponseSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "chainIdResponseSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "headResponseSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "receiptResponseSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "schemaVersion": "rpc-capture-v0.1",
+    "transactionHash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "captureSha256": "acee6ad05869c42dc42d5f7d16febae8dab4e6a3d93cb611fac5f4172f6607a8",
+  "claimBoundary": "Exact over one RPC response set; observed confirmations are not a finality guarantee.",
+  "schemaVersion": "rpc-capture-result-v0.1",
+  "status": "pass"
+}
