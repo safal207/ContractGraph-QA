@@ -4,6 +4,24 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## Unreleased — External smart-contract investigation gate
+
+### Added
+
+- `cgqa external-investigation --record <json>` as a chain-neutral intake boundary for assigned or authorized source investigations;
+- strict exact-subject, authorization, evidence-state, native/CGQA execution, blocker, verification-debt, impact, and non-claim contracts;
+- mandatory classification of the complete 30-row `AGENTS.md` capability matrix;
+- a provider-neutral JSON Schema and a source-bound Soroban dice-duel fixture;
+- installed-wheel Product CI and negative tests for false remediation verification, omitted capabilities, unarchived evidence digests, unmeasured impact claims, and incomplete execution.
+
+### Claim boundary
+
+- record validation is not target verification, an audit opinion, or a security certification;
+- `COUNTEREXAMPLE_FOUND` may preserve clearly labeled reported evidence, but reported bytes do not become archived or independently verified evidence;
+- `NO_COUNTEREXAMPLE_WITHIN_BOUND` requires an executed passing search and an explicit bound;
+- `VERIFIED_WITHIN_BOUND` remediation requires both native and exact-head ContractGraph-QA `RUN_PASS` evidence;
+- the first external fixture remains `BLOCKED`, with native regression and ContractGraph-QA execution both `NOT_RUN`.
+
 ## 1.9.0 — Universal smart-contract quickstart and unified CLI
 
 ### Added

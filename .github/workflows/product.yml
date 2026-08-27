@@ -43,9 +43,29 @@ jobs:
           cd /tmp
           cgqa --help > /tmp/cgqa-help.txt
           grep -q "quickstart" /tmp/cgqa-help.txt
+          grep -q "external-investigation" /tmp/cgqa-help.txt
           grep -q "subject-freeze" /tmp/cgqa-help.txt
           grep -q "trace-integrity" /tmp/cgqa-help.txt
           grep -q "plan-verification" /tmp/cgqa-help.txt
+      - name: Validate source-bound Soroban investigation outside checkout
+        shell: bash
+        run: |
+          cd /tmp
+          cgqa external-investigation \
+            --record "$GITHUB_WORKSPACE/scenarios/external-investigation-stellar-dice-duel.json" \
+            > /tmp/cgqa-external-investigation.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/cgqa-external-investigation.json').read_text(encoding='utf-8'))
+          assert data['recordValidationStatus'] == 'VALID'
+          assert data['findingStatus'] == 'COUNTEREXAMPLE_FOUND'
+          assert data['workflowStatus'] == 'BLOCKED'
+          assert data['nativeRegressionStatus'] == 'NOT_RUN'
+          assert data['contractGraphQaStatus'] == 'NOT_RUN'
+          assert data['boundedRemediationVerified'] is False
+          assert data['securityVerdictAuthorized'] is False
+          PY
       - name: Runtime doctor outside checkout
         run: cd /tmp && cgqa doctor --require-forge
       - name: Run self-serve demo outside checkout without Forge usage

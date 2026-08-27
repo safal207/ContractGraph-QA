@@ -25,6 +25,11 @@ from contractgraph_qa.economic_cardinality import (
     run_economic_cardinality_model,
 )
 from contractgraph_qa.execution_trace import load_execution_trace, run_execution_trace
+from contractgraph_qa.external_investigation import (
+    ExternalInvestigationError,
+    evaluate_external_investigation,
+    load_external_investigation,
+)
 from contractgraph_qa.lifecycle_liveness import (
     load_lifecycle_liveness_model,
     run_lifecycle_liveness_model,
@@ -90,6 +95,7 @@ def _print_unified_help() -> None:
 
 Universal onboarding:
   quickstart                 Detect a local smart-contract project and create a safe starter report
+  external-investigation     Validate a source-bound investigation without inventing PASS
 
 Causal-temporal vNext:
   geometry                   Compare operation-order and loop path dependence
@@ -132,6 +138,35 @@ def _decision_main(argv: list[str]) -> int:
         _emit(evaluate_agent_payment_decision_file(args.input.resolve()))
         return EXIT_OK
     except (AgentPaymentDecisionError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive product boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL
+
+
+def _external_investigation_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa external-investigation",
+        description=(
+            "Validate and summarize a chain-neutral, source-bound external smart-contract "
+            "investigation while preserving NOT_RUN and reported-evidence boundaries."
+        ),
+    )
+    parser.add_argument(
+        "--record",
+        type=Path,
+        required=True,
+        help="External Investigation Record v0.1 JSON",
+    )
+    args = parser.parse_args(argv)
+    try:
+        _emit(evaluate_external_investigation(load_external_investigation(args.record.resolve())))
+        return EXIT_OK
+    except (ExternalInvestigationError, FileNotFoundError, json.JSONDecodeError, OSError) as exc:
         print(f"cgqa: {exc}", file=sys.stderr)
         return EXIT_VALIDATION
     except KeyboardInterrupt:
@@ -494,6 +529,8 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_OK
     if effective[0] == "quickstart":
         return project_quickstart_cli.main(effective[1:])
+    if effective[0] == "external-investigation":
+        return _external_investigation_main(effective[1:])
     if effective[0] in PHASE2_COMMANDS:
         return _normalize_subcli_exit(causal_temporal_cli.main(effective))
     if effective[0] in PROOF_COMMANDS:

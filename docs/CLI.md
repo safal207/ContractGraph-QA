@@ -18,6 +18,21 @@ cgqa --help
 
 The causal-temporal Phase 2/3/4 commands use the same public exit-code contract even though their internal Python modules historically returned `2` for validation/HOLD results.
 
+## `cgqa external-investigation`
+
+Validate and summarize a chain-neutral source-bound investigation record:
+
+```bash
+cgqa external-investigation \
+  --record scenarios/external-investigation-stellar-dice-duel.json
+```
+
+The command validates exact source identity, authorization, evidence states, separate native/CGQA execution states, the complete `AGENTS.md` capability matrix, blockers, verification debt, impact classification, and explicit non-claims.
+
+A valid blocked journal exits `0` and emits `recordValidationStatus: VALID` because the record itself is valid. Consumers must inspect `workflowStatus`; exit code `0` is not a target-security verdict. Structurally invalid or overclaiming records exit `10`.
+
+See [`EXTERNAL_INVESTIGATION_GATE.md`](EXTERNAL_INVESTIGATION_GATE.md).
+
 ## `cgqa quickstart`
 
 Inspect an unfamiliar local smart-contract repository without executing project code by default.

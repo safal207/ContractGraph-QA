@@ -27,6 +27,7 @@ UNKNOWN outcome → no new financial action
 | Team / trigger | Product route | What gets verified |
 |---|---|---|
 | Payment, wallet, payout, stablecoin, or agentic-commerce team | **Ambiguous Outcome Recovery Pilot** | timeout, lost response, duplicate or delayed webhook, retry, fallback, reconciliation, policy continuity, ledger divergence |
+| Assigned issue or source-only smart-contract lead | **External Investigation Gate** | exact source subject, authorization, direct vs reported evidence, capability coverage, blockers, verification debt, honest `NOT_RUN` states |
 | Smart-contract or protocol team | **State-Machine Review** | escrow, settlement, release/refund, conservation, authorization, time boundaries, terminal states, ordering, replay |
 | Engineering or audit-readiness team | **CGQA evidence pipeline** | reviewed model, bounded search, minimal counterexample, deterministic replay, provenance-bound evidence bundle |
 
@@ -135,6 +136,32 @@ The vendor-neutral benchmark includes seed cases for:
 
 ---
 
+## External smart-contract investigation gate
+
+When an assigned or authorized investigation starts before a native regression or full CGQA adapter exists, preserve it as a strict machine-readable record:
+
+```bash
+cgqa external-investigation \
+  --record scenarios/external-investigation-stellar-dice-duel.json
+```
+
+The gate requires an exact source commit, evidence-state classification, all 30 `AGENTS.md` capability rows, explicit blockers, verification debt, impact class, and non-claims. It rejects bounded no-finding or verified-remediation language when the required execution did not occur.
+
+The Soroban example intentionally returns:
+
+```text
+record validation = VALID
+finding = COUNTEREXAMPLE_FOUND
+workflow = BLOCKED
+native regression = NOT_RUN
+ContractGraph-QA = NOT_RUN
+security verdict authorized = false
+```
+
+[External Investigation Gate →](docs/EXTERNAL_INVESTIGATION_GATE.md) · [Case-study registry →](docs/case-studies/README.md)
+
+---
+
 ## Smart-contract quickstart
 
 For an unfamiliar local smart-contract repository:
@@ -204,6 +231,7 @@ inconclusive
 - **Stateful, not function-by-function.** It searches sequences of actors, actions, retries, ordering, and time changes.
 - **Economic-effect oriented.** It tracks the reachable effect, not only the local return value.
 - **Evidence first.** Findings carry minimal paths, observed state, identity, provenance, and replay instructions.
+- **Useful before a full adapter exists.** Source-bound investigations can be preserved without being mislabeled as executed CGQA evidence.
 - **Honest assurance language.** Missing coverage does not silently become a clean PASS.
 - **Retestable.** The same historical path can be replayed after a fix, followed by alternate-path search.
 - **Authorization bounded.** Public code or an address is not treated as permission to test a production target.
@@ -227,7 +255,9 @@ Key documents:
 
 - [Recovery Pilot](PILOT.md)
 - [Synthetic Recovery Case Study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
+- [Case-Study Registry](docs/case-studies/README.md)
 - [Soroban Dice-Duel Investigation Journal](docs/case-studies/STELLAR_DICE_DUEL_PREDICTABLE_RANDOMNESS.md)
+- [External Investigation Gate](docs/EXTERNAL_INVESTIGATION_GATE.md)
 - [Product runtime](docs/PRODUCT.md)
 - [CLI reference](docs/CLI.md)
 - [Engagement workflow](docs/ENGAGEMENT.md)
@@ -266,6 +296,7 @@ A one-line answer is enough to define the first boundary.
 - Deterministic evidence bundles
 - Independent bundle verification
 - Universal smart-contract quickstart
+- Chain-neutral external investigation gate
 - Agent-payment recovery benchmark
 - Current release: `v1.9.0`
 

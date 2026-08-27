@@ -39,6 +39,21 @@ The sample engagement `CGQA-E-001` demonstrates three distinct evidence outcomes
 
 See [SAMPLE_ENGAGEMENT.md](SAMPLE_ENGAGEMENT.md).
 
+## External source-bound preflight
+
+An assigned issue or source-only lead can enter through the [External Investigation Gate](../EXTERNAL_INVESTIGATION_GATE.md) before a complete adapter or native regression exists.
+
+The gate preserves:
+
+- the exact source commit and scope;
+- direct, reported, archived, and verified evidence as different states;
+- every required capability row;
+- architecture blockers and verification debt;
+- qualitative, modeled, or measured impact without inventing ROI;
+- explicit native and CGQA `NOT_RUN` states.
+
+The [Soroban dice-duel case](../case-studies/STELLAR_DICE_DUEL_PREDICTABLE_RANDOMNESS.md) is the first external source-bound example. It records a reported counterexample and a maintainer-owned settlement blocker, but does not claim a completed CGQA engagement.
+
 The causal fixture in `proof.json` separately demonstrates:
 
 ```text
@@ -97,6 +112,8 @@ The pull-request causal security gate, exact historical path replay, and client-
 - [Primary Recovery Pilot](../../PILOT.md)
 - [Design-Partner Pilot Offer](PILOT_OFFER.md)
 - [Question-First Outreach](OUTREACH.md)
+- [External Investigation Gate](../EXTERNAL_INVESTIGATION_GATE.md)
+- [Case-Study Registry](../case-studies/README.md)
 - [Synthetic Recovery Case Study](../case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
 - [Sample Smart-Contract Engagement](SAMPLE_ENGAGEMENT.md)
 

@@ -8,7 +8,12 @@
 **Primary contract:** contracts/dice-duel/src/lib.rs  
 **ContractGraph-QA execution:** NOT_RUN
 
+**Machine-readable companion:** [`scenarios/external-investigation-stellar-dice-duel.json`](../../scenarios/external-investigation-stellar-dice-duel.json)
+**Validation command:** `cgqa external-investigation --record scenarios/external-investigation-stellar-dice-duel.json`
+
 This is a source-bound journal entry for an authorized public issue investigation. It records what was observed and reported before any production patch. It is not a full audit, a merged fix, or a claim that ContractGraph-QA has already verified the remediation.
+
+The companion record is validated by the [External Investigation Gate](../EXTERNAL_INVESTIGATION_GATE.md). A valid record preserves this journal's evidence and `NOT_RUN` boundaries; it does not upgrade them into a security verdict.
 
 ## Property under review
 

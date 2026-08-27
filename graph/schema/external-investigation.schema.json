@@ -1,0 +1,422 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schema/external-investigation-v0.1.json",
+  "title": "ContractGraph-QA External Investigation Record v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "investigationId",
+    "recordedAt",
+    "subject",
+    "authorization",
+    "property",
+    "evidence",
+    "execution",
+    "finding",
+    "blockers",
+    "capabilityMatrix",
+    "verificationDebt",
+    "impact",
+    "nonClaims"
+  ],
+  "properties": {
+    "schema": {"const": "cgqa/external-investigation/v0.1"},
+    "investigationId": {"$ref": "#/$defs/safeId"},
+    "recordedAt": {"type": "string", "format": "date-time"},
+    "subject": {"$ref": "#/$defs/subject"},
+    "authorization": {"$ref": "#/$defs/authorization"},
+    "property": {"$ref": "#/$defs/property"},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/evidence"}
+    },
+    "execution": {"$ref": "#/$defs/execution"},
+    "finding": {"$ref": "#/$defs/finding"},
+    "blockers": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/blocker"}
+    },
+    "capabilityMatrix": {
+      "type": "array",
+      "minItems": 30,
+      "maxItems": 30,
+      "items": {"$ref": "#/$defs/capability"}
+    },
+    "verificationDebt": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/debt"}
+    },
+    "impact": {"$ref": "#/$defs/impact"},
+    "nonClaims": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/nonBlank"}
+    }
+  },
+  "$defs": {
+    "nonBlank": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "safeId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "sha40": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha64": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "nullableText": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/nonBlank"}
+      ]
+    },
+    "nullableSha40": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/sha40"}
+      ]
+    },
+    "nullableSha64": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/sha64"}
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commitSha",
+        "issueUrl",
+        "paths",
+        "ecosystem",
+        "language",
+        "framework",
+        "network"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "commitSha": {"$ref": "#/$defs/sha40"},
+        "issueUrl": {"type": "string", "pattern": "^https://"},
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/nonBlank"}
+        },
+        "ecosystem": {"$ref": "#/$defs/nonBlank"},
+        "language": {"$ref": "#/$defs/nonBlank"},
+        "framework": {"$ref": "#/$defs/nonBlank"},
+        "network": {"$ref": "#/$defs/nullableText"}
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "basis", "referenceUrl", "scope"],
+      "properties": {
+        "status": {
+          "enum": ["CONFIRMED", "UNCONFIRMED", "NOT_REQUIRED"]
+        },
+        "basis": {
+          "enum": [
+            "ASSIGNED_PUBLIC_ISSUE",
+            "WRITTEN_SCOPE",
+            "OWNED_TARGET",
+            "PUBLIC_SAFE_HARBOR",
+            "SOURCE_REVIEW_ONLY"
+          ]
+        },
+        "referenceUrl": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^https://"}
+          ]
+        },
+        "scope": {"$ref": "#/$defs/nonBlank"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "CONFIRMED"}}},
+          "then": {"properties": {"referenceUrl": {"type": "string", "pattern": "^https://"}}}
+        }
+      ]
+    },
+    "property": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "invariantFamily", "protectedOutcome"],
+      "properties": {
+        "id": {"$ref": "#/$defs/safeId"},
+        "statement": {"$ref": "#/$defs/nonBlank"},
+        "invariantFamily": {
+          "enum": [
+            "SAFETY",
+            "LIVENESS",
+            "CONSERVATION",
+            "AUTHORIZATION",
+            "REPLAY",
+            "TEMPORAL",
+            "CRASH_RECOVERY",
+            "ECONOMIC_FAIRNESS",
+            "OTHER"
+          ]
+        },
+        "protectedOutcome": {"$ref": "#/$defs/nonBlank"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "state", "reference", "claim", "sha256"],
+      "properties": {
+        "id": {"$ref": "#/$defs/safeId"},
+        "kind": {
+          "enum": [
+            "SOURCE",
+            "ISSUE_UPDATE",
+            "INDEPENDENT_HARNESS",
+            "RESOURCE_MEASUREMENT",
+            "IMPACT_MEASUREMENT",
+            "NATIVE_REGRESSION",
+            "CI",
+            "CGQA_BUNDLE"
+          ]
+        },
+        "state": {
+          "enum": [
+            "DIRECTLY_OBSERVED",
+            "REPORTED_NOT_ARCHIVED",
+            "ARCHIVED_UNVERIFIED",
+            "VERIFIED"
+          ]
+        },
+        "reference": {"$ref": "#/$defs/nonBlank"},
+        "claim": {"$ref": "#/$defs/nonBlank"},
+        "sha256": {"$ref": "#/$defs/nullableSha64"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"state": {"const": "REPORTED_NOT_ARCHIVED"}}},
+          "then": {"properties": {"sha256": {"type": "null"}}}
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {"enum": ["ARCHIVED_UNVERIFIED", "VERIFIED"]}
+            }
+          },
+          "then": {"properties": {"sha256": {"$ref": "#/$defs/sha64"}}}
+        }
+      ]
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nativeRegression", "contractGraphQa"],
+      "properties": {
+        "nativeRegression": {"$ref": "#/$defs/nativeExecution"},
+        "contractGraphQa": {"$ref": "#/$defs/cgqaExecution"}
+      }
+    },
+    "nativeExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reference", "evidenceSha256"],
+      "properties": {
+        "status": {"enum": ["NOT_RUN", "BLOCKED", "RUN_FAIL", "RUN_PASS"]},
+        "reference": {"$ref": "#/$defs/nullableText"},
+        "evidenceSha256": {"$ref": "#/$defs/nullableSha64"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"enum": ["RUN_FAIL", "RUN_PASS"]}}},
+          "then": {
+            "properties": {
+              "reference": {"$ref": "#/$defs/nonBlank"},
+              "evidenceSha256": {"$ref": "#/$defs/sha64"}
+            }
+          },
+          "else": {
+            "properties": {
+              "reference": {"type": "null"},
+              "evidenceSha256": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "cgqaExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "headSha", "reference", "evidenceSha256"],
+      "properties": {
+        "status": {"enum": ["NOT_RUN", "BLOCKED", "RUN_FAIL", "RUN_PASS"]},
+        "headSha": {"$ref": "#/$defs/nullableSha40"},
+        "reference": {"$ref": "#/$defs/nullableText"},
+        "evidenceSha256": {"$ref": "#/$defs/nullableSha64"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"enum": ["RUN_FAIL", "RUN_PASS"]}}},
+          "then": {
+            "properties": {
+              "headSha": {"$ref": "#/$defs/sha40"},
+              "reference": {"$ref": "#/$defs/nonBlank"},
+              "evidenceSha256": {"$ref": "#/$defs/sha64"}
+            }
+          },
+          "else": {
+            "properties": {
+              "headSha": {"type": "null"},
+              "reference": {"type": "null"},
+              "evidenceSha256": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "claim",
+        "rootCause",
+        "evidenceIds",
+        "searchBound",
+        "remediationStatus"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "COUNTEREXAMPLE_FOUND",
+            "NO_COUNTEREXAMPLE_WITHIN_BOUND",
+            "INCONCLUSIVE",
+            "NOT_RUN"
+          ]
+        },
+        "claim": {"$ref": "#/$defs/nonBlank"},
+        "rootCause": {"$ref": "#/$defs/nullableText"},
+        "evidenceIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safeId"}
+        },
+        "searchBound": {"$ref": "#/$defs/nullableText"},
+        "remediationStatus": {
+          "enum": [
+            "NOT_STARTED",
+            "PROPOSED",
+            "BLOCKED",
+            "IMPLEMENTED_UNVERIFIED",
+            "VERIFIED_WITHIN_BOUND"
+          ]
+        }
+      }
+    },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "owner", "question", "reference"],
+      "properties": {
+        "id": {"$ref": "#/$defs/safeId"},
+        "status": {"enum": ["OPEN", "RESOLVED"]},
+        "owner": {"$ref": "#/$defs/nonBlank"},
+        "question": {"$ref": "#/$defs/nonBlank"},
+        "reference": {"$ref": "#/$defs/nullableText"}
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "evidenceBoundary"],
+      "properties": {
+        "id": {
+          "enum": [
+            "exact_subject_artifact_gate",
+            "preregistered_verification_plan",
+            "orientation_center",
+            "native_mapping_adapter_review",
+            "safety_invariants",
+            "liveness_reachability",
+            "financial_conservation",
+            "authorization_capabilities",
+            "replay_idempotency",
+            "temporal_lifecycle",
+            "crash_recovery",
+            "causal_ancestral_validity",
+            "transition_geometry",
+            "negative_control",
+            "stateful_property_search",
+            "independent_witness",
+            "trace_integrity",
+            "evidence_type_readiness",
+            "counterexample_minimization",
+            "root_cause_collapse",
+            "deterministic_replay",
+            "metamorphic_round_trip_verification",
+            "native_regression",
+            "durable_evidence_reopen_integrity",
+            "verification_debt",
+            "active_verification_planning",
+            "meaning_trajectory",
+            "dormant_patterns_watchpoints",
+            "temporal_external_replication",
+            "forward_remediation"
+          ]
+        },
+        "status": {
+          "enum": ["RUN", "NOT_APPLICABLE", "BLOCKED", "SKIPPED_WITH_REASON", "NOT_RUN"]
+        },
+        "evidenceBoundary": {"$ref": "#/$defs/nonBlank"}
+      }
+    },
+    "debt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "capabilityId", "required", "status", "nextEvidence"],
+      "properties": {
+        "id": {"$ref": "#/$defs/safeId"},
+        "capabilityId": {"$ref": "#/$defs/safeId"},
+        "required": {"type": "boolean"},
+        "status": {"enum": ["OPEN", "BLOCKED", "DONE_PASS", "DONE_FAIL", "NOT_APPLICABLE"]},
+        "nextEvidence": {"$ref": "#/$defs/nonBlank"}
+      }
+    },
+    "impact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "protectedOutcome", "statement", "evidenceIds", "assumptions"],
+      "properties": {
+        "classification": {"enum": ["QUALITATIVE", "MODELED", "MEASURED"]},
+        "protectedOutcome": {"$ref": "#/$defs/nonBlank"},
+        "statement": {"$ref": "#/$defs/nonBlank"},
+        "evidenceIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safeId"}
+        },
+        "assumptions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/nonBlank"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,320 @@
+{
+  "schema": "cgqa/external-investigation/v0.1",
+  "investigationId": "CGQA-EXT-STELLAR-DICE-DUEL-001",
+  "recordedAt": "2026-08-27T13:31:55Z",
+  "subject": {
+    "repository": "Bitcoindefi/Stellar-Game-Studio",
+    "commitSha": "43a933a84c7c3133365bf56b6998a26fdf360b24",
+    "issueUrl": "https://github.com/Bitcoindefi/Stellar-Game-Studio/issues/1",
+    "paths": [
+      "contracts/dice-duel/src/lib.rs"
+    ],
+    "ecosystem": "stellar-soroban",
+    "language": "rust",
+    "framework": "soroban-sdk",
+    "network": null
+  },
+  "authorization": {
+    "status": "CONFIRMED",
+    "basis": "ASSIGNED_PUBLIC_ISSUE",
+    "referenceUrl": "https://github.com/Bitcoindefi/Stellar-Game-Studio/issues/1",
+    "scope": "Source-bound investigation of the assigned public dice-duel issue; no production or real-value interaction."
+  },
+  "property": {
+    "id": "CGQ-FAIR-001",
+    "statement": "A participant who assembles a game must not be able to select the winner before both wagers are committed.",
+    "invariantFamily": "ECONOMIC_FAIRNESS",
+    "protectedOutcome": "Neither player can preselect a favorable dice-duel winner from public, caller-controlled inputs."
+  },
+  "evidence": [
+    {
+      "id": "SOURCE-001",
+      "kind": "SOURCE",
+      "state": "DIRECTLY_OBSERVED",
+      "reference": "https://github.com/Bitcoindefi/Stellar-Game-Studio/blob/43a933a84c7c3133365bf56b6998a26fdf360b24/contracts/dice-duel/src/lib.rs",
+      "claim": "The pinned contract accepts caller-supplied session_id and later derives the dice seed from session_id and the two player addresses; roll only records flags.",
+      "sha256": null
+    },
+    {
+      "id": "RED-001",
+      "kind": "INDEPENDENT_HARNESS",
+      "state": "REPORTED_NOT_ARCHIVED",
+      "reference": "https://github.com/Bitcoindefi/Stellar-Game-Studio/issues/1#issuecomment-5429093502",
+      "claim": "The public update reports session_id 1 producing player 1 as winner and session_id 3 producing player 2 as winner for the same players and wagers.",
+      "sha256": null
+    },
+    {
+      "id": "META-001",
+      "kind": "INDEPENDENT_HARNESS",
+      "state": "REPORTED_NOT_ARCHIVED",
+      "reference": "https://github.com/Bitcoindefi/Stellar-Game-Studio/issues/1#issuecomment-5429093502",
+      "claim": "The public update reports that reversing roll order and changing roll ledgers did not change the deterministic outcome.",
+      "sha256": null
+    },
+    {
+      "id": "RESOURCE-001",
+      "kind": "RESOURCE_MEASUREMENT",
+      "state": "REPORTED_NOT_ARCHIVED",
+      "reference": "https://github.com/Bitcoindefi/Stellar-Game-Studio/issues/1#issuecomment-5429093502",
+      "claim": "A test-only commitment prototype was reported at 344 preimage bytes, 193499 maximum CPU instructions, 42820 maximum memory bytes, and a three-entry 500-byte maximum write footprint.",
+      "sha256": null
+    },
+    {
+      "id": "BLOCKER-QUESTION-001",
+      "kind": "ISSUE_UPDATE",
+      "state": "DIRECTLY_OBSERVED",
+      "reference": "https://github.com/Bitcoindefi/Stellar-Game-Studio/issues/1#issuecomment-5428236790",
+      "claim": "The investigation asks the maintainer for the official Game Hub ABI or permission for a neutral cancel_game terminal path.",
+      "sha256": null
+    }
+  ],
+  "execution": {
+    "nativeRegression": {
+      "status": "NOT_RUN",
+      "reference": null,
+      "evidenceSha256": null
+    },
+    "contractGraphQa": {
+      "status": "NOT_RUN",
+      "headSha": null,
+      "reference": null,
+      "evidenceSha256": null
+    }
+  },
+  "finding": {
+    "status": "COUNTEREXAMPLE_FOUND",
+    "claim": "An actor able to choose session_id can search candidate IDs before game creation and select a favorable deterministic winner.",
+    "rootCause": "The outcome seed contains only values known before betting, including caller-controlled session_id; roll contributes no hidden entropy.",
+    "evidenceIds": [
+      "SOURCE-001",
+      "RED-001",
+      "META-001"
+    ],
+    "searchBound": "Two reported session IDs plus roll-order and ledger-variation negative controls; the full harness corpus is not archived.",
+    "remediationStatus": "BLOCKED"
+  },
+  "blockers": [
+    {
+      "id": "GAME-HUB-NEUTRAL-SETTLEMENT",
+      "status": "OPEN",
+      "owner": "upstream-maintainer",
+      "question": "Provide the official Game Hub ABI or authorize an additive cancel_game(session_id) path for the neither-reveals terminal state.",
+      "reference": "https://github.com/Bitcoindefi/Stellar-Game-Studio/issues/1#issuecomment-5428236790"
+    }
+  ],
+  "capabilityMatrix": [
+    {
+      "id": "exact_subject_artifact_gate",
+      "status": "RUN",
+      "evidenceBoundary": "Repository, issue, contract path, and 40-character source commit are pinned."
+    },
+    {
+      "id": "preregistered_verification_plan",
+      "status": "RUN",
+      "evidenceBoundary": "A public pre-implementation investigation plan exists in the assigned issue."
+    },
+    {
+      "id": "orientation_center",
+      "status": "RUN",
+      "evidenceBoundary": "Assignment, current finding, evidence state, blocker, and debt are recorded."
+    },
+    {
+      "id": "native_mapping_adapter_review",
+      "status": "RUN",
+      "evidenceBoundary": "The pinned dice-duel Soroban source was inspected; no CGQA adapter executed."
+    },
+    {
+      "id": "safety_invariants",
+      "status": "RUN",
+      "evidenceBoundary": "Winner selectability before both wagers commit was challenged."
+    },
+    {
+      "id": "liveness_reachability",
+      "status": "BLOCKED",
+      "evidenceBoundary": "The neither-reveals terminal path is undefined by the visible Game Hub interface."
+    },
+    {
+      "id": "financial_conservation",
+      "status": "BLOCKED",
+      "evidenceBoundary": "Neutral return semantics depend on maintainer-owned Game Hub authority."
+    },
+    {
+      "id": "authorization_capabilities",
+      "status": "RUN",
+      "evidenceBoundary": "Player authorization arguments and caller control of session_id were inspected."
+    },
+    {
+      "id": "replay_idempotency",
+      "status": "NOT_RUN",
+      "evidenceBoundary": "Candidate replay controls exist, but no remediation implementation exists to test."
+    },
+    {
+      "id": "temporal_lifecycle",
+      "status": "BLOCKED",
+      "evidenceBoundary": "Commit and reveal deadlines are not yet authoritative."
+    },
+    {
+      "id": "crash_recovery",
+      "status": "NOT_APPLICABLE",
+      "evidenceBoundary": "Crash and restart behavior is outside this bounded source finding."
+    },
+    {
+      "id": "causal_ancestral_validity",
+      "status": "NOT_APPLICABLE",
+      "evidenceBoundary": "No consequential delegated causal chain is part of this bounded finding."
+    },
+    {
+      "id": "transition_geometry",
+      "status": "RUN",
+      "evidenceBoundary": "Roll order and ledger variation were reportedly challenged."
+    },
+    {
+      "id": "negative_control",
+      "status": "RUN",
+      "evidenceBoundary": "The current deterministic implementation is the RED baseline."
+    },
+    {
+      "id": "stateful_property_search",
+      "status": "RUN",
+      "evidenceBoundary": "Offline session_id search was reported; complete search bounds are not archived."
+    },
+    {
+      "id": "independent_witness",
+      "status": "RUN",
+      "evidenceBoundary": "An independent harness result was reported publicly but its bytes are not archived here."
+    },
+    {
+      "id": "trace_integrity",
+      "status": "NOT_RUN",
+      "evidenceBoundary": "No durable execution trace bundle exists."
+    },
+    {
+      "id": "evidence_type_readiness",
+      "status": "RUN",
+      "evidenceBoundary": "Direct source evidence and reported harness evidence are classified separately."
+    },
+    {
+      "id": "counterexample_minimization",
+      "status": "SKIPPED_WITH_REASON",
+      "evidenceBoundary": "A two-ID witness is preserved, but no formal minimizer executed."
+    },
+    {
+      "id": "root_cause_collapse",
+      "status": "RUN",
+      "evidenceBoundary": "The caller-controlled deterministic seed boundary was isolated."
+    },
+    {
+      "id": "deterministic_replay",
+      "status": "RUN",
+      "evidenceBoundary": "Predicted values reportedly matched contract execution; replay bytes are not archived."
+    },
+    {
+      "id": "metamorphic_round_trip_verification",
+      "status": "RUN",
+      "evidenceBoundary": "Roll-order and ledger variations reportedly preserved the outcome."
+    },
+    {
+      "id": "native_regression",
+      "status": "NOT_RUN",
+      "evidenceBoundary": "No committed native RED or GREEN regression exists."
+    },
+    {
+      "id": "durable_evidence_reopen_integrity",
+      "status": "NOT_RUN",
+      "evidenceBoundary": "No archived harness bundle exists to reopen and hash-verify."
+    },
+    {
+      "id": "verification_debt",
+      "status": "RUN",
+      "evidenceBoundary": "Missing ABI, regression, fix, WASM, CI, and CGQA execution are explicit."
+    },
+    {
+      "id": "active_verification_planning",
+      "status": "RUN",
+      "evidenceBoundary": "The next transition is gated on authoritative neutral-settlement semantics."
+    },
+    {
+      "id": "meaning_trajectory",
+      "status": "RUN",
+      "evidenceBoundary": "Signal, counterexample, root cause, authority blocker, and next transition are preserved."
+    },
+    {
+      "id": "dormant_patterns_watchpoints",
+      "status": "RUN",
+      "evidenceBoundary": "number-guess and twenty-one are retained as separate watchpoints, not confirmed defects."
+    },
+    {
+      "id": "temporal_external_replication",
+      "status": "NOT_RUN",
+      "evidenceBoundary": "No later subject revision or independent external replay was checked."
+    },
+    {
+      "id": "forward_remediation",
+      "status": "BLOCKED",
+      "evidenceBoundary": "Production remediation waits for official neutral-settlement semantics."
+    }
+  ],
+  "verificationDebt": [
+    {
+      "id": "DEBT-GAME-HUB-ABI",
+      "capabilityId": "forward_remediation",
+      "required": true,
+      "status": "BLOCKED",
+      "nextEvidence": "Maintainer supplies the official ABI or explicitly approves neutral cancellation semantics."
+    },
+    {
+      "id": "DEBT-NATIVE-REGRESSION",
+      "capabilityId": "native_regression",
+      "required": true,
+      "status": "OPEN",
+      "nextEvidence": "Commit and execute a target-native RED regression bound to the exact upstream subject."
+    },
+    {
+      "id": "DEBT-REMEDIATION",
+      "capabilityId": "forward_remediation",
+      "required": true,
+      "status": "BLOCKED",
+      "nextEvidence": "Implement the smallest authorized dice-duel remediation after the ABI decision."
+    },
+    {
+      "id": "DEBT-NATIVE-GREEN-WASM-CI",
+      "capabilityId": "evidence_type_readiness",
+      "required": true,
+      "status": "OPEN",
+      "nextEvidence": "Archive native GREEN, relevant WASM build, formatting, lint, tests, and CI results."
+    },
+    {
+      "id": "DEBT-CGQA-RUN",
+      "capabilityId": "durable_evidence_reopen_integrity",
+      "required": true,
+      "status": "OPEN",
+      "nextEvidence": "Run ContractGraph-QA against the final exact remediation head and archive a digest-bound bundle."
+    },
+    {
+      "id": "DEBT-HARNESS-ARCHIVE",
+      "capabilityId": "trace_integrity",
+      "required": true,
+      "status": "OPEN",
+      "nextEvidence": "Archive the independent harness, dependencies, environment, outputs, and deterministic replay command."
+    }
+  ],
+  "impact": {
+    "classification": "QUALITATIVE",
+    "protectedOutcome": "Fair and value-conserving settlement of a two-player wager.",
+    "statement": "A participant who controls session_id can plausibly choose a favorable deterministic winner before both wagers are finalized, undermining economic fairness and trust. No realized monetary loss or affected population has been measured.",
+    "evidenceIds": [
+      "SOURCE-001",
+      "RED-001"
+    ],
+    "assumptions": []
+  },
+  "nonClaims": [
+    "No production fix or upstream pull request exists.",
+    "Native GREEN, WASM, target CI, and ContractGraph-QA verification have not run.",
+    "The result does not establish that number-guess or twenty-one has the identical defect.",
+    "The result is not a whole-repository or deployed-system security verdict.",
+    "The reported native resource sample does not predict production network cost.",
+    "No reward, payment amount, eligibility, or receivable is confirmed.",
+    "The upstream author's nationality is not inferred from the Spanish-language issue."
+  ]
+}

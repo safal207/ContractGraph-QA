@@ -46,6 +46,8 @@ Primary systems:
 
 The two routes share one engine but should not be mixed in the same cold outreach.
 
+Assigned public issues and source-only leads can first enter through the **External Investigation Gate**. That intake product preserves an exact source subject, evidence state, blocker, and verification debt without pretending that native or CGQA execution already occurred. It is a bridge into the state-machine review, not a third commercial route to pitch in parallel.
+
 ## Primary ideal customer profile
 
 | Buyer / champion | Trigger |
