@@ -97,8 +97,11 @@ class ProviderAdapterTest(unittest.TestCase):
         summary = validate_provider_adapter(adapter)
 
         self.assertEqual(summary["providerId"], "crossmint-wallet-transactions-public")
+        self.assertEqual(summary["schema"], "cgqa.payment-provider-adapter.v0.3")
         self.assertEqual(summary["evidencePrecedenceStatus"], "unresolved")
         self.assertEqual(summary["evidencePrecedence"], [])
+        self.assertEqual(summary["retrySemanticsStatus"], "unresolved")
+        self.assertEqual(summary["retryAllowedAfterProviderStates"], [])
         self.assertTrue(adapter["create"]["supportsIdempotencyKey"])
         self.assertFalse(adapter["create"]["sameKeyReplayDocumented"])
 
@@ -124,6 +127,27 @@ class ProviderAdapterTest(unittest.TestCase):
             "no_authoritative_finality_surface_observed",
         )
         self.assertFalse(result["retryAllowed"])
+
+    def test_crossmint_terminal_failure_is_final_but_retry_authority_unresolved(self) -> None:
+        adapter = load_provider_adapter(CROSSMINT)
+        observations = {
+            "schema": "cgqa.payment-provider-observations.v0.1",
+            "logicalOperationId": "crossmint-failed",
+            "executionId": "exec-crossmint-failed",
+            "observations": [
+                {
+                    "source": "get-transaction",
+                    "providerState": "failed",
+                    "evidenceRef": "fixture://crossmint/get/failed",
+                }
+            ],
+        }
+        result = reconcile_provider_observations(adapter, observations)
+
+        self.assertEqual(result["status"], "final")
+        self.assertEqual(result["outcome"], "failed")
+        self.assertFalse(result["retryAllowed"])
+        self.assertEqual(result["retryBlockReason"], "retry_semantics_unresolved")
 
     def test_unresolved_precedence_with_multiple_authoritative_sources_fails_closed(self) -> None:
         adapter = load_provider_adapter(CROSSMINT)
