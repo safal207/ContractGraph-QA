@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "fault-mutation-generator-v0.1",
+  "generationId": "escrow-auto-faults-v0.1",
+  "sourcePath": "src/examples/Escrow.sol",
+  "sourceSha256": "25fc095313ee81ec6c433aa12697b602374e8f8dc3752fd5b6e92fc822b13498",
+  "propertyInvariantId": "EXAMPLE-ESCROW-BEHAVIOR-002",
+  "propertyDescription": "Repository Escrow tests should reject authorization, state-transition, time-boundary, and accounting faults introduced at supported source locations.",
+  "activationWitness": {
+    "observed": true,
+    "evidenceSha256": "0a00a77cd7a328c1e72712b598b638457e8298c157f0843fe8aabd0266eebce9",
+    "description": "Repository-owned EscrowGraph.t.sol directly exercises the bound behaviors used for generated mutation challenges."
+  },
+  "requiredFaultClasses": [
+    "authorization",
+    "state_transition",
+    "time_boundary",
+    "accounting"
+  ],
+  "foundry": {
+    "profile": "default",
+    "timeoutSeconds": 120
+  },
+  "testBindings": [
+    {
+      "faultClass": "authorization",
+      "function": "fund",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_UnauthorizedActorCannotFund"
+    },
+    {
+      "faultClass": "authorization",
+      "function": "release",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_UnauthorizedActorCannotRelease"
+    },
+    {
+      "faultClass": "authorization",
+      "function": "refund",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_UnauthorizedActorCannotRefundAfterDeadline"
+    },
+    {
+      "faultClass": "state_transition",
+      "function": "<contract>",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_CausalPath_FundThenRelease"
+    },
+    {
+      "faultClass": "state_transition",
+      "function": "fund",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_CausalPath_FundThenRelease"
+    },
+    {
+      "faultClass": "state_transition",
+      "function": "release",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_CausalPath_FundThenRelease"
+    },
+    {
+      "faultClass": "state_transition",
+      "function": "refund",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_TemporalPath_RefundOnlyAfterDeadline"
+    },
+    {
+      "faultClass": "time_boundary",
+      "function": "refund",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_TemporalPath_RefundOnlyAfterDeadline"
+    },
+    {
+      "faultClass": "accounting",
+      "function": "fund",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_CausalPath_FundThenRelease"
+    },
+    {
+      "faultClass": "accounting",
+      "function": "release",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_CausalPath_FundThenRelease"
+    },
+    {
+      "faultClass": "accounting",
+      "function": "refund",
+      "matchPath": "test/EscrowGraph.t.sol",
+      "matchTest": "test_TemporalPath_RefundOnlyAfterDeadline"
+    }
+  ],
+  "maxMutationsPerFaultClass": 10,
+  "scope": "Repository-owned automatic mutation benchmark; not a third-party audit."
+}

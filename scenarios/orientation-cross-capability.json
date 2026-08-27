@@ -1,0 +1,55 @@
+{
+  "schema": "cgqa/orientation-center/v0.1",
+  "subject": {
+    "commit": "abc"
+  },
+  "state": {
+    "status": "active"
+  },
+  "ancestry": {
+    "status": "VALID_WITHIN_TRACE"
+  },
+  "authorityNow": {
+    "status": "VALID"
+  },
+  "supportingEvidence": [
+    {
+      "id": "native-test",
+      "status": "PASS"
+    }
+  ],
+  "counterevidence": [],
+  "verificationDebt": [],
+  "independentWitnesses": [],
+  "watchpoints": [],
+  "geometryResults": [
+    {
+      "id": "geometry-clean",
+      "subjectHash": "c33990960d73f212c2f65ec6532cd8da100cd2e4d385b543cf8519f38a2bb5c1",
+      "status": "pass",
+      "pair": {
+        "classification": "CLOSED"
+      },
+      "loop": {
+        "classification": "FLAT_LOOP"
+      }
+    }
+  ],
+  "ancestryResults": [
+    {
+      "id": "ancestry-clean",
+      "subjectHash": "c33990960d73f212c2f65ec6532cd8da100cd2e4d385b543cf8519f38a2bb5c1",
+      "status": "pass",
+      "effectiveValidity": "valid_within_trace"
+    }
+  ],
+  "requirements": {
+    "requireSupportingEvidence": true,
+    "requireIndependentWitness": false,
+    "requireAncestry": true,
+    "requireAuthority": true,
+    "requireGeometry": true,
+    "requireAncestryReceipt": true,
+    "expectedCounterevidenceIds": []
+  }
+}

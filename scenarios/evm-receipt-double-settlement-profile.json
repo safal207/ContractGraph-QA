@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "evm-receipt-profile-v0.1",
+  "profileId": "escrow-double-settlement-v0.1",
+  "traceIdPrefix": "evm-receipt",
+  "chainId": 31337,
+  "contractAddresses": [
+    "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  ],
+  "scope": "synthetic-local-only",
+  "events": [
+    {
+      "name": "Released",
+      "topic0": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "economicEffect": {
+        "actionId": {"source": "constant", "value": "escrow-42:settle"},
+        "effectKey": {"source": "constant", "value": "escrow-payout"},
+        "occurrenceId": {"source": "eventRef"},
+        "applied": {"source": "constant", "value": true}
+      },
+      "stateCommit": {
+        "commitId": {"source": "eventRef"},
+        "conflictKey": {"source": "topic", "index": 1, "decode": "uint256", "prefix": "escrow:"},
+        "parentState": {"source": "dataWord", "index": 0, "decode": "uint256", "enumMap": {"1": "Funded"}},
+        "parentVersion": {"source": "dataWord", "index": 1, "decode": "uint256"},
+        "operation": {"source": "constant", "value": "release"},
+        "successorState": {"source": "dataWord", "index": 2, "decode": "uint256", "enumMap": {"2": "Released"}},
+        "successorVersion": {"source": "dataWord", "index": 3, "decode": "uint256"},
+        "committed": {"source": "constant", "value": true}
+      }
+    },
+    {
+      "name": "Disputed",
+      "topic0": "0x2222222222222222222222222222222222222222222222222222222222222222",
+      "economicEffect": {
+        "actionId": {"source": "constant", "value": "escrow-42:settle"},
+        "effectKey": {"source": "constant", "value": "escrow-payout"},
+        "occurrenceId": {"source": "eventRef"},
+        "applied": {"source": "constant", "value": true}
+      },
+      "stateCommit": {
+        "commitId": {"source": "eventRef"},
+        "conflictKey": {"source": "topic", "index": 1, "decode": "uint256", "prefix": "escrow:"},
+        "parentState": {"source": "dataWord", "index": 0, "decode": "uint256", "enumMap": {"1": "Funded"}},
+        "parentVersion": {"source": "dataWord", "index": 1, "decode": "uint256"},
+        "operation": {"source": "constant", "value": "raiseDispute"},
+        "successorState": {"source": "dataWord", "index": 2, "decode": "uint256", "enumMap": {"4": "Disputed"}},
+        "successorVersion": {"source": "dataWord", "index": 3, "decode": "uint256"},
+        "committed": {"source": "constant", "value": true}
+      }
+    }
+  ]
+}

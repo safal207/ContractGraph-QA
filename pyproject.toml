@@ -4,13 +4,26 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "contractgraph-qa"
-version = "1.7.0"
-description = "Causal-temporal state-transition QA and deterministic evidence pipelines for smart contracts"
+version = "1.9.0"
+description = "Evidence-first bounded verification for payment retries, financial state machines, wallets, ledgers, and smart contracts"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "safal207" }]
-keywords = ["smart-contracts", "qa", "foundry", "solidity", "testing", "audit-readiness"]
+keywords = [
+  "bounded-verification",
+  "payment-reliability",
+  "agentic-payments",
+  "wallets",
+  "idempotency",
+  "reconciliation",
+  "financial-state-machines",
+  "smart-contracts",
+  "qa",
+  "foundry",
+  "solidity",
+  "audit-readiness",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Environment :: Console",
@@ -22,8 +35,29 @@ classifiers = [
 ]
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/safal207/ContractGraph-QA"
+Documentation = "https://github.com/safal207/ContractGraph-QA#readme"
+"Recovery Pilot" = "https://github.com/safal207/ContractGraph-QA/blob/main/PILOT.md"
+"Case Study" = "https://github.com/safal207/ContractGraph-QA/blob/main/docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md"
+Issues = "https://github.com/safal207/ContractGraph-QA/issues"
+
 [project.scripts]
 cgqa = "contractgraph_qa.cli:main"
+cgqa-hydrated = "contractgraph_qa.hydrated_lattice_cli:main"
+cgqa-hydrated-evidence = "contractgraph_qa.hydrated_lattice_evidence_cli:main"
+cgqa-evm-receipt = "contractgraph_qa.evm_receipt_cli:main"
+cgqa-evm-hydrated = "contractgraph_qa.evm_hydrated_cli:main"
+cgqa-rpc-capture = "contractgraph_qa.rpc_capture_cli:main"
+cgqa-rpc-hydrated = "contractgraph_qa.rpc_hydrated_cli:main"
+cgqa-race = "contractgraph_qa.protective_ordering_cli:main"
+cgqa-causal-repair = "contractgraph_qa.causal_repair_cli:main"
+cgqa-repair-search = "contractgraph_qa.repair_search_cli:main"
+cgqa-spec-assurance = "contractgraph_qa.spec_assurance_cli:main"
+cgqa-mutation-run = "contractgraph_qa.mutation_acquisition_cli:main"
+cgqa-fault-mutate = "contractgraph_qa.fault_mutation_generator_cli:main"
+cgqa-fault-coverage = "contractgraph_qa.fault_coverage_cli:main"
+cgqa-semantic-units-mutate = "contractgraph_qa.semantic_units_mutation_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["contractgraph_qa*"]
@@ -32,4 +66,4 @@ include = ["contractgraph_qa*"]
 include-package-data = false
 
 [tool.setuptools.package-data]
-contractgraph_qa = ["demo_assets/*.json"]
+contractgraph_qa = ["demo_assets/*.json", "schemas/*.json"]

@@ -1,0 +1,18 @@
+{
+  "suite_id": "contractgraph-state-transition-v0.1",
+  "name": "ContractGraph-QA State-Transition Benchmark Suite",
+  "version": "0.1",
+  "thesis": "Functions may pass while the reachable lifecycle still fails.",
+  "cases": [
+    "cases/CGQ-B001-disputed-dead-end.json",
+    "cases/CGQ-B002-replay-without-theft.json",
+    "cases/CGQ-B003-timeout-without-escape.json",
+    "cases/CGQ-B004-valid-functions-invalid-composition.json"
+  ],
+  "invariants": "invariants.json",
+  "expected_summary": {
+    "function_verification": "PASS",
+    "state_transition_verification": "FAIL",
+    "case_count": 4
+  }
+}

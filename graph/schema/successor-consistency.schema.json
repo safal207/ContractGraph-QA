@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/successor-consistency.schema.json",
+  "title": "ContractGraph-QA Successor Consistency Model",
+  "type": "object",
+  "required": ["schemaVersion", "modelId", "invariantId", "commits"],
+  "properties": {
+    "schemaVersion": { "type": "string", "minLength": 1 },
+    "modelId": { "type": "string", "minLength": 1 },
+    "invariantId": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "eventId",
+          "commitId",
+          "conflictKey",
+          "parentState",
+          "parentVersion",
+          "operation",
+          "successorState",
+          "successorVersion",
+          "committed"
+        ],
+        "properties": {
+          "eventId": { "type": "string", "minLength": 1 },
+          "commitId": { "type": "string", "minLength": 1 },
+          "conflictKey": { "type": "string", "minLength": 1 },
+          "parentState": { "type": "string", "minLength": 1 },
+          "parentVersion": { "type": "integer", "minimum": 0 },
+          "operation": { "type": "string", "minLength": 1 },
+          "successorState": { "type": "string", "minLength": 1 },
+          "successorVersion": { "type": "integer", "minimum": 0 },
+          "committed": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

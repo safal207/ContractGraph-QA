@@ -86,9 +86,19 @@ The symbol `⟂` here means the consume and dispatch operations must not be sepa
 
 `test/ExecutionBindingInvariant.t.sol` encodes this contract as a small Foundry corpus. It deliberately models the boundary rather than a provider-specific vulnerability:
 
+- the pure lifetime matrix covers reusable decisions under EB-1 and EB-3;
 - same-stack synchronous reusable decisions remain valid;
 - every escaped external decision fails closed without dispatch-time rebinding;
 - rebound reusable decisions may proceed;
-- consumable authority fails closed unless consumption is atomic with dispatch.
+- EB-2 uses a stateful single-use authority instead of a caller assertion;
+- `consumeAndDispatch` records consumption before its modeled side effect in the
+  same transaction, and the corpus proves the first dispatch succeeds while a
+  second dispatch with the same authority fails;
+- an escaped single-use authority cannot be consumed before dispatch-time
+  rebinding succeeds.
+
+The reference proves those state-machine properties for the executable corpus.
+It does not prove atomicity for an adapter or provider that has a different
+transaction, storage, process, or network boundary.
 
 This keeps the invariant reusable across guardrails, agent payments, escrow release/refund flows, approval systems, queues, retries, and other stateful authorization paths.

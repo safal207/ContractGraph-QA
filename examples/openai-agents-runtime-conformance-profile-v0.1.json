@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "agent-runtime-conformance-profile/v0.1",
+  "projectionSpec": "witness-projection-conformance/v0.1",
+  "id": "openai-agents-sdk",
+  "name": "OpenAI Agents SDK",
+  "source": {
+    "repository": "openai/openai-agents-python",
+    "commit": "7f7a44f8dc0650296bd5ab6c745c9bcbaa6ac3b7"
+  },
+  "boundaryType": "restricted_hosted_sqlite_session",
+  "projection": {
+    "status": "pass",
+    "passed": 8,
+    "total": 8
+  },
+  "replay": "pass",
+  "explicitAbsence": "pass",
+  "deadlineBinding": "pass",
+  "persistence": "pass",
+  "appendOnly": "fail",
+  "destructiveMutations": {
+    "status": "present",
+    "operations": ["pop_item", "clear_session"]
+  },
+  "evidenceRefs": [
+    "benchmarks/openai-agents-session-conformance-v0.1/result.json",
+    "docs/OPENAI_AGENTS_SESSION_CONFORMANCE.md"
+  ],
+  "claimBoundary": "SQLiteSession JSON persistence can carry the complete witness contract under a restricted adapter, but the native Session protocol explicitly permits destructive history mutation."
+}

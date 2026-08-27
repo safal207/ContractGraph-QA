@@ -4,6 +4,51 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## 1.9.0 — Universal smart-contract quickstart and unified CLI
+
+### Added
+
+- `cgqa quickstart --target <project>` as a safe zero-config front door for local smart-contract repositories;
+- deterministic project fingerprints, framework/ecosystem detection, source inventory, contract/program declarations, review signals, native test planning, and a Markdown starter report;
+- detection and routing for Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban, Anchor, Move, and Cairo/Scarb projects;
+- optional `--run-native` execution that uses only a detected local command and remains disabled by default;
+- installed-wheel access to causal-temporal vNext capabilities through the main `cgqa` command, including witness, debt, watchpoints, replication, proof-integrity, durable reopen, and active-verification planning;
+- unified top-level help that makes the previously hidden vNext surface discoverable.
+
+### Fixed
+
+- an installed wheel no longer requires users to know or invoke internal `python -m contractgraph_qa.*_cli` modules for vNext capabilities;
+- Phase 2/3/4 sub-CLI validation exits are normalized to the stable public `cgqa` exit-code contract;
+- onboarding no longer begins with a blank manual adapter: quickstart first identifies the project, contracts, tools, and exact local next step;
+- comments and string literals are removed before Solidity review-signal matching to avoid obvious false positives;
+- dependency/build directories and symlinked trees are excluded from source inventory by default.
+
+### Claim boundary
+
+- quickstart review signals are investigation prompts, not vulnerability findings;
+- native test success is not a security proof;
+- deep stateful ContractGraph-QA analysis still requires a reviewed state/action/invariant model or adapter;
+- native project code is never executed unless the operator explicitly passes `--run-native`.
+
+## 1.8.0 — Measurement provenance and source-bound engagement evidence
+
+### Added
+
+- executable Measurement Provenance Gate with explicit `schemaEpoch`, `coverageScope`, expected/observed population, and fail-closed verdicts;
+- deterministic negative semantics for `EPOCH_MISMATCH`, `PARTIAL_COVERAGE`, and `UNMEASURED`;
+- source-bound change-gate provenance that derives the eligible model population independently from base/head configs and binds exact gate/config digests into client proof;
+- provenance-bearing engagement wrapper containing the verified legacy engagement bundle plus `measurement-input.json`, `measurement-source.json`, `measurement-provenance.json`, and a content-addressed outer `bundle.json`;
+- installed-wheel Product E2E for the full engagement path, including deterministic byte replay and provenance-wrapper verification outside the repository checkout.
+
+### Evidence and compatibility semantics
+
+- authoritative client evidence now requires a passing measurement-provenance boundary before it can be emitted;
+- engagement measurement coverage uses manifest-declared invariant IDs as the independent denominator and emitted checks as the observed population;
+- exact manifest/result artifact SHA-256 values are bound into the source receipt, so rehashing an outer bundle cannot legitimize tampered provenance or source evidence;
+- `cgqa verify-engagement-bundle` auto-detects legacy engagement bundles and v1.8 provenance wrappers, preserving backward verification compatibility;
+- legacy bundle semantics remain independently verified inside the wrapper rather than being replaced by checksums;
+- `UNMEASURED` remains unknown rather than being coerced to a false observation, and blocked provenance cannot become authoritative client evidence.
+
 ## 1.7.0 — Release trust and portability
 
 ### Added

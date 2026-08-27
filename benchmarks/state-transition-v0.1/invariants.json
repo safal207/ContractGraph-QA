@@ -1,0 +1,33 @@
+{
+  "version": "0.1",
+  "invariants": [
+    {
+      "id": "CGQ-LIVE-001",
+      "name": "NO_LOCKED_VALUE_DEAD_END",
+      "family": "liveness",
+      "statement": "Every reachable state containing locked economic value must have at least one valid path to an economically terminal state.",
+      "failure_class": "permanent_fund_lock"
+    },
+    {
+      "id": "CGQ-SAFE-001",
+      "name": "AT_MOST_ONCE_ECONOMIC_EFFECT",
+      "family": "economic_safety",
+      "statement": "A finalized business action may produce its economic effect at most once.",
+      "failure_class": "duplicate_settlement"
+    },
+    {
+      "id": "CGQ-LIVE-002",
+      "name": "TIMEOUT_REQUIRES_RECOVERY_PATH",
+      "family": "liveness",
+      "statement": "Every expired time-bounded state that still contains economic value must retain a valid recovery path.",
+      "failure_class": "timeout_fund_lock"
+    },
+    {
+      "id": "CGQ-CONS-001",
+      "name": "SINGLE_VALID_SUCCESSOR_PER_STATE_VERSION",
+      "family": "transition_consistency",
+      "statement": "Mutually exclusive transitions must not both commit from the same state version, and every transition must commit against the state version on which it was authorized.",
+      "failure_class": "conflicting_successors"
+    }
+  ]
+}

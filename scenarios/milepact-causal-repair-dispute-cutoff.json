@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "causal-repair-v0.1",
+  "repairId": "milepact-dispute-cutoff-v0.1",
+  "invariantId": "CGQ-CAUSAL-001",
+  "change": {
+    "changeId": "add-explicit-dispute-cutoff",
+    "description": "Make raiseDispute ineligible once autoRelease becomes eligible.",
+    "changedElements": [
+      "MilepactEscrow.raiseDispute deadline guard"
+    ]
+  },
+  "targetInvariantIds": [
+    "CGQ-RACE-001"
+  ],
+  "guardInvariantIds": [
+    "CGQ-SAFE-001",
+    "CGQ-CONS-001"
+  ],
+  "baseline": {
+    "assessmentId": "milepact-before-dispute-cutoff",
+    "evidenceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "invariantResults": [
+      {"invariantId": "CGQ-RACE-001", "status": "fail"},
+      {"invariantId": "CGQ-LIVE-001", "status": "fail"},
+      {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+      {"invariantId": "CGQ-CONS-001", "status": "pass"}
+    ]
+  },
+  "candidate": {
+    "assessmentId": "milepact-after-dispute-cutoff",
+    "evidenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "invariantResults": [
+      {"invariantId": "CGQ-RACE-001", "status": "pass"},
+      {"invariantId": "CGQ-LIVE-001", "status": "fail"},
+      {"invariantId": "CGQ-SAFE-001", "status": "pass"},
+      {"invariantId": "CGQ-CONS-001", "status": "pass"}
+    ]
+  },
+  "scope": "Illustrative reviewed before/after evidence for the MP-05 ordering repair; MP-01 remains unresolved."
+}

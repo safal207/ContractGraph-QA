@@ -6,13 +6,18 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from contractgraph_qa import __version__
-from contractgraph_qa.engagement import verify_engagement_bundle, write_engagement_bundle
+from contractgraph_qa.engagement import write_engagement_bundle
+from contractgraph_qa.engagement_provenance import (
+    create_engagement_provenance_bundle,
+    verify_engagement_provenance_bundle,
+)
 from contractgraph_qa.finding import load_json_object, manifest_sha256, validate_manifest
 
 CONFIG_KEYS = {
@@ -175,17 +180,28 @@ def run_engagement_pipeline(config: EngagementRunConfig) -> dict[str, Any]:
     fingerprint = manifest_sha256(manifest)
 
     _run_direct_capture(config, fingerprint)
-    generated = write_engagement_bundle(
-        config.manifest,
-        config.result,
-        config.output_directory,
-        config.bundle,
-    )
-    verification = verify_engagement_bundle(config.bundle)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        base_bundle = Path(temp_dir) / "engagement.base.zip"
+        generated = write_engagement_bundle(
+            config.manifest,
+            config.result,
+            config.output_directory,
+            base_bundle,
+        )
+        wrapped = create_engagement_provenance_bundle(base_bundle, config.bundle)
 
+    verification = verify_engagement_provenance_bundle(config.bundle)
     _require(
-        generated["bundleSha256"] == verification["bundleSha256"],
-        "engagement bundle verification hash mismatch",
+        generated["bundleSha256"] == verification["baseBundleSha256"],
+        "embedded engagement bundle verification hash mismatch",
+    )
+    _require(
+        wrapped["bundleSha256"] == verification["bundleSha256"],
+        "engagement provenance bundle verification hash mismatch",
+    )
+    _require(
+        verification["measurementProvenanceStatus"] == "pass",
+        "engagement measurement provenance did not pass",
     )
     return {
         "ok": True,
@@ -194,6 +210,9 @@ def run_engagement_pipeline(config: EngagementRunConfig) -> dict[str, Any]:
         "manifestSha256": fingerprint,
         "coverage": verification["coverage"],
         "findingIds": verification["findingIds"],
+        "measurementProvenanceStatus": verification["measurementProvenanceStatus"],
+        "coverageScope": verification["coverageScope"],
+        "baseBundleSha256": verification["baseBundleSha256"],
         "result": str(config.result),
         "outputDirectory": str(config.output_directory),
         "bundle": str(config.bundle),

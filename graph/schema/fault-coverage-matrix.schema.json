@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/fault-coverage-matrix-v0.1.json",
+  "title": "ContractGraph-QA Fault Coverage Matrix v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "classification",
+    "generationId",
+    "acquisitionId",
+    "sourcePath",
+    "sourceSha256",
+    "mutationPlanSha256",
+    "requiredFaultClasses",
+    "coveredFaultClasses",
+    "blindSpotFaultClasses",
+    "inconclusiveFaultClasses",
+    "totals",
+    "matrix",
+    "specAssuranceStatus",
+    "claimBoundary",
+    "matrixSha256"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "fault-coverage-matrix-v0.1"},
+    "status": {"enum": ["pass", "fail", "inconclusive"]},
+    "classification": {
+      "enum": [
+        "all_reviewed_mutations_detected",
+        "blind_spots_present",
+        "incomplete_fault_coverage_evidence"
+      ]
+    },
+    "generationId": {"type": "string", "minLength": 1},
+    "acquisitionId": {"type": "string", "minLength": 1},
+    "sourcePath": {"type": "string", "minLength": 1},
+    "sourceSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "mutationPlanSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "requiredFaultClasses": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "coveredFaultClasses": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "blindSpotFaultClasses": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "inconclusiveFaultClasses": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discoveredCandidateCount", "generatedMutationCount", "detectedCount", "survivedCount", "inconclusiveCount", "reviewedKillRate"],
+      "properties": {
+        "discoveredCandidateCount": {"type": "integer", "minimum": 0},
+        "generatedMutationCount": {"type": "integer", "minimum": 0},
+        "detectedCount": {"type": "integer", "minimum": 0},
+        "survivedCount": {"type": "integer", "minimum": 0},
+        "inconclusiveCount": {"type": "integer", "minimum": 0},
+        "reviewedKillRate": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      }
+    },
+    "matrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "faultClass",
+          "status",
+          "discoveredCandidateCount",
+          "generatedMutationCount",
+          "detectedCount",
+          "survivedCount",
+          "inconclusiveCount",
+          "killRate",
+          "detectedMutationIds",
+          "survivedMutationIds",
+          "inconclusiveMutationIds",
+          "generationBlockers"
+        ],
+        "properties": {
+          "faultClass": {"type": "string", "minLength": 1},
+          "status": {"enum": ["covered_over_reviewed_mutations", "blind_spot", "inconclusive"]},
+          "discoveredCandidateCount": {"type": "integer", "minimum": 0},
+          "generatedMutationCount": {"type": "integer", "minimum": 0},
+          "detectedCount": {"type": "integer", "minimum": 0},
+          "survivedCount": {"type": "integer", "minimum": 0},
+          "inconclusiveCount": {"type": "integer", "minimum": 0},
+          "killRate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+          "detectedMutationIds": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "survivedMutationIds": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "inconclusiveMutationIds": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "generationBlockers": {"type": "array", "items": {"enum": ["unsupported", "no_candidate", "unbound_test"]}, "uniqueItems": true}
+        }
+      }
+    },
+    "specAssuranceStatus": {"type": ["string", "null"], "enum": ["pass", "fail", "inconclusive", null]},
+    "claimBoundary": {"type": "string", "minLength": 1},
+    "matrixSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

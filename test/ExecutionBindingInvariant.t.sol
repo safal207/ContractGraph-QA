@@ -12,83 +12,114 @@ contract ExecutionBindingInvariantTest {
         RetryReplay
     }
 
+    error RebindRequired();
+    error AuthorityAlreadyConsumed();
+
+    mapping(bytes32 authorityId => bool consumed) public authorityConsumed;
+    mapping(bytes32 authorityId => uint256 count) public dispatchCount;
+
     function test_ImmediateReusableExternalDecisionMayDispatch() public pure {
-        assert(_externalDispatchAllowed(Transit.ImmediateSync, false, false, false));
+        assert(_reusableExternalDispatchAllowed(Transit.ImmediateSync, false));
     }
 
     function test_CachedExternalDecisionFailsClosedWithoutRebind() public pure {
-        assert(!_externalDispatchAllowed(Transit.Cached, false, false, false));
+        assert(!_reusableExternalDispatchAllowed(Transit.Cached, false));
     }
 
     function test_DeferredExternalDecisionFailsClosedWithoutRebind() public pure {
-        assert(!_externalDispatchAllowed(Transit.Deferred, false, false, false));
+        assert(!_reusableExternalDispatchAllowed(Transit.Deferred, false));
     }
 
     function test_PersistedExternalDecisionFailsClosedWithoutRebind() public pure {
-        assert(!_externalDispatchAllowed(Transit.Persisted, false, false, false));
+        assert(!_reusableExternalDispatchAllowed(Transit.Persisted, false));
     }
 
     function test_QueuedExternalDecisionFailsClosedWithoutRebind() public pure {
-        assert(!_externalDispatchAllowed(Transit.Queued, false, false, false));
+        assert(!_reusableExternalDispatchAllowed(Transit.Queued, false));
     }
 
     function test_TransportedExternalDecisionFailsClosedWithoutRebind() public pure {
-        assert(!_externalDispatchAllowed(Transit.Transported, false, false, false));
+        assert(!_reusableExternalDispatchAllowed(Transit.Transported, false));
     }
 
     function test_RetryReplayExternalDecisionFailsClosedWithoutRebind() public pure {
-        assert(!_externalDispatchAllowed(Transit.RetryReplay, false, false, false));
+        assert(!_reusableExternalDispatchAllowed(Transit.RetryReplay, false));
     }
 
     function test_ReboundReusableDeferredDecisionMayDispatch() public pure {
-        assert(_externalDispatchAllowed(Transit.Deferred, true, false, false));
+        assert(_reusableExternalDispatchAllowed(Transit.Deferred, true));
     }
 
-    function test_ReboundConsumableDecisionStillNeedsAtomicConsume() public pure {
-        assert(!_externalDispatchAllowed(Transit.Deferred, true, true, false));
+    function test_ConsumableAuthorityDispatchesExactlyOnce() public {
+        bytes32 authorityId = keccak256("single-use-immediate");
+
+        this.consumeAndDispatch(authorityId, Transit.ImmediateSync, false);
+
+        assert(authorityConsumed[authorityId]);
+        assert(dispatchCount[authorityId] == 1);
+
+        bool secondDispatchSucceeded;
+        try this.consumeAndDispatch(authorityId, Transit.ImmediateSync, false) {
+            secondDispatchSucceeded = true;
+        } catch {}
+
+        assert(!secondDispatchSucceeded);
+        assert(dispatchCount[authorityId] == 1);
     }
 
-    function test_ReboundAndAtomicallyConsumedDecisionMayDispatch() public pure {
-        assert(_externalDispatchAllowed(Transit.Deferred, true, true, true));
-    }
+    function test_EscapedConsumableAuthorityRequiresRebindBeforeConsume() public {
+        bytes32 authorityId = keccak256("single-use-deferred");
 
-    function test_ImmediateConsumableDecisionNeedsAtomicConsume() public pure {
-        assert(!_externalDispatchAllowed(Transit.ImmediateSync, false, true, false));
-        assert(_externalDispatchAllowed(Transit.ImmediateSync, false, true, true));
+        bool unboundDispatchSucceeded;
+        try this.consumeAndDispatch(authorityId, Transit.Deferred, false) {
+            unboundDispatchSucceeded = true;
+        } catch {}
+
+        assert(!unboundDispatchSucceeded);
+        assert(!authorityConsumed[authorityId]);
+        assert(dispatchCount[authorityId] == 0);
+
+        this.consumeAndDispatch(authorityId, Transit.Deferred, true);
+        assert(authorityConsumed[authorityId]);
+        assert(dispatchCount[authorityId] == 1);
     }
 
     function testFuzz_AnyEscapedExternalDecisionRequiresRebind(
-        uint8 transitSeed,
-        bool consumable,
-        bool consumedAtomically
+        uint8 transitSeed
     ) public pure {
         Transit transit = Transit((transitSeed % 6) + 1);
 
-        assert(!_externalDispatchAllowed(transit, false, consumable, consumedAtomically));
+        assert(!_reusableExternalDispatchAllowed(transit, false));
     }
 
     function testFuzz_ReboundReusableEscapedDecisionMayDispatch(uint8 transitSeed) public pure {
         Transit transit = Transit((transitSeed % 6) + 1);
 
-        assert(_externalDispatchAllowed(transit, true, false, false));
+        assert(_reusableExternalDispatchAllowed(transit, true));
     }
 
-    function _externalDispatchAllowed(
+    function consumeAndDispatch(
+        bytes32 authorityId,
         Transit transit,
-        bool reboundAtDispatch,
-        bool consumable,
-        bool consumedAtomically
-    ) internal pure returns (bool) {
+        bool reboundAtDispatch
+    ) external {
         bool escapedProducingCallStack = transit != Transit.ImmediateSync;
-
         if (escapedProducingCallStack && !reboundAtDispatch) {
-            return false;
+            revert RebindRequired();
+        }
+        if (authorityConsumed[authorityId]) {
+            revert AuthorityAlreadyConsumed();
         }
 
-        if (consumable && !consumedAtomically) {
-            return false;
-        }
+        // Consumption precedes the modeled side effect in the same transaction.
+        authorityConsumed[authorityId] = true;
+        dispatchCount[authorityId] += 1;
+    }
 
-        return true;
+    function _reusableExternalDispatchAllowed(
+        Transit transit,
+        bool reboundAtDispatch
+    ) internal pure returns (bool) {
+        return transit == Transit.ImmediateSync || reboundAtDispatch;
     }
 }

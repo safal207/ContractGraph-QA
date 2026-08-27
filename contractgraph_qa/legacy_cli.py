@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import zipfile
 from pathlib import Path
 
 from contractgraph_qa import __version__
@@ -18,6 +19,7 @@ from contractgraph_qa.engagement import (
     verify_engagement_bundle,
     write_engagement_bundle,
 )
+from contractgraph_qa.engagement_provenance import verify_engagement_provenance_bundle
 from contractgraph_qa.engagement_run import (
     EngagementRunError,
     load_engagement_run_config,
@@ -60,6 +62,27 @@ EXIT_INTERNAL = 70
 
 def _emit(data: dict[str, object]) -> None:
     print(json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True))
+
+
+def _verify_engagement_bundle_auto(path: Path) -> dict[str, object]:
+    """Verify legacy v2 engagement ZIPs and provenance wrappers through one CLI contract."""
+
+    source = path.expanduser().resolve()
+    try:
+        with zipfile.ZipFile(source, "r") as archive:
+            names = set(archive.namelist())
+    except (OSError, zipfile.BadZipFile, RuntimeError) as exc:
+        raise EngagementError(f"invalid engagement bundle: {exc}") from exc
+
+    provenance_markers = {
+        "base-engagement.zip",
+        "measurement-input.json",
+        "measurement-source.json",
+        "measurement-provenance.json",
+    }
+    if names & provenance_markers:
+        return verify_engagement_provenance_bundle(source)
+    return verify_engagement_bundle(source)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -167,7 +190,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     verify_engagement = subparsers.add_parser(
         "verify-engagement-bundle",
-        help="Verify a multi-invariant engagement ZIP and its full semantic chain",
+        help="Verify a legacy or provenance-bound multi-invariant engagement ZIP",
     )
     verify_engagement.add_argument("bundle", type=Path)
 
@@ -300,7 +323,7 @@ def main(argv: list[str] | None = None) -> int:
             _emit(verify_evidence_bundle(args.bundle))
             return EXIT_OK
         if args.command == "verify-engagement-bundle":
-            _emit(verify_engagement_bundle(args.bundle))
+            _emit(_verify_engagement_bundle_auto(args.bundle))
             return EXIT_OK
         if args.command == "payment-recovery-evaluate":
             result = evaluate_payment_recovery_file(args.scenario.resolve())

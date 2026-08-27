@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/solidity-lattice-profile.schema.json",
+  "title": "ContractGraph-QA Solidity Lattice Profile",
+  "type": "object",
+  "required": [
+    "contractName",
+    "enumName",
+    "stateSelector",
+    "selectorKind",
+    "initialState",
+    "valueHoldingStates",
+    "safeTerminalStates",
+    "invariantId"
+  ],
+  "properties": {
+    "contractName": {"type": "string", "minLength": 1},
+    "enumName": {"type": "string", "minLength": 1},
+    "stateSelector": {"type": "string", "minLength": 1},
+    "selectorKind": {"type": "string", "enum": ["identifier", "member", "either"]},
+    "initialState": {"type": "string", "minLength": 1},
+    "valueHoldingStates": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "safeTerminalStates": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "invariantId": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}

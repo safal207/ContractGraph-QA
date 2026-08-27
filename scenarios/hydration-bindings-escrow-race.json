@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "hydration-bindings-v0.1",
+  "bindingId": "escrow-race-bindings-001",
+  "scope": "synthetic-local-only",
+  "authorityRequiredOperations": ["release", "raiseDispute"],
+  "timeSensitiveOperations": [],
+  "commits": [
+    {
+      "commitId": "commit:aaa",
+      "authorityRef": "authority:buyer",
+      "evidenceRefs": ["tx:0xaaa", "decision:release"],
+      "timeWitnessRefs": []
+    },
+    {
+      "commitId": "commit:bbb",
+      "authorityRef": "authority:participant",
+      "evidenceRefs": ["tx:0xbbb", "decision:dispute"],
+      "timeWitnessRefs": []
+    }
+  ]
+}

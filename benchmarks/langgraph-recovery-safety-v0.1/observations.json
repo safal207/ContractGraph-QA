@@ -1,0 +1,282 @@
+[
+  {
+    "admission_counts": {
+      "step1": 1,
+      "step2": 2,
+      "step3": 1
+    },
+    "admissions": [
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step1",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:2252dc8906b3842fa406eceba32b7e90522ef326b15f68aa233be1c2451d6acf",
+        "step": "step1"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step2",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:6cebfc465c3ba5091b7d87df0dbc002f8a615e4de984bf79ee3b5e3cfbd881af",
+        "step": "step2"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step2",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:6cebfc465c3ba5091b7d87df0dbc002f8a615e4de984bf79ee3b5e3cfbd881af",
+        "step": "step2"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step3",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:21177dbadb3906128a02751d80f8412999d876357fa32f66241f10a15fa8da23",
+        "step": "step3"
+      }
+    ],
+    "attempt_counts": {
+      "step1": 1,
+      "step2": 2,
+      "step3": 1
+    },
+    "attempts": [
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step1",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:2252dc8906b3842fa406eceba32b7e90522ef326b15f68aa233be1c2451d6acf",
+        "step": "step1"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step2",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:6cebfc465c3ba5091b7d87df0dbc002f8a615e4de984bf79ee3b5e3cfbd881af",
+        "step": "step2"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step2",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:6cebfc465c3ba5091b7d87df0dbc002f8a615e4de984bf79ee3b5e3cfbd881af",
+        "step": "step2"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step3",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:21177dbadb3906128a02751d80f8412999d876357fa32f66241f10a15fa8da23",
+        "step": "step3"
+      }
+    ],
+    "checkpoint_rows_at_crash": 3,
+    "crash_boundary": "checkpoint.put:channel_values.sent=2:entry",
+    "duplicate_admission_observed": true,
+    "logical_action_set_digest": "sha256:e2848c02d67c73d91a0883b947ba2a6c87042902d0302f9a955f4c4f0dfff017",
+    "logical_actions": [
+      {
+        "kind": "fixture_external_effect",
+        "logical_action": "step1",
+        "workflow_instance": "langgraph-8039:t1"
+      },
+      {
+        "kind": "fixture_external_effect",
+        "logical_action": "step2",
+        "workflow_instance": "langgraph-8039:t1"
+      },
+      {
+        "kind": "fixture_external_effect",
+        "logical_action": "step3",
+        "workflow_instance": "langgraph-8039:t1"
+      }
+    ],
+    "observable_state": {
+      "admission_counts": {
+        "step1": 1,
+        "step2": 2,
+        "step3": 1
+      },
+      "attempt_counts": {
+        "step1": 1,
+        "step2": 2,
+        "step3": 1
+      },
+      "graph_state": {
+        "sent": 3
+      }
+    },
+    "pending_write_rows_at_crash": 0,
+    "public_issue_verdict": "DUPLICATED SIDE EFFECT (step2 x2)",
+    "received": {
+      "input": {
+        "sent": 0
+      },
+      "thread_id": "t1"
+    },
+    "received_digest": "sha256:df211c5128f0037f601d04cdbb99d8d39df21036a1db99a34beae19a264aa955",
+    "receiver": "append",
+    "recovered_state_digest": "sha256:7aca3d117ef6fa44c9b2edde5b569e3b3d9fa2dc91bc6a6ae37920360697e7e4",
+    "resume_returncode": 0,
+    "runtime_reexecution_observed": true,
+    "scenario": "writes-delay",
+    "schema": "cgqa.langgraph.recovery-safety-observation/v0.1",
+    "source": {
+      "identity_mapping": "CGQA derives stable semantic IDs from the declared logical fixture action",
+      "issue": 8039,
+      "kind": "public_issue_reproduction_output",
+      "langgraph_version": "1.2.4",
+      "repository": "langchain-ai/langgraph",
+      "sqlite_checkpointer_version": "3.1.0",
+      "sqlite_version_note": "3.1.0 is the contemporaneous reproducibility pin, not a reporter-confirmed version"
+    },
+    "start_sigkill_observed": true
+  },
+  {
+    "admission_counts": {
+      "step1": 1,
+      "step2": 1,
+      "step3": 1
+    },
+    "admissions": [
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step1",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:2252dc8906b3842fa406eceba32b7e90522ef326b15f68aa233be1c2451d6acf",
+        "step": "step1"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step2",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:6cebfc465c3ba5091b7d87df0dbc002f8a615e4de984bf79ee3b5e3cfbd881af",
+        "step": "step2"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step3",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:21177dbadb3906128a02751d80f8412999d876357fa32f66241f10a15fa8da23",
+        "step": "step3"
+      }
+    ],
+    "attempt_counts": {
+      "step1": 1,
+      "step2": 1,
+      "step3": 1
+    },
+    "attempts": [
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step1",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:2252dc8906b3842fa406eceba32b7e90522ef326b15f68aa233be1c2451d6acf",
+        "step": "step1"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step2",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:6cebfc465c3ba5091b7d87df0dbc002f8a615e4de984bf79ee3b5e3cfbd881af",
+        "step": "step2"
+      },
+      {
+        "action": {
+          "kind": "fixture_external_effect",
+          "logical_action": "step3",
+          "workflow_instance": "langgraph-8039:t1"
+        },
+        "action_id": "sha256:21177dbadb3906128a02751d80f8412999d876357fa32f66241f10a15fa8da23",
+        "step": "step3"
+      }
+    ],
+    "checkpoint_rows_at_crash": 3,
+    "crash_boundary": "checkpoint.put:channel_values.sent=2:entry",
+    "duplicate_admission_observed": false,
+    "logical_action_set_digest": "sha256:e2848c02d67c73d91a0883b947ba2a6c87042902d0302f9a955f4c4f0dfff017",
+    "logical_actions": [
+      {
+        "kind": "fixture_external_effect",
+        "logical_action": "step1",
+        "workflow_instance": "langgraph-8039:t1"
+      },
+      {
+        "kind": "fixture_external_effect",
+        "logical_action": "step2",
+        "workflow_instance": "langgraph-8039:t1"
+      },
+      {
+        "kind": "fixture_external_effect",
+        "logical_action": "step3",
+        "workflow_instance": "langgraph-8039:t1"
+      }
+    ],
+    "observable_state": {
+      "admission_counts": {
+        "step1": 1,
+        "step2": 1,
+        "step3": 1
+      },
+      "attempt_counts": {
+        "step1": 1,
+        "step2": 1,
+        "step3": 1
+      },
+      "graph_state": {
+        "sent": 3
+      }
+    },
+    "pending_write_rows_at_crash": 6,
+    "public_issue_verdict": "exactly-once -- pending writes were durable and replayed",
+    "received": {
+      "input": {
+        "sent": 0
+      },
+      "thread_id": "t1"
+    },
+    "received_digest": "sha256:df211c5128f0037f601d04cdbb99d8d39df21036a1db99a34beae19a264aa955",
+    "receiver": "append",
+    "recovered_state_digest": "sha256:6194736d36a29c48dbf19ce9b944ea4e7bb94adbd3d6fcf8b9767a4fdf248f41",
+    "resume_returncode": 0,
+    "runtime_reexecution_observed": false,
+    "scenario": "put-delay",
+    "schema": "cgqa.langgraph.recovery-safety-observation/v0.1",
+    "source": {
+      "identity_mapping": "CGQA derives stable semantic IDs from the declared logical fixture action",
+      "issue": 8039,
+      "kind": "public_issue_reproduction_output",
+      "langgraph_version": "1.2.4",
+      "repository": "langchain-ai/langgraph",
+      "sqlite_checkpointer_version": "3.1.0",
+      "sqlite_version_note": "3.1.0 is the contemporaneous reproducibility pin, not a reporter-confirmed version"
+    },
+    "start_sigkill_observed": true
+  }
+]

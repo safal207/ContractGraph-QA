@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "successor-consistency.v0.1",
+  "modelId": "CGQ-B004-valid-functions-invalid-composition",
+  "invariantId": "CGQ-CONS-001",
+  "scope": "agreement state commits derived from one committed parent version",
+  "commits": [
+    {
+      "eventId": "evt-deliver-commit",
+      "commitId": "commit-delivered-v8",
+      "conflictKey": "agreement:42:lifecycle",
+      "parentState": "Funded",
+      "parentVersion": 7,
+      "operation": "deliver",
+      "successorState": "Delivered",
+      "successorVersion": 8,
+      "committed": true
+    },
+    {
+      "eventId": "evt-dispute-commit",
+      "commitId": "commit-disputed-v8",
+      "conflictKey": "agreement:42:lifecycle",
+      "parentState": "Funded",
+      "parentVersion": 7,
+      "operation": "raiseDispute",
+      "successorState": "Disputed",
+      "successorVersion": 8,
+      "committed": true
+    }
+  ]
+}

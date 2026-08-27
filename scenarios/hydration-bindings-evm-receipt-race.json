@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "hydration-bindings-v0.1",
+  "bindingId": "evm-receipt-race-bindings-001",
+  "scope": "synthetic-local-only",
+  "authorityRequiredOperations": ["release", "raiseDispute"],
+  "timeSensitiveOperations": [],
+  "commits": [
+    {
+      "commitId": "0xabababababababababababababababababababababababababababababababab:0",
+      "authorityRef": "authority:buyer",
+      "evidenceRefs": ["reviewed-receipt:release"],
+      "timeWitnessRefs": []
+    },
+    {
+      "commitId": "0xabababababababababababababababababababababababababababababababab:1",
+      "authorityRef": "authority:participant",
+      "evidenceRefs": ["reviewed-receipt:dispute"],
+      "timeWitnessRefs": []
+    }
+  ]
+}

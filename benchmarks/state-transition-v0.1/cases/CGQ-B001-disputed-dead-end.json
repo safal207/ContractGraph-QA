@@ -1,0 +1,23 @@
+{
+  "id": "CGQ-B001",
+  "name": "The Disputed Dead-End",
+  "class": "lifecycle_liveness",
+  "function_verification": "PASS",
+  "state_transition_verification": "FAIL",
+  "economic_verification": "FAIL",
+  "invariant": "CGQ-LIVE-001",
+  "invariant_name": "NO_LOCKED_VALUE_DEAD_END",
+  "initial_state": "Active",
+  "counterexample": ["Active", "Funded", "Disputed", "DEAD_END"],
+  "preconditions": [
+    "agreement is active",
+    "escrow can become funded",
+    "an authorized participant can raise a dispute",
+    "Disputed has no release, refund, resolver, or timeout exit"
+  ],
+  "economic_consequence": "Escrowed value can remain permanently inaccessible.",
+  "risk": "permanent_fund_lock",
+  "suggested_severity": "high",
+  "confidence": "high",
+  "expected_verdict": "FAIL"
+}

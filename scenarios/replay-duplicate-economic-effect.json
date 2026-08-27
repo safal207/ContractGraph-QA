@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "economic-cardinality.v0.1",
+  "modelId": "CGQ-B002-replay-without-theft",
+  "invariantId": "CGQ-SAFE-001",
+  "scope": "release settlement for one logical escrow action",
+  "events": [
+    {
+      "eventId": "evt-release-accepted",
+      "actionId": "release:A",
+      "effectKey": "escrow-release-settlement",
+      "occurrenceId": "settlement-001",
+      "applied": true
+    },
+    {
+      "eventId": "evt-release-replay-accepted",
+      "actionId": "release:A",
+      "effectKey": "escrow-release-settlement",
+      "occurrenceId": "settlement-002",
+      "applied": true
+    }
+  ]
+}

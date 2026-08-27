@@ -21,9 +21,13 @@ cgqa demo --output-dir /tmp/cgqa-demo
 cgqa verify-bundle /tmp/cgqa-demo/CGQA-005.evidence.zip
 cgqa run --config cgqa.example.toml --clean
 cgqa verify-bundle dist/CGQA-005/CGQA-005.evidence.zip
+cgqa engagement-run --config cgqa.engagement.example.toml
+cgqa verify-engagement-bundle dist/CGQA-E-001-run/CGQA-E-001.engagement.zip
 ```
 
-The normal CI, reporting CI, Product E2E, Slither advisory scan, and both Linux/Windows Portability jobs must all be green.
+The normal CI, reporting CI, Product E2E, Measurement Provenance gate, Slither advisory scan, and both Linux/Windows Portability jobs must all be green.
+
+For v1.8+ the engagement smoke must verify the provenance-bound client ZIP and report a passing measurement-provenance boundary.
 
 ## Version synchronization
 
@@ -84,13 +88,13 @@ After the release head is reviewed and merged:
 vMAJOR.MINOR.PATCH
 ```
 
-Example:
+Current release example:
 
 ```text
-v1.7.0
+v1.8.0
 ```
 
-Do not tag a commit that differs from the exact head used for the final green product and portability gates.
+Do not tag a commit that differs from the exact head used for the final green product, measurement-provenance, and portability gates.
 
 Tag creation remains an explicit operator action. The tag-triggered Distribution workflow owns artifact signing and GitHub Release publication.
 
@@ -101,6 +105,7 @@ Release notes should state:
 - product/runtime changes;
 - engine changes;
 - evidence-format changes;
+- measurement-provenance and coverage semantics;
 - safety/authorization boundary changes;
 - compatibility notes;
 - known limitations;
@@ -112,7 +117,9 @@ Release notes should state:
 
 `bundleVersion` controls evidence ZIP compatibility independently from the package version.
 
-A product patch/minor release may keep the existing bundle version as long as it can still verify the same semantic contract without ambiguity.
+A product patch/minor release may keep an existing embedded bundle version as long as it can still verify the same semantic contract without ambiguity.
+
+The v1.8 engagement provenance wrapper intentionally contains and independently verifies the legacy engagement bundle rather than silently redefining it. `cgqa verify-engagement-bundle` auto-detects both layouts.
 
 A breaking bundle layout or meaning change requires a new bundle version and explicit compatibility handling in the relevant `cgqa verify-*` command.
 

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.local/schema/solidity-mutation-plan-v0.1.json",
+  "title": "ContractGraph-QA Solidity Mutation Plan v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "acquisitionId",
+    "sourcePath",
+    "sourceSha256",
+    "propertyInvariantId",
+    "propertyDescription",
+    "activationWitness",
+    "requiredFaultClasses",
+    "foundry",
+    "mutations"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "solidity-mutation-plan-v0.1"},
+    "acquisitionId": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "sourcePath": {"type": "string", "minLength": 1},
+    "sourceSha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "propertyInvariantId": {"type": "string", "minLength": 1},
+    "propertyDescription": {"type": "string", "minLength": 1},
+    "activationWitness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed", "evidenceSha256", "description"],
+      "properties": {
+        "observed": {"type": "boolean"},
+        "evidenceSha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "description": {"type": "string", "minLength": 1}
+      }
+    },
+    "requiredFaultClasses": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "foundry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "timeoutSeconds"],
+      "properties": {
+        "profile": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+        "timeoutSeconds": {"type": "integer", "minimum": 1, "maximum": 3600}
+      }
+    },
+    "mutations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mutationId",
+          "faultClass",
+          "description",
+          "match",
+          "replacement",
+          "matchPath",
+          "matchTest"
+        ],
+        "properties": {
+          "mutationId": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+          "faultClass": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "match": {"type": "string", "minLength": 1},
+          "replacement": {"type": "string"},
+          "matchPath": {"type": "string", "minLength": 1},
+          "matchTest": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "scope": {"type": "string", "minLength": 1}
+  }
+}
