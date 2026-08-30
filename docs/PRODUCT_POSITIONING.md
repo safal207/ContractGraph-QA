@@ -8,7 +8,9 @@ ContractGraph-QA is the evidence engine and umbrella brand. It should not be pre
 
 ## Primary commercial wedge
 
-### Ambiguous Outcome Recovery Verification
+### Recovery Design Partner Lab
+
+The Lab is the capped commercial program for Ambiguous Outcome Recovery Verification. It co-creates one declared business/evidence contract with the buyer, then uses ContractGraph-QA to turn that contract into a bounded fixture, evidence pack, and retest.
 
 Buyer decision:
 
@@ -59,7 +61,7 @@ The two routes share one engine but should not be mixed in the same cold outreac
 
 ## Buying job
 
-> Turn one costly financial promise into an explicit state/evidence contract, executable failure fixture, deterministic verdict, and exact retest.
+> Co-create one costly financial promise as an explicit state/evidence contract, executable failure fixture, deterministic verdict, and exact retest.
 
 The buyer purchases the result. ContractGraph-QA is operated as the verification engine underneath.
 
@@ -76,16 +78,17 @@ A strong lead has:
 
 ## Productized-service packaging
 
-### Design-partner pilot
+### Recovery Design Partner Lab
 
-- **Price:** $750 fixed;
-- **Scope:** one named boundary;
-- **Delivery target:** five business days after accepted inputs;
+- **Capacity:** maximum five design partners;
+- **Price:** $750 fixed per one-boundary pilot;
+- **Scope:** one named ambiguous-outcome recovery boundary;
+- **Delivery target:** five business days after the Boundary Brief and required inputs are accepted;
 - **Communication:** async by default;
 - **Retest:** one bounded in-scope retest;
 - **Initial access:** public docs, synthetic traces, local fixture, or sandbox are sufficient.
 
-The first paid pilots should optimize for learning and reusable fixtures, not for maximum scope.
+The client confirms the Promise, Evidence, and Decision checkpoints. ContractGraph-QA owns the bounded model, fixture, test execution, evidence pack, and explicit remaining uncertainty. The first paid pilots should optimize for useful product learning, not maximum scope.
 
 ## North-star metric
 
@@ -94,14 +97,27 @@ The first paid pilots should optimize for learning and reusable fixtures, not fo
 Supporting funnel:
 
 ```text
-qualified lead
-→ substantive technical reply
-→ boundary confirmed
-→ fixture permission
-→ paid pilot
-→ accepted evidence pack
-→ retest or expansion
+question
+→ mirror boundary
+→ confirm Boundary Brief
+→ paid fixture
+→ evidence pack
+→ bounded retest
+→ product learning
 ```
+
+## From client pattern to product pack
+
+A pilot remains client-specific by default. A repeated pattern becomes a reusable-pack candidate only when every gate below passes:
+
+1. **Repeat:** the same invariant, evidence, and decision shape appears in at least two separately scoped client boundaries. A single request or shared provider label is not enough.
+2. **Abstract:** the useful part can be expressed as a vendor-neutral state/evidence contract, invariant set, synthetic scenario, violation code, and acceptance check.
+3. **Rebuild:** core fixtures use repository-owned synthetic evidence or separately authorized public material, not copied client artifacts.
+4. **Verify:** the candidate pack has a negative control, deterministic replay, bounded coverage, and an explicit assurance statement.
+5. **Separate:** generic interfaces may live in core; client-specific status mappings, authority choices, private schemas, endpoints, credentials, configuration, traces, and adapters stay in the client-controlled or private engagement layer.
+6. **No implied endorsement:** do not publish a client name, material, result, compatibility claim, or validation claim without explicit permission and separate supporting evidence.
+
+Promotion preserves the reusable recovery pattern, not the client's integration. A retest or successful pilot does not automatically promote anything into core.
 
 ## What not to optimize for yet
 

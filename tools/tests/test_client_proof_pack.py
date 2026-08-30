@@ -4,7 +4,10 @@ import json
 import unittest
 from pathlib import Path
 
-from contractgraph_qa.client_proof import build_causal_security_proof
+from contractgraph_qa.client_proof import (
+    build_causal_security_proof,
+    build_client_proof_pack,
+)
 from contractgraph_qa.path_replay import replay_prior_model_path
 from contractgraph_qa.postimpact import load_post_impact_model, run_post_impact_model
 from contractgraph_qa.reachability import load_reachability_model, run_reachability_model
@@ -123,7 +126,19 @@ class ClientProofPackTest(unittest.TestCase):
 
     def test_pilot_offer_remains_small_and_fixed_scope(self) -> None:
         pilot = self.proof["pilot"]
-        self.assertEqual(pilot["priceUsd"], 200)
+        generated = build_client_proof_pack(
+            self.result,
+            self.prior_model,
+            self.post_model,
+            self.fixed_model,
+        )
+        self.assertEqual(generated["pilot"], pilot)
+        self.assertEqual(pilot["program"], "recovery-design-partner-lab")
+        self.assertEqual(pilot["designPartnerCap"], 5)
+        self.assertEqual(pilot["priceUsd"], 750)
+        self.assertEqual(pilot["scopeBoundaries"], 1)
+        self.assertEqual(pilot["deliveryTargetBusinessDays"], 5)
+        self.assertIs(pilot["asyncByDefault"], True)
         self.assertLessEqual(pilot["maxPrioritizedInvariants"], 5)
         self.assertEqual(pilot["retestPasses"], 1)
 

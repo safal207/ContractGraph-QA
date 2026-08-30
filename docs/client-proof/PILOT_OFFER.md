@@ -1,20 +1,31 @@
-# ContractGraph-QA Design-Partner Pilot Offer
+# ContractGraph-QA Recovery Design Partner Lab
 
-## Bounded verification for one stateful financial promise
+## One-boundary ambiguous-outcome recovery pilot
 
-**Price:** **$750 fixed**  
-**Scope:** one named recovery boundary or one narrowly defined smart-contract state machine  
-**Delivery target:** five business days after accepted scope and inputs  
-**Communication:** async by default  
-**Retest:** one bounded retest for an in-scope fix delivered within 14 calendar days
+- **Capacity:** maximum **5 design partners**
+- **Price:** **$750 fixed per one-boundary pilot**
+- **Scope:** one named ambiguous-outcome recovery boundary
+- **Delivery target:** five business days after the Boundary Brief and required inputs are accepted
+- **Communication:** async by default
+- **Retest:** one bounded retest for an in-scope fix delivered within 14 calendar days
 
 The pilot is designed to reduce buying friction without presenting ContractGraph-QA as a formal full-platform security audit.
 
-## Choose one track
+## Working sequence
 
-### Track A — Ambiguous Outcome Recovery
+```text
+question
+→ mirror boundary
+→ confirm Boundary Brief
+→ paid fixture
+→ evidence pack
+→ bounded retest
+→ product learning
+```
 
-Good targets:
+The [one-page Recovery Boundary Brief](BOUNDARY_BRIEF.md) freezes three async client checkpoints before the fixture is treated as confirmed: **Promise**, **Evidence**, and **Decision**. Missing or conflicting authority remains `UNKNOWN`; silence is not approval.
+
+## Good targets
 
 - agent-payment retry after timeout;
 - wallet dispatch with uncertain execution;
@@ -30,18 +41,6 @@ ZERO    → retry may be allowed
 ONE     → stop
 UNKNOWN → block retry pending reconciliation
 ```
-
-### Track B — Smart-Contract State-Machine Review
-
-Good targets:
-
-- escrow release / refund;
-- settlement and fee conservation;
-- deposit / withdrawal accounting;
-- role and authority transitions;
-- deadline and exact-time behavior;
-- terminal-state exclusivity;
-- replay, ordering, or retry behavior.
 
 ## Included
 
@@ -81,7 +80,7 @@ Unless separately agreed, the pilot excludes:
 ## Deliverable shape
 
 ```text
-scope
+confirmed Boundary Brief
 → expected-state / recovery contract
 → bounded fixture and search
 → deterministic outcomes
@@ -98,10 +97,12 @@ A clean bounded result is described as `not_found_within_bound`, never as a blan
 A useful pilot can expand into:
 
 1. broader invariant or scenario coverage;
-2. additional providers, rails, wallets, ledgers, or contracts;
+2. additional providers, rails, wallets, ledgers, or recovery boundaries;
 3. authorized integration or fixed-block testing;
 4. regression-suite hardening;
 5. CI evidence gates;
 6. recurring release verification.
 
-[Primary Recovery Pilot](../../PILOT.md) · [Synthetic Recovery Case Study](../case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Discuss a pilot](mailto:safal0645@gmail.com?subject=ContractGraph-QA%20Design-Partner%20Pilot)
+Smart-contract state-machine review remains a separate product route and is not bundled into this Lab offer.
+
+[Canonical Lab scope and learning questions](../../PILOT.md) · [Boundary Brief](BOUNDARY_BRIEF.md) · [Synthetic Recovery Case Study](../case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Discuss a Lab boundary](mailto:safal0645@gmail.com?subject=ContractGraph-QA%20Recovery%20Design%20Partner%20Lab)
