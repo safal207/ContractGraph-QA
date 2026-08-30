@@ -3,7 +3,7 @@
 
 ## Bounded verification for stateful financial systems
 
-**ContractGraph-QA verifies the failure paths between intent, authorization, execution, external evidence, ledger state, reconciliation, and retry.**
+**ContractGraph-QA tests declared failure paths between intent, authorization, execution, external evidence, ledger state, reconciliation, and retry.**
 
 It is built for payment, wallet, payout, stablecoin, agentic-commerce, and smart-contract teams that need reproducible evidence for one high-risk financial promise.
 
@@ -17,7 +17,7 @@ one authorized intent → at most one economic effect
 UNKNOWN outcome → no new financial action
 ```
 
-[Read the Recovery Pilot](PILOT.md) · [See the synthetic case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Run the local demo](#run-a-local-proof) · [Discuss one bounded pilot](mailto:safal0645@gmail.com?subject=ContractGraph-QA%20Recovery%20Pilot)
+[Read the Recovery Design Partner Lab](PILOT.md) · [Open the Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md) · [See the synthetic case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Run the local demo](#run-a-local-proof)
 <!-- seo-product-intro:end -->
 
 ---
@@ -26,7 +26,7 @@ UNKNOWN outcome → no new financial action
 
 | Team / trigger | Product route | What gets verified |
 |---|---|---|
-| Payment, wallet, payout, stablecoin, or agentic-commerce team | **Ambiguous Outcome Recovery Pilot** | timeout, lost response, duplicate or delayed webhook, retry, fallback, reconciliation, policy continuity, ledger divergence |
+| Payment, wallet, payout, stablecoin, or agentic-commerce team | **Recovery Design Partner Lab** | timeout, lost response, duplicate or delayed webhook, retry, fallback, reconciliation, policy continuity, ledger divergence |
 | Smart-contract or protocol team | **State-Machine Review** | escrow, settlement, release/refund, conservation, authorization, time boundaries, terminal states, ordering, replay |
 | Engineering or audit-readiness team | **CGQA evidence pipeline** | reviewed model, bounded search, minimal counterexample, deterministic replay, provenance-bound evidence bundle |
 
@@ -34,13 +34,14 @@ ContractGraph-QA is currently delivered **productized-service first**: the clien
 
 ---
 
-## Ambiguous Outcome Recovery Pilot
+## Recovery Design Partner Lab
 
-**Design-partner price:** **$750 fixed**  
-**Scope:** one named recovery boundary  
-**Target delivery window:** five business days after the scope and inputs are accepted  
-**Communication:** async by default  
-**Retest:** one bounded retest for an in-scope fix delivered within 14 calendar days
+- **Capacity:** maximum **5 design partners**
+- **Design-partner price:** **$750 fixed per one-boundary pilot**
+- **Scope:** one named recovery boundary
+- **Target delivery window:** five business days after the Boundary Brief and required inputs are accepted
+- **Communication:** async by default
+- **Retest:** one bounded retest for an in-scope fix delivered within 14 calendar days
 
 A typical boundary looks like:
 
@@ -68,7 +69,7 @@ The pilot includes:
 
 The initial fixture can start from public documentation, synthetic traces, status definitions, webhook schemas, and a declared authoritative-evidence rule. Production credentials, customer data, and real-value transactions are not required.
 
-[Full scope and acceptance criteria →](PILOT.md)
+[Lab workflow, checkpoints, and acceptance criteria →](PILOT.md) · [One-page Boundary Brief →](docs/client-proof/BOUNDARY_BRIEF.md)
 
 ---
 
@@ -231,7 +232,8 @@ The generated scaffold starts fail-closed until the operator supplies the author
 
 Key documents:
 
-- [Recovery Pilot](PILOT.md)
+- [Recovery Design Partner Lab](PILOT.md)
+- [One-page Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md)
 - [Synthetic Recovery Case Study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
 - [Product runtime](docs/PRODUCT.md)
 - [CLI reference](docs/CLI.md)
@@ -246,20 +248,20 @@ Key documents:
 ## Commercial workflow
 
 ```text
-one painful technical question
-→ boundary confirmed
-→ permission to map one fixture
-→ fixed-scope pilot
+question
+→ mirror boundary
+→ confirm Boundary Brief
+→ paid fixture
 → evidence pack
-→ fix / retest
-→ broader regression or integration engagement
+→ bounded retest
+→ product learning
 ```
 
 A good first question is:
 
 > After dispatch returns an ambiguous result, which evidence is authoritative before another monetary attempt is permitted: platform state, external rail, processor or wallet receipt, customer ledger, or an explicit `UNKNOWN` reconciliation hold?
 
-A one-line answer is enough to define the first boundary.
+A one-line answer is enough to begin the mirror. The paid scope starts only after the one-page Boundary Brief is confirmed.
 
 ---
 

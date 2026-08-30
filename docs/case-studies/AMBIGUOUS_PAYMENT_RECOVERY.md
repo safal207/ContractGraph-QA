@@ -1,6 +1,6 @@
 # Synthetic Case Study — Ambiguous Vendor-Payment Recovery
 
-**Purpose:** show the exact shape of an Ambiguous Outcome Recovery Pilot without making a claim about any named payment provider.
+**Purpose:** show the fixture shape used by the Recovery Design Partner Lab without making a claim about any named payment provider.
 
 This is a repository-owned synthetic scenario. No production system, real customer data, or real-value transfer is involved.
 

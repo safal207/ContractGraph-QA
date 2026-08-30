@@ -356,7 +356,12 @@ def build_client_proof_pack(
             fixed_model,
         ),
         "pilot": {
-            "priceUsd": 200,
+            "program": "recovery-design-partner-lab",
+            "designPartnerCap": 5,
+            "priceUsd": 750,
+            "scopeBoundaries": 1,
+            "deliveryTargetBusinessDays": 5,
+            "asyncByDefault": True,
             "maxPrioritizedInvariants": 5,
             "retestPasses": 1,
         },

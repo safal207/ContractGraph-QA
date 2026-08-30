@@ -1,6 +1,8 @@
-# Ambiguous Outcome Recovery Pilot
+# Ambiguous Outcome Recovery — Technical Pilot Reference
 
-**One financial operation. One ambiguous result. One bounded proof of whether retry is safe.**
+> The current commercial offer and working sequence live in the [Recovery Design Partner Lab](../PILOT.md). This page preserves the detailed technical problem and test shape.
+
+**One financial operation. One ambiguous result. One bounded evidence pack for the retry decision.**
 
 This pilot turns a single retry/reconciliation boundary into an executable, evidence-backed verification fixture.
 
@@ -140,7 +142,7 @@ The pilot is complete when:
 - every retry decision maps to explicit evidence;
 - `UNKNOWN` is represented as a first-class state rather than inferred from silence;
 - the same trace produces the same classification and verdict on replay;
-- one logical operation cannot create a second economic effect through an unresolved retry path;
+- the fixture deterministically detects any modeled path that permits a second economic effect while the operation is unresolved;
 - identity continuity and authority ancestry are preserved across attempts;
 - all claims remain bounded to the supplied model, evidence, adapter, and environment.
 
@@ -165,4 +167,4 @@ A useful first question for a product or reliability team is:
 
 > After dispatch returns an ambiguous result, which evidence is authoritative before another monetary attempt is permitted: the platform state, the external rail, the wallet or processor receipt, the customer ledger, or an explicit `UNKNOWN` reconciliation hold?
 
-A one-line answer is enough to define the first pilot boundary.
+A one-line answer is enough to begin the mirror. Scope starts only after the [one-page Boundary Brief](client-proof/BOUNDARY_BRIEF.md) and required inputs are confirmed.

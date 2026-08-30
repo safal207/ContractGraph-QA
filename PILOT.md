@@ -1,16 +1,17 @@
-# Ambiguous Outcome Recovery Pilot
+# Recovery Design Partner Lab
 
-**One financial operation. One ambiguous result. One bounded proof of whether retry is safe.**
+**One financial operation. One ambiguous result. One bounded evidence pack for the retry decision.**
 
-This fixed-scope pilot is for payment, wallet, payout, stablecoin, on/off-ramp, ledger, and agentic-commerce teams that need a deterministic answer after a timeout, lost response, delayed webhook, conflicting state, or fallback.
+The Lab accepts at most **five design partners**. Each partner brings one real recovery boundary; together we confirm its business promise, evidence contract, and consequential decision before ContractGraph-QA builds the fixture. The result is a deterministic classification within the agreed model and evidence, not a blanket claim about the full platform.
 
 ## Design-partner terms
 
 | Item | Terms |
 |---|---|
-| Price | **$750 fixed** |
-| Scope | One named recovery boundary |
-| Delivery target | Five business days after accepted scope and inputs |
+| Lab capacity | Maximum **5 design partners** |
+| Price | **$750 fixed per one-boundary pilot** |
+| Scope | One named ambiguous-outcome recovery boundary |
+| Delivery target | Five business days after the Boundary Brief and required inputs are accepted |
 | Communication | Async by default |
 | Retest | One bounded retest for an in-scope fix delivered within 14 calendar days |
 | Production access | Not required for the initial synthetic or sandbox-backed fixture |
@@ -59,15 +60,38 @@ Examples:
 - fiat debit plus irreversible crypto delivery;
 - mint, burn, bridge, or cross-chain execution with delayed off-chain reconciliation.
 
+## How the Lab works
+
+```text
+question
+→ mirror boundary
+→ confirm Boundary Brief
+→ paid fixture
+→ evidence pack
+→ bounded retest
+→ product learning
+```
+
+The first answer starts the conversation; it does not silently define the scope. ContractGraph-QA mirrors the boundary in the [one-page Recovery Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md), and the client confirms three async checkpoints:
+
+| Checkpoint | Client confirms | ContractGraph-QA freezes |
+|---|---|---|
+| **Promise** | Business promise, ambiguous action, duplicate-risk retry, identity, and scope | One named boundary and explicit exclusions |
+| **Evidence** | Evidence surfaces, freshness, authority, precedence, and what remains unresolved | Evidence map, assumptions, counterevidence, and `UNKNOWN` conditions |
+| **Decision** | What `ZERO`, `ONE`, and `UNKNOWN` permit or block, and the impact of a wrong or delayed decision | Expected-state contract and fixture acceptance cases |
+
+`TBD`, conflicting evidence, or silence does not pass a checkpoint. It remains explicit verification debt or `UNKNOWN` until resolved.
+
 ## Included
 
-1. Map the declared states, identities, and evidence contract.
-2. Identify authoritative evidence surfaces and their precedence.
-3. Define the `ZERO / ONE / UNKNOWN` recovery state machine.
-4. Implement or adapt one local or sandbox-backed executable fixture.
-5. Run positive, negative, duplicate, delayed, out-of-order, retry, and identity-drift cases.
-6. Produce deterministic results and a bounded findings report.
-7. Provide one in-scope retest when a fix is supplied within the retest window.
+1. Mirror and confirm the one-page Boundary Brief.
+2. Map the declared states, identities, and evidence contract.
+3. Identify authoritative evidence surfaces and their precedence.
+4. Define the `ZERO / ONE / UNKNOWN` recovery state machine.
+5. Implement or adapt one local or sandbox-backed executable fixture.
+6. Run positive, negative, duplicate, delayed, out-of-order, retry, and identity-drift cases.
+7. Produce deterministic results and a bounded findings report.
+8. Provide one in-scope retest when a fix is supplied within the retest window.
 
 ## Minimum test matrix
 
@@ -82,10 +106,11 @@ Examples:
 | Retry under a new logical operation identity | Reject or classify as a separately authorized operation |
 | Retry with changed idempotency identity where continuity is required | Reject |
 | Internal ledger says success while the external leg remains unresolved | `UNKNOWN` unless the declared contract makes the ledger authoritative |
-| External leg succeeds while local state remains stale | `ONE`; local state must converge without another payment |
+| Authoritative evidence proves the external leg succeeded while local state remains stale | `ONE`; local state must converge without another payment |
 
 ## Deliverables
 
+- **Confirmed Boundary Brief** — the shared Promise, Evidence, and Decision contract for one boundary;
 - **Expected-state contract** — the smallest state machine preserving the recovery guarantee;
 - **Evidence map** — what each status, webhook, receipt, chain event, or ledger record can and cannot prove;
 - **Executable fixture** — one local or sandbox-backed scenario;
@@ -93,6 +118,19 @@ Examples:
 - **Counterexample** — minimized trace for a reachable unsafe retry or false-finality path;
 - **Remediation guidance** — bounded changes to identity, hold, reconciliation, or evidence precedence rules;
 - **Retest evidence** — exact-path replay plus alternate-path review for one in-scope fix.
+
+## Product learning after the retest
+
+The close-out asks:
+
+1. Did the mirrored boundary match the real business promise and duplicate-risk decision?
+2. Which evidence surface or authority assumption changed during the fixture review?
+3. Which `ZERO / ONE / UNKNOWN` case changed or clarified an operational decision?
+4. Which exact trace should remain a client regression?
+5. What remains client-specific, unresolved, or outside the verified scope?
+6. Did a vendor-neutral invariant, evidence shape, or scenario repeat strongly enough to be considered for a reusable product pack?
+
+Learning does not automatically publish client material or move a client adapter into the open-source core. Repeated patterns must pass the [product-pack promotion rules](docs/PRODUCT_POSITIONING.md#from-client-pattern-to-product-pack).
 
 ## Inputs required
 
@@ -114,7 +152,7 @@ The pilot is complete when:
 - every retry decision maps to explicit evidence;
 - `UNKNOWN` is represented as a first-class state rather than inferred from silence;
 - the same trace produces the same classification and verdict on replay;
-- one logical operation cannot create a second economic effect through an unresolved retry path;
+- the fixture deterministically detects any modeled path that permits a second economic effect while the operation is unresolved;
 - identity continuity and authority ancestry are preserved across attempts;
 - all claims remain bounded to the supplied model, evidence, adapter, and environment.
 
@@ -146,9 +184,9 @@ See the [synthetic buyer-readable case study](docs/case-studies/AMBIGUOUS_PAYMEN
 
 > After dispatch returns an ambiguous result, which evidence is authoritative before another monetary attempt is permitted: platform state, external rail, processor or wallet receipt, customer ledger, or an explicit `UNKNOWN` reconciliation hold?
 
-A one-line answer is enough to define the first boundary.
+A one-line answer is enough to begin the mirror. Scope starts only after the Boundary Brief and required inputs are confirmed.
 
-[Discuss one bounded pilot](mailto:safal0645@gmail.com?subject=Ambiguous%20Outcome%20Recovery%20Pilot) · [View the engine](README.md)
+[Open the Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md) · [Discuss one bounded Lab pilot](mailto:safal0645@gmail.com?subject=Recovery%20Design%20Partner%20Lab) · [View the engine](README.md)
 
 ## Scope and assurance boundary
 

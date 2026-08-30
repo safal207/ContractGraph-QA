@@ -26,7 +26,7 @@ One recovery-boundary question:
 
 If [concrete dispatch / timeout / retry scenario], which evidence is authoritative before another monetary attempt is permitted: platform state, the external rail, a processor or wallet receipt, the customer ledger, or an explicit UNKNOWN reconciliation hold?
 
-A one-line answer is enough.
+A one-line answer is enough to start.
 
 Best,
 Alexey Safonov
@@ -71,28 +71,26 @@ dispatch accepted
 → reconciliation closes ZERO / ONE / UNKNOWN
 ```
 
-Do not ask three more architecture questions. Convert the answer into one proposed fixture.
+Do not ask three more architecture questions. Convert the answer into one proposed Boundary Brief.
 
-## Ask permission to map one fixture
+## Mirror and confirm one Boundary Brief
 
 ```text
-I have a vendor-neutral executable recovery model for exactly this boundary.
+I'll mirror that in a one-page Boundary Brief before proposing implementation:
 
-Would it be useful if I mapped one synthetic or sandbox flow against:
+- Promise — the business promise, ambiguous action, and duplicate-risk retry;
+- Evidence — the evidence surfaces, authority, and what stays unresolved;
+- Decision — what ZERO, ONE, and UNKNOWN permit or block.
 
-- ZERO → retry may proceed;
-- ONE → stop;
-- UNKNOWN → retry remains blocked?
-
-I can send the one-page expected-state contract first.
+If the mirror is accurate, we can confirm one paid fixture. Missing authority remains UNKNOWN rather than becoming an assumption.
 ```
 
 ## Paid pilot offer
 
-Use only after the team confirms the boundary or asks what the work would involve.
+Use only after the team confirms the Boundary Brief or asks what the work would involve.
 
 ```text
-I can turn this into a fixed-scope design-partner pilot:
+I can turn the confirmed brief into one Recovery Design Partner Lab pilot:
 
 - one named recovery boundary;
 - one executable local or sandbox-backed fixture;
@@ -100,8 +98,9 @@ I can turn this into a fixed-scope design-partner pilot:
 - evidence-precedence map;
 - deterministic findings and one in-scope retest.
 
-Price: $750 fixed.
-Target: five business days after accepted scope and inputs.
+The Lab is capped at five design partners.
+Price: $750 fixed for one boundary.
+Target: five business days after the Boundary Brief and required inputs are accepted.
 Communication can remain fully async.
 ```
 
@@ -110,7 +109,7 @@ Communication can remain fully async.
 ```text
 For one authorized contract or state-machine slice, I can model up to five prioritized invariants, run bounded sequence exploration, return minimal replayable counterexamples, and include one retest.
 
-Design-partner price: $750 fixed.
+Fixed-scope price: $750.
 ```
 
 ## Qualification discipline

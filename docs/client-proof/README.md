@@ -16,10 +16,11 @@ For smart-contract teams:
 
 ## Primary product route
 
-The [Ambiguous Outcome Recovery Pilot](../../PILOT.md) verifies one named recovery boundary for a design-partner price of **$750 fixed**.
+The [Recovery Design Partner Lab](../../PILOT.md) is capped at **5 design partners** and tests one named recovery boundary for **$750 fixed per one-boundary pilot**. Work starts from a jointly confirmed [one-page Boundary Brief](BOUNDARY_BRIEF.md).
 
 It produces:
 
+- a confirmed Promise, Evidence, and Decision brief;
 - an expected-state contract;
 - an evidence-precedence map;
 - one executable local or sandbox-backed fixture;
@@ -94,8 +95,9 @@ The pull-request causal security gate, exact historical path replay, and client-
 
 ## Commercial materials
 
-- [Primary Recovery Pilot](../../PILOT.md)
-- [Design-Partner Pilot Offer](PILOT_OFFER.md)
+- [Recovery Design Partner Lab](../../PILOT.md)
+- [One-page Boundary Brief](BOUNDARY_BRIEF.md)
+- [Concise Lab Offer](PILOT_OFFER.md)
 - [Question-First Outreach](OUTREACH.md)
 - [Synthetic Recovery Case Study](../case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
 - [Sample Smart-Contract Engagement](SAMPLE_ENGAGEMENT.md)
