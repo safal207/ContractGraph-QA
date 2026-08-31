@@ -1,0 +1,30 @@
+---
+description: Turn validated engagement lessons into reviewable repository improvements
+alwaysApply: true
+---
+
+# Repository Learning Loop
+
+- After every consequential run, perform a learning harvest before the final handoff.
+- Separate target-specific facts from reusable patterns; never promote a single anecdote into a universal rule.
+- For each candidate lesson, record its trigger, invariant, evidence, applicability boundary, and overfitting or false-positive risk.
+- Search existing tests, fixtures, adapters, docs, and rules first; extend the canonical artifact instead of duplicating it.
+- Promotion requires deterministic support such as a minimized trace, native regression, negative control, or reproducible evidence bundle.
+- Keep specification ambiguity, policy choices, and model-only suspicions as `DEFER`; do not encode them as settled truth.
+- Prefer the smallest durable artifact that prevents repeated work: regression test, fixture, adapter validation, rule, template, or focused documentation.
+- Bind promoted knowledge to the exact CGQA commit and target subject that produced it.
+- Never import secrets, private evidence, unlicensed target code, or a target contract as a production dependency.
+- Submit reusable learning through a separate branch/PR with validation and explicit approval; do not silently rewrite rules or auto-merge.
+- When new evidence contradicts an old lesson, preserve history and supersede it explicitly instead of erasing it.
+- If no reusable lesson meets the evidence gate, record `NO_PROMOTION`; this is a valid outcome.
+
+## Learning harvest template
+
+- **Observation:** what was newly learned.
+- **Evidence:** exact subject, trace/test, negative control, and native confirmation.
+- **Generalization:** reusable invariant and applicability boundary.
+- **Risk:** ambiguity, false positives, overfitting, security, or compatibility impact.
+- **Artifact:** existing canonical file to update or smallest new artifact.
+- **Validation:** tests/checks proving the lesson and guarding against regression.
+- **Decision:** `PROMOTE`, `DEFER`, or `NO_PROMOTION`, with reason.
+- **Follow-up:** branch/PR/issue only when explicitly authorized.

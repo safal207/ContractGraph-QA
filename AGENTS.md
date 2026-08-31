@@ -18,6 +18,8 @@ Before reviewing an issue or pull request, follow [Scoped Verdict and Evidence R
 
 For every stateful target, also follow [Temporal Transition Test Field](.cursor/rules/temporal-transition-test-field.mdc). A case matrix does not replace a transition graph over ledger, time, TTL, authority, and storage state.
 
+After every consequential engagement, follow the [Repository Learning Loop](.cursor/rules/repository-learning-loop.mdc) and finish with `PROMOTE`, `DEFER`, or `NO_PROMOTION`.
+
 These protocols preserve lessons from prior engagements without turning a historical finding into a universal product claim.
 
 ## Required execution route
