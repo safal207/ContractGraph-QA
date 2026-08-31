@@ -5,6 +5,7 @@ alwaysApply: true
 
 # Temporal Transition Test Field
 
+- Apply the [Causal Engagement Spine](causal-engagement-spine.mdc); this is its state-transition and typed-time projection.
 - For stateful behavior, a test matrix is necessary but insufficient; also build and exercise a graph of paths through time.
 - Define each node by observable storage, actors/authority, identifiers/counters, balances/locks/status, ledger sequence, timestamp, TTL, and archive/restore state when applicable.
 - Define each edge as one public operation with its actor, inputs, ledger/time position, result or error, and exact mutation set.

@@ -1,0 +1,25 @@
+---
+description: Apply one causal contract across engagement scales before accepting a refactor or lesson
+alwaysApply: true
+---
+
+# Causal Engagement Spine
+
+Apply this sequence at repository, product, component, function, transition, and test-invariant scales:
+
+1. Freeze the exact subject, current scale, parent contract, and applicable authority boundary.
+2. State the idea contract: purpose, expected outcome, invariants, forbidden outcomes, and dependencies.
+3. Type time explicitly as wall clock, protocol clock, causal sequence, or repository history; elapsed time is not causal progress.
+4. Trace past, present, and intended future through symptom, first meaningful divergence, cause, and candidate refactor point.
+5. Navigate `DOWN` for mechanism, `UP` for parent intent, `SIDEWAYS` for dependencies, or `STOP` only with a complete explanation.
+6. Select the smallest refactor point with sufficient causal leverage; symptom, cause, and repair may differ.
+7. Bind claims and simulations to evidence while preserving `Evidence != Authority`.
+8. Verify locally and upward until parent invariants hold, cross-boundary effects are absent, causal propagation stops, and the explanation is complete.
+9. Return a bounded decision, remaining debt, and explicit mutation or publication authority.
+
+## Fractal inheritance
+
+- A child projection may add domain fields but must not weaken parent invariants, evidence gates, or authority boundaries.
+- `Local PASS != System PASS`; `Historical PASS != Current PASS`; `Observation != Generalized Lesson`.
+- Conflicting new evidence supersedes an interpretation explicitly; it does not erase repository history.
+- No PASS, simulation, or learning candidate silently authorizes production mutation, publication, or merge.

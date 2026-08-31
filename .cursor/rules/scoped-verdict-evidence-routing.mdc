@@ -5,6 +5,7 @@ alwaysApply: true
 
 # Scoped Verdict and Evidence Routing
 
+- Apply the [Causal Engagement Spine](causal-engagement-spine.mdc); this is its issue/PR scope and evidence-routing projection.
 - Before execution, record the target repository, issue/PR, exact base and head when applicable, CGQA commit, adapter/model identity, and acceptance criteria.
 - Report `PASS_WITHIN_BOUND` only for the declared scope. Never translate it into whole-contract or production safety.
 - Classify extra observations as confirmed defect, specification question, reliability risk, or positive regression evidence.

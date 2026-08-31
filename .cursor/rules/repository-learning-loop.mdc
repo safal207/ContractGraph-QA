@@ -5,6 +5,7 @@ alwaysApply: true
 
 # Repository Learning Loop
 
+- Apply the [Causal Engagement Spine](causal-engagement-spine.mdc); this is its evidence-to-reusable-knowledge projection.
 - After every consequential run, perform a learning harvest before the final handoff.
 - Separate target-specific facts from reusable patterns; never promote a single anecdote into a universal rule.
 - For each candidate lesson, record its trigger, invariant, evidence, applicability boundary, and overfitting or false-positive risk.
