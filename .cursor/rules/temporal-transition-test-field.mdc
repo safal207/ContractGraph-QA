@@ -1,0 +1,31 @@
+---
+description: Require a temporal state-transition field alongside case matrices for stateful targets
+alwaysApply: true
+---
+
+# Temporal Transition Test Field
+
+- Apply the [Causal Engagement Spine](causal-engagement-spine.mdc); bind this transition projection with `spineRef` and do not restate parent fields.
+- For stateful behavior, a test matrix is necessary but insufficient; also build and exercise a graph of paths through time.
+- Define each node by observable state, actors/authority, identifiers/counters, value/lifecycle state, and typed clocks.
+- Define each edge as an event, call, or operation with actor/source, inputs, time coordinate, result/error, and exact mutation set.
+- Express important paths as `S0 --event@typed-time--> S1 --operation@typed-time--> S2` and assert every node.
+- Cover repeated operations in one causal step, adjacent steps, meaningful time jumps, crash/restart where applicable, and repeated calls after terminal states.
+- Probe exact boundaries at `n-1`, `n`, and `n+1`, plus relevant numeric values such as zero, negative one, type minimum, and type maximum.
+- Compare paths with equal starts and ends but different intermediate touches or operation order; classify path dependence instead of automatically calling it a defect.
+- For every rejected edge, verify rollback or preservation of every relevant record, not only the returned error.
+- For blockchain/storage profiles, also cover same/adjacent ledgers, timestamp, TTL live, `ttl=0`, archived, restore-required, restored, and post-restore transitions.
+- Include forbidden-state reachability and a known-bad negative control when meaningful; explain any omission.
+- Reproduce material model findings at the native target boundary whenever feasible.
+- Use snapshots as supporting evidence, never as the sole semantic oracle.
+- Preserve deterministic seeds, search depth/bounds, minimized traces, and exact subject identity.
+
+## Required field report
+
+- **Spine:** canonical `spineRef`; the graph adds nodes/edges without changing parent identity or evidence.
+- **State vector:** all modeled dimensions and intentional omissions.
+- **Paths exercised:** happy, rejected, boundary, temporal, order-sensitive, terminal, and restore paths.
+- **Forbidden states:** reached, blocked, or not searched with reason.
+- **Node assertions:** expected and observed state after every edge.
+- **Path comparison:** equivalent, policy-dependent, drifted, or counterexample found.
+- **Evidence boundary:** native, model-only, overlay, clean-head CI, and remaining verification debt.

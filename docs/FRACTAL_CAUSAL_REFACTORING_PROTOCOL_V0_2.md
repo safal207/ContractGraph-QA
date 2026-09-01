@@ -194,6 +194,31 @@ Binding tests:
 
 `tools/tests/test_fcrp_v02.py`
 
+## FCRP-V02-SELF-LEARNING-001
+
+This self-case applies v0.2 to ContractGraph-QA's agent-learning protocol.
+
+The symptom was repeated or ad hoc promotion of useful engagement lessons. The first meaningful divergence was one level higher: the repository completion contract did not require a bounded learning decision under a shared parent causal contract.
+
+The selected refactor point is therefore the parent agent protocol, not any one target-specific checklist:
+
+```text
+causal engagement spine
+├── scoped verdict / evidence routing
+├── temporal transition field
+└── review-gated repository learning
+```
+
+Repository history is the causal clock. A commit carrying the parent spine is required evidence of progress; elapsed time or a chat summary is not.
+
+Case:
+
+`benchmarks/fcrp-v0.2/FCRP-V02-SELF-LEARNING-001.json`
+
+Binding and negative-control tests:
+
+`tools/tests/test_fcrp_v02_agent_learning.py`
+
 ## Compatibility
 
 v0.1 remains unchanged in:

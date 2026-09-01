@@ -1,0 +1,34 @@
+---
+description: Turn validated engagement lessons into reviewable repository improvements
+alwaysApply: true
+---
+
+# Repository Learning Loop
+
+- Apply the [Causal Engagement Spine](causal-engagement-spine.mdc); bind this learning projection with `spineRef` and do not restate parent fields.
+- After every consequential run, perform a learning harvest before the final handoff.
+- Separate target-specific facts from reusable patterns; never promote a single anecdote into a universal rule.
+- For each candidate lesson, record its trigger, invariant, evidence, applicability boundary, and overfitting or false-positive risk.
+- Search existing tests, fixtures, adapters, docs, and rules first; extend the canonical artifact instead of duplicating it.
+- Promotion requires deterministic support such as a minimized trace, native regression, negative control, or reproducible evidence bundle.
+- Keep specification ambiguity, policy choices, and model-only suspicions as `DEFER`; do not encode them as settled truth.
+- Prefer the smallest durable artifact that prevents repeated work: regression test, fixture, adapter validation, rule, template, or focused documentation.
+- Bind provenance to the exact CGQA commit and target subject, then prove applicability separately with an explicit predicate and supporting evidence.
+- Never import secrets, private evidence, unlicensed target code, or a target contract as a production dependency.
+- Submit reusable learning through a separate branch/PR with validation and explicit approval; do not silently rewrite rules or auto-merge.
+- Link contradictory evidence as `CONTRADICTED_BY` and choose `DEFER` until the conflict and applicability are resolved; only then record an explicit `SUPERSEDES` relation.
+- If no reusable lesson meets the evidence gate, record `NO_PROMOTION`; this is a valid outcome.
+
+## Learning harvest template
+
+- **Spine:** canonical `spineRef`; never turn a learning decision into parent authority.
+- **Observation:** what was newly learned.
+- **Evidence:** exact subject, trace/test, negative control, and native confirmation.
+- **Provenance:** exact source commit/subject; this does not prove applicability.
+- **Applicability:** explicit predicate, reusable invariant, boundary, and independent support.
+- **Risk:** ambiguity, false positives, overfitting, security, or compatibility impact.
+- **Artifact:** existing canonical file to update or smallest new artifact.
+- **Validation:** tests/checks proving the lesson and guarding against regression.
+- **Decision:** `PROMOTE`, `DEFER`, or `NO_PROMOTION`, with reason.
+- **Publication authority:** true/false plus distinct `authorizationRef`; `PROMOTE` alone grants none.
+- **Follow-up:** branch/PR/issue only when explicitly authorized.

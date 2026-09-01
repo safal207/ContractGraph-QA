@@ -12,6 +12,18 @@ A PASS-like result is always bounded by the model, evidence, assumptions, adapte
 
 Never describe bounded exploration as a formal proof of production correctness.
 
+## Reusable engagement protocols
+
+Start every consequential engagement with the [Causal Engagement Spine](.cursor/rules/causal-engagement-spine.mdc). Apply the same idea, time, cause, evidence, authority, and verification contract at repository, component, transition, and test scales.
+
+Use its specialized projections:
+
+- Before reviewing an issue or pull request, follow [Scoped Verdict and Evidence Routing](.cursor/rules/scoped-verdict-evidence-routing.mdc).
+- For every stateful target, follow [Temporal Transition Test Field](.cursor/rules/temporal-transition-test-field.mdc). A case matrix does not replace a transition graph over ledger, time, TTL, authority, and storage state.
+- After every consequential engagement, follow the [Repository Learning Loop](.cursor/rules/repository-learning-loop.mdc) and finish with `PROMOTE`, `DEFER`, or `NO_PROMOTION`.
+
+Each projection may add domain detail but must not relax the spine's parent invariants. These protocols preserve lessons without turning a historical finding into a universal product claim.
+
 ## Required execution route
 
 Use this order unless a step is genuinely not applicable:

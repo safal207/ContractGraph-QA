@@ -1,0 +1,182 @@
+{
+  "schema": "cgqa.fcrp-case.v0.2",
+  "caseId": "FCRP-V02-SELF-LEARNING-001",
+  "title": "Agent engagement lessons inherit one causal contract before repository promotion",
+  "scope": {
+    "nodeId": "contractgraph-qa-agent-learning-governance",
+    "scale": "repository agent protocol / engagement / transition test",
+    "ideaContract": {
+      "purpose": "Preserve reusable verification lessons as evidence-bound repository knowledge without overgeneralizing one target engagement.",
+      "expectedOutcome": "Every consequential run applies one causal spine, specialized projections, and a review-gated learning decision.",
+      "invariants": [
+        "all child projections reference one canonical spine identity instead of restating mutable parent fields",
+        "each specialized projection preserves the parent causal, evidence, verification, and authority boundaries",
+        "a scoped target verdict never becomes a whole-system safety claim",
+        "a reusable lesson requires deterministic evidence and an explicit applicability boundary",
+        "evidence maturity and FCRP PASS do not grant mutation, publication, or merge authority"
+      ],
+      "forbiddenOutcomes": [
+        "target-specific behavior promoted as a universal repository rule",
+        "a child projection weakens the parent authority or verification contract",
+        "elapsed time or repeated prose is treated as causal learning progress",
+        "chat-local evidence is silently treated as durable repository knowledge"
+      ],
+      "dependencies": [
+        "AGENTS.md",
+        ".cursor/rules/causal-engagement-spine.mdc",
+        ".cursor/rules/scoped-verdict-evidence-routing.mdc",
+        ".cursor/rules/temporal-transition-test-field.mdc",
+        ".cursor/rules/repository-learning-loop.mdc",
+        "contractgraph_qa/fcrp_v02.py"
+      ],
+      "parentContract": "ContractGraph-QA remains a bounded verification layer whose evidence and PASS results never create authority by themselves."
+    }
+  },
+  "evidence": [
+    {
+      "id": "E-CGQA-BASE",
+      "kind": "repository-history",
+      "ref": "safal207/ContractGraph-QA@ce490a3b6521eeecea0c24a6b6e3ce807887405f",
+      "claim": "The parent agent protocol bounded PASS and enumerated verification capabilities but did not require a post-run promotion decision or a shared parent contract for reusable engagement rules.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-CGQA-SPINE",
+      "kind": "repository-refactor",
+      "ref": "safal207/ContractGraph-QA@a5f5f1dd731ee9995bf41051551e44f58f46722a",
+      "claim": "The refactor adds one canonical causal engagement spine and makes scoped verdict, temporal transition, and repository learning rules explicit spineRef-bound child projections.",
+      "strength": "RECOMPUTABLE",
+      "mayGrantAuthority": false
+    },
+    {
+      "id": "E-CGQA-PR147",
+      "kind": "review-boundary",
+      "ref": "https://github.com/safal207/ContractGraph-QA/pull/147",
+      "claim": "The agent-learning change is isolated in a reviewable pull request rather than silently written to main.",
+      "strength": "OBSERVED",
+      "mayGrantAuthority": false
+    }
+  ],
+  "timeModel": {
+    "domains": [
+      "REPOSITORY_HISTORY",
+      "CAUSAL_SEQUENCE"
+    ],
+    "primaryDomain": "CAUSAL_SEQUENCE",
+    "causalAdvanceRequired": true,
+    "causalAdvanceEvidenceRefs": [
+      "E-CGQA-SPINE"
+    ]
+  },
+  "timeline": {
+    "past": {
+      "summary": "Reusable lessons could remain in an engagement summary or be copied into separate rules without an explicit parent causal contract.",
+      "evidenceRefs": [
+        "E-CGQA-BASE"
+      ]
+    },
+    "present": {
+      "summary": "The review branch contains one parent spine and three bounded projections with explicit promotion and authority gates.",
+      "evidenceRefs": [
+        "E-CGQA-SPINE",
+        "E-CGQA-PR147"
+      ]
+    },
+    "future": {
+      "summary": "Future runs conclude with evidence-bound promotion decisions while target-specific observations remain scoped or deferred.",
+      "evidenceRefs": [
+        "E-CGQA-SPINE"
+      ]
+    }
+  },
+  "causalPath": [
+    {
+      "id": "N1",
+      "level": "repository-governance",
+      "phase": "first-divergence",
+      "statement": "The completion protocol stopped at reporting evidence and debt without requiring a bounded repository-learning decision under one parent causal contract.",
+      "evidenceRefs": [
+        "E-CGQA-BASE"
+      ]
+    },
+    {
+      "id": "N2",
+      "level": "engagement-run",
+      "phase": "symptom",
+      "statement": "Useful patterns could be rediscovered in later runs or promoted ad hoc without a consistent generalization and authority gate.",
+      "evidenceRefs": [
+        "E-CGQA-BASE"
+      ]
+    },
+    {
+      "id": "N3",
+      "level": "parent-agent-contract",
+      "phase": "refactor",
+      "statement": "Extract one causal engagement spine and make scope, temporal testing, and learning explicit projections that cannot weaken it.",
+      "evidenceRefs": [
+        "E-CGQA-SPINE"
+      ]
+    },
+    {
+      "id": "N4",
+      "level": "future-agent-run",
+      "phase": "verified-state",
+      "statement": "Agents preserve exact subject, typed time, causal path, evidence, authority, upward verification, and a review-gated learning decision at each applicable scale.",
+      "evidenceRefs": [
+        "E-CGQA-SPINE"
+      ]
+    }
+  ],
+  "divergence": {
+    "symptomPoint": "N2",
+    "firstMeaningfulDivergence": "N1",
+    "causePoint": "N1",
+    "selectedRefactorPoint": "N3",
+    "evidenceRefs": [
+      "E-CGQA-BASE",
+      "E-CGQA-SPINE"
+    ]
+  },
+  "navigation": {
+    "direction": "UP",
+    "reason": "Repeated work appeared inside individual engagements, but the missing guarantee belonged to the parent repository agent contract."
+  },
+  "refactor": {
+    "point": "N3",
+    "change": "Create one causal engagement spine and bind three independently consumable projections to its invariant and authority boundaries.",
+    "expectedEffect": "Future agents can retain reusable knowledge without duplicating causal policy or promoting target-specific observations as universal truth."
+  },
+  "simulation": {
+    "status": "PASS",
+    "checkedSurfaces": [
+      "children",
+      "parent",
+      "dependencies",
+      "future"
+    ],
+    "evidenceRefs": [
+      "E-CGQA-SPINE"
+    ]
+  },
+  "authorization": {
+    "evidenceMayGrantAuthority": false,
+    "mutationAuthorized": false,
+    "authorizationRef": null,
+    "authorityBoundary": "This self-case validates the repository learning contract only; it grants no future authority to mutate targets, publish branches, merge pull requests, or rewrite rules."
+  },
+  "verification": {
+    "local": "PASS",
+    "upward": "PASS",
+    "evidenceRefs": [
+      "E-CGQA-SPINE"
+    ],
+    "stopConditions": {
+      "parentInvariantsPreserved": true,
+      "crossBoundaryEffectsAbsent": true,
+      "causalPropagationStopped": true,
+      "causalExplanationComplete": true
+    }
+  },
+  "expectedProtocolDecision": "PASS"
+}

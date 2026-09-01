@@ -1,0 +1,36 @@
+---
+description: Apply one causal contract across engagement scales before accepting a refactor or lesson
+alwaysApply: true
+---
+
+# Causal Engagement Spine
+
+This is the human operational projection of [FCRP v0.2](../../docs/FRACTAL_CAUSAL_REFACTORING_PROTOCOL_V0_2.md).
+
+## Canonical record
+
+Create one `CausalSpine` per exact subject and record its fields once:
+
+- `spineId`, `exactSubject`, `subjectHash`, scale, and parent contract;
+- idea contract: purpose, expected outcome, invariants, forbidden outcomes, and dependencies;
+- typed time model plus past, present, and intended future;
+- symptom, first meaningful divergence, cause, navigation, and selected refactor point;
+- evidence references and applicability boundary;
+- authority: mutation, publication, merge, and distinct `authorizationRef`;
+- local/upward verification, stop conditions, debt, and interpretation history.
+
+Every child projection carries `spineRef` and records only its own fields. A different subject, evidence boundary, or authority starts a new spine; never restate a changed parent value under the old reference.
+
+## Navigation and verification
+
+1. Navigate `DOWN` for mechanism, `UP` for parent intent, `SIDEWAYS` for dependencies, or `STOP` only with a complete explanation.
+2. Select the smallest refactor point with sufficient causal leverage; symptom, cause, and repair may differ.
+3. Bind every claim and simulation to evidence while preserving `Evidence != Authority`.
+4. Verify locally and upward until parent invariants hold, cross-boundary effects are absent, causal propagation stops, and the explanation is complete.
+5. Return a bounded decision and debt; without a distinct `authorizationRef`, mutation, publication, and merge are unauthorized.
+
+## Fractal inheritance
+
+- A child may add domain fields but never weaken parent invariants, evidence gates, or authority boundaries.
+- `Local PASS != System PASS`; `Historical PASS != Current PASS`; `Observation != Generalized Lesson`.
+- Conflicting evidence is linked as `CONTRADICTED_BY` and forces `HOLD`/`DEFER` until applicability and conflict are resolved; only then may an interpretation explicitly `SUPERSEDE` another.
