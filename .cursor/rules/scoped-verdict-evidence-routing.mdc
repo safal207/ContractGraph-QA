@@ -5,21 +5,22 @@ alwaysApply: true
 
 # Scoped Verdict and Evidence Routing
 
-- Apply the [Causal Engagement Spine](causal-engagement-spine.mdc); this is its issue/PR scope and evidence-routing projection.
+- Apply the [Causal Engagement Spine](causal-engagement-spine.mdc); bind this issue/PR projection with `spineRef` and do not restate parent fields.
 - Before execution, record the target repository, issue/PR, exact base and head when applicable, CGQA commit, adapter/model identity, and acceptance criteria.
 - Report `PASS_WITHIN_BOUND` only for the declared scope. Never translate it into whole-contract or production safety.
 - Classify extra observations as confirmed defect, specification question, reliability risk, or positive regression evidence.
-- An unrelated defect does not change a scoped PASS unless it invalidates the tested fix or its acceptance criteria.
-- Preserve a confirmed independent defect as a minimal deterministic test-only reproducer on a separate evidence branch/commit based on the exact tested head.
+- Before calling a finding unrelated, check shared causal ancestry and parent invariants; keep it in scope if it invalidates the tested fix or acceptance criteria.
+- Create or publish an evidence branch, issue, comment, or pull request only with explicit authorization.
+- Preserve an authorized independent defect as a minimal deterministic test-only reproducer on a separate evidence branch/commit based on the exact tested head.
 - Label results from an uncommitted/test-only overlay separately from clean-head CI evidence.
 - Do not add vulnerable-behavior characterization tests or unrelated production fixes to the target PR.
 - Search existing issues before drafting a new one. Prefer one defect, one affected operation, and one route to resolution.
-- Publish branches, issues, comments, or pull requests only with explicit user authorization.
 - In a later fix PR, invert the reproducer to assert the safe invariant; keep ABI and policy changes within approved maintainer scope.
 
 ## Required handoff
 
-- **Scope verdict:** target issue/PR, exact subject, verdict, and boundary.
+- **Spine:** canonical `spineRef`; never duplicate or alter its subject, evidence, or authority.
+- **Scope verdict:** target issue/PR, acceptance criteria, verdict, and boundary.
 - **Evidence:** native matrix, transition path, negative control when meaningful, CGQA search bounds, and snapshots/traces.
 - **Independent findings:** classification, impact, deterministic reproduction, and separate route.
 - **Verification debt:** unavailable gates, skipped capabilities with reasons, overlays, missing witnesses, and missing CI.

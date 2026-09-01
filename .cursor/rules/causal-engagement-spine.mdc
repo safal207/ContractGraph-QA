@@ -5,21 +5,32 @@ alwaysApply: true
 
 # Causal Engagement Spine
 
-Apply this sequence at repository, product, component, function, transition, and test-invariant scales:
+This is the human operational projection of [FCRP v0.2](../../docs/FRACTAL_CAUSAL_REFACTORING_PROTOCOL_V0_2.md).
 
-1. Freeze the exact subject, current scale, parent contract, and applicable authority boundary.
-2. State the idea contract: purpose, expected outcome, invariants, forbidden outcomes, and dependencies.
-3. Type time explicitly as wall clock, protocol clock, causal sequence, or repository history; elapsed time is not causal progress.
-4. Trace past, present, and intended future through symptom, first meaningful divergence, cause, and candidate refactor point.
-5. Navigate `DOWN` for mechanism, `UP` for parent intent, `SIDEWAYS` for dependencies, or `STOP` only with a complete explanation.
-6. Select the smallest refactor point with sufficient causal leverage; symptom, cause, and repair may differ.
-7. Bind claims and simulations to evidence while preserving `Evidence != Authority`.
-8. Verify locally and upward until parent invariants hold, cross-boundary effects are absent, causal propagation stops, and the explanation is complete.
-9. Return a bounded decision, remaining debt, and explicit mutation or publication authority.
+## Canonical record
+
+Create one `CausalSpine` per exact subject and record its fields once:
+
+- `spineId`, `exactSubject`, `subjectHash`, scale, and parent contract;
+- idea contract: purpose, expected outcome, invariants, forbidden outcomes, and dependencies;
+- typed time model plus past, present, and intended future;
+- symptom, first meaningful divergence, cause, navigation, and selected refactor point;
+- evidence references and applicability boundary;
+- authority: mutation, publication, merge, and distinct `authorizationRef`;
+- local/upward verification, stop conditions, debt, and interpretation history.
+
+Every child projection carries `spineRef` and records only its own fields. A different subject, evidence boundary, or authority starts a new spine; never restate a changed parent value under the old reference.
+
+## Navigation and verification
+
+1. Navigate `DOWN` for mechanism, `UP` for parent intent, `SIDEWAYS` for dependencies, or `STOP` only with a complete explanation.
+2. Select the smallest refactor point with sufficient causal leverage; symptom, cause, and repair may differ.
+3. Bind every claim and simulation to evidence while preserving `Evidence != Authority`.
+4. Verify locally and upward until parent invariants hold, cross-boundary effects are absent, causal propagation stops, and the explanation is complete.
+5. Return a bounded decision and debt; without a distinct `authorizationRef`, mutation, publication, and merge are unauthorized.
 
 ## Fractal inheritance
 
-- A child projection may add domain fields but must not weaken parent invariants, evidence gates, or authority boundaries.
+- A child may add domain fields but never weaken parent invariants, evidence gates, or authority boundaries.
 - `Local PASS != System PASS`; `Historical PASS != Current PASS`; `Observation != Generalized Lesson`.
-- Conflicting new evidence supersedes an interpretation explicitly; it does not erase repository history.
-- No PASS, simulation, or learning candidate silently authorizes production mutation, publication, or merge.
+- Conflicting evidence is linked as `CONTRADICTED_BY` and forces `HOLD`/`DEFER` until applicability and conflict are resolved; only then may an interpretation explicitly `SUPERSEDE` another.
