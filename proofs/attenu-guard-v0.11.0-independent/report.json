@@ -1,0 +1,208 @@
+{
+  "cases": [
+    {
+      "expected": "accept",
+      "missing_required_failures": [],
+      "name": "valid_bundle_v2",
+      "observed": "accept",
+      "observed_failures": [],
+      "passed": true,
+      "required_failures": []
+    },
+    {
+      "expected": "reject",
+      "missing_required_failures": [],
+      "name": "reject_params_mismatch",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "params_mismatch",
+          "seq": 3
+        }
+      ],
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "params_mismatch",
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "missing_required_failures": [],
+      "name": "reject_outcome_without_allow",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "outcome_without_allow",
+          "seq": 6
+        }
+      ],
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "outcome_without_allow",
+          "seq": 6
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "missing_required_failures": [],
+      "name": "reject_outcome_before_allow",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "outcome_before_allow",
+          "seq": 2
+        }
+      ],
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "outcome_before_allow",
+          "seq": 2
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "missing_required_failures": [],
+      "name": "reject_duplicate_outcome",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "duplicate_outcome",
+          "seq": 4
+        }
+      ],
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "duplicate_outcome",
+          "seq": 4
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "missing_required_failures": [],
+      "name": "reject_duplicate_call_id",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "outcome_without_allow",
+          "seq": 3
+        },
+        {
+          "node": "vectors:n1",
+          "reason": "duplicate_call_id",
+          "seq": 4
+        },
+        {
+          "node": "vectors:n1",
+          "reason": "outcome_node_mismatch",
+          "seq": 6
+        },
+        {
+          "node": "vectors:n1",
+          "reason": "params_mismatch",
+          "seq": 6
+        }
+      ],
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "duplicate_call_id",
+          "seq": 4
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "missing_required_failures": [],
+      "name": "reject_rehashed_chain",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        }
+      ],
+      "passed": true,
+      "required_failures": [
+        {
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "missing_required_failures": [],
+      "name": "reject_tampered_entry",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "integrity",
+          "seq": 3
+        }
+      ],
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "integrity",
+          "seq": 3
+        }
+      ]
+    }
+  ],
+  "claim_boundary": [
+    "Independent reproduction of the released bundle_vectors_v1 corpus only.",
+    "No claim of general verifier completeness, CrewAI runtime correctness, production security, or certification."
+  ],
+  "environment": {
+    "implementation": "CPython",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+    "python": "3.13.5"
+  },
+  "proof_id": "safal207/attenu-bundle-vectors-v1-independent-v0.1",
+  "run_date": "2026-09-02",
+  "source": {
+    "fixture_bytes": 69573,
+    "fixture_git_blob_sha1": "7a78f025eed9f219f2ee055cef3ec1ae3fe1f352",
+    "fixture_path": "tests/vectors/bundles/bundle_vectors_v1.json",
+    "fixture_sha256": "90d7fa70eabe92cbfa4df04bad50ac78995b57e83812cc5671e1ba9de01619ce",
+    "python_release": "attenu-io/attenu-guard@68d4062a8f5610e9c2a80f9f378b9eedbb6d9fed",
+    "python_version": "0.11.0",
+    "typescript_release": "attenu-io/attenu-guard-ts@4fd6a17bf1c05534f2b81db46adcdbd84d6d7af6",
+    "typescript_version": "0.6.0"
+  },
+  "summary": {
+    "cases_passed": 8,
+    "cases_total": 8,
+    "passed": true
+  },
+  "verifier": {
+    "claim_boundary": "released bundle_vectors_v1 corpus only; not a general audit or runtime certification",
+    "id": "safal207-independent-bundle-v1",
+    "independence_boundary": "stdlib-only; no attenu_guard imports; fixture read as raw bytes",
+    "source_sha256": "16b5a0f867a2d4b02c4b03a57ac993793df816cbd2f6e5ed82b62a13ee757bd0",
+    "version": "0.1.0"
+  }
+}
