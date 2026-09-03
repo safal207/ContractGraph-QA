@@ -111,6 +111,28 @@ class ContainmentRegressionTests(unittest.TestCase):
             lambda _root, spawn: spawn["granted"].__setitem__("constraints", [])
         )
 
+    def test_invalid_shared_constraint_shape_or_type_rejects(self) -> None:
+        def add_child_member(_root: dict[str, Any], spawn: dict[str, Any]) -> None:
+            spawn["granted"]["constraints"][0]["unknown"] = True
+
+        def add_parent_member(root: dict[str, Any], _spawn: dict[str, Any]) -> None:
+            root["authority"]["constraints"][0]["unknown"] = True
+
+        def set_child_boolean(_root: dict[str, Any], spawn: dict[str, Any]) -> None:
+            spawn["granted"]["constraints"][0]["max"] = True
+
+        def set_parent_boolean(root: dict[str, Any], _spawn: dict[str, Any]) -> None:
+            root["authority"]["constraints"][0]["max"] = True
+
+        for name, mutate in (
+            ("child extra member", add_child_member),
+            ("parent extra member", add_parent_member),
+            ("child Boolean max", set_child_boolean),
+            ("parent Boolean max", set_parent_boolean),
+        ):
+            with self.subTest(name=name):
+                self.assert_monotonicity_reject(mutate)
+
 
 if __name__ == "__main__":
     unittest.main()

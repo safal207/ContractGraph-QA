@@ -152,11 +152,25 @@ def _scope_covers(parent: str, child: str) -> bool:
     return False
 
 
-def _constraint_map(authority: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+def _constraint_map(
+    authority: Mapping[str, Any],
+) -> dict[str, Mapping[str, Any]] | None:
+    raw_constraints = authority.get("constraints")
+    if raw_constraints is None:
+        raw_constraints = []
+    if not isinstance(raw_constraints, list):
+        return None
+
     out: dict[str, Mapping[str, Any]] = {}
-    for raw in authority.get("constraints") or []:
-        if isinstance(raw, dict) and isinstance(raw.get("key"), str):
-            out[raw["key"]] = raw
+    for raw in raw_constraints:
+        if (not isinstance(raw, dict)
+                or set(raw) != {"key", "max"}
+                or not isinstance(raw.get("key"), str)
+                or not isinstance(raw.get("max"), (int, float))
+                or isinstance(raw.get("max"), bool)
+                or raw["key"] in out):
+            return None
+        out[raw["key"]] = raw
     return out
 
 
@@ -173,41 +187,26 @@ def _authority_narrower(child: Mapping[str, Any], parent: Mapping[str, Any]) -> 
 
     child_constraints = _constraint_map(child)
     parent_constraints = _constraint_map(parent)
+    if child_constraints is None or parent_constraints is None:
+        return False
     # Every bound held by the parent must remain present in the child. Omitting
     # a ceiling makes that dimension unbounded and is therefore a widening.
     for key, parent_constraint in parent_constraints.items():
         child_constraint = child_constraints.get(key)
         if child_constraint is None:
             return False
-        # The released corpus exercises max_rows. Unknown constraint forms fail
-        # closed instead of being assumed narrower.
-        if "max" in child_constraint and "max" in parent_constraint:
-            child_max = child_constraint["max"]
-            parent_max = parent_constraint["max"]
-            if (not isinstance(child_max, (int, float))
-                    or isinstance(child_max, bool)
-                    or not isinstance(parent_max, (int, float))
-                    or isinstance(parent_max, bool)
-                    or child_max > parent_max):
-                return False
-        elif child_constraint != parent_constraint:
+        if child_constraint["max"] > parent_constraint["max"]:
             return False
 
-    # Additional known max constraints narrow authority further. Unknown forms
-    # stay fail-closed because this verifier claims only the published corpus
-    # profile, not the draft's complete constraint vocabulary.
-    for key, child_constraint in child_constraints.items():
-        if key in parent_constraints:
-            continue
-        if (set(child_constraint) != {"key", "max"}
-                or not isinstance(child_constraint.get("max"), (int, float))
-                or isinstance(child_constraint.get("max"), bool)):
-            return False
+    # Additional supported max constraints narrow authority further. Shape,
+    # type, and duplicate-key validation happened before the comparison.
     return True
 
 
 def _context_within(authority: Mapping[str, Any], context: Mapping[str, Any]) -> bool:
     constraints = _constraint_map(authority)
+    if constraints is None:
+        return False
     if "rows" in context and "max_rows" in constraints:
         limit = constraints["max_rows"].get("max")
         if not isinstance(limit, int) or not isinstance(context["rows"], int) or context["rows"] > limit:

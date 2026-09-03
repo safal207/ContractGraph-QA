@@ -28,9 +28,9 @@ This proof is additive. It does not replace or rewrite the pinned 8/8 result for
 - Fixture Git blob SHA-1 in both release tags:
   `de376308bdb5d469f09b096e75eae4cd762f2262`
 - Verifier SHA-256:
-  `ec57e24d9ee85530b4acbd44427247700ca8a2a55dc83c39002792929f09695f`
+  `361690dfa0c015445bc05bcbb955aaaa54dba00cd3136c72015f0ab767504446`
 - Generated report SHA-256:
-  `0be4a61065fa63d87ca79433e2a17b6bf384d8dd83f152867f52a6a6fd45cd5f`
+  `693e4fb7e07cb1fde1b66e76f12562362118455b997e867115612efb62bec105`
 
 The Python source tag, TypeScript source tag, and installed Python wheel carry
 the same fixture bytes. The wheel's `RECORD` also binds the same byte count and
@@ -80,15 +80,16 @@ subset base.
 
 `test_containment_regressions.py` therefore keeps a separate, non-conformance
 test layer. It rebuilds the chain and anchor after each local mutation and
-checks five boundaries:
+checks six boundaries:
 
 1. a literal-subset control remains valid;
 2. literal-subset plus increased TTL rejects;
 3. literal-subset plus loosened ceiling rejects;
 4. literal-subset plus omitted TTL rejects;
 5. literal-subset plus omitted child ceiling rejects.
+6. unsupported members or Boolean maxima in either shared constraint reject.
 
-Result: **5/5 PASS**. These local mutations demonstrate the behavior of this
+Result: **6/6 PASS**. These local mutations demonstrate the behavior of this
 independent verifier only. They are not released vectors and do not prove the
 reference implementations fixed the defect.
 
