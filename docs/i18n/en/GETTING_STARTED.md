@@ -60,6 +60,12 @@ Package-manager coordinates and local-reference examples are in the
 reference runner; Rust is the LiminalQA native runner; Elixir is the
 PythiaLabs native runner.
 
+[SDK v0.1.0 is publicly downloadable from GitHub](https://github.com/safal207/ContractGraph-QA/releases/tag/interop-sdk-v0.1.0),
+and the Go module is available with
+`go get github.com/safal207/ContractGraph-QA/sdks/go@v0.1.0`. The `.tgz`,
+JAR/POM, and `.nupkg` are release assets; npm, Maven Central, and nuget.org
+listings are not published yet.
+
 ## What fails closed
 
 Every consumer rejects:

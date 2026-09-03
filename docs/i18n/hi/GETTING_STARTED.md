@@ -53,6 +53,12 @@ Package coordinates और local references के लिए [SDK release guide]
 देखें। Python ContractGraph-QA reference runner है, Rust LiminalQA native runner
 है और Elixir PythiaLabs native runner है।
 
+[SDK v0.1.0 GitHub से public download के लिए उपलब्ध है](https://github.com/safal207/ContractGraph-QA/releases/tag/interop-sdk-v0.1.0),
+और Go module को
+`go get github.com/safal207/ContractGraph-QA/sdks/go@v0.1.0` से install किया जा
+सकता है। `.tgz`, JAR/POM और `.nupkg` release assets हैं; npm, Maven Central और
+nuget.org पर publication अभी pending है।
+
 ## Fail-closed सीमा
 
 हर adapter duplicate JSON keys, unknown critical fields, pin drift, missing या
