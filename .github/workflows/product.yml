@@ -46,6 +46,9 @@ jobs:
           grep -q "subject-freeze" /tmp/cgqa-help.txt
           grep -q "trace-integrity" /tmp/cgqa-help.txt
           grep -q "plan-verification" /tmp/cgqa-help.txt
+          grep -q "liminalqa-conformance" /tmp/cgqa-help.txt
+      - name: Run portable LiminalQA conformance outside checkout
+        run: cd /tmp && cgqa liminalqa-conformance
       - name: Runtime doctor outside checkout
         run: cd /tmp && cgqa doctor --require-forge
       - name: Run self-serve demo outside checkout without Forge usage

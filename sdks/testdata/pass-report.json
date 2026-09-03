@@ -1,0 +1,51 @@
+{
+  "authority": {
+    "classification": "conformance_evidence_only",
+    "mayAuthorizeAction": false
+  },
+  "claimBoundary": "Synthetic conformance verifies adapter behavior only for these pinned fixtures and mutations. It does not verify a production system, prove security or completeness, authorize an action, or replace independent replay against the exact subject.",
+  "contractPins": [
+    {
+      "artifactProfile": "org.contractgraph-qa.bounded-invariant-evidence.v0.1",
+      "artifactSchema": "org.contractgraph-qa.liminalqa-evidence.v0.1",
+      "fixtureSha256": "e1d5a14c5c1b75e2cfffaf87bf526fd61e141a0c5b7828de4f275e9792fda3ce",
+      "id": "cgqa-evidence",
+      "ownerRepository": "safal207/ContractGraph-QA",
+      "producerCommit": "bdf7ced074e3a7baf57cf89ac68be9674bd76a02",
+      "schemaSha256": "53b0b4a0b1f4d77de26b8be9dbb90006ea0bd30c5cd3960a2f3e7d44d9664184"
+    },
+    {
+      "artifactProfile": "org.liminalqa.non-authoritative-candidate-seeds.v0.1",
+      "artifactSchema": "org.liminalqa.cgqa-candidates.v0.1",
+      "fixtureSha256": "60b794934959c30f9957d0e54de83d7760ac38b618b0676603d721daa8ef11d3",
+      "id": "liminal-candidates",
+      "ownerRepository": "safal207/LiminalQAengineer",
+      "producerCommit": "db9c85f678aafd6e28487e0679a9fb6c3ebfb0c3",
+      "schemaSha256": "896e32921d41925a976fef5d0ba561a08bd1f2265a08bc9ccf5065a3238a4f60"
+    }
+  ],
+  "counts": {"failed": 0, "passed": 14, "total": 14},
+  "implementation": {"language": "python", "name": "contractgraph-qa", "version": "1.9.0"},
+  "reportId": "cgqa-sdk-pass-fixture",
+  "results": [
+    {"category":"golden","contract":"cgqa-evidence","diagnostic":"profile accepted without action authority","expectedSemantics":"VALID_NON_AUTHORIZING","id":"cgqa-evidence-golden","inputSha256":"e1d5a14c5c1b75e2cfffaf87bf526fd61e141a0c5b7828de4f275e9792fda3ce","observedSemantics":"VALID_NON_AUTHORIZING","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"authority_escalation","contract":"cgqa-evidence","diagnostic":"authority escalation blocked","expectedSemantics":"INVALID_BLOCKED","id":"cgqa-evidence-authority-escalation","inputSha256":"33eb3122738032c3ebc1043f5058bc7a9cc469c6ecff8ad0a602aaa3a80067ce","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"semantic_mismatch","contract":"cgqa-evidence","diagnostic":"count mismatch blocked","expectedSemantics":"INVALID_BLOCKED","id":"cgqa-evidence-count-mismatch","inputSha256":"3f348306ba20fdb780b662ec3aadbdf8d1a805a1d81cb2eb66103824e9f8b95f","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"temporal_inversion","contract":"cgqa-evidence","diagnostic":"temporal inversion blocked","expectedSemantics":"INVALID_BLOCKED","id":"cgqa-evidence-temporal-inversion","inputSha256":"dbc7d64eda4aeb497bf360e10335896b3f9b4316973306e37a8a21134cc85ba8","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"unknown_field","contract":"cgqa-evidence","diagnostic":"unknown field blocked","expectedSemantics":"INVALID_BLOCKED","id":"cgqa-evidence-unknown-authority-field","inputSha256":"49d7eab11be2a4fc5b90776a9822156573ef5753bff25e674629fdb8e742edea","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"unsafe_identifier","contract":"cgqa-evidence","diagnostic":"unsafe identifier blocked","expectedSemantics":"INVALID_BLOCKED","id":"cgqa-evidence-unsafe-causal-parent","inputSha256":"e50dfe383bbd2577b72dba043bbe129b6370b81ec8226d6fa9ed206bf6bf51af","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"ambiguous_json","contract":"cgqa-evidence","diagnostic":"ambiguous JSON blocked","expectedSemantics":"INVALID_BLOCKED","id":"cgqa-evidence-duplicate-schema-key","inputSha256":"6ff810788c268a93af16daa7a814cfe84616542951de92be8dbe79aabf3d41c9","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"golden","contract":"liminal-candidates","diagnostic":"profile accepted without action authority","expectedSemantics":"VALID_NON_AUTHORIZING","id":"liminal-candidates-golden","inputSha256":"60b794934959c30f9957d0e54de83d7760ac38b618b0676603d721daa8ef11d3","observedSemantics":"VALID_NON_AUTHORIZING","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"authority_escalation","contract":"liminal-candidates","diagnostic":"authority escalation blocked","expectedSemantics":"INVALID_BLOCKED","id":"liminal-candidates-authority-escalation","inputSha256":"261570efc9e6c13d46686a6f5941ee7d39db620c4603cf30a64e0f0baae3abff","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"unknown_field","contract":"liminal-candidates","diagnostic":"unknown field blocked","expectedSemantics":"INVALID_BLOCKED","id":"liminal-candidates-unknown-authority-field","inputSha256":"1a3841322a8dae89e793f92cedcf341c5fafa4a70e308426d76f674434291941","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"verification_weakening","contract":"liminal-candidates","diagnostic":"verification weakening blocked","expectedSemantics":"INVALID_BLOCKED","id":"liminal-candidates-missing-independent-replay","inputSha256":"8030649160511f62065f4ba33d703fb4dcbf96bc25480d8fa9c7d4e85d715423","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"semantic_mismatch","contract":"liminal-candidates","diagnostic":"debt mismatch blocked","expectedSemantics":"INVALID_BLOCKED","id":"liminal-candidates-debt-mismatch","inputSha256":"172a1567897dc4a78deaf2c9f50bc6634e59d2d671ab23d414ca8b4a089f8185","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"unsafe_identifier","contract":"liminal-candidates","diagnostic":"unsafe identifier blocked","expectedSemantics":"INVALID_BLOCKED","id":"liminal-candidates-unsafe-causal-parent","inputSha256":"61b8e74f52248e50fc90e0765b6cc0449ea5b588cb6aa525d148dcb9ac447960","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"},
+    {"category":"ambiguous_json","contract":"liminal-candidates","diagnostic":"ambiguous JSON blocked","expectedSemantics":"INVALID_BLOCKED","id":"liminal-candidates-duplicate-schema-key","inputSha256":"9bf53f54b15a2eb09731c28dfffc5ba39f7c04b0d5fa4d076f300f8107ae2d40","observedSemantics":"INVALID_BLOCKED","sideEffectExecuted":false,"status":"PASS"}
+  ],
+  "schema": "org.contractgraph-qa.liminalqa-interop-conformance-result.v0.1",
+  "status": "PASS",
+  "suiteId": "cgqa-liminalqa-v0.1",
+  "suiteSha256": "562e2f9ae699f001b9ccf1b2b9f6dd30c435d53d668b5fd9a04ca15ca1e4faac",
+  "suiteVersion": "0.1.0"
+}

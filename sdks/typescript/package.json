@@ -1,0 +1,31 @@
+{
+  "name": "@contractgraph-qa/interop-report",
+  "version": "0.1.0",
+  "description": "Fail-closed validator for ContractGraph-QA and LiminalQA conformance evidence",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    }
+  },
+  "bin": {
+    "cgqa-report-validate": "./bin/cgqa-report-validate.js"
+  },
+  "files": ["bin", "src", "README.md"],
+  "scripts": {
+    "test": "node --test",
+    "pack:check": "npm pack --dry-run"
+  },
+  "engines": {"node": ">=18"},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/safal207/ContractGraph-QA.git",
+    "directory": "sdks/typescript"
+  },
+  "keywords": ["contractgraph", "liminalqa", "pythialabs", "conformance", "evidence", "agent-safety"],
+  "license": "Apache-2.0",
+  "publishConfig": {"access": "public"}
+}
