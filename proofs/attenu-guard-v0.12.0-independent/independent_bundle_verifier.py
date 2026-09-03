@@ -152,11 +152,25 @@ def _scope_covers(parent: str, child: str) -> bool:
     return False
 
 
-def _constraint_map(authority: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+def _constraint_map(
+    authority: Mapping[str, Any],
+) -> dict[str, Mapping[str, Any]] | None:
+    raw_constraints = authority.get("constraints")
+    if raw_constraints is None:
+        raw_constraints = []
+    if not isinstance(raw_constraints, list):
+        return None
+
     out: dict[str, Mapping[str, Any]] = {}
-    for raw in authority.get("constraints") or []:
-        if isinstance(raw, dict) and isinstance(raw.get("key"), str):
-            out[raw["key"]] = raw
+    for raw in raw_constraints:
+        if (not isinstance(raw, dict)
+                or set(raw) != {"key", "max"}
+                or not isinstance(raw.get("key"), str)
+                or not isinstance(raw.get("max"), (int, float))
+                or isinstance(raw.get("max"), bool)
+                or raw["key"] in out):
+            return None
+        out[raw["key"]] = raw
     return out
 
 
@@ -173,27 +187,26 @@ def _authority_narrower(child: Mapping[str, Any], parent: Mapping[str, Any]) -> 
 
     child_constraints = _constraint_map(child)
     parent_constraints = _constraint_map(parent)
-    # Omitting a ceiling held by the parent removes that restriction rather
-    # than narrowing it. This dimension is documented by the released format,
-    # even though revision v1.1 exercises the related raised-ceiling case.
-    if any(key not in child_constraints for key in parent_constraints):
+    if child_constraints is None or parent_constraints is None:
         return False
-    for key, child_constraint in child_constraints.items():
-        parent_constraint = parent_constraints.get(key)
-        if parent_constraint is None:
+    # Every bound held by the parent must remain present in the child. Omitting
+    # a ceiling makes that dimension unbounded and is therefore a widening.
+    for key, parent_constraint in parent_constraints.items():
+        child_constraint = child_constraints.get(key)
+        if child_constraint is None:
             return False
-        # The released corpus exercises max_rows. Unknown constraint forms fail
-        # closed instead of being assumed narrower.
-        if "max" in child_constraint and "max" in parent_constraint:
-            if child_constraint["max"] > parent_constraint["max"]:
-                return False
-        elif child_constraint != parent_constraint:
+        if child_constraint["max"] > parent_constraint["max"]:
             return False
+
+    # Additional supported max constraints narrow authority further. Shape,
+    # type, and duplicate-key validation happened before the comparison.
     return True
 
 
 def _context_within(authority: Mapping[str, Any], context: Mapping[str, Any]) -> bool:
     constraints = _constraint_map(authority)
+    if constraints is None:
+        return False
     if "rows" in context and "max_rows" in constraints:
         limit = constraints["max_rows"].get("max")
         if not isinstance(limit, int) or not isinstance(context["rows"], int) or context["rows"] > limit:
@@ -388,8 +401,7 @@ def score_document(document: Mapping[str, Any]) -> tuple[bool, list[dict[str, An
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("vectors", type=Path,
-                        help="path to released bundle_vectors_v1.json revision v1.1")
+    parser.add_argument("vectors", type=Path, help="path to released bundle_vectors_v1.json")
     parser.add_argument("--report", type=Path, help="write machine-readable report JSON")
     parser.add_argument("--allow-unpinned-bytes", action="store_true",
                         help="score a different corpus hash (reported, but not the pinned release proof)")
