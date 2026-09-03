@@ -172,6 +172,12 @@ For the reciprocal, file-first ContractGraph-QA ↔ LiminalQA adapter, including
 bounded-evidence export and non-authoritative candidate import, see
 [LiminalQA interop v0.1](docs/LIMINALQA_INTEROP.md).
 
+Run the portable golden and fail-closed vectors before shipping any language adapter:
+
+```bash
+cgqa liminalqa-conformance
+```
+
 ---
 
 ## What the engine produces

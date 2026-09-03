@@ -12,6 +12,7 @@ import tempfile
 from typing import Any, Callable
 
 from contractgraph_qa import legacy_cli
+from contractgraph_qa.interop_conformance import run_interop_conformance_suite
 from contractgraph_qa.liminalqa_interop import (
     LiminalQaInteropError,
     build_liminalqa_evidence_export,
@@ -199,3 +200,32 @@ def import_candidates_main(argv: list[str]) -> int:
         return import_liminalqa_candidates(candidate_export, source_bytes=raw), output
 
     return _run(action)
+
+
+def conformance_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        prog="cgqa liminalqa-conformance",
+        description=(
+            "Run the pinned CGQA/LiminalQA golden and fail-closed vectors without "
+            "executing candidates or authorizing actions."
+        ),
+    )
+    parser.add_argument(
+        "--suite",
+        type=Path,
+        help="Optional path to an exact byte-for-byte copy of the pinned v0.1 suite",
+    )
+    args = parser.parse_args(argv)
+    try:
+        report = run_interop_conformance_suite(args.suite)
+        print(canonical_json_bytes(report).decode("utf-8"))
+        return EXIT_OK if report["status"] == "PASS" else EXIT_VALIDATION
+    except (ValueError, FileNotFoundError, OSError) as exc:
+        print(f"cgqa: {exc}", file=sys.stderr)
+        return EXIT_VALIDATION
+    except KeyboardInterrupt:
+        print("cgqa: interrupted", file=sys.stderr)
+        return 130
+    except Exception as exc:  # pragma: no cover - defensive CLI boundary
+        print(f"cgqa: unexpected error: {exc}", file=sys.stderr)
+        return EXIT_INTERNAL

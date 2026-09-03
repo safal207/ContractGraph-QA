@@ -65,11 +65,54 @@ The consumer pin records the exact LiminalQA producer commit and candidate
 schema SHA-256 in
 [`contractgraph_qa/schemas/liminalqa-cgqa-candidates-v0.1.external-contract.json`](../contractgraph_qa/schemas/liminalqa-cgqa-candidates-v0.1.external-contract.json).
 
+## Portable conformance kit
+
+Before publishing a Python, Rust, TypeScript, Elixir, Go, JVM, or .NET adapter,
+run the same language-neutral suite:
+
+```bash
+cgqa liminalqa-conformance
+```
+
+The self-contained kit lives in
+[`contractgraph_qa/conformance/liminalqa-v0.1/`](../contractgraph_qa/conformance/liminalqa-v0.1/).
+It pins the manifest, suite and result schemas, both producer schemas, both
+golden fixtures, and their SHA-256 digests. The reference runner refuses a
+rewritten manifest or asset before evaluating any vector.
+
+The 14 vectors cover both interchange directions. Golden fixtures must produce
+`VALID_NON_AUTHORIZING`; authority escalation, semantic mismatch, temporal
+inversion, unknown fields, weakened independent replay, unsafe identifiers, and
+ambiguous duplicate-key JSON must produce `INVALID_BLOCKED`. Every result also
+records `sideEffectExecuted=false` and `mayAuthorizeAction=false`.
+If an adapter accepts an authorizing or fresh-verification-weakening profile,
+the runner records `UNSAFE_ACCEPTED` and fails the suite rather than treating
+the runner's outer guard as proof that the adapter blocked it.
+
+Mutation semantics are byte-stable across implementations:
+
+- `identity` preserves the golden fixture bytes exactly.
+- `add`, `replace`, and `remove` use the declared RFC 6901 JSON Pointer, then
+  emit UTF-8 JSON with recursively sorted object keys, compact separators, and
+  one trailing LF.
+- `duplicate_root_key` inserts the declared duplicate before the fixture's
+  first root member while preserving the remaining fixture bytes.
+
+Every case pins `expectedInputSha256`. A runner must stop before invoking its
+adapter if the generated mutation does not match that digest; semantically
+similar but byte-different test input is not the pinned v0.1 vector.
+
+Other language implementations should vendor the exact suite bytes, apply the
+declared mutation operations, and publish a result with their own adapter name,
+version, and implementation language. Passing the suite proves behavior only
+for the pinned fixtures and mutations. It does not prove production correctness
+or security and never authorizes a target-system action.
+
 ## Adapter strategy
 
 The canonical engines remain Python (ContractGraph-QA) and Rust (LiminalQA).
 Language packages should be thin wrappers around these versioned JSON profiles,
-golden fixtures, and conformance tests rather than independent reimplementations
+golden fixtures, and this exact conformance suite rather than independent reimplementations
 of verdict logic. Initial packaging targets are Python, TypeScript/Node, Rust,
 Go, JVM, and .NET.
 

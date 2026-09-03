@@ -66,4 +66,10 @@ include = ["contractgraph_qa*"]
 include-package-data = false
 
 [tool.setuptools.package-data]
-contractgraph_qa = ["demo_assets/*.json", "schemas/*.json"]
+contractgraph_qa = [
+  "demo_assets/*.json",
+  "schemas/*.json",
+  "conformance/liminalqa-v0.1/*.json",
+  "conformance/liminalqa-v0.1/schemas/*.json",
+  "conformance/liminalqa-v0.1/fixtures/*.json",
+]
