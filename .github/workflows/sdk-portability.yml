@@ -1,0 +1,97 @@
+name: SDK Portability
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-parity:
+    name: protocol and translation parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest tools.tests.test_sdk_portability
+
+  typescript:
+    name: TypeScript / JavaScript adapter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/typescript
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: npm pack --dry-run
+      - run: node ./bin/cgqa-report-validate.js ../testdata/pass-report.json
+
+  go:
+    name: Go adapter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/go
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.22.x'
+          cache-dependency-path: sdks/go/go.mod
+      - name: Verify checked-in Go formatting
+        run: |
+          gofmt -w .
+          git diff --exit-code -- .
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go run ./cmd/cgqa-report-validate ../testdata/pass-report.json
+
+  java:
+    name: Java / JVM adapter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/java
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: sdks/java/pom.xml
+      - run: mvn --batch-mode --no-transfer-progress verify
+      - run: mvn --batch-mode --no-transfer-progress exec:java -Dexec.args=../testdata/pass-report.json
+
+  dotnet:
+    name: C# / .NET adapter
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/dotnet
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test test/ContractGraphQA.Interop.Tests/ContractGraphQA.Interop.Tests.csproj --configuration Release
+      - run: dotnet pack src/ContractGraphQA.Interop/ContractGraphQA.Interop.csproj --configuration Release --no-restore
+      - run: dotnet run --project src/ContractGraphQA.Interop.Cli --configuration Release -- ../testdata/pass-report.json
