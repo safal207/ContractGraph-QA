@@ -356,6 +356,37 @@ def _is_sha256(value: Any) -> bool:
     )
 
 
+def _transition_counts(
+    before_cases: list[dict[str, Any]],
+    after_cases: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Derive aggregate transition evidence from validated case observations."""
+    if [case.get("name") for case in before_cases] != CASE_ORDER:
+        raise ValueError("before transition case order mismatch")
+    if [case.get("name") for case in after_cases] != CASE_ORDER:
+        raise ValueError("after transition case order mismatch")
+    before = {case["name"]: case for case in before_cases}
+    after = {case["name"]: case for case in after_cases}
+    controls = set(CASE_ORDER) - DEFECT_CASES
+    defect_cases_flipped = sum(
+        before[name].get("decision") == "accept"
+        and after[name].get("decision") == "reject"
+        for name in DEFECT_CASES
+    )
+    controls_stable = sum(
+        before[name].get("decision") == after[name].get("decision")
+        for name in controls
+    )
+    return {
+        "defect_cases_flipped": defect_cases_flipped,
+        "controls_stable": controls_stable,
+        "passed": (
+            defect_cases_flipped == len(DEFECT_CASES)
+            and controls_stable == len(controls)
+        ),
+    }
+
+
 def _validate_probe(
     probe: dict[str, Any],
     *,
@@ -533,6 +564,25 @@ def main() -> int:
         raise ValueError("TypeScript before/after probes used different runtime identities")
 
     observations = sum(len(result["cases"]) for result in validated_results.values())
+    transition_counts = {
+        "python": _transition_counts(
+            validated_results["python_before"]["cases"],
+            validated_results["python_after"]["cases"],
+        ),
+        "typescript": _transition_counts(
+            validated_results["typescript_before"]["cases"],
+            validated_results["typescript_after"]["cases"],
+        ),
+    }
+    defect_transitions = sum(
+        result["defect_cases_flipped"] for result in transition_counts.values()
+    )
+    stable_control_transitions = sum(
+        result["controls_stable"] for result in transition_counts.values()
+    )
+    transitions_passed = all(
+        result["passed"] is True for result in transition_counts.values()
+    )
     report = {
         "claim": (
             "the exact official v1.2 literal-subset rows accepted by the vulnerable "
@@ -567,24 +617,20 @@ def main() -> int:
             "python": {
                 "before": "0.11.0",
                 "after": "0.12.1",
-                "defect_cases_flipped": 4,
-                "controls_stable": 2,
-                "passed": True,
+                **transition_counts["python"],
             },
             "typescript": {
                 "before": "0.6.0",
                 "after": "0.7.1",
-                "defect_cases_flipped": 4,
-                "controls_stable": 2,
-                "passed": True,
+                **transition_counts["typescript"],
             },
         },
         "summary": {
-            "passed": True,
+            "passed": transitions_passed,
             "observations_matched": observations,
             "observations_total": observations,
-            "defect_transitions_proved": 8,
-            "stable_control_transitions": 4,
+            "defect_transitions_proved": defect_transitions,
+            "stable_control_transitions": stable_control_transitions,
         },
     }
 

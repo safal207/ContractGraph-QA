@@ -209,6 +209,22 @@ class AttenuBundleV12ProofTest(unittest.TestCase):
                         before[name]["bundle_sha256"], after[name]["bundle_sha256"]
                     )
 
+    def test_transition_counts_are_derived_from_observations(self):
+        report = self.reference_report
+        python_before = report["results"]["python_before"]["cases"]
+        python_after = report["results"]["python_after"]["cases"]
+        self.assertEqual(
+            self.driver._transition_counts(python_before, python_after),
+            {"defect_cases_flipped": 4, "controls_stable": 2, "passed": True},
+        )
+
+        changed_after = copy.deepcopy(python_after)
+        changed_after[1]["decision"] = "accept"
+        self.assertEqual(
+            self.driver._transition_counts(python_before, changed_after),
+            {"defect_cases_flipped": 3, "controls_stable": 2, "passed": False},
+        )
+
     def test_verified_wheel_snapshot_survives_path_swap(self):
         trusted = _wheel_bytes("trusted")
         swapped = _wheel_bytes("swapped")

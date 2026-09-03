@@ -89,7 +89,7 @@ tag is corroboration, not a package-to-source attestation.
 - TypeScript probe SHA-256:
   `2802a02230fd353cb4d7ecd2fc276b3f6207cff66af77191b436908ab1838107`
 - Replay driver SHA-256:
-  `2fc782aa08bf702501882e0ee42cff07b4eb5eaa2214a173fb5ad06ff52a2f36`
+  `181e09f34076805c2a43b8ea7cd5527faf4289c6a7b93fd6aa2d5c56db869a5c`
 - Published-package report SHA-256:
   `0d794ba2624723631a6a58219a401d27df9c2e7b5e11248f91904443b3f67ad7`
 
