@@ -121,6 +121,12 @@ class AttenuBundleV12ProofTest(unittest.TestCase):
             readme,
         )
         self.assertNotIn("| Temporal Lifecycle | RUN |", readme)
+        self.assertIn(
+            "The package report regenerates byte-for-byte; the 17-case report "
+            "uses declared environment/path normalization.",
+            readme,
+        )
+        self.assertNotIn("Both reports regenerate byte-for-byte", readme)
 
     def test_reference_replay_static_provenance_executes_successfully(self):
         completed = subprocess.run(

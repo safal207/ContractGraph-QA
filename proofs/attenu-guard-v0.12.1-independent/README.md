@@ -44,8 +44,9 @@ Hosted CI and exact-head review remain separate publication gates.
    four hash-pinned registry packages.
 5. Require old false-accept → new positioned-reject transitions for all four
    defect rows in both languages.
-6. Freeze package bytes before extraction, bind the wheel-carried fixture, and
-   byte-compare regenerated reports.
+6. Freeze package bytes before extraction, bind the wheel-carried fixture,
+   byte-compare the regenerated package report, and compare the 17-case report
+   after the declared environment/path normalization.
 7. Run focused tests, repository tests, hosted CI, and exact-head review.
 
 ## Exact identities
@@ -204,7 +205,7 @@ and replay under Python 3.12.13 and Node 24.19.0.
 | Evidence Type / Readiness | RUN | Raw bytes, execution results, and corroboration are kept distinct. |
 | Counterexample Minimization | RUN | Four one-dimension official mutations are replayed unchanged. |
 | Root-Cause Collapse | RUN | Scope syntax is held constant while TTL/ceiling changes. |
-| Deterministic Replay | RUN | Both reports regenerate byte-for-byte. |
+| Deterministic Replay | RUN | The package report regenerates byte-for-byte; the 17-case report uses declared environment/path normalization. |
 | Metamorphic / Round-Trip Verification | RUN | First twelve rows and per-case hashes remain stable across revisions/runtimes. |
 | Native Regression | RUN | Exact installed-package APIs execute the official defect rows. |
 | Durable Evidence Reopen / Integrity | RUN | Static checkers reopen and verify committed artifacts. |
