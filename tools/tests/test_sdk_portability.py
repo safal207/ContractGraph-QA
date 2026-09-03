@@ -123,6 +123,58 @@ class SdkPortabilityTest(unittest.TestCase):
         self.assertTrue(action_refs)
         self.assertTrue(all(re.fullmatch(r"[0-9a-f]{40}", ref) for ref in action_refs))
 
+    def test_sdk_release_workflow_is_exact_subject_and_registry_bounded(self) -> None:
+        workflow = (
+            ROOT / ".github/workflows/release-sdk-v0.1.0.yml"
+        ).read_text(encoding="utf-8")
+
+        for marker in (
+            "TARGET_SHA: de7c765243dc86226b8554757ef1f9419c194a4c",
+            "VERSION: 0.1.0",
+            "RELEASE_TAG: interop-sdk-v0.1.0",
+            "GO_TAG: sdks/go/v0.1.0",
+            "git merge-base --is-ancestor",
+            "sha256sum -c SHA256SUMS",
+            "actions/attest@",
+            "gh release create",
+            "GOPROXY=https://proxy.golang.org",
+            "mayAuthorizeAction",
+            "if: github.event_name == 'push'",
+            "actions/download-artifact@",
+        ):
+            self.assertIn(marker, workflow)
+
+        for forbidden in (
+            "npm publish",
+            "dotnet nuget push",
+            "mvn deploy",
+            "NPM_TOKEN",
+            "NUGET_API_KEY",
+            "MAVEN_PASSWORD",
+        ):
+            self.assertNotIn(forbidden, workflow)
+
+        action_refs = re.findall(r"uses:\s*[^@\s]+@([^\s]+)", workflow)
+        self.assertTrue(action_refs)
+        self.assertTrue(all(re.fullmatch(r"[0-9a-f]{40}", ref) for ref in action_refs))
+
+        build_block, publish_block = workflow.split("\n  publish:\n", 1)
+        self.assertIn("permissions:\n  contents: read", build_block)
+        self.assertIn("persist-credentials: false", build_block)
+        for forbidden in ("contents: write", "git push", "gh release create", "actions/attest@"):
+            self.assertNotIn(forbidden, build_block)
+        for required in ("needs: build", "contents: write", "git push", "gh release create"):
+            self.assertIn(required, publish_block)
+
+        self.assertLess(
+            workflow.index("Upload pre-publication evidence"),
+            workflow.index("Create or verify exact tags"),
+        )
+        self.assertLess(
+            workflow.index("Revalidate subject, destinations, and checksums"),
+            workflow.index("Create or verify exact tags"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
