@@ -23,7 +23,7 @@ FIXTURE = PROOF_DIR / "bundle_vectors_v1.json"
 COMMITTED_REPORT = PROOF_DIR / "report.json"
 
 PINNED_VERIFIER_SHA256 = (
-    "8c72f4195c34b84e36d336570c19bf4a2912a3cc905a4c786bd80d54767aa941"
+    "ad229ed3074b2c9dfd502beac4eb4ce9929c036946ebbf75bd46451016d412dd"
 )
 PINNED_FIXTURE_SHA256 = (
     "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
@@ -49,7 +49,14 @@ EXPECTED_CASE_NAMES = [
     "reject_null_ttl_literal",
     "reject_omitted_ceiling_literal",
 ]
-EXPECTED_TOP_LEVEL_KEYS = {"cases", "environment", "input", "summary", "verifier"}
+EXPECTED_TOP_LEVEL_KEYS = {
+    "cases",
+    "environment",
+    "input",
+    "repository_subject",
+    "summary",
+    "verifier",
+}
 EXPECTED_INPUT_KEYS = {"bytes", "contract", "path", "pinned_sha256", "revision", "sha256"}
 EXPECTED_CASE_KEYS = {
     "expected",
@@ -61,6 +68,16 @@ EXPECTED_CASE_KEYS = {
     "required_failures",
 }
 EXPECTED_FAILURE_KEYS = {"call_id", "detail", "node", "reason", "seq"}
+EXPECTED_REPOSITORY_SUBJECT = {
+    "repository": "safal207/ContractGraph-QA",
+    "pull_request": 152,
+    "branch": "proof/attenu-guard-v0.12.1-independent",
+    "receipt_url": (
+        "https://github.com/safal207/ContractGraph-QA/pull/152"
+        "#issuecomment-5528155565"
+    ),
+    "binding": "external receipt binds the exact base, head, and tree",
+}
 
 
 def sha256(path: Path) -> str:
@@ -140,8 +157,11 @@ def validate_report_shape(report: dict[str, Any], label: str) -> None:
     verifier = report.get("verifier")
     if not isinstance(verifier, dict):
         raise ValueError(f"{label} verifier section is missing")
-    if verifier.get("id") != "safal207-independent-bundle-v1.2" or verifier.get("version") != "0.3.0":
+    if verifier.get("id") != "safal207-independent-bundle-v1.2" or verifier.get("version") != "0.3.1":
         raise ValueError(f"{label} verifier identity differs: {verifier!r}")
+
+    if report.get("repository_subject") != EXPECTED_REPOSITORY_SUBJECT:
+        raise ValueError(f"{label} repository subject receipt differs")
 
     summary = report.get("summary")
     if summary != {"cases_passed": 17, "cases_total": 17, "passed": True}:

@@ -103,6 +103,13 @@
       "sha256": "2802a02230fd353cb4d7ecd2fc276b3f6207cff66af77191b436908ab1838107"
     }
   },
+  "repository_subject": {
+    "binding": "external receipt binds the exact base, head, and tree",
+    "branch": "proof/attenu-guard-v0.12.1-independent",
+    "pull_request": 152,
+    "receipt_url": "https://github.com/safal207/ContractGraph-QA/pull/152#issuecomment-5528155565",
+    "repository": "safal207/ContractGraph-QA"
+  },
   "results": {
     "python_after": {
       "case_canonicalization": "sorted-key compact JSON UTF-8",

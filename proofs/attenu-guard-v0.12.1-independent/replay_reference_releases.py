@@ -28,6 +28,16 @@ PROOF_DIR = Path(__file__).resolve().parent
 FIXTURE = PROOF_DIR / "bundle_vectors_v1.json"
 PYTHON_PROBE = PROOF_DIR / "reference_python_probe.py"
 TYPESCRIPT_PROBE = PROOF_DIR / "reference_ts_probe.cjs"
+REPOSITORY_SUBJECT = {
+    "repository": "safal207/ContractGraph-QA",
+    "pull_request": 152,
+    "branch": "proof/attenu-guard-v0.12.1-independent",
+    "receipt_url": (
+        "https://github.com/safal207/ContractGraph-QA/pull/152"
+        "#issuecomment-5528155565"
+    ),
+    "binding": "external receipt binds the exact base, head, and tree",
+}
 
 FIXTURE_IDENTITY = {
     "filename": "bundle_vectors_v1.json",
@@ -612,6 +622,7 @@ def main() -> int:
                 "sha256": sha256(TYPESCRIPT_PROBE),
             },
         },
+        "repository_subject": REPOSITORY_SUBJECT,
         "results": validated_results,
         "transitions": {
             "python": {

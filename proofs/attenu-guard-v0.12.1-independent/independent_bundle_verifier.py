@@ -26,9 +26,19 @@ from pathlib import Path
 from typing import Any, Mapping
 
 VERIFIER_ID = "safal207-independent-bundle-v1.2"
-VERIFIER_VERSION = "0.3.0"
+VERIFIER_VERSION = "0.3.1"
 VECTOR_CONTRACT = "bundle_vectors_v1"
 VECTOR_REVISION = "bundle_vectors_v1.2"
+REPOSITORY_SUBJECT = {
+    "repository": "safal207/ContractGraph-QA",
+    "pull_request": 152,
+    "branch": "proof/attenu-guard-v0.12.1-independent",
+    "receipt_url": (
+        "https://github.com/safal207/ContractGraph-QA/pull/152"
+        "#issuecomment-5528155565"
+    ),
+    "binding": "external receipt binds the exact base, head, and tree",
+}
 # Exact bytes extracted from attenu_guard-0.12.1-py3-none-any.whl.
 PINNED_VECTOR_SHA256 = "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
 PINNED_CASES = [
@@ -446,6 +456,7 @@ def main() -> int:
             "contract": document.get("version"),
             "revision": document.get("revision"),
         },
+        "repository_subject": REPOSITORY_SUBJECT,
         "summary": {
             "passed": passed,
             "cases_passed": sum(1 for case in cases if case["passed"]),

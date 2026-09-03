@@ -398,6 +398,13 @@
     "revision": "bundle_vectors_v1.2",
     "sha256": "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
   },
+  "repository_subject": {
+    "binding": "external receipt binds the exact base, head, and tree",
+    "branch": "proof/attenu-guard-v0.12.1-independent",
+    "pull_request": 152,
+    "receipt_url": "https://github.com/safal207/ContractGraph-QA/pull/152#issuecomment-5528155565",
+    "repository": "safal207/ContractGraph-QA"
+  },
   "summary": {
     "cases_passed": 17,
     "cases_total": 17,
@@ -407,7 +414,7 @@
     "claim_boundary": "released bundle_vectors_v1.2 corpus only; not a general audit or runtime certification",
     "id": "safal207-independent-bundle-v1.2",
     "independence_boundary": "stdlib-only; no attenu_guard imports; fixture read as raw bytes",
-    "source_sha256": "8c72f4195c34b84e36d336570c19bf4a2912a3cc905a4c786bd80d54767aa941",
-    "version": "0.3.0"
+    "source_sha256": "ad229ed3074b2c9dfd502beac4eb4ce9929c036946ebbf75bd46451016d412dd",
+    "version": "0.3.1"
   }
 }

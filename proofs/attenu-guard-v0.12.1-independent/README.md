@@ -15,7 +15,7 @@ locally constructed before/after replay rather than rewriting either result.
 - Purpose: independently score the immutable v1.2 corpus and test whether its
   four isolated rows distinguish the vulnerable and corrected releases.
 - Exact subject: the fixture, source tags, registry artifacts, probes, reports,
-  and repository revision listed below.
+  and repository generation bound by the external receipt listed below.
 - Parent contract: the v1.1 result remained `HOLD` for official-corpus
   discrimination until an isolated upstream revision existed.
 - Invariants: exact bytes; first twelve cases unchanged; literal-subset base;
@@ -80,18 +80,28 @@ tag is corroboration, not a package-to-source attestation.
 
 ### Proof artifacts
 
+- Repository: `safal207/ContractGraph-QA`
+- Pull request / branch: `#152` /
+  `proof/attenu-guard-v0.12.1-independent`
+- External repository-subject receipt:
+  https://github.com/safal207/ContractGraph-QA/pull/152#issuecomment-5528155565
+
+The receipt is outside the commit graph to avoid a self-referential commit
+identifier. It binds the exact base commit, head commit, and tree after hosted
+verification; a moved head makes that receipt stale until explicitly replaced.
+
 - Verifier SHA-256:
-  `8c72f4195c34b84e36d336570c19bf4a2912a3cc905a4c786bd80d54767aa941`
+  `ad229ed3074b2c9dfd502beac4eb4ce9929c036946ebbf75bd46451016d412dd`
 - 17-case report SHA-256:
-  `3b93b3988eeab413727948c6eb5289419fd6858908d165dbe647c5c4728edca2`
+  `5744e240e2ecb12b0c25c428f9b679eeee2abcc50f6b9b3d83049ab73ae375df`
 - Python probe SHA-256:
   `cd051b7c6b08c6ea7479e2455ee500d1ce72247ad6c01c6faf3c0da255ebbf44`
 - TypeScript probe SHA-256:
   `2802a02230fd353cb4d7ecd2fc276b3f6207cff66af77191b436908ab1838107`
 - Replay driver SHA-256:
-  `181e09f34076805c2a43b8ea7cd5527faf4289c6a7b93fd6aa2d5c56db869a5c`
+  `6445b789c2dfb088151652c891a288ba1f3e132565913b336af0c41842e0f894`
 - Published-package report SHA-256:
-  `0d794ba2624723631a6a58219a401d27df9c2e7b5e11248f91904443b3f67ad7`
+  `bffd6372cc33db4141f01089356d0f825526c3b974105e6cd21fdd7d0c28f6e0`
 
 ## Independent 17-case score
 
@@ -174,7 +184,7 @@ and replay under Python 3.12.13 and Node 24.19.0.
 
 | Capability | Status | Current-bound reason |
 |---|---|---|
-| Exact Subject / Artifact Gate | RUN | Fixture, packages, source tags, scripts, and reports are digest-bound. |
+| Exact Subject / Artifact Gate | RUN | Artifacts are digest-bound; the external receipt binds repository, branch, base, head, and tree. |
 | Preregistered Verification Plan | RUN | Acceptance criteria above precede publication. |
 | Orientation Center | RUN | Local evidence is `BALANCED`; hosted gates remain explicit. |
 | Native Mapping / Adapter Review | RUN | Probes call each published package's native bundle verifier. |
@@ -183,7 +193,7 @@ and replay under Python 3.12.13 and Node 24.19.0.
 | Financial Conservation | NOT_APPLICABLE | No value-transfer invariant is in this corpus. |
 | Authorization / Capabilities | RUN | Parent/child scopes, TTL, and ceilings are exercised. |
 | Replay / Idempotency | RUN | Released duplicate outcome/call-id rows remain in the 17-case score. |
-| Temporal Lifecycle | RUN | Bounded, null, increased, and inherited TTL semantics are exercised. |
+| Temporal Lifecycle | NOT_RUN | TTL authority narrowing is exercised, but no clock, expiry boundary, or repeated post-boundary operation is executed. |
 | Crash / Recovery | NOT_APPLICABLE | No persisted transition or restart boundary exists. |
 | Causal / Ancestral Validity | RUN | Every new reject is evaluated against exact parent authority. |
 | Transition Geometry | RUN | Order-sensitive released rows and same-input version transitions are checked. |
@@ -208,7 +218,8 @@ and replay under Python 3.12.13 and Node 24.19.0.
 ## Verdict and claim boundary
 
 `PASS_WITHIN_BOUND` locally for the exact 17 fixture objects and the six
-selected case objects executed under four exact registry artifacts.
+selected case objects executed under four exact registry artifacts. Repository
+generation is bound separately by the external exact-subject receipt above.
 
 This does not prove general verifier completeness, package-to-source build
 provenance, CrewAI integration behavior, production security, or behavior

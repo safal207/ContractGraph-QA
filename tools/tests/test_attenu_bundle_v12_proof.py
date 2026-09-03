@@ -33,6 +33,16 @@ APPENDED_CASES = [
 ]
 DEFECT_CASES = APPENDED_CASES[1:]
 REPLAY_CASES = APPENDED_CASES + ["reject_widened_scope"]
+REPOSITORY_SUBJECT = {
+    "repository": "safal207/ContractGraph-QA",
+    "pull_request": 152,
+    "branch": "proof/attenu-guard-v0.12.1-independent",
+    "receipt_url": (
+        "https://github.com/safal207/ContractGraph-QA/pull/152"
+        "#issuecomment-5528155565"
+    ),
+    "binding": "external receipt binds the exact base, head, and tree",
+}
 
 
 def _entry(case, event):
@@ -100,6 +110,17 @@ class AttenuBundleV12ProofTest(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertIn("cases=17/17", completed.stdout)
+
+    def test_repository_receipt_and_temporal_boundary_are_explicit(self):
+        self.assertEqual(self.report["repository_subject"], REPOSITORY_SUBJECT)
+        self.assertEqual(self.reference_report["repository_subject"], REPOSITORY_SUBJECT)
+        readme = (PROOF / "README.md").read_text(encoding="utf-8")
+        self.assertIn(REPOSITORY_SUBJECT["receipt_url"], readme)
+        self.assertIn(
+            "| Temporal Lifecycle | NOT_RUN |",
+            readme,
+        )
+        self.assertNotIn("| Temporal Lifecycle | RUN |", readme)
 
     def test_reference_replay_static_provenance_executes_successfully(self):
         completed = subprocess.run(

@@ -20,11 +20,11 @@ FIXTURE = PROOF_DIR / "bundle_vectors_v1.json"
 COMMITTED_REPORT = PROOF_DIR / "reference_release_report.json"
 
 PINNED = {
-    DRIVER: "181e09f34076805c2a43b8ea7cd5527faf4289c6a7b93fd6aa2d5c56db869a5c",
+    DRIVER: "6445b789c2dfb088151652c891a288ba1f3e132565913b336af0c41842e0f894",
     PYTHON_PROBE: "cd051b7c6b08c6ea7479e2455ee500d1ce72247ad6c01c6faf3c0da255ebbf44",
     TYPESCRIPT_PROBE: "2802a02230fd353cb4d7ecd2fc276b3f6207cff66af77191b436908ab1838107",
     FIXTURE: "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea",
-    COMMITTED_REPORT: "0d794ba2624723631a6a58219a401d27df9c2e7b5e11248f91904443b3f67ad7",
+    COMMITTED_REPORT: "bffd6372cc33db4141f01089356d0f825526c3b974105e6cd21fdd7d0c28f6e0",
 }
 CASE_ORDER = [
     "valid_bundle_v2_literal",
@@ -72,6 +72,16 @@ ARTIFACT_IDENTITIES = {
         "0edc239d686ad1a709813f6382549745d3d48d1f5a5354a5d90fb1d4521ea5be",
     ),
 }
+EXPECTED_REPOSITORY_SUBJECT = {
+    "repository": "safal207/ContractGraph-QA",
+    "pull_request": 152,
+    "branch": "proof/attenu-guard-v0.12.1-independent",
+    "receipt_url": (
+        "https://github.com/safal207/ContractGraph-QA/pull/152"
+        "#issuecomment-5528155565"
+    ),
+    "binding": "external receipt binds the exact base, head, and tree",
+}
 
 
 def sha256(path: Path) -> str:
@@ -95,6 +105,8 @@ def _expected_decision(stage: str, name: str) -> str:
 
 def _validate_committed_report() -> None:
     report = json.loads(COMMITTED_REPORT.read_text(encoding="utf-8"))
+    if report.get("repository_subject") != EXPECTED_REPOSITORY_SUBJECT:
+        raise ValueError("reference report repository subject receipt mismatch")
     if report.get("summary") != {
         "defect_transitions_proved": 8,
         "observations_matched": 24,
