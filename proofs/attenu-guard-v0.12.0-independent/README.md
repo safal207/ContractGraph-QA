@@ -184,10 +184,10 @@ That check pins the driver, both probes, committed report, all four package
 hashes and byte counts, then requires an exact byte-for-byte regenerated
 report.
 
-The Product workflow's `Attenu exact published artifacts` job runs the static
-proof gates, downloads the four exact registry artifacts, verifies their pinned
-hashes and sizes before execution, and performs the complete 24/24 replay under
-the runtime versions recorded in the committed report.
+The path-scoped `Attenu reference proof` workflow runs the static proof gates,
+downloads the four exact registry artifacts, verifies their pinned hashes and
+sizes before execution, and performs the complete 24/24 replay under the
+runtime versions recorded in the committed report.
 
 ## Diagnostic differences
 
