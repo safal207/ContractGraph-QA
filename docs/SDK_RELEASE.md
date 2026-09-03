@@ -14,7 +14,7 @@ verdict owners.
 | Elixir | PythiaLabs Mix task | repository Mix project | Project-supported Elixir/OTP | Native conformance runner in draft PR |
 | TypeScript / JavaScript | [`sdks/typescript`](../sdks/typescript/) | `@contractgraph-qa/interop-report` | Node 18 | Registry-ready, not yet published |
 | Go | [`sdks/go`](../sdks/go/) | `github.com/safal207/ContractGraph-QA/sdks/go` | Go 1.22 | Module-ready, not yet tagged |
-| Java / JVM | [`sdks/java`](../sdks/java/) | `io.github.safal207:contractgraph-interop` | Java 17 | Maven-ready, not yet published |
+| Java / JVM | [`sdks/java`](../sdks/java/) | `io.github.safal207:contractgraph-interop` | Java 17 | Artifact-ready; Central publisher profile not configured |
 | C# / .NET | [`sdks/dotnet`](../sdks/dotnet/) | `ContractGraphQA.Interop` | .NET 8 | NuGet-ready, not yet published |
 
 “Registry-ready” means source, public API, CLI where applicable, metadata,
@@ -60,8 +60,8 @@ npm publish --access public
 git tag sdks/go/v0.1.0 <verified-merge-commit>
 git push origin sdks/go/v0.1.0
 
-# Maven Central (requires configured signing and Central credentials)
-mvn -f sdks/java/pom.xml deploy -Pcentral-release
+# Maven artifact; configure signing and a Central publisher before upload
+mvn -f sdks/java/pom.xml verify
 
 # NuGet
 dotnet nuget push sdks/dotnet/src/ContractGraphQA.Interop/bin/Release/*.nupkg \
