@@ -9,6 +9,7 @@
  */
 
 const path = require("node:path");
+const { createHash } = require("node:crypto");
 
 if (process.argv.length !== 4) {
   throw new Error("usage: reference_ts_probe.cjs PACKAGE_DIR EXPECTED_VERSION");
@@ -45,6 +46,8 @@ const defectCases = new Set([
   "unbounded_ttl",
   "dropped_ceiling",
 ]);
+const fixedParamsSaltHex = "00".repeat(16);
+const bundleCanonicalization = "sorted-key compact JSON UTF-8";
 
 function indexOf(bundle, event) {
   const index = bundle.entries.findIndex((entry) => entry.event === event);
@@ -86,6 +89,7 @@ function makeBundle(granted) {
   child.complete();
   root.complete();
   const bundle = exportBundle(root.auditLog(), signer);
+  bundle.entries[indexOf(bundle, "root")].params_salt = fixedParamsSaltHex;
   bundle.entries[indexOf(bundle, "spawn")].granted = granted;
   rehashAndReanchor(bundle);
   return bundle;
@@ -97,9 +101,13 @@ function granted({ scopes = ["crm.read"], maxRows = 50, ttl = 900 } = {}) {
 }
 
 function observe(name, grantedWire) {
-  const report = verifyBundle(makeBundle(grantedWire), signer);
+  const bundle = makeBundle(grantedWire);
+  const report = verifyBundle(bundle, signer);
   return {
     name,
+    bundle_sha256: createHash("sha256")
+      .update(JSON.stringify(stable(bundle)), "utf8")
+      .digest("hex"),
     decision: report.ok ? "accept" : "reject",
     checks: {
       anchor: report.checks.anchor,
@@ -140,7 +148,16 @@ const report = {
   implementation: "typescript",
   package: "attenu-guard",
   version: attenu.VERSION,
+  runtime: {
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+  },
   defect_cases: Array.from(defectCases).sort(),
+  bundle_profile: {
+    canonicalization: bundleCanonicalization,
+    params_salt_hex: fixedParamsSaltHex,
+  },
   cases,
 };
 

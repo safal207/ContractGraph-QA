@@ -7,7 +7,9 @@ only; ``replay_reference_releases.py`` owns the before/after expectations.
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import platform
 import sys
 from typing import Any
 
@@ -24,6 +26,8 @@ DEFECT_CASES = {
     "unbounded_ttl",
     "dropped_ceiling",
 }
+FIXED_PARAMS_SALT_HEX = "00" * 16
+BUNDLE_CANONICALIZATION = "sorted-key compact JSON UTF-8"
 
 
 def _index_of(bundle: dict[str, Any], event: str) -> int:
@@ -46,6 +50,16 @@ def _rehash_and_reanchor(bundle: dict[str, Any]) -> None:
     bundle["anchor"] = anchor
 
 
+def _canonical_sha256(value: dict[str, Any]) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _bundle(granted: dict[str, Any]) -> dict[str, Any]:
     parent = Authority(
         {"crm.read", "mail.send"},
@@ -66,6 +80,9 @@ def _bundle(granted: dict[str, Any]) -> dict[str, Any]:
     child.complete()
     root.complete()
     bundle = evidence.export_bundle(root.audit_log(), SIGNER)
+    bundle["entries"][_index_of(bundle, "root")]["params_salt"] = (
+        FIXED_PARAMS_SALT_HEX
+    )
     bundle["entries"][_index_of(bundle, "spawn")]["granted"] = granted
     _rehash_and_reanchor(bundle)
     return bundle
@@ -82,9 +99,11 @@ def _granted(
 
 
 def _observe(name: str, granted: dict[str, Any]) -> dict[str, Any]:
-    report = evidence.verify_bundle(_bundle(granted), SIGNER)
+    bundle = _bundle(granted)
+    report = evidence.verify_bundle(bundle, SIGNER)
     return {
         "name": name,
+        "bundle_sha256": _canonical_sha256(bundle),
         "decision": "accept" if report["ok"] else "reject",
         "checks": {
             "anchor": report["checks"]["anchor"],
@@ -127,7 +146,17 @@ def main() -> int:
         "implementation": "python",
         "package": "attenu-guard",
         "version": attenu_guard.__version__,
+        "runtime": {
+            "implementation": platform.python_implementation(),
+            "version": platform.python_version(),
+            "platform": sys.platform,
+            "machine": platform.machine(),
+        },
         "defect_cases": sorted(DEFECT_CASES),
+        "bundle_profile": {
+            "canonicalization": BUNDLE_CANONICALIZATION,
+            "params_salt_hex": FIXED_PARAMS_SALT_HEX,
+        },
         "cases": cases,
     }
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))

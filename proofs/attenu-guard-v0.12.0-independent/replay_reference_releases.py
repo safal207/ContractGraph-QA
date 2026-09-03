@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -79,17 +80,33 @@ DEFECT_CASES = {
     "unbounded_ttl",
     "dropped_ceiling",
 }
+FIXED_PARAMS_SALT_HEX = "00" * 16
+BUNDLE_CANONICALIZATION = "sorted-key compact JSON UTF-8"
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return sha256_bytes(path.read_bytes())
 
 
-def _verified_artifact(path: Path, identity: dict[str, Any]) -> dict[str, Any]:
+def sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _verified_artifact(
+    path: Path,
+    identity: dict[str, Any],
+) -> tuple[dict[str, Any], bytes]:
+    """Read, verify, and freeze one artifact for all later extraction.
+
+    The returned immutable bytes are the only execution source.  The supplied
+    path is never reopened after this function returns, so a path replacement
+    cannot detach the reported digest from the extracted package.
+    """
     if not path.is_file():
         raise ValueError(f"missing artifact: {path}")
-    size = path.stat().st_size
-    digest = sha256(path)
+    payload = path.read_bytes()
+    size = len(payload)
+    digest = sha256_bytes(payload)
     if size != identity["bytes"]:
         raise ValueError(
             f"{path.name}: byte count {size}, expected {identity['bytes']}"
@@ -98,14 +115,18 @@ def _verified_artifact(path: Path, identity: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(
             f"{path.name}: SHA-256 {digest}, expected {identity['sha256']}"
         )
-    return {
-        "filename": identity["filename"],
-        "package": identity["package"],
-        "version": identity["version"],
-        "format": identity["format"],
-        "bytes": size,
-        "sha256": digest,
-    }
+    return (
+        {
+            "filename": identity["filename"],
+            "package": identity["package"],
+            "version": identity["version"],
+            "format": identity["format"],
+            "bytes": size,
+            "sha256": digest,
+            "execution_source": "same verified in-memory bytes",
+        },
+        payload,
+    )
 
 
 def _safe_target(root: Path, member_name: str) -> Path:
@@ -117,8 +138,8 @@ def _safe_target(root: Path, member_name: str) -> Path:
     return target
 
 
-def _extract_wheel(path: Path, destination: Path) -> None:
-    with zipfile.ZipFile(path) as archive:
+def _extract_wheel(payload: bytes, destination: Path) -> None:
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         for member in archive.infolist():
             _safe_target(destination, member.filename)
             mode = member.external_attr >> 16
@@ -127,8 +148,8 @@ def _extract_wheel(path: Path, destination: Path) -> None:
         archive.extractall(destination)
 
 
-def _extract_npm_tarball(path: Path, destination: Path) -> Path:
-    with tarfile.open(path, "r:gz") as archive:
+def _extract_npm_tarball(payload: bytes, destination: Path) -> Path:
+    with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
         members = archive.getmembers()
         for member in members:
             target = _safe_target(destination, member.name)
@@ -145,7 +166,7 @@ def _extract_npm_tarball(path: Path, destination: Path) -> Path:
                 shutil.copyfileobj(source, output)
     package_root = destination / "package"
     if not (package_root / "package.json").is_file():
-        raise ValueError(f"npm tarball has no package/package.json: {path}")
+        raise ValueError("npm tarball has no package/package.json")
     return package_root
 
 
@@ -209,6 +230,18 @@ def _validate_probe(
         raise ValueError(f"package identity mismatch: {probe!r}")
     if probe.get("defect_cases") != sorted(DEFECT_CASES):
         raise ValueError(f"defect case declaration mismatch: {probe!r}")
+    runtime = probe.get("runtime")
+    if not isinstance(runtime, dict) or not runtime or not all(
+        isinstance(key, str) and isinstance(value, str)
+        for key, value in runtime.items()
+    ):
+        raise ValueError(f"runtime identity missing or malformed: {probe!r}")
+    expected_profile = {
+        "canonicalization": BUNDLE_CANONICALIZATION,
+        "params_salt_hex": FIXED_PARAMS_SALT_HEX,
+    }
+    if probe.get("bundle_profile") != expected_profile:
+        raise ValueError(f"bundle profile mismatch: {probe!r}")
 
     cases = probe.get("cases")
     if not isinstance(cases, list) or [case.get("name") for case in cases] != CASE_ORDER:
@@ -228,6 +261,15 @@ def _validate_probe(
             )
         if checks.get("containment") is not True:
             raise ValueError(f"{implementation} {version} {name}: containment also failed")
+        bundle_digest = case.get("bundle_sha256")
+        if (
+            not isinstance(bundle_digest, str)
+            or len(bundle_digest) != 64
+            or any(character not in "0123456789abcdef" for character in bundle_digest)
+        ):
+            raise ValueError(
+                f"{implementation} {version} {name}: invalid canonical bundle SHA-256"
+            )
 
         expected_monotonicity = expected == "accept"
         expected_positions = [] if expected == "accept" else [
@@ -266,9 +308,17 @@ def main() -> int:
         "typescript_before": args.typescript_before_tarball,
         "typescript_after": args.typescript_after_tarball,
     }
-    artifact_report = {
+    frozen_artifacts = {
         name: _verified_artifact(path, ARTIFACTS[name])
         for name, path in supplied.items()
+    }
+    artifact_report = {
+        name: frozen[0]
+        for name, frozen in frozen_artifacts.items()
+    }
+    artifact_payloads = {
+        name: frozen[1]
+        for name, frozen in frozen_artifacts.items()
     }
 
     with tempfile.TemporaryDirectory(prefix="attenu-reference-replay-") as temporary:
@@ -280,13 +330,13 @@ def main() -> int:
         for destination in (py_before_root, py_after_root, ts_before_root, ts_after_root):
             destination.mkdir()
 
-        _extract_wheel(supplied["python_before"], py_before_root)
-        _extract_wheel(supplied["python_after"], py_after_root)
+        _extract_wheel(artifact_payloads["python_before"], py_before_root)
+        _extract_wheel(artifact_payloads["python_after"], py_after_root)
         ts_before_package = _extract_npm_tarball(
-            supplied["typescript_before"], ts_before_root
+            artifact_payloads["typescript_before"], ts_before_root
         )
         ts_after_package = _extract_npm_tarball(
-            supplied["typescript_after"], ts_after_root
+            artifact_payloads["typescript_after"], ts_after_root
         )
 
         raw_results = {
@@ -340,6 +390,35 @@ def main() -> int:
     }
 
     observations = sum(len(result["cases"]) for result in validated_results.values())
+    canonical_bundle_hashes: dict[str, str] = {}
+    for case_name in CASE_ORDER:
+        digests = {
+            next(
+                case["bundle_sha256"]
+                for case in result["cases"]
+                if case["name"] == case_name
+            )
+            for result in validated_results.values()
+        }
+        if len(digests) != 1:
+            raise ValueError(
+                f"{case_name}: before/after or cross-language bundle identity mismatch: "
+                f"{sorted(digests)}"
+            )
+        canonical_bundle_hashes[case_name] = digests.pop()
+
+    runtime_identities = {
+        "python": validated_results["python_before"]["runtime"],
+        "typescript": validated_results["typescript_before"]["runtime"],
+    }
+    if validated_results["python_after"]["runtime"] != runtime_identities["python"]:
+        raise ValueError("Python before/after probes used different runtime identities")
+    if (
+        validated_results["typescript_after"]["runtime"]
+        != runtime_identities["typescript"]
+    ):
+        raise ValueError("TypeScript before/after probes used different runtime identities")
+
     report = {
         "claim": (
             "exact published Python and TypeScript artifacts change all four literal-subset "
@@ -351,6 +430,12 @@ def main() -> int:
             "build attestation; HS256 is a deterministic test signer"
         ),
         "artifacts": artifact_report,
+        "bundle_inputs": {
+            "canonicalization": BUNDLE_CANONICALIZATION,
+            "params_salt_hex": FIXED_PARAMS_SALT_HEX,
+            "per_case_sha256": canonical_bundle_hashes,
+        },
+        "runtime_identities": runtime_identities,
         "probes": {
             "python": {
                 "path": PYTHON_PROBE.name,

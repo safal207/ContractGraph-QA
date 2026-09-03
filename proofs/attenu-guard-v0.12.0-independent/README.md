@@ -118,9 +118,18 @@ Pinned before-release artifacts:
   `9099da7270cda6e662a76ddf6ca08bd568bd8232970078cd1e47e76dd2377a13`.
 
 The after-release artifact hashes are the 0.12.0 and 0.7.0 hashes already
-pinned above. `reference_release_report.json` records every observation and
-the hashes of both probes. The replay extracts verified package bytes into a
-temporary directory; it does not install them or use the network.
+pinned above. `reference_release_report.json` records every observation, both
+probe hashes, the exact runtime identities, and one canonical SHA-256 for each
+of the six input bundles. Every probe fixes the root `params_salt` to the same
+16-byte value, and the driver requires each case's canonical bundle digest to
+match across both releases and both languages before accepting the transition.
+
+The driver reads and verifies all four package artifacts once before any probe
+runs. Extraction consumes those same immutable in-memory bytes rather than
+reopening the caller-supplied paths, so a later path replacement cannot detach
+the reported digest from the code that is executed. The packages are extracted
+into a private temporary directory; they are not installed and the replay uses
+no network after the initial caller-managed download.
 
 ## Exact-tag source corroboration
 
@@ -174,6 +183,11 @@ python3 \
 That check pins the driver, both probes, committed report, all four package
 hashes and byte counts, then requires an exact byte-for-byte regenerated
 report.
+
+The `Attenu reference proof` workflow runs the static proof gates on every
+affected pull request, downloads the four exact registry artifacts, verifies
+their pinned hashes and sizes before execution, and performs the complete
+24/24 replay under the runtime versions recorded in the committed report.
 
 ## Diagnostic differences
 
