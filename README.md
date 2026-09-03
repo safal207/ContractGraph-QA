@@ -185,7 +185,7 @@ consumer SDKs for TypeScript/JavaScript, Go, Java/JVM, and .NET. Together with
 the native Python, Rust, and Elixir runners, the same pinned boundary is usable
 from eight language ecosystems without merging verdict authority.
 
-[Open the SDK matrix →](sdks/README.md) · [See release-ready package coordinates →](docs/SDK_RELEASE.md) · [Review the adoption completion gates →](docs/ADOPTION_READINESS.md)
+[Download SDK v0.1.0 →](https://github.com/safal207/ContractGraph-QA/releases/tag/interop-sdk-v0.1.0) · [Open the SDK matrix →](sdks/README.md) · [Review package and registry status →](docs/SDK_RELEASE.md) · [Review the adoption completion gates →](docs/ADOPTION_READINESS.md)
 
 ---
 

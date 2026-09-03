@@ -53,6 +53,12 @@ dotnet run --project sdks/dotnet/src/ContractGraphQA.Interop.Cli -- report.json
 Python هو المشغّل المرجعي لـ ContractGraph-QA، وRust هو المشغّل الأصلي لـ
 LiminalQA، وElixir هو المشغّل الأصلي لـ PythiaLabs.
 
+[يتوفر SDK v0.1.0 للتنزيل العام من GitHub](https://github.com/safal207/ContractGraph-QA/releases/tag/interop-sdk-v0.1.0)،
+كما يمكن تثبيت وحدة Go بالأمر
+`go get github.com/safal207/ContractGraph-QA/sdks/go@v0.1.0`. تتوفر ملفات
+`.tgz` وJAR/POM و`.nupkg` ضمن الإصدار؛ أما النشر على npm وMaven Central
+وnuget.org فما زال بانتظار الإعداد.
+
 ## حدود الإغلاق الآمن
 
 ترفض جميع المهايئات مفاتيح JSON المكررة، والحقول الحرجة غير المعروفة، وتغيّر

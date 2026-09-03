@@ -51,6 +51,12 @@ dotnet run --project sdks/dotnet/src/ContractGraphQA.Interop.Cli -- report.json
 是 ContractGraph-QA 的参考 runner，Rust 是 LiminalQA 的原生 runner，Elixir
 是 PythiaLabs 的原生 runner。
 
+[SDK v0.1.0 已可从 GitHub 公开下载](https://github.com/safal207/ContractGraph-QA/releases/tag/interop-sdk-v0.1.0)，
+Go 模块可通过
+`go get github.com/safal207/ContractGraph-QA/sdks/go@v0.1.0` 安装。`.tgz`、
+JAR/POM 和 `.nupkg` 均为 release 资源；npm、Maven Central 和 nuget.org
+的正式发布仍在等待配置。
+
 ## Fail-closed 边界
 
 所有适配器都会拒绝重复 JSON 键、未知关键字段、任何 pin 漂移、缺失或重复

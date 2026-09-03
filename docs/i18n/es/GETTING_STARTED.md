@@ -54,6 +54,12 @@ Las coordenadas de paquetes están en la [guía de publicación de SDK](../../SD
 Python es el runner de referencia de ContractGraph-QA, Rust el runner nativo
 de LiminalQA y Elixir el de PythiaLabs.
 
+[SDK v0.1.0 se puede descargar públicamente desde GitHub](https://github.com/safal207/ContractGraph-QA/releases/tag/interop-sdk-v0.1.0),
+y el módulo Go está disponible con
+`go get github.com/safal207/ContractGraph-QA/sdks/go@v0.1.0`. Los archivos
+`.tgz`, JAR/POM y `.nupkg` están en la release; las publicaciones en npm,
+Maven Central y nuget.org todavía están pendientes.
+
 ## Límite fail-closed
 
 Todos los consumidores rechazan claves JSON duplicadas, campos críticos
