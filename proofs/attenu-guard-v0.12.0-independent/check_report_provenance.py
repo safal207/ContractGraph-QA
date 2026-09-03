@@ -23,15 +23,29 @@ FIXTURE = PROOF_DIR / "bundle_vectors_v1.json"
 COMMITTED_REPORT = PROOF_DIR / "report.json"
 
 PINNED_VERIFIER_SHA256 = (
-    "26446ec98f757eb369dc15de8d49bf32f5e625704ea0a435d53f768fc14fa16c"
+    "ec57e24d9ee85530b4acbd44427247700ca8a2a55dc83c39002792929f09695f"
 )
 PINNED_FIXTURE_SHA256 = (
     "b21c5a44a79d422d52857f03e2f3327d559c409e98c482b4664e1ab726327403"
 )
 PINNED_FIXTURE_BYTES = 104_579
-PINNED_VECTOR_CONTRACT = "bundle_vectors_v1"
-PINNED_VECTOR_REVISION = "bundle_vectors_v1.1"
+PINNED_REVISION = "bundle_vectors_v1.1"
+EXPECTED_CASE_NAMES = [
+    "valid_bundle_v2",
+    "reject_params_mismatch",
+    "reject_outcome_without_allow",
+    "reject_outcome_before_allow",
+    "reject_duplicate_outcome",
+    "reject_duplicate_call_id",
+    "reject_rehashed_chain",
+    "reject_tampered_entry",
+    "reject_widened_scope",
+    "reject_uncontained_allow",
+    "reject_increased_ttl",
+    "reject_loosened_ceiling",
+]
 EXPECTED_TOP_LEVEL_KEYS = {"cases", "environment", "input", "summary", "verifier"}
+EXPECTED_INPUT_KEYS = {"bytes", "contract", "path", "pinned_sha256", "revision", "sha256"}
 EXPECTED_CASE_KEYS = {
     "expected",
     "failure_details",
@@ -80,6 +94,9 @@ def validate_report_shape(report: dict[str, Any], label: str) -> None:
     cases = report.get("cases")
     if not isinstance(cases, list) or len(cases) != 12:
         raise ValueError(f"{label} must contain exactly 12 case reports")
+    names = [case.get("name") for case in cases if isinstance(case, dict)]
+    if names != EXPECTED_CASE_NAMES:
+        raise ValueError(f"{label} case list/order differs: {names!r}")
 
     for case in cases:
         if not isinstance(case, dict):
@@ -102,12 +119,24 @@ def validate_report_shape(report: dict[str, Any], label: str) -> None:
                 )
 
     input_section = report.get("input")
-    if not isinstance(input_section, dict):
-        raise ValueError(f"{label} has no input object")
-    if input_section.get("contract") != PINNED_VECTOR_CONTRACT:
-        raise ValueError(f"{label} has the wrong vector contract: {input_section!r}")
-    if input_section.get("revision") != PINNED_VECTOR_REVISION:
-        raise ValueError(f"{label} has the wrong vector revision: {input_section!r}")
+    if not isinstance(input_section, dict) or set(input_section) != EXPECTED_INPUT_KEYS:
+        raise ValueError(f"{label} input section has an unexpected shape")
+    expected_input = {
+        "bytes": PINNED_FIXTURE_BYTES,
+        "contract": "bundle_vectors_v1",
+        "pinned_sha256": PINNED_FIXTURE_SHA256,
+        "revision": PINNED_REVISION,
+        "sha256": PINNED_FIXTURE_SHA256,
+    }
+    observed_input = {key: value for key, value in input_section.items() if key != "path"}
+    if observed_input != expected_input:
+        raise ValueError(f"{label} input identity differs: {observed_input!r}")
+
+    verifier = report.get("verifier")
+    if not isinstance(verifier, dict):
+        raise ValueError(f"{label} verifier section is missing")
+    if verifier.get("id") != "safal207-independent-bundle-v1.1" or verifier.get("version") != "0.2.0":
+        raise ValueError(f"{label} verifier identity differs: {verifier!r}")
 
     summary = report.get("summary")
     if summary != {"cases_passed": 12, "cases_total": 12, "passed": True}:
@@ -200,6 +229,7 @@ def main() -> int:
     print(f"fixture_bytes={fixture_bytes}")
     print(f"fixture_sha256={fixture_sha}")
     print(f"report_sha256={sha256(COMMITTED_REPORT)}")
+    print("revision=bundle_vectors_v1.1")
     print("cases=12/12")
     return 0
 

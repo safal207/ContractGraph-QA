@@ -306,7 +306,7 @@
     "claim_boundary": "released bundle_vectors_v1.1 corpus only; not a general audit or runtime certification",
     "id": "safal207-independent-bundle-v1.1",
     "independence_boundary": "stdlib-only; no attenu_guard imports; fixture read as raw bytes",
-    "source_sha256": "26446ec98f757eb369dc15de8d49bf32f5e625704ea0a435d53f768fc14fa16c",
+    "source_sha256": "ec57e24d9ee85530b4acbd44427247700ca8a2a55dc83c39002792929f09695f",
     "version": "0.2.0"
   }
 }
