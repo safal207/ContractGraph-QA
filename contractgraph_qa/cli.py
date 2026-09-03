@@ -11,6 +11,7 @@ from contractgraph_qa import (
     active_verification_cli,
     causal_temporal_cli,
     legacy_cli,
+    liminalqa_interop_cli,
     ltp_continuity_bridge_cli,
     proof_integrity_cli,
     project_quickstart_cli,
@@ -94,6 +95,11 @@ Universal onboarding:
 
 Smart-contract continuity:
   continuity-export         Export reviewed CGQA evidence to the normative LTP v0.1 input contract
+
+LiminalQA interoperability:
+  export-liminalqa          Export bounded evidence with exact subject and provenance binding
+  import-liminalqa-candidates
+                             Accept LiminalQA candidates only as non-authoritative search seeds
 
 Causal-temporal vNext:
   geometry                   Compare operation-order and loop path dependence
@@ -500,6 +506,10 @@ def main(argv: list[str] | None = None) -> int:
         return project_quickstart_cli.main(effective[1:])
     if effective[0] == "continuity-export":
         return ltp_continuity_bridge_cli.main(effective[1:])
+    if effective[0] == "export-liminalqa":
+        return liminalqa_interop_cli.export_main(effective[1:])
+    if effective[0] == "import-liminalqa-candidates":
+        return liminalqa_interop_cli.import_candidates_main(effective[1:])
     if effective[0] in PHASE2_COMMANDS:
         return _normalize_subcli_exit(causal_temporal_cli.main(effective))
     if effective[0] in PROOF_COMMANDS:

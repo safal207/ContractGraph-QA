@@ -168,6 +168,10 @@ and API continuity, see the
 ContractGraph-QA produces reviewed evidence envelopes; the existing LTP verifier
 remains the only source of continuity verdicts.
 
+For the reciprocal, file-first ContractGraph-QA ↔ LiminalQA adapter, including
+bounded-evidence export and non-authoritative candidate import, see
+[LiminalQA interop v0.1](docs/LIMINALQA_INTEROP.md).
+
 ---
 
 ## What the engine produces
@@ -239,6 +243,7 @@ Key documents:
 - [CLI reference](docs/CLI.md)
 - [Engagement workflow](docs/ENGAGEMENT.md)
 - [Adapter manifest](docs/ADAPTER_MANIFEST.md)
+- [LiminalQA interop v0.1](docs/LIMINALQA_INTEROP.md)
 - [Evidence distribution](docs/DISTRIBUTION.md)
 - [Client proof pack](docs/client-proof/README.md)
 - [Agent verification protocol](AGENTS.md)
