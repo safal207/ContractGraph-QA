@@ -179,8 +179,6 @@ jobs:
     name: Attenu exact published artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      ATTENU_ARTIFACT_DIR: ${{ runner.temp }}/attenu-artifacts
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -197,22 +195,22 @@ jobs:
       - name: Download pinned registry artifacts
         shell: bash
         run: |
-          mkdir -p "$ATTENU_ARTIFACT_DIR"
+          mkdir -p "$RUNNER_TEMP/attenu-artifacts"
           python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
-            --dest "$ATTENU_ARTIFACT_DIR" 'attenu-guard==0.11.0'
+            --dest "$RUNNER_TEMP/attenu-artifacts" 'attenu-guard==0.11.0'
           python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
-            --dest "$ATTENU_ARTIFACT_DIR" 'attenu-guard==0.12.0'
-          npm pack 'attenu-guard@0.6.0' --pack-destination "$ATTENU_ARTIFACT_DIR" --silent
-          npm pack 'attenu-guard@0.7.0' --pack-destination "$ATTENU_ARTIFACT_DIR" --silent
+            --dest "$RUNNER_TEMP/attenu-artifacts" 'attenu-guard==0.12.0'
+          npm pack 'attenu-guard@0.6.0' --pack-destination "$RUNNER_TEMP/attenu-artifacts" --silent
+          npm pack 'attenu-guard@0.7.0' --pack-destination "$RUNNER_TEMP/attenu-artifacts" --silent
       - name: Replay exact published artifacts
         run: >-
           python
           proofs/attenu-guard-v0.12.0-independent/check_reference_replay_provenance.py
           --python-before-wheel
-          "$ATTENU_ARTIFACT_DIR/attenu_guard-0.11.0-py3-none-any.whl"
+          "$RUNNER_TEMP/attenu-artifacts/attenu_guard-0.11.0-py3-none-any.whl"
           --python-after-wheel
-          "$ATTENU_ARTIFACT_DIR/attenu_guard-0.12.0-py3-none-any.whl"
+          "$RUNNER_TEMP/attenu-artifacts/attenu_guard-0.12.0-py3-none-any.whl"
           --typescript-before-tarball
-          "$ATTENU_ARTIFACT_DIR/attenu-guard-0.6.0.tgz"
+          "$RUNNER_TEMP/attenu-artifacts/attenu-guard-0.6.0.tgz"
           --typescript-after-tarball
-          "$ATTENU_ARTIFACT_DIR/attenu-guard-0.7.0.tgz"
+          "$RUNNER_TEMP/attenu-artifacts/attenu-guard-0.7.0.tgz"
