@@ -1,0 +1,770 @@
+{
+  "artifacts": {
+    "python_after": {
+      "bytes": 321186,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu_guard-0.12.1-py3-none-any.whl",
+      "format": "wheel",
+      "package": "attenu-guard",
+      "sha256": "bccba92a439b1c7bed9314589488b279d6236055d21d32278434b368f3f9c36f",
+      "version": "0.12.1"
+    },
+    "python_before": {
+      "bytes": 312444,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu_guard-0.11.0-py3-none-any.whl",
+      "format": "wheel",
+      "package": "attenu-guard",
+      "sha256": "cae895475f116deb862295b6c8938f5e586f115ea20bdd6df2f6b2e38df880b0",
+      "version": "0.11.0"
+    },
+    "typescript_after": {
+      "bytes": 214567,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu-guard-0.7.1.tgz",
+      "format": "npm-tarball",
+      "package": "attenu-guard",
+      "sha256": "0edc239d686ad1a709813f6382549745d3d48d1f5a5354a5d90fb1d4521ea5be",
+      "version": "0.7.1"
+    },
+    "typescript_before": {
+      "bytes": 222495,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu-guard-0.6.0.tgz",
+      "format": "npm-tarball",
+      "package": "attenu-guard",
+      "sha256": "9099da7270cda6e662a76ddf6ca08bd568bd8232970078cd1e47e76dd2377a13",
+      "version": "0.6.0"
+    }
+  },
+  "case_inputs": {
+    "canonicalization": "sorted-key compact JSON UTF-8",
+    "per_case": {
+      "reject_increased_ttl_literal": {
+        "bundle_sha256": "10135d04dea4394da59308191362a707a021c3b36975e53972b106ab040b1965",
+        "case_sha256": "36175355986ee17154255dbe3247f4edab425e92c8f559890946b541db35a1c4"
+      },
+      "reject_loosened_ceiling_literal": {
+        "bundle_sha256": "8a46b90bb67cd7407d46b1400ec89f374f67a1a519c45248ae4ba2b05455f4c0",
+        "case_sha256": "f364cc603770a081044c453a59a23fdb6f85d05df74cdb7bc2e3d97fab195fbe"
+      },
+      "reject_null_ttl_literal": {
+        "bundle_sha256": "1f9168ea614e924cccec6af3519166177042b1cafd71b33a8f9e8ec89428d3c9",
+        "case_sha256": "b3c8ea55ed63f3dc85937e7ccd2947b0b059695edb57ffdfcfa29f3980643080"
+      },
+      "reject_omitted_ceiling_literal": {
+        "bundle_sha256": "32e3e86b7aa6ece7c04d91546dfbca6f5997c468c888ade5ca23fa08825fb966",
+        "case_sha256": "5a123a4a743c0a6afa1bd05482df45e09d12624e32946f029af64e82d687080b"
+      },
+      "reject_widened_scope": {
+        "bundle_sha256": "f376b6577dc04a499540297ea97e1b977eecee047e2e0575e20947d7c6b68b16",
+        "case_sha256": "00cdf29bd93f47b5b8543fcd4fb930680bd7b12c0f806960ed643f60496a6606"
+      },
+      "valid_bundle_v2_literal": {
+        "bundle_sha256": "e4c76a8cd07c8ef0cc2a0754510fa2fe81c62e63fe30b8173b19d1f0a9a153ba",
+        "case_sha256": "d14b782deaad54d503d752916ae9be6b6fc19f41d1627305f9ee6a294c983be5"
+      }
+    },
+    "selected_order": [
+      "valid_bundle_v2_literal",
+      "reject_increased_ttl_literal",
+      "reject_loosened_ceiling_literal",
+      "reject_null_ttl_literal",
+      "reject_omitted_ceiling_literal",
+      "reject_widened_scope"
+    ]
+  },
+  "claim": "the exact official v1.2 literal-subset rows accepted by the vulnerable Python and TypeScript releases are positioned monotonicity rejects in the fixed 0.12.1 and 0.7.1 registry artifacts",
+  "claim_boundary": "six exact official case objects and four registry artifacts only; no package-to-source build attestation or production security claim",
+  "fixture": {
+    "bytes": 146765,
+    "contract": "bundle_vectors_v1",
+    "execution_source": "same verified raw bytes parsed once before probes",
+    "filename": "bundle_vectors_v1.json",
+    "git_blob_sha1": "88aee3fd8b346810423266a51783ee10c80a6b1f",
+    "python_after_wheel_binding": {
+      "bytes": 146765,
+      "matches_vendored_fixture": true,
+      "member": "attenu_guard/vectors/bundles/bundle_vectors_v1.json",
+      "record_digest": "sha256=VDEdaMg0LAHOIz9LGuolESWk8zI_2XdsAYQ9Oy9XAOo",
+      "record_size": 146765,
+      "sha256": "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
+    },
+    "revision": "bundle_vectors_v1.2",
+    "sha256": "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
+  },
+  "probes": {
+    "python": {
+      "path": "reference_python_probe.py",
+      "sha256": "cd051b7c6b08c6ea7479e2455ee500d1ce72247ad6c01c6faf3c0da255ebbf44"
+    },
+    "typescript": {
+      "path": "reference_ts_probe.cjs",
+      "sha256": "2802a02230fd353cb4d7ecd2fc276b3f6207cff66af77191b436908ab1838107"
+    }
+  },
+  "results": {
+    "python_after": {
+      "case_canonicalization": "sorted-key compact JSON UTF-8",
+      "cases": [
+        {
+          "bundle_sha256": "e4c76a8cd07c8ef0cc2a0754510fa2fe81c62e63fe30b8173b19d1f0a9a153ba",
+          "case_sha256": "d14b782deaad54d503d752916ae9be6b6fc19f41d1627305f9ee6a294c983be5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "valid_bundle_v2_literal"
+        },
+        {
+          "bundle_sha256": "10135d04dea4394da59308191362a707a021c3b36975e53972b106ab040b1965",
+          "case_sha256": "36175355986ee17154255dbe3247f4edab425e92c8f559890946b541db35a1c4",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ttl 7200 > parent 3600)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_increased_ttl_literal"
+        },
+        {
+          "bundle_sha256": "8a46b90bb67cd7407d46b1400ec89f374f67a1a519c45248ae4ba2b05455f4c0",
+          "case_sha256": "f364cc603770a081044c453a59a23fdb6f85d05df74cdb7bc2e3d97fab195fbe",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ceiling max_rows<=250000 looser than parent max_rows<=100000)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_loosened_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "1f9168ea614e924cccec6af3519166177042b1cafd71b33a8f9e8ec89428d3c9",
+          "case_sha256": "b3c8ea55ed63f3dc85937e7ccd2947b0b059695edb57ffdfcfa29f3980643080",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ttl unbounded, parent 3600)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_null_ttl_literal"
+        },
+        {
+          "bundle_sha256": "32e3e86b7aa6ece7c04d91546dfbca6f5997c468c888ade5ca23fa08825fb966",
+          "case_sha256": "5a123a4a743c0a6afa1bd05482df45e09d12624e32946f029af64e82d687080b",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ceiling max_rows unbounded, parent holds max_rows<=100000)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_omitted_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "f376b6577dc04a499540297ea97e1b977eecee047e2e0575e20947d7c6b68b16",
+          "case_sha256": "00cdf29bd93f47b5b8543fcd4fb930680bd7b12c0f806960ed643f60496a6606",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (child scopes ['crm.read', 'pay.transfer'] not held by parent)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_widened_scope"
+        }
+      ],
+      "fixture": {
+        "contract": "bundle_vectors_v1",
+        "revision": "bundle_vectors_v1.2",
+        "sha256": "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
+      },
+      "implementation": "python",
+      "package": "attenu-guard",
+      "runtime": {
+        "implementation": "CPython",
+        "machine": "x86_64",
+        "platform": "linux",
+        "version": "3.12.13"
+      },
+      "version": "0.12.1"
+    },
+    "python_before": {
+      "case_canonicalization": "sorted-key compact JSON UTF-8",
+      "cases": [
+        {
+          "bundle_sha256": "e4c76a8cd07c8ef0cc2a0754510fa2fe81c62e63fe30b8173b19d1f0a9a153ba",
+          "case_sha256": "d14b782deaad54d503d752916ae9be6b6fc19f41d1627305f9ee6a294c983be5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "valid_bundle_v2_literal"
+        },
+        {
+          "bundle_sha256": "10135d04dea4394da59308191362a707a021c3b36975e53972b106ab040b1965",
+          "case_sha256": "36175355986ee17154255dbe3247f4edab425e92c8f559890946b541db35a1c4",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_increased_ttl_literal"
+        },
+        {
+          "bundle_sha256": "8a46b90bb67cd7407d46b1400ec89f374f67a1a519c45248ae4ba2b05455f4c0",
+          "case_sha256": "f364cc603770a081044c453a59a23fdb6f85d05df74cdb7bc2e3d97fab195fbe",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_loosened_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "1f9168ea614e924cccec6af3519166177042b1cafd71b33a8f9e8ec89428d3c9",
+          "case_sha256": "b3c8ea55ed63f3dc85937e7ccd2947b0b059695edb57ffdfcfa29f3980643080",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_null_ttl_literal"
+        },
+        {
+          "bundle_sha256": "32e3e86b7aa6ece7c04d91546dfbca6f5997c468c888ade5ca23fa08825fb966",
+          "case_sha256": "5a123a4a743c0a6afa1bd05482df45e09d12624e32946f029af64e82d687080b",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_omitted_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "f376b6577dc04a499540297ea97e1b977eecee047e2e0575e20947d7c6b68b16",
+          "case_sha256": "00cdf29bd93f47b5b8543fcd4fb930680bd7b12c0f806960ed643f60496a6606",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (child scopes ['crm.read', 'pay.transfer'] not held by parent)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_widened_scope"
+        }
+      ],
+      "fixture": {
+        "contract": "bundle_vectors_v1",
+        "revision": "bundle_vectors_v1.2",
+        "sha256": "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
+      },
+      "implementation": "python",
+      "package": "attenu-guard",
+      "runtime": {
+        "implementation": "CPython",
+        "machine": "x86_64",
+        "platform": "linux",
+        "version": "3.12.13"
+      },
+      "version": "0.11.0"
+    },
+    "typescript_after": {
+      "case_canonicalization": "sorted-key compact JSON UTF-8",
+      "cases": [
+        {
+          "bundle_sha256": "e4c76a8cd07c8ef0cc2a0754510fa2fe81c62e63fe30b8173b19d1f0a9a153ba",
+          "case_sha256": "d14b782deaad54d503d752916ae9be6b6fc19f41d1627305f9ee6a294c983be5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "valid_bundle_v2_literal"
+        },
+        {
+          "bundle_sha256": "10135d04dea4394da59308191362a707a021c3b36975e53972b106ab040b1965",
+          "case_sha256": "36175355986ee17154255dbe3247f4edab425e92c8f559890946b541db35a1c4",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ttl 7200 > parent 3600)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_increased_ttl_literal"
+        },
+        {
+          "bundle_sha256": "8a46b90bb67cd7407d46b1400ec89f374f67a1a519c45248ae4ba2b05455f4c0",
+          "case_sha256": "f364cc603770a081044c453a59a23fdb6f85d05df74cdb7bc2e3d97fab195fbe",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ceiling max_rows<=250000 looser than parent max_rows<=100000)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_loosened_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "1f9168ea614e924cccec6af3519166177042b1cafd71b33a8f9e8ec89428d3c9",
+          "case_sha256": "b3c8ea55ed63f3dc85937e7ccd2947b0b059695edb57ffdfcfa29f3980643080",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ttl unbounded, parent 3600)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_null_ttl_literal"
+        },
+        {
+          "bundle_sha256": "32e3e86b7aa6ece7c04d91546dfbca6f5997c468c888ade5ca23fa08825fb966",
+          "case_sha256": "5a123a4a743c0a6afa1bd05482df45e09d12624e32946f029af64e82d687080b",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (ceiling max_rows unbounded, parent holds max_rows<=100000)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_omitted_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "f376b6577dc04a499540297ea97e1b977eecee047e2e0575e20947d7c6b68b16",
+          "case_sha256": "00cdf29bd93f47b5b8543fcd4fb930680bd7b12c0f806960ed643f60496a6606",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (child scopes ['crm.read', 'pay.transfer'] not held by parent)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_widened_scope"
+        }
+      ],
+      "fixture": {
+        "contract": "bundle_vectors_v1",
+        "revision": "bundle_vectors_v1.2",
+        "sha256": "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
+      },
+      "implementation": "typescript",
+      "package": "attenu-guard",
+      "runtime": {
+        "arch": "x64",
+        "node": "v24.19.0",
+        "platform": "linux"
+      },
+      "version": "0.7.1"
+    },
+    "typescript_before": {
+      "case_canonicalization": "sorted-key compact JSON UTF-8",
+      "cases": [
+        {
+          "bundle_sha256": "e4c76a8cd07c8ef0cc2a0754510fa2fe81c62e63fe30b8173b19d1f0a9a153ba",
+          "case_sha256": "d14b782deaad54d503d752916ae9be6b6fc19f41d1627305f9ee6a294c983be5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "valid_bundle_v2_literal"
+        },
+        {
+          "bundle_sha256": "10135d04dea4394da59308191362a707a021c3b36975e53972b106ab040b1965",
+          "case_sha256": "36175355986ee17154255dbe3247f4edab425e92c8f559890946b541db35a1c4",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_increased_ttl_literal"
+        },
+        {
+          "bundle_sha256": "8a46b90bb67cd7407d46b1400ec89f374f67a1a519c45248ae4ba2b05455f4c0",
+          "case_sha256": "f364cc603770a081044c453a59a23fdb6f85d05df74cdb7bc2e3d97fab195fbe",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_loosened_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "1f9168ea614e924cccec6af3519166177042b1cafd71b33a8f9e8ec89428d3c9",
+          "case_sha256": "b3c8ea55ed63f3dc85937e7ccd2947b0b059695edb57ffdfcfa29f3980643080",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_null_ttl_literal"
+        },
+        {
+          "bundle_sha256": "32e3e86b7aa6ece7c04d91546dfbca6f5997c468c888ade5ca23fa08825fb966",
+          "case_sha256": "5a123a4a743c0a6afa1bd05482df45e09d12624e32946f029af64e82d687080b",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_details": [],
+          "failure_positions": [],
+          "matched": true,
+          "name": "reject_omitted_ceiling_literal"
+        },
+        {
+          "bundle_sha256": "f376b6577dc04a499540297ea97e1b977eecee047e2e0575e20947d7c6b68b16",
+          "case_sha256": "00cdf29bd93f47b5b8543fcd4fb930680bd7b12c0f806960ed643f60496a6606",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_details": [
+            {
+              "call_id": null,
+              "detail": "monotonicity: vectors:n1 not ⊆ parent vectors:n0 (child scopes ['crm.read', 'pay.transfer'] not held by parent)",
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "failure_positions": [
+            {
+              "node": "vectors:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "reject_widened_scope"
+        }
+      ],
+      "fixture": {
+        "contract": "bundle_vectors_v1",
+        "revision": "bundle_vectors_v1.2",
+        "sha256": "54311d68c8342c01ce233f4b1aea251125a4f3323fd9776c01843d3b2f5700ea"
+      },
+      "implementation": "typescript",
+      "package": "attenu-guard",
+      "runtime": {
+        "arch": "x64",
+        "node": "v24.19.0",
+        "platform": "linux"
+      },
+      "version": "0.6.0"
+    }
+  },
+  "runtime_identities": {
+    "python": {
+      "implementation": "CPython",
+      "machine": "x86_64",
+      "platform": "linux",
+      "version": "3.12.13"
+    },
+    "typescript": {
+      "arch": "x64",
+      "node": "v24.19.0",
+      "platform": "linux"
+    }
+  },
+  "summary": {
+    "defect_transitions_proved": 8,
+    "observations_matched": 24,
+    "observations_total": 24,
+    "passed": true,
+    "stable_control_transitions": 4
+  },
+  "transitions": {
+    "python": {
+      "after": "0.12.1",
+      "before": "0.11.0",
+      "controls_stable": 2,
+      "defect_cases_flipped": 4,
+      "passed": true
+    },
+    "typescript": {
+      "after": "0.7.1",
+      "before": "0.6.0",
+      "controls_stable": 2,
+      "defect_cases_flipped": 4,
+      "passed": true
+    }
+  }
+}

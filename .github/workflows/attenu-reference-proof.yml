@@ -5,14 +5,18 @@ on:
     paths:
       - '.github/workflows/attenu-reference-proof.yml'
       - 'proofs/attenu-guard-v0.12.0-independent/**'
+      - 'proofs/attenu-guard-v0.12.1-independent/**'
       - 'tools/tests/test_attenu_bundle_v11_proof.py'
+      - 'tools/tests/test_attenu_bundle_v12_proof.py'
       - 'tools/tests/test_attenu_reference_release_proof.py'
   push:
     branches: [main]
     paths:
       - '.github/workflows/attenu-reference-proof.yml'
       - 'proofs/attenu-guard-v0.12.0-independent/**'
+      - 'proofs/attenu-guard-v0.12.1-independent/**'
       - 'tools/tests/test_attenu_bundle_v11_proof.py'
+      - 'tools/tests/test_attenu_bundle_v12_proof.py'
       - 'tools/tests/test_attenu_reference_release_proof.py'
   workflow_dispatch:
 
@@ -59,3 +63,43 @@ jobs:
           "$RUNNER_TEMP/attenu-artifacts/attenu-guard-0.6.0.tgz"
           --typescript-after-tarball
           "$RUNNER_TEMP/attenu-artifacts/attenu-guard-0.7.0.tgz"
+
+  official-v12-replay:
+    name: Official v1.2 discrimination
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12.13'
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24.19.0'
+          package-manager-cache: false
+      - name: Run static v1.2 proof gates
+        run: python -m unittest tools/tests/test_attenu_bundle_v12_proof.py -v
+      - name: Download pinned v1.2 registry artifacts
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/attenu-v12-artifacts"
+          python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
+            --dest "$RUNNER_TEMP/attenu-v12-artifacts" 'attenu-guard==0.11.0'
+          python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
+            --dest "$RUNNER_TEMP/attenu-v12-artifacts" 'attenu-guard==0.12.1'
+          npm pack 'attenu-guard@0.6.0' --pack-destination "$RUNNER_TEMP/attenu-v12-artifacts" --silent
+          npm pack 'attenu-guard@0.7.1' --pack-destination "$RUNNER_TEMP/attenu-v12-artifacts" --silent
+      - name: Replay exact official v1.2 rows
+        run: >-
+          python
+          proofs/attenu-guard-v0.12.1-independent/check_reference_replay_provenance.py
+          --python-before-wheel
+          "$RUNNER_TEMP/attenu-v12-artifacts/attenu_guard-0.11.0-py3-none-any.whl"
+          --python-after-wheel
+          "$RUNNER_TEMP/attenu-v12-artifacts/attenu_guard-0.12.1-py3-none-any.whl"
+          --typescript-before-tarball
+          "$RUNNER_TEMP/attenu-v12-artifacts/attenu-guard-0.6.0.tgz"
+          --typescript-after-tarball
+          "$RUNNER_TEMP/attenu-v12-artifacts/attenu-guard-0.7.1.tgz"
