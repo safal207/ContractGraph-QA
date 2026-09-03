@@ -4,6 +4,7 @@ import io
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 import zipfile
@@ -39,6 +40,22 @@ def _wheel_bytes(marker: str) -> bytes:
     payload = io.BytesIO()
     with zipfile.ZipFile(payload, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("fixture/value.txt", marker)
+    return payload.getvalue()
+
+
+def _npm_tarball_bytes(marker: str) -> bytes:
+    payload = io.BytesIO()
+    files = {
+        "package/package.json": b'{"name":"fixture","version":"1.0.0"}\n',
+        "package/value.txt": marker.encode("utf-8"),
+    }
+    with tarfile.open(fileobj=payload, mode="w:gz") as archive:
+        for name, content in files.items():
+            member = tarfile.TarInfo(name)
+            member.size = len(content)
+            member.mode = 0o644
+            member.mtime = 0
+            archive.addfile(member, io.BytesIO(content))
     return payload.getvalue()
 
 
@@ -115,6 +132,43 @@ class AttenuReferenceReleaseProofTest(unittest.TestCase):
 
             self.assertEqual(
                 (destination / "fixture" / "value.txt").read_text(encoding="utf-8"),
+                "trusted",
+            )
+            self.assertEqual(report["sha256"], hashlib.sha256(frozen_bytes).hexdigest())
+            self.assertNotEqual(
+                report["sha256"],
+                hashlib.sha256(supplied.read_bytes()).hexdigest(),
+            )
+            self.assertEqual(report["execution_source"], "same verified in-memory bytes")
+
+    def test_verified_npm_snapshot_survives_path_swap(self):
+        trusted = _npm_tarball_bytes("trusted")
+        swapped = _npm_tarball_bytes("swapped")
+        identity = {
+            "filename": "fixture.tgz",
+            "package": "fixture",
+            "version": "1.0.0",
+            "sha256": hashlib.sha256(trusted).hexdigest(),
+            "bytes": len(trusted),
+            "format": "npm-tarball",
+        }
+
+        with tempfile.TemporaryDirectory(prefix="attenu-snapshot-regression-") as temporary:
+            root = Path(temporary)
+            supplied = root / "fixture.tgz"
+            destination = root / "extracted"
+            destination.mkdir()
+            supplied.write_bytes(trusted)
+
+            report, frozen_bytes = self.driver._verified_artifact(supplied, identity)
+            supplied.write_bytes(swapped)
+            package_root = self.driver._extract_npm_tarball(
+                frozen_bytes,
+                destination,
+            )
+
+            self.assertEqual(
+                (package_root / "value.txt").read_text(encoding="utf-8"),
                 "trusted",
             )
             self.assertEqual(report["sha256"], hashlib.sha256(frozen_bytes).hexdigest())
