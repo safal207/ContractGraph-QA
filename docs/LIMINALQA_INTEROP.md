@@ -111,10 +111,14 @@ or security and never authorizes a target-system action.
 ## Adapter strategy
 
 The canonical engines remain Python (ContractGraph-QA) and Rust (LiminalQA).
-Language packages should be thin wrappers around these versioned JSON profiles,
-golden fixtures, and this exact conformance suite rather than independent reimplementations
-of verdict logic. Initial packaging targets are Python, TypeScript/Node, Rust,
-Go, JVM, and .NET.
+Language packages are thin validators around these versioned JSON profiles,
+golden fixtures, and the exact conformance result rather than independent
+reimplementations of verdict logic. Native suite runners now exist in Python,
+Rust, and Elixir. Consumer SDKs for TypeScript/JavaScript, Go, JVM, and .NET
+live under [`sdks/`](../sdks/) and pin every case and producer digest.
+
+See the [SDK release matrix](SDK_RELEASE.md) for package coordinates and the
+[five-language quickstarts](i18n/) for application-level examples.
 
 Every consumer must pin the producer schema version and digest, reject unknown
 critical fields, preserve exact subject and causal identity, and keep network

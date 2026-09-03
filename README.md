@@ -1,6 +1,8 @@
 <!-- seo-product-intro:start -->
 # ContractGraph-QA
 
+Documentation: [English](docs/i18n/en/GETTING_STARTED.md) · [简体中文](docs/i18n/zh-CN/GETTING_STARTED.md) · [हिन्दी](docs/i18n/hi/GETTING_STARTED.md) · [Español](docs/i18n/es/GETTING_STARTED.md) · [العربية](docs/i18n/ar/GETTING_STARTED.md)
+
 ## Bounded verification for stateful financial systems
 
 **ContractGraph-QA tests declared failure paths between intent, authorization, execution, external evidence, ledger state, reconciliation, and retry.**
@@ -177,6 +179,13 @@ Run the portable golden and fail-closed vectors before shipping any language ada
 ```bash
 cgqa liminalqa-conformance
 ```
+
+Application teams can validate that machine-readable report with the shipped
+consumer SDKs for TypeScript/JavaScript, Go, Java/JVM, and .NET. Together with
+the native Python, Rust, and Elixir runners, the same pinned boundary is usable
+from eight language ecosystems without merging verdict authority.
+
+[Open the SDK matrix →](sdks/README.md) · [See release-ready package coordinates →](docs/SDK_RELEASE.md) · [Review the adoption completion gates →](docs/ADOPTION_READINESS.md)
 
 ---
 
