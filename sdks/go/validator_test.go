@@ -42,11 +42,15 @@ func TestValidateJSONAcceptsPinnedReport(t *testing.T) {
 func TestValidateJSONRejectsSafetyDrift(t *testing.T) {
 	tests := map[string]func(map[string]any){
 		"authority escalation": func(report map[string]any) { report["authority"].(map[string]any)["mayAuthorizeAction"] = true },
-		"suite drift": func(report map[string]any) { report["suiteSha256"] = "drift" },
-		"count mismatch": func(report map[string]any) { report["counts"].(map[string]any)["passed"] = 13 },
-		"reported side effect": func(report map[string]any) { report["results"].([]any)[0].(map[string]any)["sideEffectExecuted"] = true },
-		"unsafe acceptance": func(report map[string]any) { report["results"].([]any)[1].(map[string]any)["observedSemantics"] = "UNSAFE_ACCEPTED" },
-		"missing case": func(report map[string]any) { report["results"] = report["results"].([]any)[:13] },
+		"suite drift":          func(report map[string]any) { report["suiteSha256"] = "drift" },
+		"count mismatch":       func(report map[string]any) { report["counts"].(map[string]any)["passed"] = 13 },
+		"reported side effect": func(report map[string]any) {
+			report["results"].([]any)[0].(map[string]any)["sideEffectExecuted"] = true
+		},
+		"unsafe acceptance": func(report map[string]any) {
+			report["results"].([]any)[1].(map[string]any)["observedSemantics"] = "UNSAFE_ACCEPTED"
+		},
+		"missing case":       func(report map[string]any) { report["results"] = report["results"].([]any)[:13] },
 		"unknown root field": func(report map[string]any) { report["authorization"] = "ALLOW" },
 	}
 	for name, change := range tests {

@@ -59,20 +59,20 @@ type casePin struct {
 }
 
 var casePins = map[string]casePin{
-	"cgqa-evidence-golden":                     {"cgqa-evidence", "golden", "VALID_NON_AUTHORIZING", "e1d5a14c5c1b75e2cfffaf87bf526fd61e141a0c5b7828de4f275e9792fda3ce"},
-	"cgqa-evidence-authority-escalation":        {"cgqa-evidence", "authority_escalation", "INVALID_BLOCKED", "33eb3122738032c3ebc1043f5058bc7a9cc469c6ecff8ad0a602aaa3a80067ce"},
-	"cgqa-evidence-count-mismatch":              {"cgqa-evidence", "semantic_mismatch", "INVALID_BLOCKED", "3f348306ba20fdb780b662ec3aadbdf8d1a805a1d81cb2eb66103824e9f8b95f"},
-	"cgqa-evidence-temporal-inversion":          {"cgqa-evidence", "temporal_inversion", "INVALID_BLOCKED", "dbc7d64eda4aeb497bf360e10335896b3f9b4316973306e37a8a21134cc85ba8"},
-	"cgqa-evidence-unknown-authority-field":      {"cgqa-evidence", "unknown_field", "INVALID_BLOCKED", "49d7eab11be2a4fc5b90776a9822156573ef5753bff25e674629fdb8e742edea"},
-	"cgqa-evidence-unsafe-causal-parent":         {"cgqa-evidence", "unsafe_identifier", "INVALID_BLOCKED", "e50dfe383bbd2577b72dba043bbe129b6370b81ec8226d6fa9ed206bf6bf51af"},
-	"cgqa-evidence-duplicate-schema-key":         {"cgqa-evidence", "ambiguous_json", "INVALID_BLOCKED", "6ff810788c268a93af16daa7a814cfe84616542951de92be8dbe79aabf3d41c9"},
-	"liminal-candidates-golden":                  {"liminal-candidates", "golden", "VALID_NON_AUTHORIZING", "60b794934959c30f9957d0e54de83d7760ac38b618b0676603d721daa8ef11d3"},
-	"liminal-candidates-authority-escalation":    {"liminal-candidates", "authority_escalation", "INVALID_BLOCKED", "261570efc9e6c13d46686a6f5941ee7d39db620c4603cf30a64e0f0baae3abff"},
-	"liminal-candidates-unknown-authority-field": {"liminal-candidates", "unknown_field", "INVALID_BLOCKED", "1a3841322a8dae89e793f92cedcf341c5fafa4a70e308426d76f674434291941"},
+	"cgqa-evidence-golden":                          {"cgqa-evidence", "golden", "VALID_NON_AUTHORIZING", "e1d5a14c5c1b75e2cfffaf87bf526fd61e141a0c5b7828de4f275e9792fda3ce"},
+	"cgqa-evidence-authority-escalation":            {"cgqa-evidence", "authority_escalation", "INVALID_BLOCKED", "33eb3122738032c3ebc1043f5058bc7a9cc469c6ecff8ad0a602aaa3a80067ce"},
+	"cgqa-evidence-count-mismatch":                  {"cgqa-evidence", "semantic_mismatch", "INVALID_BLOCKED", "3f348306ba20fdb780b662ec3aadbdf8d1a805a1d81cb2eb66103824e9f8b95f"},
+	"cgqa-evidence-temporal-inversion":              {"cgqa-evidence", "temporal_inversion", "INVALID_BLOCKED", "dbc7d64eda4aeb497bf360e10335896b3f9b4316973306e37a8a21134cc85ba8"},
+	"cgqa-evidence-unknown-authority-field":         {"cgqa-evidence", "unknown_field", "INVALID_BLOCKED", "49d7eab11be2a4fc5b90776a9822156573ef5753bff25e674629fdb8e742edea"},
+	"cgqa-evidence-unsafe-causal-parent":            {"cgqa-evidence", "unsafe_identifier", "INVALID_BLOCKED", "e50dfe383bbd2577b72dba043bbe129b6370b81ec8226d6fa9ed206bf6bf51af"},
+	"cgqa-evidence-duplicate-schema-key":            {"cgqa-evidence", "ambiguous_json", "INVALID_BLOCKED", "6ff810788c268a93af16daa7a814cfe84616542951de92be8dbe79aabf3d41c9"},
+	"liminal-candidates-golden":                     {"liminal-candidates", "golden", "VALID_NON_AUTHORIZING", "60b794934959c30f9957d0e54de83d7760ac38b618b0676603d721daa8ef11d3"},
+	"liminal-candidates-authority-escalation":       {"liminal-candidates", "authority_escalation", "INVALID_BLOCKED", "261570efc9e6c13d46686a6f5941ee7d39db620c4603cf30a64e0f0baae3abff"},
+	"liminal-candidates-unknown-authority-field":    {"liminal-candidates", "unknown_field", "INVALID_BLOCKED", "1a3841322a8dae89e793f92cedcf341c5fafa4a70e308426d76f674434291941"},
 	"liminal-candidates-missing-independent-replay": {"liminal-candidates", "verification_weakening", "INVALID_BLOCKED", "8030649160511f62065f4ba33d703fb4dcbf96bc25480d8fa9c7d4e85d715423"},
-	"liminal-candidates-debt-mismatch":           {"liminal-candidates", "semantic_mismatch", "INVALID_BLOCKED", "172a1567897dc4a78deaf2c9f50bc6634e59d2d671ab23d414ca8b4a089f8185"},
-	"liminal-candidates-unsafe-causal-parent":    {"liminal-candidates", "unsafe_identifier", "INVALID_BLOCKED", "61b8e74f52248e50fc90e0765b6cc0449ea5b588cb6aa525d148dcb9ac447960"},
-	"liminal-candidates-duplicate-schema-key":    {"liminal-candidates", "ambiguous_json", "INVALID_BLOCKED", "9bf53f54b15a2eb09731c28dfffc5ba39f7c04b0d5fa4d076f300f8107ae2d40"},
+	"liminal-candidates-debt-mismatch":              {"liminal-candidates", "semantic_mismatch", "INVALID_BLOCKED", "172a1567897dc4a78deaf2c9f50bc6634e59d2d671ab23d414ca8b4a089f8185"},
+	"liminal-candidates-unsafe-causal-parent":       {"liminal-candidates", "unsafe_identifier", "INVALID_BLOCKED", "61b8e74f52248e50fc90e0765b6cc0449ea5b588cb6aa525d148dcb9ac447960"},
+	"liminal-candidates-duplicate-schema-key":       {"liminal-candidates", "ambiguous_json", "INVALID_BLOCKED", "9bf53f54b15a2eb09731c28dfffc5ba39f7c04b0d5fa4d076f300f8107ae2d40"},
 }
 
 // Implementation identifies the native runner that produced the report.
