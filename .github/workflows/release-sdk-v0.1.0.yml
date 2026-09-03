@@ -1,0 +1,395 @@
+name: Release interoperability SDK v0.1.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-sdk-v0.1.0.yml
+  pull_request:
+    paths:
+      - .github/workflows/release-sdk-v0.1.0.yml
+      - tools/tests/test_sdk_portability.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-interop-sdk-v0.1.0
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build and inspect exact SDK bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TARGET_SHA: de7c765243dc86226b8554757ef1f9419c194a4c
+      VERSION: 0.1.0
+      RELEASE_TAG: interop-sdk-v0.1.0
+      GO_TAG: sdks/go/v0.1.0
+      GO_MODULE: github.com/safal207/ContractGraph-QA/sdks/go
+      SUITE_SHA256: 562e2f9ae699f001b9ccf1b2b9f6dd30c435d53d668b5fd9a04ca15ca1e4faac
+    steps:
+      - name: Checkout trusted main history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Verify exact release subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${TARGET_SHA}^{commit}"
+          git merge-base --is-ancestor "${TARGET_SHA}" "${GITHUB_SHA}"
+
+      - name: Checkout exact release subject
+        run: git checkout --detach "${TARGET_SHA}"
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.22.x"
+          cache-dependency-path: sdks/go/go.mod
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: sdks/java/pom.xml
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Verify one version and one pinned protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          version = os.environ["VERSION"]
+          npm = json.loads(Path("sdks/typescript/package.json").read_text(encoding="utf-8"))
+          assert npm["version"] == version
+
+          ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+          pom = ET.parse("sdks/java/pom.xml").getroot()
+          assert pom.findtext("m:version", namespaces=ns) == version
+
+          project = ET.parse(
+              "sdks/dotnet/src/ContractGraphQA.Interop/ContractGraphQA.Interop.csproj"
+          ).getroot()
+          assert project.findtext("./PropertyGroup/Version") == version
+
+          go_mod = Path("sdks/go/go.mod").read_text(encoding="utf-8")
+          assert f"module {os.environ['GO_MODULE']}" in go_mod
+
+          report = json.loads(Path("sdks/testdata/pass-report.json").read_text(encoding="utf-8"))
+          assert report["suiteSha256"] == os.environ["SUITE_SHA256"]
+          assert report["authority"]["mayAuthorizeAction"] is False
+          PY
+
+      - name: Create bounded artifact directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e sdk-release
+          mkdir sdk-release
+
+      - name: Test and pack TypeScript and JavaScript SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd sdks/typescript
+          npm test
+          npm pack --json --pack-destination ../../sdk-release > ../../sdk-release/npm-pack.json
+          node ./bin/cgqa-report-validate.js ../testdata/pass-report.json
+
+      - name: Test and archive Go SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd sdks/go
+          gofmt -w .
+          git diff --exit-code -- .
+          go test ./...
+          go vet ./...
+          go run ./cmd/cgqa-report-validate ../testdata/pass-report.json
+          cd ../..
+          git archive \
+            --format=tar.gz \
+            --prefix="contractgraph-interop-go-${VERSION}/" \
+            --output="sdk-release/contractgraph-interop-go-${VERSION}.tar.gz" \
+            "${TARGET_SHA}" \
+            sdks/go
+
+      - name: Test and package Java and JVM SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn --batch-mode --no-transfer-progress -f sdks/java/pom.xml clean verify
+          mvn --batch-mode --no-transfer-progress -f sdks/java/pom.xml \
+            exec:java -Dexec.args=sdks/testdata/pass-report.json
+          cp "sdks/java/target/contractgraph-interop-${VERSION}.jar" sdk-release/
+          cp "sdks/java/target/contractgraph-interop-${VERSION}-sources.jar" sdk-release/
+          cp sdks/java/pom.xml "sdk-release/contractgraph-interop-${VERSION}.pom"
+
+      - name: Test and package C# and .NET SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore sdks/dotnet/test/ContractGraphQA.Interop.Tests/ContractGraphQA.Interop.Tests.csproj
+          dotnet test sdks/dotnet/test/ContractGraphQA.Interop.Tests/ContractGraphQA.Interop.Tests.csproj \
+            --configuration Release --no-restore
+          dotnet pack sdks/dotnet/src/ContractGraphQA.Interop/ContractGraphQA.Interop.csproj \
+            --configuration Release --no-restore --output sdk-release
+          dotnet run --project sdks/dotnet/src/ContractGraphQA.Interop.Cli \
+            --configuration Release -- sdks/testdata/pass-report.json
+
+      - name: Inspect package boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm_tarball="$(find sdk-release -maxdepth 1 -type f -name '*.tgz' -print -quit)"
+          java_jar="sdk-release/contractgraph-interop-${VERSION}.jar"
+          nuget_package="$(find sdk-release -maxdepth 1 -type f -name '*.nupkg' -print -quit)"
+
+          test -n "${npm_tarball}"
+          test -f "${java_jar}"
+          test -n "${nuget_package}"
+          tar -tzf "${npm_tarball}" | grep -q 'package/src/index.js'
+          jar tf "${java_jar}" | grep -q 'org/contractgraphqa/interop/InteropReportValidator.class'
+          unzip -l "${nuget_package}" | grep -q 'lib/net8.0/ContractGraphQA.Interop.dll'
+          tar -tzf "sdk-release/contractgraph-interop-go-${VERSION}.tar.gz" \
+            | grep -q '/sdks/go/validator.go'
+
+      - name: Bind release manifest and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path("sdk-release")
+          artifacts = []
+          for path in sorted(root.iterdir()):
+              if path.is_file():
+                  payload = path.read_bytes()
+                  artifacts.append(
+                      {
+                          "name": path.name,
+                          "bytes": len(payload),
+                          "sha256": hashlib.sha256(payload).hexdigest(),
+                      }
+                  )
+
+          manifest = {
+              "schema": "contractgraph-qa-sdk-release-v0.1",
+              "releaseTag": os.environ["RELEASE_TAG"],
+              "goTag": os.environ["GO_TAG"],
+              "version": os.environ["VERSION"],
+              "sourceCommit": os.environ["TARGET_SHA"],
+              "workflowCommit": os.environ["GITHUB_SHA"],
+              "suiteSha256": os.environ["SUITE_SHA256"],
+              "authority": {
+                  "claimBoundary": "conformance_evidence_only",
+                  "mayAuthorizeAction": False,
+              },
+              "artifacts": artifacts,
+          }
+          (root / "release-manifest.json").write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          (
+            cd sdk-release
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' \
+              | LC_ALL=C sort \
+              | xargs sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+      - name: Upload pre-publication evidence
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: contractgraph-interop-sdk-v0.1.0
+          path: sdk-release/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: attest, tag, and publish exact SDK bundle
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      TARGET_SHA: de7c765243dc86226b8554757ef1f9419c194a4c
+      VERSION: 0.1.0
+      RELEASE_TAG: interop-sdk-v0.1.0
+      GO_TAG: sdks/go/v0.1.0
+      GO_MODULE: github.com/safal207/ContractGraph-QA/sdks/go
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout trusted main history
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.22.x"
+
+      - name: Download exact build evidence
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: contractgraph-interop-sdk-v0.1.0
+          path: sdk-release
+
+      - name: Revalidate subject, destinations, and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${TARGET_SHA}^{commit}"
+          git merge-base --is-ancestor "${TARGET_SHA}" "${GITHUB_SHA}"
+          git fetch --tags --force origin
+          (
+            cd sdk-release
+            sha256sum -c SHA256SUMS
+          )
+
+          for tag in "${RELEASE_TAG}" "${GO_TAG}"; do
+            if git show-ref --verify --quiet "refs/tags/${tag}"; then
+              tagged_commit="$(git rev-list -n1 "${tag}")"
+              if [ "${tagged_commit}" != "${TARGET_SHA}" ]; then
+                echo "${tag} points to ${tagged_commit}, expected ${TARGET_SHA}" >&2
+                exit 1
+              fi
+              echo "${tag} already points to the exact subject; continuing idempotently."
+            fi
+          done
+
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "${RELEASE_TAG} already exists; refusing to replace public assets." >&2
+            exit 1
+          fi
+
+      - name: Attest exact SDK release bundle
+        id: sdk_attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: sdk-release/*
+
+      - name: Preserve offline attestation bundle
+        shell: bash
+        run: cp "${{ steps.sdk_attestation.outputs.bundle-path }}" sdk-release/SHA256SUMS.attestation.json
+
+      - name: Create or verify exact tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          create_or_verify_tag() {
+            local tag="$1"
+            local message="$2"
+            if git show-ref --verify --quiet "refs/tags/${tag}"; then
+              test "$(git rev-list -n1 "${tag}")" = "${TARGET_SHA}"
+            else
+              git tag -a "${tag}" "${TARGET_SHA}" -m "${message}"
+              git push origin "refs/tags/${tag}"
+            fi
+          }
+
+          create_or_verify_tag "${RELEASE_TAG}" "ContractGraph-QA interoperability SDK ${VERSION}"
+          create_or_verify_tag "${GO_TAG}" "ContractGraph-QA Go interoperability SDK ${VERSION}"
+
+      - name: Publish immutable GitHub SDK release
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes_file="$(mktemp)"
+          cat > "${notes_file}" <<EOF
+          # ContractGraph-QA interoperability SDK v${VERSION}
+
+          Exact source subject: \`${TARGET_SHA}\`
+
+          This release contains fail-closed conformance-report consumers for
+          TypeScript/JavaScript, Go, Java/JVM, and .NET. Every package pins suite
+          \`cgqa-liminalqa-v0.1\` and remains evidence-only with
+          \`mayAuthorizeAction=false\`.
+
+          The GitHub bundle is the durable public download channel. The Go module
+          is also published under \`${GO_TAG}\`. npm, Maven Central, and NuGet
+          publication remain separate credential-bound transitions and are not
+          implied by this release.
+          EOF
+
+          gh release create "${RELEASE_TAG}" sdk-release/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --verify-tag \
+            --title "ContractGraph-QA interoperability SDK v${VERSION}" \
+            --notes-file "${notes_file}"
+
+      - name: Verify published assets independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          download_dir="$(mktemp -d)"
+          gh release download "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --dir "${download_dir}"
+          (
+            cd "${download_dir}"
+            sha256sum -c SHA256SUMS
+          )
+          gh release view "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json tagName,name,isDraft,isPrerelease,url,assets
+
+      - name: Verify Go module through the public proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          proxy_result="$(mktemp)"
+          proxy_verified=false
+          for attempt in $(seq 1 12); do
+            if GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org \
+              go mod download -json "${GO_MODULE}@v${VERSION}" > "${proxy_result}"; then
+              proxy_verified=true
+              break
+            fi
+            sleep 10
+          done
+          test "${proxy_verified}" = true
+          python - "${proxy_result}" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert result["Version"] == "v0.1.0"
+          assert result["Sum"].startswith("h1:")
+          assert result["GoModSum"].startswith("h1:")
+          PY
