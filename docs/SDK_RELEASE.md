@@ -114,6 +114,10 @@ confirm the full CI conclusion, inspect the produced archive, and publish from
 a protected environment. Never expose registry credentials to untrusted PR
 code, and never infer registry publication from the GitHub bundle alone.
 
+The guarded npm/NuGet transition, exact confirmation strings, protected
+environment setup, failure semantics, and the Maven Central `0.1.0` hold are
+specified in the [official registry release runbook](SDK_REGISTRY_RELEASE.md).
+
 ## Versioning rule
 
 SDK `0.1.x` supports only suite `cgqa-liminalqa-v0.1` and rejects any other
