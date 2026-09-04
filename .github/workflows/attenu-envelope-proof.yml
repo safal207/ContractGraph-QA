@@ -66,11 +66,28 @@ jobs:
             proofs/attenu-guard-v0.13.0-envelope-independent/README.md \
             "$RUNNER_TEMP/attenu-envelope-v11-report.md"
 
+      - name: Require CWD-independent evidence
+        working-directory: /tmp
+        run: |
+          python \
+            "$GITHUB_WORKSPACE/proofs/attenu-guard-v0.13.0-envelope-independent/independent_envelope_verifier.py" \
+            "$GITHUB_WORKSPACE/external/attenu-guard/tests/vectors/envelopes/envelope_vectors_v1.json" \
+            --json-out "$RUNNER_TEMP/attenu-envelope-v11-report-from-tmp.json" \
+            --markdown-out "$RUNNER_TEMP/attenu-envelope-v11-report-from-tmp.md"
+          diff -u \
+            "$GITHUB_WORKSPACE/proofs/attenu-guard-v0.13.0-envelope-independent/report.json" \
+            "$RUNNER_TEMP/attenu-envelope-v11-report-from-tmp.json"
+          diff -u \
+            "$GITHUB_WORKSPACE/proofs/attenu-guard-v0.13.0-envelope-independent/README.md" \
+            "$RUNNER_TEMP/attenu-envelope-v11-report-from-tmp.md"
+
       - name: Show exact output digests
         run: |
           sha256sum \
             "$RUNNER_TEMP/attenu-envelope-v11-report.json" \
-            "$RUNNER_TEMP/attenu-envelope-v11-report.md"
+            "$RUNNER_TEMP/attenu-envelope-v11-report.md" \
+            "$RUNNER_TEMP/attenu-envelope-v11-report-from-tmp.json" \
+            "$RUNNER_TEMP/attenu-envelope-v11-report-from-tmp.md"
 
       - name: Upload review artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -79,5 +96,7 @@ jobs:
           path: |
             ${{ runner.temp }}/attenu-envelope-v11-report.json
             ${{ runner.temp }}/attenu-envelope-v11-report.md
+            ${{ runner.temp }}/attenu-envelope-v11-report-from-tmp.json
+            ${{ runner.temp }}/attenu-envelope-v11-report-from-tmp.md
           if-no-files-found: error
           retention-days: 14
