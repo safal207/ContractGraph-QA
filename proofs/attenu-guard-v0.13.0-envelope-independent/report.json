@@ -1,0 +1,497 @@
+{
+  "cases": [
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "accept",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "valid_spawn_envelope",
+      "observed": "accept",
+      "observed_failures": [],
+      "required_failures": [],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "accept",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "valid_allow_envelope",
+      "observed": "accept",
+      "observed_failures": [],
+      "required_failures": [],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "accept",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "valid_jcs_reorder",
+      "observed": "accept",
+      "observed_failures": [],
+      "required_failures": [],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "accept",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "absent_envelope",
+      "observed": "accept",
+      "observed_failures": [],
+      "required_failures": [],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "accept",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "indeterminate_result",
+      "observed": "accept",
+      "observed_failures": [],
+      "required_failures": [],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_rehashed_chain_sparse",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        },
+        {
+          "node": "vectors:n0",
+          "reason": "envelope_subject_mismatch",
+          "seq": 2
+        }
+      ],
+      "required_failures": [
+        {
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        },
+        {
+          "node": "vectors:n0",
+          "reason": "envelope_subject_mismatch",
+          "seq": 2
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_subject_mismatch",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_bad_signature",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_bad_signature",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_bad_signature",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_unknown_version",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_version",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_version",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_bad_signature",
+          "seq": 1
+        }
+      ],
+      "missing_required": [],
+      "name": "reject_non_canonical",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_non_canonical",
+          "seq": 1
+        },
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_bad_signature",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_non_canonical",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_member_without_bump",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_member",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_member",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_masked_bundle_mutation",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [
+        {
+          "node": "vectors:n0",
+          "reason": "envelope_subject_mismatch",
+          "seq": 2
+        }
+      ],
+      "missing_required": [],
+      "name": "reject_rehashed_chain_anchored",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        },
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        },
+        {
+          "node": "vectors:n0",
+          "reason": "envelope_subject_mismatch",
+          "seq": 2
+        }
+      ],
+      "required_failures": [
+        {
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        },
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "not_present_not_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_rehashed_chain_unanchored",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_unknown_witness",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_witness",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_witness",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_locator_mismatch",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_subject_mismatch",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_duplicate_subject",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_duplicate_subject",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_duplicate_subject",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    },
+    {
+      "anchor_mode": "fixture_anchor_checked",
+      "canonical_match": true,
+      "error": null,
+      "expected": "reject",
+      "extra_observed": [],
+      "missing_required": [],
+      "name": "reject_unknown_alg",
+      "observed": "reject",
+      "observed_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_witness",
+          "seq": 1
+        }
+      ],
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "envelope_unknown_witness",
+          "seq": 1
+        }
+      ],
+      "states_match": true,
+      "status": "agree"
+    }
+  ],
+  "claim_boundary": {
+    "not_proved": [
+      "completeness of witness coverage",
+      "that an absent envelopes array was never stripped",
+      "authority or independence of a configured witness",
+      "runtime enforcement outside the frozen cases",
+      "general verifier completeness or security certification",
+      "endorsement by attenu-guard or A2A maintainers"
+    ],
+    "proved_for_pinned_corpus": [
+      "exact vector bytes, revision, and case order",
+      "independent ledger hash, HS256 anchor, authority, containment, and execution-binding checks",
+      "Ed25519 witness signature under the named trusted kid",
+      "entry_hash binding and locator consistency",
+      "raw-envelope JCS canonicality where raw_hex is supplied",
+      "minimal required failure reasons at exact seq/node positions",
+      "per-entry witness-signed or process-asserted state",
+      "duplicate-subject fallback to process-asserted"
+    ]
+  },
+  "source": {
+    "commit": "8042a0ce33a9f8a7bf54a1917d5e8a0ac0344084",
+    "repository": "attenu-io/attenu-guard",
+    "tag": "v0.13.0",
+    "vector_contract": "envelope_vectors_v1",
+    "vector_revision": "envelope_vectors_v1.1",
+    "vector_sha256": "6a57d75ebec881d39d5a1805793a20f9a6d7bff021b70782dcb57c43b276df64"
+  },
+  "summary": {
+    "agree": 18,
+    "disagree": 0,
+    "total": 18,
+    "unsupported": 0
+  },
+  "verifier": {
+    "base_ledger_verifier": {
+      "id": "safal207-independent-bundle-v1.2",
+      "path": "proofs/attenu-guard-v0.12.1-independent/independent_bundle_verifier.py",
+      "version": "0.3.1"
+    },
+    "id": "safal207-independent-envelope-v1.1",
+    "version": "0.1.0"
+  }
+}
