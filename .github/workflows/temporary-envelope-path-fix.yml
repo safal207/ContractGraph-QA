@@ -1,0 +1,47 @@
+name: Temporary envelope report path fix
+
+on:
+  push:
+    branches:
+      - proof/attenu-guard-v0.13.0-envelope-independent
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-remove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the exact feature branch
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: proof/attenu-guard-v0.13.0-envelope-independent
+
+      - name: Apply the reviewed one-line semantic fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("proofs/attenu-guard-v0.13.0-envelope-independent/independent_envelope_verifier.py")
+          text = path.read_text(encoding="utf-8")
+          old = '                "path": _display_path(_BASE_PATH),'
+          new = '''                "path": _BASE_PATH.relative_to(
+                              Path(__file__).resolve().parents[2]
+                          ).as_posix(),'''
+          if text.count(old) != 1:
+              raise SystemExit(f"expected one exact replacement target, found {text.count(old)}")
+          path.write_text(text.replace(old, new), encoding="utf-8")
+          Path(".github/workflows/temporary-envelope-path-fix.yml").unlink()
+          PY
+          git diff --check
+
+      - name: Commit the fix and remove this temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            proofs/attenu-guard-v0.13.0-envelope-independent/independent_envelope_verifier.py \
+            .github/workflows/temporary-envelope-path-fix.yml
+          git commit -m "fix: make envelope report path cwd-independent"
+          git push origin HEAD:proof/attenu-guard-v0.13.0-envelope-independent
