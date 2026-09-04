@@ -8,8 +8,13 @@ import sys
 import unittest
 from pathlib import Path
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+try:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+except ModuleNotFoundError:
+    Ed25519PrivateKey = None  # type: ignore[assignment]
+    Encoding = None  # type: ignore[assignment]
+    PublicFormat = None  # type: ignore[assignment]
 
 _ROOT = Path(__file__).resolve().parents[2]
 _MODULE_PATH = (
@@ -33,7 +38,8 @@ def _load_module():
     return module
 
 
-MOD = _load_module()
+CRYPTO_AVAILABLE = Ed25519PrivateKey is not None
+MOD = _load_module() if CRYPTO_AVAILABLE else None
 
 
 def _tiny_ledger() -> list[dict]:
@@ -114,6 +120,10 @@ def _signed_bundle(
     return bundle, witness_keys, private_key
 
 
+@unittest.skipUnless(
+    CRYPTO_AVAILABLE,
+    "cryptography is an optional dependency exercised by attenu-envelope-proof.yml",
+)
 class TestIndependentEnvelopeV11(unittest.TestCase):
     def test_exact_subject_and_closed_vocabularies_are_pinned(self):
         self.assertEqual(MOD.VECTOR_CONTRACT, "envelope_vectors_v1")
