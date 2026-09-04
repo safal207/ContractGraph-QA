@@ -1,0 +1,454 @@
+name: Publish SDK v0.1.0 to official registries
+
+on:
+  workflow_dispatch:
+    inputs:
+      registry:
+        description: Exact official registry transition
+        required: true
+        type: choice
+        options:
+          - npm
+          - nuget
+      confirmation:
+        description: Type the exact coordinate-specific confirmation from the release guide
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-sdk-v0.1.0-${{ inputs.registry }}
+  cancel-in-progress: false
+
+env:
+  TARGET_SHA: de7c765243dc86226b8554757ef1f9419c194a4c
+  RELEASE_WORKFLOW_SHA: 9cbeb2e0630e10054094369e1f5cf87707386954
+  RELEASE_TAG: interop-sdk-v0.1.0
+  VERSION: 0.1.0
+  POLICY: sdks/registry-release-v0.1.0.json
+  RELEASE_ASSET_BASE: https://github.com/safal207/ContractGraph-QA/releases/download/interop-sdk-v0.1.0
+  NPM_REGISTRY_VERSION_URL: https://registry.npmjs.org/%40contractgraph-qa%2Finterop-report/0.1.0
+  NUGET_REGISTRY_PACKAGE_URL: https://api.nuget.org/v3-flatcontainer/contractgraphqa.interop/0.1.0/contractgraphqa.interop.0.1.0.nupkg
+
+jobs:
+  preflight:
+    name: Verify exact immutable registry input
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Bind actor, repository, branch, and confirmation
+        shell: bash
+        env:
+          REQUESTED_REGISTRY: ${{ inputs.registry }}
+          PROVIDED_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTOR}" = "safal207"
+          test "${GITHUB_REPOSITORY}" = "safal207/ContractGraph-QA"
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+
+          case "${REQUESTED_REGISTRY}" in
+            npm)
+              expected='publish @contractgraph-qa/interop-report@0.1.0'
+              ;;
+            nuget)
+              expected='publish ContractGraphQA.Interop@0.1.0'
+              ;;
+            *)
+              echo "Unsupported registry: ${REQUESTED_REGISTRY}" >&2
+              exit 1
+              ;;
+          esac
+          test "${PROVIDED_CONFIRMATION}" = "${expected}"
+
+      - name: Verify exact release ancestry and tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${TARGET_SHA}^{commit}"
+          git cat-file -e "${RELEASE_WORKFLOW_SHA}^{commit}"
+          git merge-base --is-ancestor "${TARGET_SHA}" "${GITHUB_SHA}"
+          git merge-base --is-ancestor "${RELEASE_WORKFLOW_SHA}" "${GITHUB_SHA}"
+          git fetch --tags --force origin
+          test "$(git rev-list -n1 "${RELEASE_TAG}")" = "${TARGET_SHA}"
+
+      - name: Download the frozen public release inputs
+        shell: bash
+        env:
+          REQUESTED_REGISTRY: ${{ inputs.registry }}
+        run: |
+          set -euo pipefail
+          test ! -e registry-input
+          mkdir -m 0700 registry-input
+
+          download_asset() {
+            local name="$1"
+            curl \
+              --fail \
+              --location \
+              --max-filesize 16777216 \
+              --proto '=https' \
+              --proto-redir '=https' \
+              --retry 5 \
+              --retry-all-errors \
+              --show-error \
+              --silent \
+              --tlsv1.2 \
+              "${RELEASE_ASSET_BASE}/${name}" \
+              --output "registry-input/${name}"
+          }
+
+          download_asset SHA256SUMS
+          download_asset release-manifest.json
+          case "${REQUESTED_REGISTRY}" in
+            npm)
+              download_asset contractgraph-qa-interop-report-0.1.0.tgz
+              download_asset npm-pack.json
+              ;;
+            nuget)
+              download_asset ContractGraphQA.Interop.0.1.0.nupkg
+              ;;
+          esac
+
+      - name: Verify archive, metadata, checksums, and authority boundary
+        shell: bash
+        env:
+          REQUESTED_REGISTRY: ${{ inputs.registry }}
+        run: |
+          set -euo pipefail
+          python tools/sdk_registry_release.py \
+            --policy "${POLICY}" \
+            verify-bundle \
+            --registry "${REQUESTED_REGISTRY}" \
+            --bundle registry-input \
+            --evidence registry-input/preflight-evidence.json
+
+      - name: Require an absent registry version before mutation
+        shell: bash
+        env:
+          REQUESTED_REGISTRY: ${{ inputs.registry }}
+        run: |
+          set -euo pipefail
+          case "${REQUESTED_REGISTRY}" in
+            npm) url="${NPM_REGISTRY_VERSION_URL}" ;;
+            nuget) url="${NUGET_REGISTRY_PACKAGE_URL}" ;;
+          esac
+          status="$({ curl \
+            --location \
+            --max-filesize 16777216 \
+            --output /tmp/registry-version-response \
+            --proto '=https' \
+            --proto-redir '=https' \
+            --retry 3 \
+            --retry-all-errors \
+            --show-error \
+            --silent \
+            --tlsv1.2 \
+            --write-out '%{http_code}' \
+            "${url}"; } 2>/tmp/registry-version-error)" || {
+              cat /tmp/registry-version-error >&2
+              exit 1
+            }
+          case "${status}" in
+            404) echo "Registry version is absent; preflight may continue." ;;
+            200)
+              echo "Registry version already exists; refusing an overwrite or duplicate." >&2
+              exit 1
+              ;;
+            *)
+              echo "Registry returned HTTP ${status}; absence was not established." >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Preserve verified pre-publication input
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: registry-preflight-${{ inputs.registry }}
+          path: registry-input/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-npm:
+    name: Publish exact npm bootstrap package
+    if: inputs.registry == 'npm'
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: sdk-registry-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Require the protected environment arm
+        shell: bash
+        env:
+          REGISTRY_RELEASE_ARMED: ${{ vars.REGISTRY_RELEASE_ARMED }}
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTOR}" = "safal207"
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test "${REGISTRY_RELEASE_ARMED}" = "interop-sdk-v0.1.0@de7c765243dc86226b8554757ef1f9419c194a4c"
+
+      - name: Download verified preflight input
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: registry-preflight-npm
+          path: registry-input
+
+      - name: Reverify the exact npm input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p registry-evidence
+          python tools/sdk_registry_release.py \
+            --policy "${POLICY}" \
+            verify-bundle \
+            --registry npm \
+            --bundle registry-input \
+            --evidence registry-evidence/prepublish-evidence.json
+
+      - name: Set up the provenance-capable npm client
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          scope: '@contractgraph-qa'
+
+      - name: Verify npm client and recheck absent destination
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$(npm --version)" <<'PY'
+          import re
+          import sys
+
+          match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:[-+].*)?", sys.argv[1])
+          assert match is not None, sys.argv[1]
+          assert tuple(map(int, match.groups())) >= (11, 5, 1), sys.argv[1]
+          PY
+          status="$(curl \
+            --location \
+            --max-filesize 16777216 \
+            --output /tmp/npm-version-response \
+            --proto '=https' \
+            --proto-redir '=https' \
+            --show-error \
+            --silent \
+            --tlsv1.2 \
+            --write-out '%{http_code}' \
+            "${NPM_REGISTRY_VERSION_URL}")"
+          test "${status}" = "404"
+
+      - name: Publish the exact npm tarball
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${NODE_AUTH_TOKEN}"
+          npm publish \
+            registry-input/contractgraph-qa-interop-report-0.1.0.tgz \
+            --access public \
+            --ignore-scripts \
+            --provenance
+
+      - name: Replicate npm registry metadata and integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          published=false
+          for attempt in $(seq 1 30); do
+            status="$(curl \
+              --location \
+              --max-filesize 16777216 \
+              --output registry-evidence/npm-registry-version.json \
+              --proto '=https' \
+              --proto-redir '=https' \
+              --show-error \
+              --silent \
+              --tlsv1.2 \
+              --write-out '%{http_code}' \
+              "${NPM_REGISTRY_VERSION_URL}")"
+            if [ "${status}" = "200" ]; then
+              published=true
+              break
+            fi
+            test "${status}" = "404"
+            sleep 10
+          done
+          test "${published}" = true
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          policy = json.loads(Path("sdks/registry-release-v0.1.0.json").read_text())
+          expected = policy["registries"]["npm"]
+          live = json.loads(Path("registry-evidence/npm-registry-version.json").read_text())
+          assert live["name"] == expected["packageName"]
+          assert live["version"] == policy["release"]["version"]
+          assert live["dist"]["integrity"] == expected["integrity"]
+          evidence = {
+              "schema": "contractgraph-qa-sdk-npm-replication-v0.1",
+              "status": "VERIFIED",
+              "coordinate": expected["coordinate"],
+              "integrity": live["dist"]["integrity"],
+              "sourceCommit": policy["release"]["sourceCommit"],
+              "mayAuthorizeAction": False,
+          }
+          Path("registry-evidence/npm-publication.json").write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+
+      - name: Preserve npm publication evidence
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: registry-publication-npm
+          path: registry-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
+  publish-nuget:
+    name: Publish exact NuGet package with OIDC
+    if: inputs.registry == 'nuget'
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: sdk-registry-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Require the protected environment arm and NuGet identity
+        shell: bash
+        env:
+          REGISTRY_RELEASE_ARMED: ${{ vars.REGISTRY_RELEASE_ARMED }}
+          NUGET_USER: ${{ secrets.NUGET_USER }}
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTOR}" = "safal207"
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test "${REGISTRY_RELEASE_ARMED}" = "interop-sdk-v0.1.0@de7c765243dc86226b8554757ef1f9419c194a4c"
+          test -n "${NUGET_USER}"
+
+      - name: Download verified preflight input
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: registry-preflight-nuget
+          path: registry-input
+
+      - name: Reverify the exact NuGet input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p registry-evidence
+          python tools/sdk_registry_release.py \
+            --policy "${POLICY}" \
+            verify-bundle \
+            --registry nuget \
+            --bundle registry-input \
+            --evidence registry-evidence/prepublish-evidence.json
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Recheck absent NuGet destination
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl \
+            --location \
+            --max-filesize 16777216 \
+            --output /tmp/nuget-version-response \
+            --proto '=https' \
+            --proto-redir '=https' \
+            --show-error \
+            --silent \
+            --tlsv1.2 \
+            --write-out '%{http_code}' \
+            "${NUGET_REGISTRY_PACKAGE_URL}")"
+          test "${status}" = "404"
+
+      - name: Exchange GitHub OIDC for a short-lived NuGet key
+        id: nuget-login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish the exact NuGet package
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${NUGET_API_KEY}"
+          dotnet nuget push \
+            registry-input/ContractGraphQA.Interop.0.1.0.nupkg \
+            --api-key "${NUGET_API_KEY}" \
+            --source https://api.nuget.org/v3/index.json \
+            --timeout 300
+
+      - name: Replicate the public NuGet package and compare payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          published=false
+          for attempt in $(seq 1 60); do
+            status="$(curl \
+              --location \
+              --max-filesize 16777216 \
+              --output registry-evidence/ContractGraphQA.Interop.0.1.0.registry.nupkg \
+              --proto '=https' \
+              --proto-redir '=https' \
+              --show-error \
+              --silent \
+              --tlsv1.2 \
+              --write-out '%{http_code}' \
+              "${NUGET_REGISTRY_PACKAGE_URL}")"
+            if [ "${status}" = "200" ]; then
+              published=true
+              break
+            fi
+            test "${status}" = "404"
+            sleep 10
+          done
+          test "${published}" = true
+          python tools/sdk_registry_release.py \
+            --policy "${POLICY}" \
+            compare-nuget \
+            --source registry-input/ContractGraphQA.Interop.0.1.0.nupkg \
+            --candidate registry-evidence/ContractGraphQA.Interop.0.1.0.registry.nupkg \
+            --evidence registry-evidence/nuget-publication.json
+
+      - name: Preserve NuGet publication evidence
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: registry-publication-nuget
+          path: registry-evidence/
+          if-no-files-found: warn
+          retention-days: 90
