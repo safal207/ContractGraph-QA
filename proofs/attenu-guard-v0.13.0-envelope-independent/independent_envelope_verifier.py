@@ -856,7 +856,9 @@ def report_as_json(report: CorpusReport) -> dict[str, Any]:
             "base_ledger_verifier": {
                 "id": BASE.VERIFIER_ID,
                 "version": BASE.VERIFIER_VERSION,
-                "path": _display_path(_BASE_PATH),
+                "path": _BASE_PATH.relative_to(
+                    Path(__file__).resolve().parents[2]
+                ).as_posix(),
             },
         },
         "source": {
