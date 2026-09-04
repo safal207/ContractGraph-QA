@@ -228,7 +228,7 @@
     ],
     "proved": [
       "independent agreement with the frozen 18-case observer-envelope corpus",
-      "byte identity of repository, PyPI, and npm vector copies",
+      "byte identity of Python repository, PyPI wheel, and TypeScript repository vector copies",
       "entry_hash binding plus locator mismatch detection",
       "raw-wire JCS and Ed25519 witness verification exercised by the corpus",
       "duplicate-subject rejection and exact per-entry state mapping"
@@ -261,7 +261,7 @@
       },
       {
         "sha256": "6a57d75ebec881d39d5a1805793a20f9a6d7bff021b70782dcb57c43b276df64",
-        "source": "npm attenu-guard@0.8.0"
+        "source": "attenu-io/attenu-guard-ts@51eebfc957c47aeba3738e5f1f67e8d3d55da50f:test/fixtures/vectors/envelopes/envelope_vectors_v1.json"
       }
     ],
     "version": "envelope_vectors_v1"
