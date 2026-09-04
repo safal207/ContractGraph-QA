@@ -57,6 +57,15 @@ jobs:
           --json-out "$RUNNER_TEMP/attenu-envelope-v11-report.json"
           --markdown-out "$RUNNER_TEMP/attenu-envelope-v11-report.md"
 
+      - name: Require deterministic committed evidence
+        run: |
+          diff -u \
+            proofs/attenu-guard-v0.13.0-envelope-independent/report.json \
+            "$RUNNER_TEMP/attenu-envelope-v11-report.json"
+          diff -u \
+            proofs/attenu-guard-v0.13.0-envelope-independent/README.md \
+            "$RUNNER_TEMP/attenu-envelope-v11-report.md"
+
       - name: Show exact output digests
         run: |
           sha256sum \
