@@ -1,0 +1,284 @@
+{
+  "cases": [
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "accept",
+      "name": "valid_spawn_envelope",
+      "observed": "accept",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "accept",
+      "name": "valid_allow_envelope",
+      "observed": "accept",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "accept",
+      "name": "valid_jcs_reorder",
+      "observed": "accept",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "accept",
+      "name": "absent_envelope",
+      "observed": "accept",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "accept",
+      "name": "indeterminate_result",
+      "observed": "accept",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_rehashed_chain_sparse",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_subject_mismatch",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_bad_signature",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_unknown_version",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_non_canonical",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_member_without_bump",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_masked_bundle_mutation",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_rehashed_chain_anchored",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_rehashed_chain_unanchored",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_unknown_witness",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_locator_mismatch",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_duplicate_subject",
+      "observed": "reject",
+      "status": "AGREE"
+    },
+    {
+      "assertions": {
+        "entry_states": true,
+        "failure_position_rule": true,
+        "minimal_failures": true,
+        "verdict": true
+      },
+      "expected": "reject",
+      "name": "reject_unknown_alg",
+      "observed": "reject",
+      "status": "AGREE"
+    }
+  ],
+  "claim_boundary": {
+    "not_proved": [
+      "global capture completeness or absence of never-recorded effects",
+      "that an absent envelope was expected or that a witness was available",
+      "witness freshness, non-equivocation, or deployment non-bypassability",
+      "integrity of an envelope array stripped outside the ledger anchor",
+      "correctness of the upstream specification or every implementation",
+      "A2A adoption, certification, or endorsement"
+    ],
+    "proved": [
+      "independent agreement with the frozen 18-case observer-envelope corpus",
+      "byte identity of repository, PyPI, and npm vector copies",
+      "entry_hash binding plus locator mismatch detection",
+      "raw-wire JCS and Ed25519 witness verification exercised by the corpus",
+      "duplicate-subject rejection and exact per-entry state mapping"
+    ]
+  },
+  "failure_vocabulary": [
+    "envelope_unknown_version",
+    "envelope_unknown_member",
+    "envelope_subject_mismatch",
+    "envelope_duplicate_subject",
+    "envelope_non_canonical",
+    "envelope_unknown_witness",
+    "envelope_bad_signature"
+  ],
+  "subject": {
+    "case_count": 18,
+    "commit": "f34a351c12ddc08e9c8bd3beca9da4695a46376f",
+    "path": "tests/vectors/envelopes/envelope_vectors_v1.json",
+    "repository": "attenu-io/attenu-guard",
+    "revision": "envelope_vectors_v1.1",
+    "sha256": "6a57d75ebec881d39d5a1805793a20f9a6d7bff021b70782dcb57c43b276df64",
+    "source_copies": [
+      {
+        "sha256": "6a57d75ebec881d39d5a1805793a20f9a6d7bff021b70782dcb57c43b276df64",
+        "source": "attenu-io/attenu-guard@f34a351c12ddc08e9c8bd3beca9da4695a46376f:tests/vectors/envelopes/envelope_vectors_v1.json"
+      },
+      {
+        "sha256": "6a57d75ebec881d39d5a1805793a20f9a6d7bff021b70782dcb57c43b276df64",
+        "source": "PyPI attenu-guard==0.13.0"
+      },
+      {
+        "sha256": "6a57d75ebec881d39d5a1805793a20f9a6d7bff021b70782dcb57c43b276df64",
+        "source": "npm attenu-guard@0.8.0"
+      }
+    ],
+    "version": "envelope_vectors_v1"
+  },
+  "summary": {
+    "accept_cases": 5,
+    "agree": 18,
+    "cases": 18,
+    "disagree": 0,
+    "failure_vocabulary_covered": 7,
+    "overall": "AGREE",
+    "reject_cases": 13
+  },
+  "verifier": {
+    "base_bundle_verifier": "proofs/attenu-guard-v0.12.1-independent/independent_bundle_verifier.py",
+    "id": "safal207-independent-envelope-v1.1",
+    "upstream_runtime_imported": false,
+    "version": "0.1.0"
+  }
+}
