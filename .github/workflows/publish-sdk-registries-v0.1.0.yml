@@ -268,7 +268,7 @@ jobs:
             --ignore-scripts \
             --provenance
 
-      - name: Replicate npm registry metadata and integrity
+      - name: Replicate npm registry metadata and package bytes
         shell: bash
         run: |
           set -euo pipefail
@@ -293,28 +293,29 @@ jobs:
             sleep 10
           done
           test "${published}" = true
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          policy = json.loads(Path("sdks/registry-release-v0.1.0.json").read_text())
-          expected = policy["registries"]["npm"]
-          live = json.loads(Path("registry-evidence/npm-registry-version.json").read_text())
-          assert live["name"] == expected["packageName"]
-          assert live["version"] == policy["release"]["version"]
-          assert live["dist"]["integrity"] == expected["integrity"]
-          evidence = {
-              "schema": "contractgraph-qa-sdk-npm-replication-v0.1",
-              "status": "VERIFIED",
-              "coordinate": expected["coordinate"],
-              "integrity": live["dist"]["integrity"],
-              "sourceCommit": policy["release"]["sourceCommit"],
-              "mayAuthorizeAction": False,
-          }
-          Path("registry-evidence/npm-publication.json").write_text(
-              json.dumps(evidence, indent=2, sort_keys=True) + "\n"
-          )
-          PY
+          tarball_url="$(python tools/sdk_registry_release.py \
+            --policy "${POLICY}" \
+            npm-tarball-url \
+            --metadata registry-evidence/npm-registry-version.json)"
+          # Do not follow redirects: only bytes served directly by npm qualify.
+          status="$(curl \
+            --max-filesize 16777216 \
+            --connect-timeout 15 \
+            --max-time 120 \
+            --output registry-evidence/npm-registry-package.tgz \
+            --proto '=https' \
+            --show-error \
+            --silent \
+            --tlsv1.2 \
+            --write-out '%{http_code}' \
+            "${tarball_url}")"
+          test "${status}" = "200"
+          python tools/sdk_registry_release.py \
+            --policy "${POLICY}" \
+            compare-npm \
+            --metadata registry-evidence/npm-registry-version.json \
+            --candidate registry-evidence/npm-registry-package.tgz \
+            --evidence registry-evidence/npm-publication.json
 
       - name: Preserve npm publication evidence
         if: always()

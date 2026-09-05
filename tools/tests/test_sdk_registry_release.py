@@ -4,14 +4,25 @@ import base64
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import re
+import shutil
+import subprocess
+import sys
 import tarfile
 import tempfile
+import textwrap
 import unittest
 import zipfile
 
-from tools.sdk_registry_release import VerificationError, compare_nuget, verify_bundle
+from tools.sdk_registry_release import (
+    VerificationError,
+    compare_npm,
+    compare_nuget,
+    npm_tarball_url,
+    verify_bundle,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -152,6 +163,159 @@ def _write_nuget(path: Path, *, dll: bytes = b"adapter", signature: bool = False
 
 
 class SdkRegistryReleaseTest(unittest.TestCase):
+    def test_npm_workflow_rejects_served_bytes_despite_matching_metadata(self) -> None:
+        """Exercise the real replication shell with an offline registry double."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            policy_path = _write_npm_fixture(root)
+            policy = json.loads(policy_path.read_text())
+            expected = policy["registries"]["npm"]
+            tarball_url = (
+                "https://registry.npmjs.org/@contractgraph-qa/interop-report/-/"
+                "interop-report-0.1.0.tgz"
+            )
+            metadata = {
+                "name": expected["packageName"],
+                "version": policy["release"]["version"],
+                "dist": {"integrity": expected["integrity"], "tarball": tarball_url},
+            }
+            (root / "metadata.json").write_text(json.dumps(metadata))
+            # Preserve the length and every metadata field, but change one byte.
+            payload = bytearray((root / expected["asset"]).read_bytes())
+            payload[-1] ^= 1
+            (root / "served.tgz").write_bytes(payload)
+            (root / "sdks").mkdir()
+            shutil.copyfile(policy_path, root / "sdks/registry-release-v0.1.0.json")
+            (root / "tools").mkdir()
+            shutil.copyfile(ROOT / "tools/sdk_registry_release.py", root / "tools/sdk_registry_release.py")
+            (root / "registry-evidence").mkdir()
+            (root / "bin").mkdir()
+            curl = root / "bin/curl"
+            curl.write_text(
+                f"#!{sys.executable}\n" + textwrap.dedent("""\
+                from pathlib import Path
+                import sys
+                args = sys.argv[1:]
+                output = Path(args[args.index('--output') + 1])
+                url = args[-1]
+                with Path('requests.txt').open('a') as requests:
+                    requests.write(url + '\\n')
+                source = 'served.tgz' if url.endswith('.tgz') else 'metadata.json'
+                output.write_bytes(Path(source).read_bytes())
+                print('200', end='')
+                """)
+            )
+            curl.chmod(0o755)
+            workflow = WORKFLOW.read_text()
+            step = workflow.split("      - name: Replicate npm registry", 1)[1]
+            script = textwrap.dedent(
+                step.split("        run: |\n", 1)[1].split("\n      - name:", 1)[0]
+            )
+            result = subprocess.run(
+                ["bash", "-euo", "pipefail", "-c", script],
+                cwd=root,
+                env={
+                    **os.environ,
+                    "PATH": str(root / "bin") + os.pathsep + os.environ["PATH"],
+                    "POLICY": "sdks/registry-release-v0.1.0.json",
+                    "NPM_REGISTRY_VERSION_URL": "https://registry.npmjs.org/test/0.1.0",
+                },
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn(tarball_url, (root / "requests.txt").read_text().splitlines())
+            self.assertIn("digest differs", result.stderr)
+            self.assertFalse((root / "registry-evidence/npm-publication.json").exists())
+
+            # A fresh observation of the original bytes can produce evidence.
+            shutil.copyfile(root / expected["asset"], root / "served.tgz")
+            valid = subprocess.run(
+                ["bash", "-euo", "pipefail", "-c", script],
+                cwd=root,
+                env={
+                    **os.environ,
+                    "PATH": str(root / "bin") + os.pathsep + os.environ["PATH"],
+                    "POLICY": "sdks/registry-release-v0.1.0.json",
+                    "NPM_REGISTRY_VERSION_URL": "https://registry.npmjs.org/test/0.1.0",
+                },
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            self.assertEqual(valid.returncode, 0, valid.stdout + valid.stderr)
+            evidence = json.loads((root / "registry-evidence/npm-publication.json").read_text())
+            self.assertEqual(evidence["assetSha256"], expected["sha256"])
+            self.assertEqual(evidence["assetBytes"], expected["bytes"])
+            self.assertFalse(evidence["mayAuthorizeAction"])
+
+    def test_npm_replication_rejects_size_integrity_and_metadata_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            policy_path = _write_npm_fixture(root)
+            policy = json.loads(policy_path.read_text())
+            expected = policy["registries"]["npm"]
+            candidate = root / expected["asset"]
+            original = candidate.read_bytes()
+            metadata_path = root / "registry.json"
+            metadata = {
+                "name": expected["packageName"],
+                "version": "0.1.0",
+                "dist": {
+                    "integrity": expected["integrity"],
+                    "tarball": "https://registry.npmjs.org/package.tgz",
+                },
+            }
+            metadata_path.write_text(json.dumps(metadata))
+            for payload in (b"", original[:-1], original + b"x"):
+                with self.subTest(size=len(payload)):
+                    candidate.write_bytes(payload)
+                    with self.assertRaisesRegex(VerificationError, "size differs"):
+                        compare_npm(metadata_path, candidate, policy_path)
+            candidate.write_bytes(original)
+            for field, value in (("name", "another-package"), ("version", "0.2.0")):
+                with self.subTest(field=field):
+                    metadata_path.write_text(json.dumps({**metadata, field: value}))
+                    with self.assertRaises(VerificationError):
+                        compare_npm(metadata_path, candidate, policy_path)
+            metadata["dist"]["integrity"] = "sha512-wrong"
+            metadata_path.write_text(json.dumps(metadata))
+            with self.assertRaisesRegex(VerificationError, "registry integrity differs"):
+                compare_npm(metadata_path, candidate, policy_path)
+            # Matching metadata alone cannot replace hashing the payload for SRI.
+            policy["registries"]["npm"]["integrity"] = "sha512-wrong"
+            policy_path.write_text(json.dumps(policy))
+            with self.assertRaisesRegex(VerificationError, "tarball integrity differs"):
+                compare_npm(metadata_path, candidate, policy_path)
+
+    def test_npm_tarball_url_rejects_non_registry_locations(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            policy_path = _write_npm_fixture(root)
+            policy = json.loads(policy_path.read_text())
+            expected = policy["registries"]["npm"]
+            metadata_path = root / "registry.json"
+            for url in (
+                None,
+                "http://registry.npmjs.org/package.tgz",
+                "https://example.invalid/package.tgz",
+                "https://registry.npmjs.org:8443/package.tgz",
+                "https://registry.npmjs.org:invalid/package.tgz",
+                "https://user@registry.npmjs.org/package.tgz",
+                "https://registry.npmjs.org/package.tgz?token=value",
+                "https://registry.npmjs.org/package.tgz#fragment",
+                "https://registry.npmjs.org/\npackage.tgz",
+            ):
+                with self.subTest(url=url):
+                    metadata_path.write_text(json.dumps({
+                        "name": expected["packageName"],
+                        "version": "0.1.0",
+                        "dist": {"integrity": expected["integrity"], "tarball": url},
+                    }))
+                    with self.assertRaises(VerificationError):
+                        npm_tarball_url(metadata_path, policy_path)
+
     def test_synthetic_npm_bundle_verifies_and_tampering_fails(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

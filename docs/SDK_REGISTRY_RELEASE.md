@@ -69,6 +69,13 @@ Before the run:
    confirmation: publish @contractgraph-qa/interop-report@0.1.0
    ```
 
+The replication step first validates the version document and its public HTTPS
+`registry.npmjs.org` tarball URL. It then downloads that tarball without following
+redirects and requires HTTP 200, the frozen byte count, SHA-256, and SHA-512
+integrity before writing `npm-publication.json` with `status: VERIFIED`.
+The evidence artifact retains the registry metadata and downloaded tarball.
+Matching `dist.integrity` metadata alone does not establish byte replication.
+
 After the run succeeds, verify the publication evidence artifact
 `registry-publication-npm`, revoke the bootstrap token, and remove `NPM_TOKEN`
 from the environment. Configure an npm trusted publisher for later versions;
