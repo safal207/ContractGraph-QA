@@ -1,0 +1,6 @@
+{
+  "schema": "cgqa/foundry-replay-observation/v0.1",
+  "status": "observed",
+  "test": "test_TSSEReplay",
+  "steps": ["authorize", "settle"]
+}

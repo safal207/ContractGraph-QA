@@ -115,13 +115,13 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Destination directory; defaults to ./engagements/<name>",
     )
 
-    run = subparsers.add_parser("run", help="Run capture → export → report → evidence-bundle pipeline")
+    run = subparsers.add_parser("run", help="Run capture -> export -> report -> evidence-bundle pipeline")
     run.add_argument("--config", type=Path, required=True, help="Product TOML config")
     run.add_argument("--clean", action="store_true", help="Remove generated outputs before running")
 
     engagement_run = subparsers.add_parser(
         "engagement-run",
-        help="Run direct multi-invariant Foundry capture → engagement evidence pipeline",
+        help="Run direct multi-invariant Foundry capture -> engagement evidence pipeline",
     )
     engagement_run.add_argument(
         "--config",
@@ -213,13 +213,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--contract",
         type=Path,
         required=True,
-        help="Payment ↔ Fulfillment Coupling Contract v0.1 JSON",
+        help="Payment <-> Fulfillment Coupling Contract v0.1 JSON",
     )
     payment_fulfillment.add_argument(
         "--scenario",
         type=Path,
         required=True,
-        help="Payment ↔ Fulfillment Coupling scenario JSON",
+        help="Payment <-> Fulfillment Coupling scenario JSON",
     )
 
     provider_adapter_validate = subparsers.add_parser(

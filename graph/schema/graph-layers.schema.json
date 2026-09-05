@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/graph-layers.schema.json",
+  "title": "ContractGraph-QA Idea/Plan/Fact Graph Layers v0.1",
+  "type": "object",
+  "required": ["schema", "graphId", "idea", "plan", "fact"],
+  "properties": {
+    "schema": { "const": "cgqa/graph-layers/v0.1" },
+    "graphId": { "$ref": "#/$defs/nonBlank" },
+    "idea": { "$ref": "#/$defs/ideaLayer" },
+    "plan": { "$ref": "#/$defs/planLayer" },
+    "fact": { "$ref": "#/$defs/factLayer" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonBlank": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+    },
+    "dimension": {
+      "type": "string",
+      "enum": ["time", "space", "state", "environment", "actor", "authority", "value"]
+    },
+    "ideaLayer": {
+      "type": "object",
+      "required": ["edges"],
+      "properties": {
+        "edges": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/edge" },
+              { "properties": { "status": { "const": "desired" } } }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "planLayer": {
+      "type": "object",
+      "required": ["edges"],
+      "properties": {
+        "edges": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/edge" },
+              { "properties": { "status": { "const": "planned" } } }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "factLayer": {
+      "type": "object",
+      "required": ["edges"],
+      "properties": {
+        "edges": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              { "$ref": "#/$defs/edge" },
+              {
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["observed", "blocked", "static-gap"]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "from", "to", "dimensions", "status", "evidence"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "from": { "$ref": "#/$defs/nonBlank" },
+        "to": { "$ref": "#/$defs/nonBlank" },
+        "dimensions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/dimension" }
+        },
+        "status": {
+          "type": "string",
+          "enum": ["desired", "planned", "observed", "blocked", "static-gap"]
+        },
+        "evidence": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

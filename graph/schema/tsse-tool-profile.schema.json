@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/tsse-tool-profile.schema.json",
+  "title": "ContractGraph-QA TSSE Reviewed Tool Profile v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "profileId",
+    "tool",
+    "acceptedToolVersions",
+    "acceptedExitCodes",
+    "observationHash",
+    "subject",
+    "invariants",
+    "forbiddenTransitions",
+    "scope"
+  ],
+  "properties": {
+    "schema": { "const": "cgqa/tsse-tool-profile/v0.1" },
+    "profileId": { "$ref": "#/$defs/nonBlank" },
+    "tool": {
+      "type": "string",
+      "enum": ["foundry", "echidna", "medusa", "cargo-soroban", "slither"]
+    },
+    "acceptedToolVersions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonBlank" }
+    },
+    "acceptedExitCodes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "observationHash": {
+      "oneOf": [
+        { "$ref": "#/$defs/sha256" },
+        { "type": "null" }
+      ]
+    },
+    "subject": { "$ref": "#/$defs/subject" },
+    "invariants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/invariant" }
+    },
+    "forbiddenTransitions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/forbiddenTransition" }
+    },
+    "scope": { "$ref": "#/$defs/nonBlank" }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": { "tool": { "const": "slither" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "properties": {
+          "invariants": { "maxItems": 0 },
+          "forbiddenTransitions": { "maxItems": 0 },
+          "observationHash": { "type": "null" }
+        }
+      },
+      "else": {
+        "properties": {
+          "invariants": { "minItems": 1 },
+          "forbiddenTransitions": { "minItems": 1 },
+          "observationHash": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonBlank": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portableRelativePath": {
+      "allOf": [
+        { "$ref": "#/$defs/nonBlank" },
+        {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!\\.\\.?$)(?!\\.\\.?/)(?!.*//)(?!.*\\/$)(?!.*\\/\\.\\.?(?:\\/|$))(?!.*\\\\).+$"
+        }
+      ]
+    },
+    "subjectArtifact": {
+      "type": "object",
+      "required": ["path", "digest"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portableRelativePath" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "subject": {
+      "type": "object",
+      "required": ["repository", "revision", "artifacts"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/nonBlank" },
+        "revision": { "$ref": "#/$defs/nonBlank" },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/subjectArtifact" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "invariant": {
+      "type": "object",
+      "required": ["id", "kind", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "safety",
+            "liveness",
+            "conservation",
+            "authorization",
+            "replay",
+            "temporal",
+            "spatial",
+            "environmental",
+            "causal"
+          ]
+        },
+        "description": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "forbiddenTransition": {
+      "type": "object",
+      "required": ["id", "fromPhase", "toPhase", "invariantId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "fromPhase": { "$ref": "#/$defs/nonBlank" },
+        "toPhase": { "$ref": "#/$defs/nonBlank" },
+        "invariantId": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

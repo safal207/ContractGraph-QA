@@ -1,0 +1,34 @@
+{
+  "schema": "cgqa/tsse-tool-profile/v0.1",
+  "profileId": "foundry-payment-policy-v0.1",
+  "tool": "foundry",
+  "acceptedToolVersions": ["forge-fixture-v0.1"],
+  "acceptedExitCodes": [0],
+  "observationHash": "a9e820c9eab727c146be21727bb4a8bd89dc91a37f8a90d509634c3e0b832427",
+  "subject": {
+    "repository": "local://contractgraph-qa/tsse-tool-fixture",
+    "revision": "fixture-tsse-tool-capture-v0.1",
+    "artifacts": [
+      {
+        "path": "artifacts/PaymentCoordinator.sol",
+        "digest": "f84c21bdb64f68caae9e1a34b88c4b4f0daa1d593ebd0e92adf49c0e8073a75f"
+      }
+    ]
+  },
+  "invariants": [
+    {
+      "id": "CGQ-TSSE-SAFE-001",
+      "kind": "safety",
+      "description": "A settled payment must not return to authorization."
+    }
+  ],
+  "forbiddenTransitions": [
+    {
+      "id": "settled-to-authorized",
+      "fromPhase": "SETTLED",
+      "toPhase": "AUTHORIZED",
+      "invariantId": "CGQ-TSSE-SAFE-001"
+    }
+  ],
+  "scope": "Repository-owned synthetic Foundry replay capture; no production security claim."
+}

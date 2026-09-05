@@ -1,0 +1,38 @@
+{
+  "schema": "cgqa/tsse-tool-profile/v0.1",
+  "profileId": "cargo-soroban-repay-policy-v0.1",
+  "tool": "cargo-soroban",
+  "acceptedToolVersions": [
+    "cargo-fixture-v0.1"
+  ],
+  "acceptedExitCodes": [
+    0
+  ],
+  "observationHash": "775dd981d1ed0eb8c32324c4ed0f1ec1843e0319120beae8798a4bddea418552",
+  "subject": {
+    "repository": "https://example.invalid/cgqa-synthetic-soroban-fixture",
+    "revision": "synthetic-soroban-fixture-v0.1",
+    "artifacts": [
+      {
+        "path": "artifacts/SyntheticSorobanLoan.rs",
+        "digest": "e77f9cd819e4fad7cf276cd823a92542c828a1f0880413ff68b17c84864715bd"
+      }
+    ]
+  },
+  "invariants": [
+    {
+      "id": "debt-nonincrease",
+      "kind": "conservation",
+      "description": "A successful positive repayment must not transition into increased debt."
+    }
+  ],
+  "forbiddenTransitions": [
+    {
+      "id": "repayment-increases-debt",
+      "fromPhase": "ACTIVE",
+      "toPhase": "DEBT_INCREASED",
+      "invariantId": "debt-nonincrease"
+    }
+  ],
+  "scope": "Synthetic one-test Soroban receipt used only to exercise strict graph adapter bindings."
+}

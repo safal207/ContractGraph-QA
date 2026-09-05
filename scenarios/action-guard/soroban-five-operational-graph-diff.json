@@ -1,0 +1,16 @@
+{
+  "claimBoundary": "A graph-layer diff is a coverage and specification-drift signal; it is not a security verdict.",
+  "factEdgeCount": 2,
+  "geometryMismatches": [],
+  "graphId": "agent-action-guard-soroban-five-v0.1",
+  "ideaEdgeCount": 2,
+  "missingFactEdgeIds": [],
+  "plannedEdgeCount": 2,
+  "schema": "cgqa/graph-layer-diff/v0.1",
+  "status": "drift_detected",
+  "unevidencedFactEdgeIds": [
+    "execution-gate"
+  ],
+  "unexpectedFactEdgeIds": [],
+  "unplannedIdeaEdgeIds": []
+}

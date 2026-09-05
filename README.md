@@ -162,6 +162,74 @@ Detected routes include Foundry, Hardhat, Truffle, Ape/Brownie/Vyper, Soroban, A
 
 [Universal quickstart documentation →](docs/UNIVERSAL_QUICKSTART.md)
 
+For a reviewed saved trace, TSSE keeps time, protocol topology, state,
+environment, actor, authority, and value changes separate:
+
+```bash
+cgqa tsse --model scenarios/tsse-payment-lifecycle.json
+```
+
+It checks exact-subject/evidence binding, monotonic time, causal continuity,
+declared boundary changes, and forbidden phase transitions. It does not execute
+or scan the target represented by the model.
+
+[TSSE transition model documentation →](docs/TSSE_TRANSITION_MODEL.md)
+
+Reviewed Cargo/Soroban, Foundry, Echidna, and Medusa replay observations can be compiled into
+that model while Slither findings remain static challenge seeds:
+
+```bash
+cgqa tsse-adapt \
+  --capture scenarios/tsse-tools/foundry-capture.json \
+  --profile scenarios/tsse-tools/foundry-profile.json
+```
+
+The separately reviewed profile anchors the expected subject, tool version,
+exit semantics, observation hash, and policy. The adapter reopens and hashes every declared
+source/tool artifact, parses the selected native receipt, computes the TSSE
+subject and hashes, locks all requirements on, and never treats a nested trace
+pass as a scan/security verdict.
+
+[TSSE tool adapter documentation →](docs/TSSE_TOOL_ADAPTERS.md)
+
+To make verification coverage visible, keep intent, planned checks, and
+observed evidence in separate graph layers and compare them deterministically:
+
+```bash
+cgqa-graph-layers \
+  --input outputs/soroban-five-graph-layers.json \
+  --output outputs/soroban-five-graph-layer-diff.json
+```
+
+The diff exposes specification drift, actual bad transition geometry, and
+unexecuted or unexpected transitions; `blocked`/`static-gap` facts remain
+un-evidenced. An `aligned` result is a coverage signal, never a security
+verdict.
+
+For high-capability audit workflows, run the separate Agent Action Guard before
+and after tool use. It binds the exact subject, authorization envelope,
+allowlists, independent monitor, denial/canary controls, receipts, and witness
+state without executing any command:
+
+```bash
+cgqa action-guard \
+  --input scenarios/action-guard/soroban-five-preflight.json \
+  --output outputs/action-guard-result.json
+```
+
+`pass` means the declared action is within the supplied envelope; `hold` keeps
+safe denials or evidence debt visible; `fail` marks a control bypass. This is a
+policy/evidence gate, not a scan or bounty verdict. See
+[`AGENT_ACTION_GUARD.md`](docs/AGENT_ACTION_GUARD.md).
+
+The `LIVE_WRITE` capability also requires a separate `liveWriteApprovalRef`;
+raising the envelope ceiling alone cannot authorize a live write. The public
+core remains read-only: it validates saved traces and evidence, but starts no
+process, opens no network connection, and performs no target write. Execution
+belongs to a separately isolated runner; its receipts may be imported later as
+evidence. See [`AGENT_ACTION_GUARD.md`](docs/AGENT_ACTION_GUARD.md) and the
+[`Astra-6 roadmap`](docs/ASTRA6_ROADMAP.md).
+
 For end-to-end request, transaction-attempt, receipt/event, indexer, backend,
 and API continuity, see the
 [Smart Contract Continuity Bridge v0.1](docs/SMART_CONTRACT_CONTINUITY_BRIDGE.md).
@@ -242,6 +310,8 @@ Key documents:
 - [Evidence distribution](docs/DISTRIBUTION.md)
 - [Client proof pack](docs/client-proof/README.md)
 - [Agent verification protocol](AGENTS.md)
+- [TSSE transition model](docs/TSSE_TRANSITION_MODEL.md)
+- [TSSE reviewed tool adapters](docs/TSSE_TOOL_ADAPTERS.md)
 
 ---
 

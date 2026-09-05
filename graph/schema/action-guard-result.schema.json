@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/action-guard-result.schema.json",
+  "title": "ContractGraph-QA Agent Action Guard Result v0.1",
+  "type": "object",
+  "required": ["schema", "status", "guardStatus", "agentConformance", "evidenceStatus", "subjectHash", "authorizationRef", "authorizationHash", "inputHash", "history", "actionResults", "findings", "metrics", "claimBoundary", "resultHash"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "cgqa/action-guard-result/v0.1" },
+    "status": { "enum": ["pass", "hold", "fail"] },
+    "guardStatus": { "enum": ["PASS", "SAFE_HOLD", "FAIL"] },
+    "agentConformance": { "enum": ["CONFORMANT", "NONCONFORMANT", "BYPASS"] },
+    "evidenceStatus": { "enum": ["NOT_REQUIRED", "COMPLETE", "INCOMPLETE", "INVALID"] },
+    "subjectHash": { "$ref": "#/$defs/sha256" },
+    "authorizationRef": { "$ref": "#/$defs/nonBlank" },
+    "authorizationHash": { "$ref": "#/$defs/sha256" },
+    "inputHash": { "$ref": "#/$defs/sha256" },
+    "history": { "$ref": "#/$defs/history" },
+    "actionResults": { "type": "array", "items": { "$ref": "#/$defs/actionResult" } },
+    "findings": { "type": "array", "items": { "$ref": "#/$defs/finding" } },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "claimBoundary": { "$ref": "#/$defs/nonBlank" },
+    "resultHash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "nonBlank": { "type": "string", "minLength": 1, "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "nullableSha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+    "textList": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nonBlank" } },
+    "history": {
+      "type": "object",
+      "required": ["previousResultHash", "declaredPriorDeniedSemanticActionIds", "effectiveDeniedSemanticActionIds", "independentlyVerified"],
+      "additionalProperties": false,
+      "properties": {
+        "previousResultHash": { "$ref": "#/$defs/nullableSha256" },
+        "declaredPriorDeniedSemanticActionIds": { "$ref": "#/$defs/textList" },
+        "effectiveDeniedSemanticActionIds": { "$ref": "#/$defs/textList" },
+        "independentlyVerified": { "const": false }
+      }
+    },
+    "actionResult": {
+      "type": "object",
+      "required": ["actionId", "semanticActionId", "parentActionId", "subjectHash", "expectedDecision", "recordedDecision", "guardStatus", "agentConformance", "evidenceStatus", "safeAlternative", "policyReasons", "integrityReasons", "evidenceReasons", "transitionPath", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "actionId": { "$ref": "#/$defs/nonBlank" },
+        "semanticActionId": { "$ref": "#/$defs/nonBlank" },
+        "parentActionId": { "oneOf": [{ "$ref": "#/$defs/nonBlank" }, { "type": "null" }] },
+        "subjectHash": { "$ref": "#/$defs/sha256" },
+        "expectedDecision": { "enum": ["ALLOW", "DENY"] },
+        "recordedDecision": { "enum": ["ALLOW", "DENY"] },
+        "guardStatus": { "enum": ["PASS", "SAFE_HOLD", "FAIL"] },
+        "agentConformance": { "enum": ["CONFORMANT", "NONCONFORMANT", "BYPASS"] },
+        "evidenceStatus": { "enum": ["NOT_REQUIRED", "COMPLETE", "INCOMPLETE", "INVALID"] },
+        "safeAlternative": { "type": "boolean" },
+        "policyReasons": { "$ref": "#/$defs/textList" },
+        "integrityReasons": { "$ref": "#/$defs/textList" },
+        "evidenceReasons": { "$ref": "#/$defs/textList" },
+        "transitionPath": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/nonBlank" } },
+        "status": { "enum": ["pass", "hold", "fail"] }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["code", "severity", "actionId"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "$ref": "#/$defs/nonBlank" },
+        "severity": { "enum": ["FAIL", "HOLD"] },
+        "actionId": { "oneOf": [{ "$ref": "#/$defs/nonBlank" }, { "type": "null" }] }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["totalActions", "policyAllows", "policyDenials", "executed", "safeDenials", "controlBypasses", "retryAttempts", "canaryTouches", "evidenceDebtActions"],
+      "additionalProperties": false,
+      "properties": {
+        "totalActions": { "type": "integer", "minimum": 0 },
+        "policyAllows": { "type": "integer", "minimum": 0 },
+        "policyDenials": { "type": "integer", "minimum": 0 },
+        "executed": { "type": "integer", "minimum": 0 },
+        "safeDenials": { "type": "integer", "minimum": 0 },
+        "controlBypasses": { "type": "integer", "minimum": 0 },
+        "retryAttempts": { "type": "integer", "minimum": 0 },
+        "canaryTouches": { "type": "integer", "minimum": 0 },
+        "evidenceDebtActions": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

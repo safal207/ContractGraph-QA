@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/graph-layer-diff.schema.json",
+  "title": "ContractGraph-QA Idea/Plan/Fact Graph Diff v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "graphId",
+    "status",
+    "ideaEdgeCount",
+    "plannedEdgeCount",
+    "factEdgeCount",
+    "unplannedIdeaEdgeIds",
+    "missingFactEdgeIds",
+    "unexpectedFactEdgeIds",
+    "unevidencedFactEdgeIds",
+    "geometryMismatches",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schema": { "const": "cgqa/graph-layer-diff/v0.1" },
+    "graphId": { "$ref": "#/$defs/nonBlank" },
+    "status": { "type": "string", "enum": ["aligned", "drift_detected"] },
+    "ideaEdgeCount": { "type": "integer", "minimum": 0 },
+    "plannedEdgeCount": { "type": "integer", "minimum": 0 },
+    "factEdgeCount": { "type": "integer", "minimum": 0 },
+    "unplannedIdeaEdgeIds": { "$ref": "#/$defs/idList" },
+    "missingFactEdgeIds": { "$ref": "#/$defs/idList" },
+    "unexpectedFactEdgeIds": { "$ref": "#/$defs/idList" },
+    "unevidencedFactEdgeIds": { "$ref": "#/$defs/idList" },
+    "geometryMismatches": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/geometryMismatch" }
+    },
+    "claimBoundary": { "$ref": "#/$defs/nonBlank" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonBlank": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonBlank" }
+    },
+    "geometry": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/nonBlank" },
+        { "$ref": "#/$defs/nonBlank" },
+        {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonBlank" }
+        }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "geometryMismatch": {
+      "type": "object",
+      "required": ["edgeId", "boundary", "expected", "actual"],
+      "properties": {
+        "edgeId": { "$ref": "#/$defs/nonBlank" },
+        "boundary": { "enum": ["idea-plan", "plan-fact"] },
+        "expected": { "$ref": "#/$defs/geometry" },
+        "actual": { "$ref": "#/$defs/geometry" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -4,6 +4,75 @@ All notable ContractGraph-QA changes are documented here.
 
 The project follows Semantic Versioning for the product runtime. Engine research increments before v1.0 are retained in Git history and README release notes.
 
+## Unreleased
+
+### Agent Action Guard
+
+- Added strict `cgqa/action-guard/v0.1` and result schemas for exact-subject
+  authorization envelopes, capability ceilings, tool/path/network allowlists,
+  independent monitor decisions, denial/retry controls, canaries, and
+  receipt/witness evidence.
+- Added deterministic `cgqa action-guard` / `cgqa-action-guard` CLI with
+  atomic output and fail-closed input/output collision checks.
+- Added a separate explicit approval reference for `LIVE_WRITE` capability;
+  the capability ceiling alone cannot authorize a live write.
+- Kept guard status, agent conformance, and evidence readiness separate; the
+  evaluator never executes recorded commands and never upgrades a TSSE or scan
+  result into a security or bounty verdict.
+- Added a repository-owned Soroban preflight fixture and direct negative-control
+  coverage for stale authorization, path escape, monitor mismatch, denial
+  retries, canary contact, and missing witnesses.
+
+### Action Guard boundary
+
+- Kept Action Guard and the public CLI read-only after adversarial review.
+- Removed local execution and witness entry points from the public package:
+  same-privilege filesystem markers and self-declared witnesses cannot prove
+  replay prevention, containment, or independent control.
+- Moved execution, authenticated witnessing, and durable replay protection to a
+  separately isolated-runner roadmap.
+- Added an Astra-inspired hardening map with explicit current and roadmap states.
+
+### Idea/plan/fact graph coverage
+
+- Added strict `cgqa/graph-layers/v0.1` validation and deterministic
+  `cgqa graph-layers` / `cgqa-graph-layers` comparison for intended (`idea`),
+  scheduled (`plan`), and observed (`fact`) transitions across time, space,
+  state, environment, actor, authority, and value dimensions.
+- Graph-layer diffs report specification drift and coverage gaps only; they
+  never become a security verdict or a bounty claim.
+- Fact-layer geometry now records the actual observed transition, so bad
+  source/target paths surface as drift; `blocked` and `static-gap` facts are
+  explicitly reported as un-evidenced rather than counted as aligned.
+- Replaced non-ASCII arrows in legacy CLI help text so `cgqa --help` remains
+  usable on Windows code pages.
+
+### TSSE reviewed scanner adapters
+
+- Added fail-closed reviewed evidence capture for Foundry, Echidna, and Medusa
+  replay observations plus Slither static replay seeds.
+- Added raw source/tool artifact reopening and SHA-256 verification, computed
+  subject/profile/state/environment bindings, and locked TSSE requirements.
+- Added a separately reviewed profile trust boundary, tool/version/exit and
+  canonical observation binding, concrete search-bound enforcement, native
+  sequence parsers, portable path containment, and bounded input-size limits.
+- Added `cgqa tsse-adapt` / `cgqa-tsse-adapt`, input/profile/result schemas,
+  fixtures, and bounded
+  status semantics that never promote a trace pass into a scan verdict.
+
+### Added
+
+- strict Time-Space-State-Environment (`TSSE`) v0.1 trace model with exact-subject, evidence, actor, authority, and economic-value coordinates;
+- deterministic checks for monotonic time, causal-step/predecessor/path continuity, declared cross-boundary effects, and forbidden phase transitions;
+- standalone `cgqa-tsse` and unified `cgqa tsse` commands with stable pass/hold/validation exit codes;
+- machine-readable JSON Schema, schema/runtime drift gate, repository-owned payment-lifecycle fixture, and targeted negative-control tests.
+
+### Claim boundary
+
+- TSSE validates one supplied finite trace and does not discover paths, execute targets, infer invariants, or prove exhaustive security;
+- disabled requirements remain explicit in result evidence;
+- the bundled fixture is synthetic and creates no testing authorization.
+
 ## 1.9.0 — Universal smart-contract quickstart and unified CLI
 
 ### Added

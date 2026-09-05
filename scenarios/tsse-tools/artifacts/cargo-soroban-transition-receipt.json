@@ -1,0 +1,53 @@
+{
+  "schema": "cgqa/cargo-soroban-transition-receipt/v0.1",
+  "status": "observed",
+  "framework": "soroban",
+  "package": "synthetic_soroban_loan",
+  "test": "tests::repay_reduces_debt",
+  "seed": null,
+  "subjectBundleHash": "8d9fc4eb4f3f3b4fe4eda342f8d2f79dbdceb0c10bba7a3c49b714b4b7dbef81",
+  "execution": {
+    "matched": 1,
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0
+  },
+  "steps": [
+    {
+      "observationId": "loan-after-repay",
+      "action": "repay",
+      "time": {
+        "ledgerSequence": 1001,
+        "ledgerTimestamp": 1700000005,
+        "epoch": 1
+      },
+      "space": {
+        "network": "standalone:soroban-fixture",
+        "contract": "SyntheticSorobanLoan",
+        "callFrame": "SyntheticSorobanLoan::repay",
+        "storageDomain": "persistent:loan/loan-7",
+        "protocolLocation": "loan.repayment"
+      },
+      "state": {
+        "phase": "ACTIVE",
+        "stateHash": "d10dda948bb1ddc4487b5308b9afb763ee12832b16d7f927f39ce72c823fcf8a"
+      },
+      "environmentHash": "7303167a71ad9679c7c56fc4f5ee86377cba70bea46d3078e0401da8aaa78d1c",
+      "actor": {
+        "identity": "borrower-A",
+        "role": "borrower"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "authorized"
+      },
+      "value": {
+        "unit": "stroop",
+        "locked": 60,
+        "moved": 40
+      },
+      "snapshotArtifactId": "soroban-state-after-repay",
+      "snapshotDigest": "12279eb32748acbd6a9ad942babc47c76c56ba0760a90847a52c4cdfb7452729"
+    }
+  ]
+}

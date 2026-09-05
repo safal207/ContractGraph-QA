@@ -1,0 +1,164 @@
+{
+  "schema": "cgqa/tsse-tool-capture/v0.1",
+  "captureId": "cargo-soroban-repay-trace-v0.1",
+  "tool": "cargo-soroban",
+  "toolVersion": "cargo-fixture-v0.1",
+  "run": {
+    "argv": [
+      "cargo",
+      "test",
+      "--locked",
+      "-p",
+      "synthetic_soroban_loan",
+      "tests::repay_reduces_debt",
+      "--",
+      "--exact",
+      "--nocapture"
+    ],
+    "exitCode": 0,
+    "termination": "completed",
+    "seed": null,
+    "bounds": {
+      "testLimit": 1,
+      "maxSequenceLength": 1,
+      "timeLimitSeconds": 30,
+      "workers": 1
+    }
+  },
+  "subject": {
+    "repository": "https://example.invalid/cgqa-synthetic-soroban-fixture",
+    "revision": "synthetic-soroban-fixture-v0.1",
+    "artifacts": [
+      {
+        "path": "artifacts/SyntheticSorobanLoan.rs",
+        "digest": "e77f9cd819e4fad7cf276cd823a92542c828a1f0880413ff68b17c84864715bd"
+      }
+    ]
+  },
+  "toolArtifacts": [
+    {
+      "id": "cargo-soroban-receipt",
+      "kind": "cargo-soroban-transition-receipt",
+      "path": "artifacts/cargo-soroban-transition-receipt.json",
+      "digest": "15654d144edfbfa3cdebeb5d2f92a5ec0afd2ad4d25fb53ec1d59df99a53559f"
+    },
+    {
+      "id": "soroban-state-after-repay",
+      "kind": "soroban-state-snapshot",
+      "path": "artifacts/soroban-state-after-repay.json",
+      "digest": "12279eb32748acbd6a9ad942babc47c76c56ba0760a90847a52c4cdfb7452729"
+    }
+  ],
+  "observations": [
+    {
+      "id": "loan-before-repay",
+      "incoming": null,
+      "time": {
+        "block": 1000,
+        "timestamp": 1700000000,
+        "epoch": 1
+      },
+      "space": {
+        "chainId": "standalone:soroban-fixture",
+        "contract": "SyntheticSorobanLoan",
+        "callFrame": "tests::setup",
+        "storageDomain": "persistent:loan/loan-7",
+        "protocolLocation": "loan.repayment"
+      },
+      "state": {
+        "phase": "ACTIVE",
+        "values": {
+          "loanId": "loan-7",
+          "outstanding": 100,
+          "lastLedger": 1000
+        }
+      },
+      "environment": {
+        "oracleState": "fixed-fixture",
+        "tokenModel": "native-asset",
+        "feeMode": "none",
+        "implementation": "synthetic-soroban-host-v0.1"
+      },
+      "actor": {
+        "identity": "borrower-A",
+        "role": "borrower"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "authorized"
+      },
+      "value": {
+        "unit": "stroop",
+        "locked": 100,
+        "moved": 0
+      }
+    },
+    {
+      "id": "loan-after-repay",
+      "incoming": {
+        "id": "repay-loan",
+        "cause": "borrower invocation",
+        "action": "repay",
+        "evidenceRefs": [
+          "cargo-soroban-receipt",
+          "soroban-state-after-repay"
+        ]
+      },
+      "time": {
+        "block": 1001,
+        "timestamp": 1700000005,
+        "epoch": 1
+      },
+      "space": {
+        "chainId": "standalone:soroban-fixture",
+        "contract": "SyntheticSorobanLoan",
+        "callFrame": "SyntheticSorobanLoan::repay",
+        "storageDomain": "persistent:loan/loan-7",
+        "protocolLocation": "loan.repayment"
+      },
+      "state": {
+        "phase": "ACTIVE",
+        "values": {
+          "loanId": "loan-7",
+          "outstanding": 60,
+          "lastLedger": 1001
+        }
+      },
+      "environment": {
+        "oracleState": "fixed-fixture",
+        "tokenModel": "native-asset",
+        "feeMode": "none",
+        "implementation": "synthetic-soroban-host-v0.1"
+      },
+      "actor": {
+        "identity": "borrower-A",
+        "role": "borrower"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "authorized"
+      },
+      "value": {
+        "unit": "stroop",
+        "locked": 60,
+        "moved": 40
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "debt-nonincrease",
+      "kind": "conservation",
+      "description": "A successful positive repayment must not transition into increased debt."
+    }
+  ],
+  "forbiddenTransitions": [
+    {
+      "id": "repayment-increases-debt",
+      "fromPhase": "ACTIVE",
+      "toPhase": "DEBT_INCREASED",
+      "invariantId": "debt-nonincrease"
+    }
+  ],
+  "scope": "Synthetic one-test Soroban receipt used only to exercise strict graph adapter bindings."
+}

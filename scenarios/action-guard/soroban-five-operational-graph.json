@@ -1,0 +1,64 @@
+{
+  "schema": "cgqa/graph-layers/v0.1",
+  "graphId": "agent-action-guard-soroban-five-v0.1",
+  "idea": {
+    "edges": [
+      {
+        "id": "authorization-envelope",
+        "from": "proposed-action",
+        "to": "policy-evaluated",
+        "dimensions": ["actor", "authority", "state", "environment"],
+        "status": "desired",
+        "evidence": "Astra-inspired explicit scope and independent policy monitor"
+      },
+      {
+        "id": "execution-gate",
+        "from": "policy-evaluated",
+        "to": "executed-with-receipt",
+        "dimensions": ["actor", "authority", "state", "environment", "value"],
+        "status": "desired",
+        "evidence": "execution requires monitor allow, receipt, and independent witness"
+      }
+    ]
+  },
+  "plan": {
+    "edges": [
+      {
+        "id": "authorization-envelope",
+        "from": "proposed-action",
+        "to": "policy-evaluated",
+        "dimensions": ["actor", "authority", "state", "environment"],
+        "status": "planned",
+        "evidence": "action-guard evaluator checks subject, capability, tool, target, path, network, time, and budget"
+      },
+      {
+        "id": "execution-gate",
+        "from": "policy-evaluated",
+        "to": "executed-with-receipt",
+        "dimensions": ["actor", "authority", "state", "environment", "value"],
+        "status": "planned",
+        "evidence": "postflight path must bind execution receipt and independent witness"
+      }
+    ]
+  },
+  "fact": {
+    "edges": [
+      {
+        "id": "authorization-envelope",
+        "from": "proposed-action",
+        "to": "policy-evaluated",
+        "dimensions": ["actor", "authority", "state", "environment"],
+        "status": "observed",
+        "evidence": "scenarios/action-guard/soroban-five-preflight-result.json#resultHash=172336529b599cfa7abef9990935e1603dd4beaf1ca3093e4ba6bf25bebec6b6"
+      },
+      {
+        "id": "execution-gate",
+        "from": "policy-evaluated",
+        "to": "executed-with-receipt",
+        "dimensions": ["actor", "authority", "state", "environment", "value"],
+        "status": "static-gap",
+        "evidence": "The portable repository fixture records preflight only; a host-bound runtime receipt, independent witness, and OS/network isolation proof must be supplied by the executing environment"
+      }
+    ]
+  }
+}
