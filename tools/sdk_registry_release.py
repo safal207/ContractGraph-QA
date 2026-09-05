@@ -11,6 +11,7 @@ from pathlib import Path, PurePosixPath
 import re
 import sys
 import tarfile
+from urllib.parse import urlsplit
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -340,6 +341,83 @@ def verify_bundle(registry: str, bundle: Path, policy_path: Path) -> dict[str, o
     }
 
 
+def _npm_registry_metadata(metadata_path: Path, policy: dict[str, object]) -> str:
+    release = policy["release"]
+    expected = policy["registries"]["npm"]
+    live = _read_json(metadata_path)
+    if not isinstance(live, dict) or not isinstance(live.get("dist"), dict):
+        raise VerificationError("npm registry metadata must include a dist object")
+    if live.get("name") != expected["packageName"]:
+        raise VerificationError("npm registry package name differs from policy")
+    if live.get("version") != release["version"]:
+        raise VerificationError("npm registry version differs from policy")
+    if live["dist"].get("integrity") != expected["integrity"]:
+        raise VerificationError("npm registry integrity differs from policy")
+    url = live["dist"].get("tarball")
+    if not isinstance(url, str) or any(ord(c) <= 32 or ord(c) == 127 for c in url) or "\\" in url:
+        raise VerificationError("invalid npm registry tarball URL")
+    try:
+        parsed = urlsplit(url)
+        valid = (
+            parsed.scheme == "https"
+            and parsed.hostname == "registry.npmjs.org"
+            and parsed.port in (None, 443)
+            and parsed.username is None
+            and parsed.password is None
+            and parsed.path.startswith("/")
+            and not parsed.query
+            and not parsed.fragment
+        )
+    except ValueError as exc:
+        raise VerificationError("invalid npm registry tarball URL") from exc
+    if not valid:
+        raise VerificationError("npm tarball URL must use the public HTTPS npm registry")
+    return url
+
+
+def npm_tarball_url(metadata_path: Path, policy_path: Path) -> str:
+    """Validate registry metadata before allowing its tarball URL to be fetched."""
+    return _npm_registry_metadata(metadata_path, _load_policy(policy_path))
+
+
+def compare_npm(metadata_path: Path, candidate: Path, policy_path: Path) -> dict[str, object]:
+    """Bind replication evidence to downloaded bytes, not just registry claims."""
+    policy = _load_policy(policy_path)
+    tarball_url = _npm_registry_metadata(metadata_path, policy)
+    release = policy["release"]
+    expected = policy["registries"]["npm"]
+    expected_bytes = expected["bytes"]
+    if not isinstance(expected_bytes, int) or not 0 < expected_bytes <= 16 * 1024 * 1024:
+        raise VerificationError("npm policy size is outside the download bound")
+    if candidate.is_symlink() or not candidate.is_file():
+        raise VerificationError("missing regular registry npm tarball")
+    try:
+        with candidate.open("rb") as stream:
+            payload = stream.read(expected_bytes + 1)
+    except OSError as exc:
+        raise VerificationError(f"cannot read registry npm tarball: {exc}") from exc
+    if len(payload) != expected_bytes:
+        raise VerificationError("registry npm tarball size differs from the frozen policy")
+    digest = hashlib.sha256(payload).hexdigest()
+    if digest != expected["sha256"]:
+        raise VerificationError("registry npm tarball digest differs from the frozen policy")
+    integrity = "sha512-" + base64.b64encode(hashlib.sha512(payload).digest()).decode("ascii")
+    if integrity != expected["integrity"]:
+        raise VerificationError("registry npm tarball integrity differs from the frozen policy")
+    return {
+        "schema": "contractgraph-qa-sdk-npm-replication-v0.1",
+        "status": "VERIFIED",
+        "coordinate": expected["coordinate"],
+        "tarballUrl": tarball_url,
+        "assetSha256": digest,
+        "assetBytes": len(payload),
+        "integrity": integrity,
+        "sourceCommit": release["sourceCommit"],
+        "claimBoundary": release["claimBoundary"],
+        "mayAuthorizeAction": False,
+    }
+
+
 def compare_nuget(source: Path, candidate: Path, policy_path: Path) -> dict[str, object]:
     policy = _load_policy(policy_path)
     release = policy["release"]
@@ -390,6 +468,14 @@ def _parser() -> argparse.ArgumentParser:
     verify.add_argument("--bundle", type=Path, required=True)
     verify.add_argument("--evidence", type=Path)
 
+    npm_url = subparsers.add_parser("npm-tarball-url")
+    npm_url.add_argument("--metadata", type=Path, required=True)
+
+    npm = subparsers.add_parser("compare-npm")
+    npm.add_argument("--metadata", type=Path, required=True)
+    npm.add_argument("--candidate", type=Path, required=True)
+    npm.add_argument("--evidence", type=Path)
+
     compare = subparsers.add_parser("compare-nuget")
     compare.add_argument("--source", type=Path, required=True)
     compare.add_argument("--candidate", type=Path, required=True)
@@ -402,6 +488,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "verify-bundle":
             result = verify_bundle(args.registry, args.bundle, args.policy)
+        elif args.command == "npm-tarball-url":
+            print(npm_tarball_url(args.metadata, args.policy))
+            return 0
+        elif args.command == "compare-npm":
+            result = compare_npm(args.metadata, args.candidate, args.policy)
         else:
             result = compare_nuget(args.source, args.candidate, args.policy)
         _write_evidence(result, args.evidence)
