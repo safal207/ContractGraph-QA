@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
 from contractgraph_qa.action_guard import evaluate_action_guard, load_action_guard
+from contractgraph_qa.evidence_io import write_text_atomic as _write_atomic
 
 
 EXIT_PASS = 0
@@ -47,32 +46,6 @@ def _same_path(left: Path, right: Path) -> bool:
         return False
 
 
-def _write_atomic(path: Path, rendered: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            newline="\n",
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temporary = Path(handle.name)
-            handle.write(rendered)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        if temporary is not None:
-            try:
-                temporary.unlink(missing_ok=True)
-            except OSError:
-                pass
-
-
 def main(argv: list[str] | None = None, *, prog: str = "cgqa-action-guard") -> int:
     try:
         args = _parser(prog).parse_args(argv)
@@ -91,7 +64,7 @@ def main(argv: list[str] | None = None, *, prog: str = "cgqa-action-guard") -> i
         result = evaluate_action_guard(load_action_guard(input_path))
         rendered = _stable_json(result)
         if output_path is not None:
-            _write_atomic(output_path, rendered)
+            _write_atomic(output_path, rendered, force=args.force)
         print(rendered, end="")
 
         status = result.get("status")

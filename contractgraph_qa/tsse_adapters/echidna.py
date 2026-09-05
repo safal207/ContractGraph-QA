@@ -128,6 +128,10 @@ def adapt_echidna_capture(
         f"echidnaCampaign.tests[{solved_index}].transactions",
         non_empty=True,
     )
+    if len(transactions) != len(capture["observations"]) - 1:
+        raise ToolCaptureError(
+            "Echidna transaction count must match reviewed observations"
+        )
     functions: list[str] = []
     for transaction_index, raw_transaction in enumerate(transactions):
         field = (

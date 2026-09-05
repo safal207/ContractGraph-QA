@@ -87,6 +87,11 @@ The result keeps those answers separate as agent conformance, guard integrity,
 and evidence readiness. A safely blocked action is not a successful audit, and
 missing evidence is not proof that an action failed to occur.
 
+Every supplied witness is checked, including for `NOT_EXECUTED` and
+`STOPPED` actions. A missing witness can be optional before execution;
+a contradictory supplied witness produces evidence `INVALID` and `hold`.
+The evaluator compares declared identities and does not authenticate them.
+
 ## Denial and honeypot testing
 
 A denied semantic action cannot be retried under a new label inside the same
@@ -117,8 +122,12 @@ writes only an explicitly requested result file.
 Scanner or contract execution belongs in a separate isolated runner. That
 runner must provide OS and network containment, authenticated authorization,
 durable replay control outside the target's write scope, and an independent
-witness. The public core imports only the resulting evidence. Until those
+witness. These analysis commands import only the resulting evidence. Until those
 controls are independently proven, execution remains verification debt.
+
+This is the boundary of the new evidence workflow. The package's existing
+native-run and RPC commands remain separate capabilities and are not covered
+by the Action Guard validator's no-execution guarantee.
 
 ## Integration boundary
 

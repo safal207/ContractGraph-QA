@@ -133,7 +133,7 @@ class TSSECliTest(unittest.TestCase):
             output_path.write_text("preserve-me", encoding="utf-8")
             stderr = io.StringIO()
             with mock.patch(
-                "contractgraph_qa.tsse_cli.os.replace",
+                "contractgraph_qa.evidence_io.os.replace",
                 side_effect=OSError("simulated replace failure"),
             ):
                 with contextlib.redirect_stderr(stderr):

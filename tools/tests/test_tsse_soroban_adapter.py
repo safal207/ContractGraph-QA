@@ -70,6 +70,24 @@ def _rewrite_receipt(
 
 
 class TSSESorobanAdapterTest(unittest.TestCase):
+    def test_rust_subject_fixture_bytes_are_portable_and_digest_bound(self) -> None:
+        attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("*.rs text eol=lf", attributes.splitlines())
+        for manifest in (SOROBAN_CAPTURE, SOROBAN_PROFILE):
+            rust_artifacts = [
+                artifact
+                for artifact in _load(manifest)["subject"]["artifacts"]
+                if artifact["path"].endswith(".rs")
+            ]
+            self.assertTrue(rust_artifacts)
+            for artifact in rust_artifacts:
+                with self.subTest(manifest=manifest.name, path=artifact["path"]):
+                    raw = (manifest.parent / artifact["path"]).read_bytes()
+                    self.assertNotIn(b"\r\n", raw)
+                    self.assertEqual(
+                        hashlib.sha256(raw).hexdigest(), artifact["digest"]
+                    )
+
     def test_fixture_builds_a_bounded_native_bound_graph(self) -> None:
         capture = validate_tool_capture(_load(SOROBAN_CAPTURE))
         profile = validate_tool_profile(_load(SOROBAN_PROFILE))

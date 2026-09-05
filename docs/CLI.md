@@ -142,10 +142,19 @@ require `--force`, and the input file can never be overwritten. See
 [`AGENT_ACTION_GUARD.md`](AGENT_ACTION_GUARD.md) for the control graph and
 capability ladder.
 
-The public CLI intentionally has no command-execution subcommand. It checks
-reviewed traces and already-produced evidence only. A separate isolated runner
-may execute tools and export receipts, but its containment, authorization, and
-witnessing stay outside this process.
+The `tsse`, `tsse-adapt`, `graph-layers`, and `action-guard` commands
+analyze saved inputs and do not execute targets or open network connections.
+They write only requested result files. The package still includes legacy
+`run`, `engagement-run`, `quickstart --run-native`, and RPC tools; the
+read-only analysis boundary does not cover those commands.
+
+All four analysis commands reject output paths that identify their inputs.
+Without `--force`, output creation atomically refuses an existing destination,
+including a file created by another concurrent run. This requires hard-link
+support in the output filesystem; unsupported filesystems return an error.
+`--force` permits atomic replacement of result files, never the inputs.
+Adapter result/model outputs are separate writes, not a multi-file transaction;
+if saving the model fails, the completed result receipt remains for inspection.
 
 ## `cgqa continuity-export`
 

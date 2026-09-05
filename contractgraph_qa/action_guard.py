@@ -139,6 +139,8 @@ def _object(value: object, field: str, keys: set[str]) -> dict[str, Any]:
 def _text(value: object, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         _fail(f"{field} must be a non-empty string")
+    if value != value.strip():
+        _fail(f"{field} must not have leading or trailing whitespace")
     return value
 
 
@@ -543,15 +545,18 @@ def _policy_reasons(
 def _witness_state(
     action: dict[str, Any], model: dict[str, Any]
 ) -> tuple[str, list[str]]:
-    if action["outcome"] != "EXECUTED":
-        return "NOT_REQUIRED", []
+    executed = action["outcome"] == "EXECUTED"
     reasons: list[str] = []
-    if not action["evidenceRefs"]:
+    if executed and not action["evidenceRefs"]:
         reasons.append("MISSING_EXECUTION_RECEIPT")
     witness = action["witness"]
     if witness is None:
+        if not executed:
+            return "NOT_REQUIRED", []
         reasons.append("MISSING_INDEPENDENT_WITNESS")
         return "INCOMPLETE", reasons
+    # Optional evidence still has to agree with the action it describes.
+    # In particular, a declared non-execution cannot hide a conflicting witness.
     if witness["actor"] in {action["actor"], model["monitor"]["actor"]}:
         reasons.append("WITNESS_ACTOR_NOT_INDEPENDENT")
     if witness["failureDomain"] in {

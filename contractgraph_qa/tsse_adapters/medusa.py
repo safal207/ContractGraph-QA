@@ -77,6 +77,10 @@ def adapt_medusa_capture(
         )
 
     sequence = _array(receipt["sequence"], "medusaReceipt.sequence", non_empty=True)
+    if len(sequence) != len(capture["observations"]) - 1:
+        raise ToolCaptureError(
+            "Medusa transaction count must match reviewed observations"
+        )
     functions: list[str] = []
     for index, raw_transaction in enumerate(sequence):
         field = f"medusaReceipt.sequence[{index}]"

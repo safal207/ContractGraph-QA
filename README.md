@@ -223,11 +223,14 @@ policy/evidence gate, not a scan or bounty verdict. See
 [`AGENT_ACTION_GUARD.md`](docs/AGENT_ACTION_GUARD.md).
 
 The `LIVE_WRITE` capability also requires a separate `liveWriteApprovalRef`;
-raising the envelope ceiling alone cannot authorize a live write. The public
-core remains read-only: it validates saved traces and evidence, but starts no
-process, opens no network connection, and performs no target write. Execution
-belongs to a separately isolated runner; its receipts may be imported later as
-evidence. See [`AGENT_ACTION_GUARD.md`](docs/AGENT_ACTION_GUARD.md) and the
+raising the envelope ceiling alone cannot authorize a live write. The
+`tsse`, `tsse-adapt`, `graph-layers`, and `action-guard` commands analyze
+saved evidence: they start no target process or network connection and write
+only requested result files. This boundary applies to those commands, not to
+the whole package: legacy `run`, `engagement-run`, `quickstart --run-native`,
+and RPC tools remain available under their existing controls. An isolated
+runner for the new evidence workflow is a separate roadmap item. See
+[`AGENT_ACTION_GUARD.md`](docs/AGENT_ACTION_GUARD.md) and the
 [`Astra-6 roadmap`](docs/ASTRA6_ROADMAP.md).
 
 For end-to-end request, transaction-attempt, receipt/event, indexer, backend,

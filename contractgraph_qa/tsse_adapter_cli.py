@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
+
+from contractgraph_qa.evidence_io import write_text_atomic as _write_atomic
 
 from contractgraph_qa.tsse_adapters import (
     adapt_tool_capture,
@@ -63,32 +63,6 @@ def _parser(prog: str = "cgqa-tsse-adapt") -> argparse.ArgumentParser:
 
 def _stable_json(data: object) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
-
-
-def _write_atomic(output: Path, rendered: str) -> None:
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            newline="\n",
-            dir=output.parent,
-            prefix=f".{output.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temporary = Path(handle.name)
-            handle.write(rendered)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, output)
-    finally:
-        if temporary is not None:
-            try:
-                temporary.unlink(missing_ok=True)
-            except OSError:
-                pass
 
 
 def _same_path(left: Path, right: Path) -> bool:
@@ -184,9 +158,9 @@ def main(argv: list[str] | None = None, *, prog: str = "cgqa-tsse-adapt") -> int
 
         rendered = _stable_json(result)
         if result_output is not None:
-            _write_atomic(result_output, rendered)
+            _write_atomic(result_output, rendered, force=args.force)
         if model_output is not None:
-            _write_atomic(model_output, _stable_json(model))
+            _write_atomic(model_output, _stable_json(model), force=args.force)
 
         print(rendered, end="")
         return EXIT_OK if result.get("status") == "ready" else EXIT_HOLD

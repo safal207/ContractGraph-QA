@@ -7,7 +7,7 @@ not a claim that this repository has Astra-level capability or safeguards.
 | Astra lesson | ContractGraph-QA control | Current state |
 | --- | --- | --- |
 | Capability must be measured with realistic evaluations | Run the five-contract matrix through deterministic, exact-name tests and preserve snapshots | In place |
-| Prevent both malicious use and unauthorized model actions | Keep the public core read-only and discovery graphs separate from the Action Guard policy graph | In place |
+| Prevent both malicious use and unauthorized model actions | Keep the four saved-evidence analysis commands read-only and discovery graphs separate from the Action Guard policy graph | Analysis-command boundary in place; not a package-wide restriction |
 | Monitoring must be able to stop an action | Enforce preflight and stop controls in a separate isolated runner | Roadmap |
 | Evidence must survive review | Hash saved inputs, outputs, exact subject identity, and normalized evidence | Partly in place |
 | Tool identity must not be spoofable by path resolution | Verify executable identity inside the external runner, not from self-declared trace fields | Roadmap |
@@ -17,8 +17,9 @@ not a claim that this repository has Astra-level capability or safeguards.
 | Release decisions should tolerate safe friction | Preserve `pass` / `hold` / `fail` separately from vulnerability severity or bounty eligibility | In place |
 
 The practical next milestone is exact-subject verification for saved evidence.
-Execution comes later, only through a separately reviewed OS/network-isolated
-runner with an external replay ledger and authenticated witness.
+An isolated runner for this workflow remains a separate roadmap item, including
+an external replay ledger and authenticated witness. Existing native-run and RPC
+commands remain available; they are outside the four analysis commands' boundary.
 
 Do not collect or expose hidden model reasoning as evidence. The useful analogue
 of Astra's monitoring is a minimal, replayable action trace: who proposed the

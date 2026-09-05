@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
+
+from contractgraph_qa.evidence_io import write_text_atomic as _write_atomic
 
 from contractgraph_qa.tsse import load_tsse_model, run_tsse_model
 
@@ -48,32 +48,6 @@ def _stable_json(data: dict[str, object]) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
 
 
-def _write_atomic(output: Path, rendered: str) -> None:
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            newline="\n",
-            dir=output.parent,
-            prefix=f".{output.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temporary = Path(handle.name)
-            handle.write(rendered)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, output)
-    finally:
-        if temporary is not None:
-            try:
-                temporary.unlink(missing_ok=True)
-            except OSError:
-                pass
-
-
 def main(argv: list[str] | None = None, *, prog: str = "cgqa-tsse") -> int:
     try:
         args = _parser(prog).parse_args(argv)
@@ -94,7 +68,7 @@ def main(argv: list[str] | None = None, *, prog: str = "cgqa-tsse") -> int:
                 raise ValueError("--output must not overwrite the input model")
             if output.exists() and not args.force:
                 raise ValueError("--output already exists; pass --force to replace it")
-            _write_atomic(output, rendered)
+            _write_atomic(output, rendered, force=args.force)
 
         print(rendered, end="")
         return EXIT_OK if result.get("status") == "pass" else EXIT_HOLD

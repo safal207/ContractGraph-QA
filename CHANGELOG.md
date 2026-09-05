@@ -6,6 +6,20 @@ The project follows Semantic Versioning for the product runtime. Engine research
 
 ## Unreleased
 
+### Saved-evidence review corrections
+
+- Validate every supplied Action Guard witness, including before execution;
+  conflicting evidence yields INVALID/HOLD, and padded identifiers are rejected.
+- Reject duplicate JSON fields and input/output aliases in graph comparison.
+- Share one atomic evidence writer across all four analysis commands; a
+  concurrent output cannot be overwritten without an explicit force option.
+- Bound actual adapter reads and reject native/observation length mismatches
+  before indexing Echidna or Medusa sequences.
+- Pin Rust fixture line endings to LF so byte hashes survive Windows checkout.
+- Scope read-only documentation to the four analysis commands; existing
+  native-run and RPC commands remain available.
+- Remove unused runtime/witness schema-check helpers from the active checker.
+
 ### Agent Action Guard
 
 - Added strict `cgqa/action-guard/v0.1` and result schemas for exact-subject
@@ -25,7 +39,8 @@ The project follows Semantic Versioning for the product runtime. Engine research
 
 ### Action Guard boundary
 
-- Kept Action Guard and the public CLI read-only after adversarial review.
+- Kept Action Guard and the new saved-evidence analysis commands read-only
+  after adversarial review; this does not describe the whole public CLI.
 - Removed local execution and witness entry points from the public package:
   same-privilege filesystem markers and self-declared witnesses cannot prove
   replay prevention, containment, or independent control.

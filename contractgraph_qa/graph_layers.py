@@ -8,6 +8,8 @@ drift; it never upgrades a missing fact into a security verdict.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 
@@ -143,6 +145,31 @@ def graph_layers_from_dict(value: Any) -> dict[str, object]:
     }
 
 
+def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON object key {key!r}")
+        result[key] = value
+    return result
+
+
+def _reject_constant(value: str) -> object:
+    raise ValueError(f"non-JSON numeric constant {value!r}")
+
+
+def load_graph_layers(path: Path) -> dict[str, object]:
+    """Load a graph without silently discarding ambiguous JSON fields."""
+
+    with path.open("r", encoding="utf-8") as handle:
+        raw = json.load(
+            handle,
+            object_pairs_hook=_reject_duplicate_pairs,
+            parse_constant=_reject_constant,
+        )
+    return graph_layers_from_dict(raw)
+
+
 def _edge_signature(edge: dict[str, object]) -> tuple[object, ...]:
     return (
         edge["from"],
@@ -233,4 +260,5 @@ __all__ = [
     "ROOT_KEYS",
     "compare_graph_layers",
     "graph_layers_from_dict",
+    "load_graph_layers",
 ]

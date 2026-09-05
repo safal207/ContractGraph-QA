@@ -409,6 +409,117 @@ def _subject_hash_fields_require_sha256_digests() -> None:
 class ActionGuardTests(unittest.TestCase):
     """Expose every Action Guard policy case to unittest discovery."""
 
+    def test_nonexecuted_supplied_witness_is_checked(self) -> None:
+        mismatches = (
+            ("actor", "scanner", "WITNESS_ACTOR_NOT_INDEPENDENT"),
+            ("actor", "guardian", "WITNESS_ACTOR_NOT_INDEPENDENT"),
+            ("failureDomain", "worker-a", "WITNESS_FAILURE_DOMAIN_NOT_INDEPENDENT"),
+            ("failureDomain", "control-plane", "WITNESS_FAILURE_DOMAIN_NOT_INDEPENDENT"),
+            ("subjectHash", "0" * 64, "WITNESS_SUBJECT_MISMATCH"),
+            ("actionId", "different-action", "WITNESS_ACTION_MISMATCH"),
+            ("outcome", "EXECUTED", "WITNESS_OUTCOME_MISMATCH"),
+        )
+        for outcome in ("NOT_EXECUTED", "STOPPED"):
+            for field, value, reason in mismatches:
+                with self.subTest(outcome=outcome, field=field, value=value):
+                    raw = model()
+                    row = action(
+                        raw,
+                        outcome=outcome,
+                        completed_at=123 if outcome == "STOPPED" else None,
+                        witnessed=True,
+                    )
+                    row["witness"][field] = value
+                    raw["actions"] = [row]
+                    result = evaluate_action_guard(raw)
+                    self.assertEqual(result["status"], "hold")
+                    self.assertEqual(result["evidenceStatus"], "INVALID")
+                    action_result = result["actionResults"][0]
+                    self.assertEqual(action_result["evidenceStatus"], "INVALID")
+                    self.assertIn(reason, action_result["evidenceReasons"])
+                    self.assertNotIn("MISSING_EXECUTION_RECEIPT", action_result["evidenceReasons"])
+
+    def test_optional_witness_does_not_require_execution_receipt(self) -> None:
+        for outcome in ("NOT_EXECUTED", "STOPPED"):
+            for witnessed in (False, True):
+                with self.subTest(outcome=outcome, witnessed=witnessed):
+                    raw = model()
+                    raw["actions"] = [
+                        action(
+                            raw,
+                            outcome=outcome,
+                            completed_at=123 if outcome == "STOPPED" else None,
+                            witnessed=witnessed,
+                        )
+                    ]
+                    result = evaluate_action_guard(raw)
+                    self.assertEqual(
+                        result["evidenceStatus"],
+                        "COMPLETE" if witnessed else "NOT_REQUIRED",
+                    )
+                    self.assertEqual(result["actionResults"][0]["evidenceReasons"], [])
+                    self.assertEqual(result["metrics"]["executed"], 0)
+
+    def test_supplied_optional_witness_needs_its_own_evidence(self) -> None:
+        raw = model()
+        row = action(raw, witnessed=True)
+        row["witness"]["evidenceRefs"] = []
+        raw["actions"] = [row]
+        result = evaluate_action_guard(raw)
+        self.assertEqual(result["status"], "hold")
+        self.assertEqual(result["evidenceStatus"], "INCOMPLETE")
+        self.assertEqual(
+            result["actionResults"][0]["evidenceReasons"],
+            ["MISSING_WITNESS_EVIDENCE"],
+        )
+
+    def test_invalid_optional_witness_dominates_complete_execution_evidence(self) -> None:
+        raw = model()
+        observed = action(
+            raw,
+            outcome="EXECUTED",
+            completed_at=123,
+            evidence=["receipt:one"],
+            witnessed=True,
+        )
+        proposed = action(raw, action_id="a2", proposed_at=130, witnessed=True)
+        proposed["witness"]["outcome"] = "EXECUTED"
+        raw["actions"] = [observed, proposed]
+        result = evaluate_action_guard(raw)
+        self.assertEqual(result["status"], "hold")
+        self.assertEqual(result["evidenceStatus"], "INVALID")
+        self.assertEqual(result["metrics"]["evidenceDebtActions"], 1)
+
+    def test_padded_identity_and_reference_strings_are_rejected(self) -> None:
+        fields = (
+            ("actions", 0, "actionId"),
+            ("actions", 0, "parentActionId"),
+            ("actions", 0, "evidenceRefs", 0),
+            ("actions", 0, "witness", "actor"),
+            ("authorization", "ref"),
+            ("authorization", "allowedTools", 0),
+            ("authorization", "liveWriteApprovalRef"),
+        )
+        for path in fields:
+            for padded in (" identity", "identity ", "\tidentity", "identity\n"):
+                with self.subTest(path=path, padded=padded):
+                    raw = model()
+                    raw["actions"] = [action(raw, evidence=["receipt:one"], witnessed=True)]
+                    target = raw
+                    for component in path[:-1]:
+                        target = target[component]
+                    target[path[-1]] = padded
+                    with self.assertRaisesRegex(ActionGuardError, "leading or trailing whitespace"):
+                        evaluate_action_guard(raw)
+                    self.assertEqual(target[path[-1]], padded)
+
+    def test_internal_spaces_preserve_identity_and_pass(self) -> None:
+        raw = model()
+        raw["actions"] = [action(raw, action_id="action one", witnessed=True)]
+        result = evaluate_action_guard(raw)
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(result["actionResults"][0]["actionId"], "action one")
+
     test_clean_preflight_passes_without_execution_evidence = staticmethod(
         _clean_preflight_passes_without_execution_evidence
     )

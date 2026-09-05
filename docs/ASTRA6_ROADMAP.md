@@ -14,14 +14,16 @@ security capability.
 4. **Evidence pack** preserves the minimized test, inputs, hashes, limitations,
    and verification debt.
 
-The public core is read-only. It starts no scanner or contract process and opens
-no network connection. Execution is a separate security boundary.
+The analysis core comprises `tsse`, `tsse-adapt`, `graph-layers`, and
+`action-guard`. These commands inspect saved data and write requested results;
+they start no target process or network connection. Legacy native-run and RPC
+commands still exist in the package and are outside this boundary.
 
 ## Delivery sequence
 
 ### P0 — Safe core
 
-- keep execution out of the public CLI;
+- keep execution out of the four saved-evidence analysis commands;
 - maintain portable fixtures and deterministic tests;
 - keep scan evidence separate from bounty and security verdicts.
 
@@ -67,7 +69,7 @@ no network connection. Execution is a separate security boundary.
 ## Acceptance gates
 
 - core tests are deterministic and require no network;
-- no public-core code path starts a process;
+- none of the four analysis commands starts a target process or network request;
 - every verdict carries subject identity, evidence hashes, and limitations;
 - a new tool adapter ships with positive, negative, and malformed fixtures;
 - isolated execution remains unavailable until containment and replay tests are

@@ -11,6 +11,8 @@ import copy
 import hashlib
 import json
 import math
+import os
+import stat
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
@@ -241,15 +243,24 @@ def parse_json_bytes(raw: bytes, field: str) -> object:
 
 def _read_limited(path: Path, *, maximum: int, field: str) -> bytes:
     try:
-        size = path.stat().st_size
-    except OSError as exc:
-        raise ToolCaptureError(f"failed to stat {field} {path}: {exc}") from exc
-    if size > maximum:
-        raise ToolCaptureError(
-            f"{field} exceeds the {maximum}-byte input limit"
-        )
-    try:
-        raw = path.read_bytes()
+        # O_NONBLOCK prevents opening a FIFO from waiting for another process
+        # on platforms that support it. Inspect the opened file, not a separate
+        # path snapshot, and never allocate an unbounded input buffer.
+        with open(
+            path,
+            "rb",
+            opener=lambda name, flags: os.open(
+                name, flags | getattr(os, "O_NONBLOCK", 0)
+            ),
+        ) as handle:
+            metadata = os.fstat(handle.fileno())
+            if not stat.S_ISREG(metadata.st_mode):
+                raise ToolCaptureError(f"{field} {path} is not a regular file")
+            if metadata.st_size > maximum:
+                raise ToolCaptureError(
+                    f"{field} exceeds the {maximum}-byte input limit"
+                )
+            raw = handle.read(maximum + 1)
     except OSError as exc:
         raise ToolCaptureError(f"failed to read {field} {path}: {exc}") from exc
     if len(raw) > maximum:

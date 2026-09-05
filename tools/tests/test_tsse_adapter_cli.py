@@ -195,7 +195,7 @@ class TSSEAdapterCLITest(unittest.TestCase):
             output = Path(temporary) / "result.json"
             output.write_text("old", encoding="utf-8")
             with mock.patch(
-                "contractgraph_qa.tsse_adapter_cli.os.replace",
+                "contractgraph_qa.evidence_io.os.replace",
                 side_effect=OSError("replace failed"),
             ):
                 with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
@@ -228,12 +228,12 @@ class TSSEAdapterCLITest(unittest.TestCase):
             )._write_atomic
             calls = 0
 
-            def fail_second_write(path: Path, rendered: str) -> None:
+            def fail_second_write(path: Path, rendered: str, *, force: bool = False) -> None:
                 nonlocal calls
                 calls += 1
                 if calls == 2:
                     raise OSError("model replace failed")
-                real_write_atomic(path, rendered)
+                real_write_atomic(path, rendered, force=force)
 
             with mock.patch(
                 "contractgraph_qa.tsse_adapter_cli._write_atomic",

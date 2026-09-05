@@ -193,6 +193,41 @@ class TSSEToolAdapterTest(unittest.TestCase):
                                 profile_root=copy_root,
                             )
 
+    def test_native_sequence_length_must_match_reviewed_observations(self) -> None:
+        for tool in ("echidna", "medusa"):
+            for transaction_count in (1, 3):
+                with self.subTest(tool=tool, transaction_count=transaction_count):
+                    with tempfile.TemporaryDirectory() as temporary:
+                        copy_root = Path(temporary) / "capture"
+                        shutil.copytree(FIXTURE_ROOT, copy_root)
+                        capture, profile = _dynamic_case(tool)
+                        artifact = copy_root / capture["toolArtifacts"][0]["path"]
+                        receipt = _load(artifact)
+                        transactions = (
+                            receipt["tests"][0]["transactions"]
+                            if tool == "echidna"
+                            else receipt["sequence"]
+                        )
+                        if transaction_count == 1:
+                            del transactions[1:]
+                        else:
+                            transactions.append(copy.deepcopy(transactions[-1]))
+                        artifact.write_text(json.dumps(receipt), encoding="utf-8")
+                        capture["toolArtifacts"][0]["digest"] = hashlib.sha256(
+                            artifact.read_bytes()
+                        ).hexdigest()
+
+                        with self.assertRaisesRegex(
+                            ToolCaptureError,
+                            "transaction count must match reviewed observations",
+                        ):
+                            _adapt(
+                                capture,
+                                profile,
+                                capture_root=copy_root,
+                                profile_root=copy_root,
+                            )
+
     def test_relabeling_foundry_bytes_as_echidna_is_rejected(self) -> None:
         capture = copy.deepcopy(_load(FOUNDRY_CAPTURE))
         profile = copy.deepcopy(_load(FOUNDRY_PROFILE))
