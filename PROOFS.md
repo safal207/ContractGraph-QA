@@ -52,6 +52,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 
 ### Evidence links
 
+- [Client-facing proof brief](docs/client-proof/INDEPENDENT_VERIFICATION_BRIEF.md)
 - [Proof README](proofs/attenu-envelope-v1.2-independent/README.md)
 - [Machine-readable report](proofs/attenu-envelope-v1.2-independent/report.json)
 - [Pinned runner](proofs/attenu-envelope-v1.2-independent/run_pinned_proof.py)
