@@ -1,0 +1,91 @@
+{
+  "schema": "cgqa.attenu-delegation-local-validation.v1",
+  "started_at": "2026-09-06T04:13:36.313105+00:00",
+  "verifier_commit": "921173318176165a0d16e8b81c6913dbda4aa472",
+  "hosted_ci": "NOT_RUN",
+  "external_publication": "NOT_RUN",
+  "runs": [
+    {
+      "command": [
+        "node",
+        "--test",
+        "--test-reporter=tap",
+        "proofs/attenu-delegation-20-independent/verify.test.mjs"
+      ],
+      "started_at": "2026-09-06T04:13:36.370059+00:00",
+      "finished_at": "2026-09-06T04:13:36.697046+00:00",
+      "exit_code": 0,
+      "stdout": "TAP version 13\n# Subtest: frozen corpus: verdict and reason agree on all twenty rows\nok 1 - frozen corpus: verdict and reason agree on all twenty rows\n  ---\n  duration_ms: 12.965686\n  type: 'test'\n  ...\n# Subtest: negative controls: constant verdicts and runtime exceptions cannot score a pass\nok 2 - negative controls: constant verdicts and runtime exceptions cannot score a pass\n  ---\n  duration_ms: 0.28547\n  type: 'test'\n  ...\n# Subtest: metadata changes cannot affect the semantic API; only the harness score changes\nok 3 - metadata changes cannot affect the semantic API; only the harness score changes\n  ---\n  duration_ms: 8.317422\n  type: 'test'\n  ...\n# Subtest: JSON parser rejects duplicate decoded names, invalid UTF-16 and non-finite values\nok 4 - JSON parser rejects duplicate decoded names, invalid UTF-16 and non-finite values\n  ---\n  duration_ms: 0.659903\n  type: 'test'\n  ...\n# Subtest: JCS preserves number spelling, Unicode and UTF-16 order, including numeric-looking keys\nok 5 - JCS preserves number spelling, Unicode and UTF-16 order, including numeric-looking keys\n  ---\n  duration_ms: 0.197924\n  type: 'test'\n  ...\n# Subtest: canonical serialization round-trips the received components of every accepting vector\nok 6 - canonical serialization round-trips the received components of every accepting vector\n  ---\n  duration_ms: 0.701186\n  type: 'test'\n  ...\n# Subtest: scope containment is directional and retains the namespace separator\nok 7 - scope containment is directional and retains the namespace separator\n  ---\n  duration_ms: 0.135792\n  type: 'test'\n  ...\n# Subtest: six constraint relations preserve the direction of admissible sets\nok 8 - six constraint relations preserve the direction of admissible sets\n  ---\n  duration_ms: 0.20747\n  type: 'test'\n  ...\n# Subtest: time path reaches exact expiry, rejects after it, and leaves inputs unchanged\nok 9 - time path reaches exact expiry, rejects after it, and leaves inputs unchanged\n  ---\n  duration_ms: 2.037259\n  type: 'test'\n  ...\n# Subtest: corpus iteration order changes no individual outcome\nok 10 - corpus iteration order changes no individual outcome\n  ---\n  duration_ms: 11.901748\n  type: 'test'\n  ...\n# Subtest: artifact gate refuses changed, missing, extra and symlinked vector files\nok 11 - artifact gate refuses changed, missing, extra and symlinked vector files\n  ---\n  duration_ms: 7.175405\n  type: 'test'\n  ...\n1..11\n# tests 11\n# suites 0\n# pass 11\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 209.657228\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "proofs/attenu-delegation-20-independent/run-proof.mjs",
+        "--check",
+        "proofs/attenu-delegation-20-independent/first-run.json"
+      ],
+      "started_at": "2026-09-06T04:13:36.697123+00:00",
+      "finished_at": "2026-09-06T04:13:36.775701+00:00",
+      "exit_code": 0,
+      "stdout": "{\"cases\":20,\"accept_cases\":7,\"reject_cases\":13,\"agree\":20,\"disagree\":0,\"errors\":0,\"declared_rejection_reasons\":8,\"overall\":\"PASS_WITHIN_BOUND\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "proofs/attenu-delegation-20-independent/run-proof.mjs",
+        "--check",
+        "proofs/attenu-delegation-20-independent/report.json"
+      ],
+      "started_at": "2026-09-06T04:13:36.775755+00:00",
+      "finished_at": "2026-09-06T04:13:36.885180+00:00",
+      "exit_code": 0,
+      "stdout": "{\"cases\":20,\"accept_cases\":7,\"reject_cases\":13,\"agree\":20,\"disagree\":0,\"errors\":0,\"declared_rejection_reasons\":8,\"overall\":\"PASS_WITHIN_BOUND\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "proofs/attenu-delegation-20-independent/check-sources.mjs",
+        "/workspace/scratch/131f8724c593/attenu-upstream-source"
+      ],
+      "started_at": "2026-09-06T04:13:36.885195+00:00",
+      "finished_at": "2026-09-06T04:13:37.004980+00:00",
+      "exit_code": 0,
+      "stdout": "{\"status\":\"PASS\",\"repository\":\"attenu-io/attenu-guard\",\"initial_head\":\"419f6584c120736688aa946b9c46cfe1c8124292\",\"final_head\":\"419f6584c120736688aa946b9c46cfe1c8124292\",\"vectors\":20,\"byte_identical_copies\":3,\"copies\":[\"vendored\",\"upstream tests/vectors\",\"upstream src/attenu_guard/vectors\"],\"distribution_wheel_checked\":false,\"upstream_runtime_executed\":false}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "proofs/attenu-delegation-20-independent/cgqa-checks.py"
+      ],
+      "started_at": "2026-09-06T04:13:37.004995+00:00",
+      "finished_at": "2026-09-06T04:13:37.127291+00:00",
+      "exit_code": 0,
+      "stdout": "{\n  \"durable_reopen\": {\n    \"reason\": \"artifact manifest not yet created\",\n    \"status\": \"not_run\"\n  },\n  \"native_module_sha256\": \"e98d16aee965afa8015070c961b28e9a0b0d4aebba3906570a5de15157226dec\",\n  \"subject_freeze\": {\n    \"claimBoundary\": \"Stable subject identity is required before evidence can be attributed to the same target.\",\n    \"classification\": \"UNCHANGED\",\n    \"inputHash\": \"3288e0e32f9afba2db57bb44b647c6563027b266ec38f6b70076573b60440956\",\n    \"schema\": \"cgqa/subject-freeze-result/v0.1\",\n    \"status\": \"pass\",\n    \"subjectAfterHash\": \"25935573b3e91e16e99ac84db44303bb9dc91dfdc74311f7a8448a9939f0f158\",\n    \"subjectBeforeHash\": \"25935573b3e91e16e99ac84db44303bb9dc91dfdc74311f7a8448a9939f0f158\"\n  },\n  \"subject_negative_control\": \"STALE_SUBJECT\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-09-06T04:13:37.127306+00:00",
+      "finished_at": "2026-09-06T04:13:37.130603+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "runtime": {
+    "node": "v24.19.0",
+    "v8": "13.6.233.17-node.51",
+    "openssl": "3.5.7",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "finished_at": "2026-09-06T04:13:37.130615+00:00"
+}
