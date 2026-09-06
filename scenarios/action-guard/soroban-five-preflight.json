@@ -1,0 +1,72 @@
+{
+  "schema": "cgqa/action-guard/v0.1",
+  "subject": {
+    "repository": "agent-test-matrix",
+    "revision": "fa031f77a986fc15de87c46b0193d0321fc6ea59",
+    "tree": "6d1c75a184dbbb5ed4cb1ce1f24e6c5812233d43",
+    "archiveSha256": "2412c12e958d33503c5ba29ab479e96d0b78d62885e0ea4887de1b61aec87534"
+  },
+  "agent": {
+    "actor": "cgqa-runner",
+    "failureDomain": "local-runner"
+  },
+  "authorization": {
+    "ref": "local-reviewed-soroban-replay-2026-09-03",
+    "subjectHash": "8d086928a9604f84dc3b575466b61f16a1727c6a4bd74661036dc75930e0b112",
+    "issuer": "repository-owner",
+    "grantee": "cgqa-runner",
+    "validFrom": 1,
+    "validUntil": 100,
+    "maxCapability": "LOCAL_REPLAY",
+    "liveWriteApprovalRef": null,
+    "allowedTools": ["cargo"],
+    "allowedOperations": ["test"],
+    "allowedTargets": ["soroban-five-runner"],
+    "allowedReadPaths": ["C:/cgqa-fixtures/soroban-five-runner"],
+    "allowedWritePaths": ["C:/cgqa-fixtures/soroban-five-runner/target"],
+    "allowedNetworks": [],
+    "maxActions": 16
+  },
+  "monitor": {
+    "actor": "cgqa-guardian",
+    "failureDomain": "policy-plane"
+  },
+  "canaries": {
+    "targets": ["production", "mainnet"],
+    "paths": ["C:/cgqa-fixtures/forbidden"],
+    "networks": ["mainnet.rpc.example"]
+  },
+  "history": {
+    "previousResultHash": null,
+    "deniedSemanticActionIds": []
+  },
+  "actions": [
+    {
+      "actionId": "preflight-cargo-tests",
+      "semanticActionId": "run-local-soroban-tests",
+      "parentActionId": null,
+      "subjectHash": "8d086928a9604f84dc3b575466b61f16a1727c6a4bd74661036dc75930e0b112",
+      "authRef": "local-reviewed-soroban-replay-2026-09-03",
+      "actor": "cgqa-runner",
+      "failureDomain": "local-runner",
+      "capability": "LOCAL_REPLAY",
+      "tool": "cargo",
+      "operation": "test",
+      "target": "soroban-five-runner",
+      "pathAccess": "READ",
+      "path": "C:/cgqa-fixtures/soroban-five-runner/Cargo.toml",
+      "network": null,
+      "proposedAt": 10,
+      "monitorDecision": {
+        "actor": "cgqa-guardian",
+        "failureDomain": "policy-plane",
+        "decision": "ALLOW",
+        "recordedAt": 11
+      },
+      "outcome": "NOT_EXECUTED",
+      "completedAt": null,
+      "evidenceRefs": [],
+      "witness": null
+    }
+  ]
+}

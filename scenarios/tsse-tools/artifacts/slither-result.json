@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "error": null,
+  "results": {
+    "detectors": [
+      {
+        "check": "reentrancy-eth",
+        "impact": "High",
+        "confidence": "Medium",
+        "description": "Synthetic external interaction should be challenged with runtime replay.",
+        "elements": [
+          {
+            "type": "function",
+            "name": "settle",
+            "source_mapping": {
+              "start": 369,
+              "length": 203,
+              "filename_relative": "artifacts/PaymentCoordinator.sol",
+              "lines": [16, 17, 18, 19, 20, 21],
+              "starting_column": 5,
+              "ending_column": 6
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

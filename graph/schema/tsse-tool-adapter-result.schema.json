@@ -1,0 +1,370 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/tsse-tool-adapter-result.schema.json",
+  "title": "ContractGraph-QA TSSE Tool Adapter Result v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "captureId",
+    "tool",
+    "toolVersion",
+    "status",
+    "normalizationStatus",
+    "scanVerdict",
+    "captureHash",
+    "subjectBundleHash",
+    "profileId",
+    "profileHash",
+    "normalizationHash",
+    "subject",
+    "profileArtifactVerification",
+    "captureSubjectArtifacts",
+    "run",
+    "toolArtifacts",
+    "nativeEvidence",
+    "claimBoundary",
+    "verificationDebt",
+    "resultHash"
+  ],
+  "properties": {
+    "schema": { "const": "cgqa/tsse-tool-adapter-result/v0.1" },
+    "captureId": { "$ref": "#/$defs/nonBlank" },
+    "tool": {
+      "type": "string",
+      "enum": ["foundry", "echidna", "medusa", "cargo-soroban", "slither"]
+    },
+    "toolVersion": { "$ref": "#/$defs/nonBlank" },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "hold", "inconclusive"]
+    },
+    "normalizationStatus": {
+      "type": "string",
+      "enum": ["complete", "inconclusive"]
+    },
+    "scanVerdict": { "const": "NOT_ASSESSED" },
+    "captureHash": { "$ref": "#/$defs/sha256" },
+    "subjectBundleHash": { "$ref": "#/$defs/sha256" },
+    "profileId": { "$ref": "#/$defs/nonBlank" },
+    "profileHash": { "$ref": "#/$defs/sha256" },
+    "normalizationHash": { "$ref": "#/$defs/sha256" },
+    "subject": { "$ref": "#/$defs/verifiedSubject" },
+    "profileArtifactVerification": { "$ref": "#/$defs/profileVerification" },
+    "captureSubjectArtifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/verifiedSubjectArtifact" }
+    },
+    "run": { "$ref": "#/$defs/run" },
+    "toolArtifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/verifiedToolArtifact" }
+    },
+    "nativeBindings": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "#/$defs/nonBlank" },
+      "additionalProperties": { "$ref": "#/$defs/nativeBinding" }
+    },
+    "nativeEvidence": { "$ref": "#/$defs/nativeEvidence" },
+    "tsseModel": {
+      "type": "object",
+      "required": ["schema"],
+      "properties": {
+        "schema": { "const": "cgqa/tsse-transition-model/v0.1" }
+      }
+    },
+    "tsseResult": {
+      "type": "object",
+      "required": ["schema", "modelId", "status", "modelHash", "subjectHash"],
+      "properties": {
+        "schema": { "const": "cgqa/tsse-transition-result/v0.1" },
+        "modelId": { "$ref": "#/$defs/nonBlank" },
+        "status": { "type": "string", "enum": ["pass", "hold"] },
+        "modelHash": { "$ref": "#/$defs/sha256" },
+        "subjectHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "slitherSuccess": { "type": "boolean" },
+    "toolError": {
+      "oneOf": [
+        { "$ref": "#/$defs/nonBlank" },
+        { "type": "null" }
+      ]
+    },
+    "staticSeeds": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/staticSeed" }
+    },
+    "claimBoundary": { "$ref": "#/$defs/nonBlank" },
+    "verificationDebt": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/nonBlank" }
+    },
+    "resultHash": { "$ref": "#/$defs/sha256" }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": { "tool": { "const": "slither" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "required": ["slitherSuccess", "toolError", "staticSeeds"],
+        "properties": {
+          "status": { "const": "inconclusive" }
+        },
+        "not": {
+          "anyOf": [
+            { "required": ["nativeBindings"] },
+            { "required": ["tsseModel"] },
+            { "required": ["tsseResult"] }
+          ]
+        }
+      },
+      "else": {
+        "required": ["nativeBindings", "tsseModel", "tsseResult"],
+        "properties": {
+          "tool": {
+            "type": "string",
+            "enum": ["foundry", "echidna", "medusa", "cargo-soroban"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ready", "hold"]
+          },
+          "normalizationStatus": { "const": "complete" }
+        },
+        "not": {
+          "anyOf": [
+            { "required": ["slitherSuccess"] },
+            { "required": ["toolError"] },
+            { "required": ["staticSeeds"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "ready" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "tsseResult": {
+            "type": "object",
+            "required": ["status"],
+            "properties": { "status": { "const": "pass" } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "hold" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "tsseResult": {
+            "type": "object",
+            "required": ["status"],
+            "properties": { "status": { "const": "hold" } }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonBlank": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portableRelativePath": {
+      "allOf": [
+        { "$ref": "#/$defs/nonBlank" },
+        {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!\\.\\.?$)(?!\\.\\.?/)(?!.*//)(?!.*\\/$)(?!.*\\/\\.\\.?(?:\\/|$))(?!.*\\\\).+$"
+        }
+      ]
+    },
+    "nullableInteger": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "null" }
+      ]
+    },
+    "nullablePositiveInteger": {
+      "oneOf": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "null" }
+      ]
+    },
+    "nullableString": {
+      "oneOf": [
+        { "$ref": "#/$defs/nonBlank" },
+        { "type": "null" }
+      ]
+    },
+    "bounds": {
+      "type": "object",
+      "required": ["testLimit", "maxSequenceLength", "timeLimitSeconds", "workers"],
+      "properties": {
+        "testLimit": { "$ref": "#/$defs/nullableInteger" },
+        "maxSequenceLength": { "$ref": "#/$defs/nullableInteger" },
+        "timeLimitSeconds": { "$ref": "#/$defs/nullableInteger" },
+        "workers": { "$ref": "#/$defs/nullablePositiveInteger" }
+      },
+      "additionalProperties": false
+    },
+    "run": {
+      "type": "object",
+      "required": ["argv", "exitCode", "termination", "seed", "bounds"],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonBlank" }
+        },
+        "exitCode": { "$ref": "#/$defs/nullableInteger" },
+        "termination": {
+          "type": "string",
+          "enum": ["completed", "failed", "timed-out", "interrupted", "crashed", "unknown"]
+        },
+        "seed": { "$ref": "#/$defs/nullableString" },
+        "bounds": { "$ref": "#/$defs/bounds" }
+      },
+      "additionalProperties": false
+    },
+    "verifiedSubjectArtifact": {
+      "type": "object",
+      "required": ["path", "digest", "byteLength"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portableRelativePath" },
+        "digest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "verifiedToolArtifact": {
+      "type": "object",
+      "required": ["id", "kind", "path", "digest", "byteLength"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "kind": { "$ref": "#/$defs/nonBlank" },
+        "path": { "$ref": "#/$defs/portableRelativePath" },
+        "digest": { "$ref": "#/$defs/sha256" },
+        "byteLength": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "verifiedSubject": {
+      "type": "object",
+      "required": ["repository", "revision", "artifacts"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/nonBlank" },
+        "revision": { "$ref": "#/$defs/nonBlank" },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/verifiedSubjectArtifact" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "profileVerification": {
+      "type": "object",
+      "required": ["status", "subjectBundleHash", "artifacts"],
+      "properties": {
+        "status": { "const": "verified" },
+        "subjectBundleHash": { "$ref": "#/$defs/sha256" },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/verifiedSubjectArtifact" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "nativeBinding": {
+      "type": "object",
+      "required": ["artifactId", "locator", "index"],
+      "properties": {
+        "artifactId": { "$ref": "#/$defs/nonBlank" },
+        "locator": { "$ref": "#/$defs/nonBlank" },
+        "index": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "nativeEvidence": {
+      "type": "object",
+      "required": ["status", "parser", "artifactId", "artifactDigest"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["bound", "static-only", "inconclusive"]
+        },
+        "parser": { "$ref": "#/$defs/nonBlank" },
+        "artifactId": { "$ref": "#/$defs/nonBlank" },
+        "artifactDigest": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": true
+    },
+    "sourceLocation": {
+      "type": "object",
+      "required": ["path", "lines"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portableRelativePath" },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "staticSeed": {
+      "type": "object",
+      "required": [
+        "id",
+        "detector",
+        "impact",
+        "confidence",
+        "description",
+        "sourceLocations",
+        "evidenceRef",
+        "verificationStatus",
+        "recommendedDynamicTools"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "detector": { "$ref": "#/$defs/nonBlank" },
+        "impact": { "$ref": "#/$defs/nonBlank" },
+        "confidence": { "$ref": "#/$defs/nonBlank" },
+        "description": { "$ref": "#/$defs/nonBlank" },
+        "sourceLocations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sourceLocation" }
+        },
+        "evidenceRef": { "$ref": "#/$defs/nonBlank" },
+        "verificationStatus": { "const": "unverified" },
+        "recommendedDynamicTools": {
+          "type": "array",
+          "const": ["foundry", "echidna", "medusa"]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

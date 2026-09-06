@@ -1,0 +1,11 @@
+{
+  "schema": "cgqa/synthetic-soroban-state-snapshot/v0.1",
+  "ledgerSequence": 1001,
+  "ledgerTimestamp": 1700000005,
+  "contract": "SyntheticSorobanLoan",
+  "state": {
+    "loanId": "loan-7",
+    "outstanding": 60,
+    "lastLedger": 1001
+  }
+}

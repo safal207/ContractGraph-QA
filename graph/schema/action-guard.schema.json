@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/action-guard.schema.json",
+  "title": "ContractGraph-QA Agent Action Guard v0.1",
+  "type": "object",
+  "required": ["schema", "subject", "agent", "authorization", "monitor", "canaries", "history", "actions"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "cgqa/action-guard/v0.1" },
+    "subject": { "$ref": "#/$defs/nonEmptyJson" },
+    "agent": { "$ref": "#/$defs/actor" },
+    "authorization": { "$ref": "#/$defs/authorization" },
+    "monitor": { "$ref": "#/$defs/actor" },
+    "canaries": { "$ref": "#/$defs/canaries" },
+    "history": { "$ref": "#/$defs/history" },
+    "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } }
+  },
+  "$defs": {
+    "nonBlank": { "type": "string", "minLength": 1, "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "nullableSha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+    "nullableText": { "oneOf": [{ "$ref": "#/$defs/nonBlank" }, { "type": "null" }] },
+    "nonEmptyJson": {
+      "oneOf": [
+        { "type": "object", "minProperties": 1 },
+        { "type": "array", "minItems": 1 },
+        { "type": "string", "minLength": 1 },
+        { "type": "number" },
+        { "type": "boolean" }
+      ]
+    },
+    "textList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/nonBlank" }
+    },
+    "actor": {
+      "type": "object",
+      "required": ["actor", "failureDomain"],
+      "additionalProperties": false,
+      "properties": {
+        "actor": { "$ref": "#/$defs/nonBlank" },
+        "failureDomain": { "$ref": "#/$defs/nonBlank" }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "required": ["ref", "subjectHash", "issuer", "grantee", "validFrom", "validUntil", "maxCapability", "liveWriteApprovalRef", "allowedTools", "allowedOperations", "allowedTargets", "allowedReadPaths", "allowedWritePaths", "allowedNetworks", "maxActions"],
+      "additionalProperties": false,
+      "properties": {
+        "ref": { "$ref": "#/$defs/nonBlank" },
+        "subjectHash": { "$ref": "#/$defs/sha256" },
+        "issuer": { "$ref": "#/$defs/nonBlank" },
+        "grantee": { "$ref": "#/$defs/nonBlank" },
+        "validFrom": { "type": "integer" },
+        "validUntil": { "type": "integer" },
+        "maxCapability": { "enum": ["READ_ONLY", "LOCAL_REPLAY", "SANDBOX_DYNAMIC", "AUTHORIZED_FORK", "LIVE_WRITE"] },
+        "liveWriteApprovalRef": { "$ref": "#/$defs/nullableText" },
+        "allowedTools": { "$ref": "#/$defs/textList" },
+        "allowedOperations": { "$ref": "#/$defs/textList" },
+        "allowedTargets": { "$ref": "#/$defs/textList" },
+        "allowedReadPaths": { "$ref": "#/$defs/textList" },
+        "allowedWritePaths": { "$ref": "#/$defs/textList" },
+        "allowedNetworks": { "$ref": "#/$defs/textList" },
+        "maxActions": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "canaries": {
+      "type": "object",
+      "required": ["targets", "paths", "networks"],
+      "additionalProperties": false,
+      "properties": {
+        "targets": { "$ref": "#/$defs/textList" },
+        "paths": { "$ref": "#/$defs/textList" },
+        "networks": { "$ref": "#/$defs/textList" }
+      }
+    },
+    "history": {
+      "type": "object",
+      "required": ["previousResultHash", "deniedSemanticActionIds"],
+      "additionalProperties": false,
+      "properties": {
+        "previousResultHash": { "$ref": "#/$defs/nullableSha256" },
+        "deniedSemanticActionIds": { "$ref": "#/$defs/textList" }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["actor", "failureDomain", "decision", "recordedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "actor": { "$ref": "#/$defs/nonBlank" },
+        "failureDomain": { "$ref": "#/$defs/nonBlank" },
+        "decision": { "enum": ["ALLOW", "DENY"] },
+        "recordedAt": { "type": "integer" }
+      }
+    },
+    "witness": {
+      "type": "object",
+      "required": ["actor", "failureDomain", "subjectHash", "actionId", "outcome", "evidenceRefs"],
+      "additionalProperties": false,
+      "properties": {
+        "actor": { "$ref": "#/$defs/nonBlank" },
+        "failureDomain": { "$ref": "#/$defs/nonBlank" },
+        "subjectHash": { "$ref": "#/$defs/sha256" },
+        "actionId": { "$ref": "#/$defs/nonBlank" },
+        "outcome": { "enum": ["NOT_EXECUTED", "STOPPED", "EXECUTED"] },
+        "evidenceRefs": { "$ref": "#/$defs/textList" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["actionId", "semanticActionId", "parentActionId", "subjectHash", "authRef", "actor", "failureDomain", "capability", "tool", "operation", "target", "pathAccess", "path", "network", "proposedAt", "monitorDecision", "outcome", "completedAt", "evidenceRefs", "witness"],
+      "additionalProperties": false,
+      "properties": {
+        "actionId": { "$ref": "#/$defs/nonBlank" },
+        "semanticActionId": { "$ref": "#/$defs/nonBlank" },
+        "parentActionId": { "$ref": "#/$defs/nullableText" },
+        "subjectHash": { "$ref": "#/$defs/sha256" },
+        "authRef": { "$ref": "#/$defs/nonBlank" },
+        "actor": { "$ref": "#/$defs/nonBlank" },
+        "failureDomain": { "$ref": "#/$defs/nonBlank" },
+        "capability": { "enum": ["READ_ONLY", "LOCAL_REPLAY", "SANDBOX_DYNAMIC", "AUTHORIZED_FORK", "LIVE_WRITE"] },
+        "tool": { "$ref": "#/$defs/nonBlank" },
+        "operation": { "$ref": "#/$defs/nonBlank" },
+        "target": { "$ref": "#/$defs/nonBlank" },
+        "pathAccess": { "enum": ["NONE", "READ", "WRITE"] },
+        "path": { "$ref": "#/$defs/nullableText" },
+        "network": { "$ref": "#/$defs/nullableText" },
+        "proposedAt": { "type": "integer" },
+        "monitorDecision": { "$ref": "#/$defs/decision" },
+        "outcome": { "enum": ["NOT_EXECUTED", "STOPPED", "EXECUTED"] },
+        "completedAt": { "oneOf": [{ "type": "integer" }, { "type": "null" }] },
+        "evidenceRefs": { "$ref": "#/$defs/textList" },
+        "witness": { "oneOf": [{ "$ref": "#/$defs/witness" }, { "type": "null" }] }
+      }
+    }
+  }
+}

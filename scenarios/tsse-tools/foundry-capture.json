@@ -1,0 +1,193 @@
+{
+  "schema": "cgqa/tsse-tool-capture/v0.1",
+  "captureId": "foundry-payment-lifecycle-v0.1",
+  "tool": "foundry",
+  "toolVersion": "forge-fixture-v0.1",
+  "run": {
+    "argv": ["forge", "test", "--match-test", "test_TSSEReplay"],
+    "exitCode": 0,
+    "termination": "completed",
+    "seed": "42",
+    "bounds": {
+      "testLimit": 1,
+      "maxSequenceLength": 2,
+      "timeLimitSeconds": 30,
+      "workers": 1
+    }
+  },
+  "subject": {
+    "repository": "local://contractgraph-qa/tsse-tool-fixture",
+    "revision": "fixture-tsse-tool-capture-v0.1",
+    "artifacts": [
+      {
+        "path": "artifacts/PaymentCoordinator.sol",
+        "digest": "f84c21bdb64f68caae9e1a34b88c4b4f0daa1d593ebd0e92adf49c0e8073a75f"
+      }
+    ]
+  },
+  "toolArtifacts": [
+    {
+      "id": "foundry-replay",
+      "kind": "foundry-test-output",
+      "path": "artifacts/foundry-replay.json",
+      "digest": "96df9fa10189b74191271d9366e44fff622f2a860e28e97c886c4d52658ec97d"
+    }
+  ],
+  "observations": [
+    {
+      "id": "payment-created",
+      "incoming": null,
+      "time": {
+        "block": 100,
+        "timestamp": 1000,
+        "epoch": 1
+      },
+      "space": {
+        "chainId": "local-fixture",
+        "contract": "PaymentCoordinator",
+        "callFrame": "request",
+        "storageDomain": "payment-request",
+        "protocolLocation": "payment:created"
+      },
+      "state": {
+        "phase": "CREATED",
+        "values": {
+          "amount": 100,
+          "authorized": false,
+          "settled": false
+        }
+      },
+      "environment": {
+        "oracleState": "not-applicable",
+        "tokenModel": "internal-ledger",
+        "feeMode": "fixed-zero",
+        "implementation": "PaymentCoordinator@fixture-v0.1"
+      },
+      "actor": {
+        "identity": "fixture-buyer",
+        "role": "payer"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "unbound"
+      },
+      "value": {
+        "unit": "FIXTURE_UNIT",
+        "locked": 0,
+        "moved": 0
+      }
+    },
+    {
+      "id": "payment-authorized",
+      "incoming": {
+        "id": "authorize-payment",
+        "cause": "reviewed Foundry replay observation",
+        "action": "authorize",
+        "evidenceRefs": ["foundry-replay"]
+      },
+      "time": {
+        "block": 101,
+        "timestamp": 1001,
+        "epoch": 1
+      },
+      "space": {
+        "chainId": "local-fixture",
+        "contract": "PaymentCoordinator",
+        "callFrame": "authorize",
+        "storageDomain": "payment-authorization",
+        "protocolLocation": "payment:authorized"
+      },
+      "state": {
+        "phase": "AUTHORIZED",
+        "values": {
+          "amount": 100,
+          "authorized": true,
+          "settled": false
+        }
+      },
+      "environment": {
+        "oracleState": "not-applicable",
+        "tokenModel": "internal-ledger",
+        "feeMode": "fixed-zero",
+        "implementation": "PaymentCoordinator@fixture-v0.1"
+      },
+      "actor": {
+        "identity": "fixture-authority",
+        "role": "authorizer"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "granted"
+      },
+      "value": {
+        "unit": "FIXTURE_UNIT",
+        "locked": 100,
+        "moved": 0
+      }
+    },
+    {
+      "id": "payment-settled",
+      "incoming": {
+        "id": "settle-payment",
+        "cause": "reviewed Foundry replay observation",
+        "action": "settle",
+        "evidenceRefs": ["foundry-replay"]
+      },
+      "time": {
+        "block": 102,
+        "timestamp": 1002,
+        "epoch": 1
+      },
+      "space": {
+        "chainId": "local-fixture",
+        "contract": "PaymentCoordinator",
+        "callFrame": "settle",
+        "storageDomain": "payment-settlement",
+        "protocolLocation": "payment:settled"
+      },
+      "state": {
+        "phase": "SETTLED",
+        "values": {
+          "amount": 100,
+          "authorized": true,
+          "settled": true
+        }
+      },
+      "environment": {
+        "oracleState": "not-applicable",
+        "tokenModel": "internal-ledger",
+        "feeMode": "fixed-zero",
+        "implementation": "PaymentCoordinator@fixture-v0.1"
+      },
+      "actor": {
+        "identity": "fixture-settler",
+        "role": "settler"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "consumed"
+      },
+      "value": {
+        "unit": "FIXTURE_UNIT",
+        "locked": 0,
+        "moved": 100
+      }
+    }
+  ],
+  "invariants": [
+    {
+      "id": "CGQ-TSSE-SAFE-001",
+      "kind": "safety",
+      "description": "A settled payment must not return to authorization."
+    }
+  ],
+  "forbiddenTransitions": [
+    {
+      "id": "settled-to-authorized",
+      "fromPhase": "SETTLED",
+      "toPhase": "AUTHORIZED",
+      "invariantId": "CGQ-TSSE-SAFE-001"
+    }
+  ],
+  "scope": "Repository-owned synthetic Foundry replay capture; no production security claim."
+}

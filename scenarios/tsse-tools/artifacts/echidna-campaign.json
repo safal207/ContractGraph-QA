@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "error": null,
+  "tests": [
+    {
+      "contract": "PaymentCoordinator",
+      "name": "echidna_payment_lifecycle",
+      "status": "solved",
+      "error": null,
+      "testType": "property",
+      "transactions": [
+        {
+          "contract": "PaymentCoordinator",
+          "function": "authorize(uint256)",
+          "arguments": ["100"],
+          "gas": 100000,
+          "gasprice": 0
+        },
+        {
+          "contract": "PaymentCoordinator",
+          "function": "settle()",
+          "arguments": [],
+          "gas": 100000,
+          "gasprice": 0
+        }
+      ]
+    }
+  ],
+  "seed": 42,
+  "coverage": {}
+}

@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/tsse-tool-capture.schema.json",
+  "title": "ContractGraph-QA TSSE Reviewed Tool Capture v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "captureId",
+    "tool",
+    "toolVersion",
+    "run",
+    "subject",
+    "toolArtifacts",
+    "observations",
+    "invariants",
+    "forbiddenTransitions",
+    "scope"
+  ],
+  "properties": {
+    "schema": { "const": "cgqa/tsse-tool-capture/v0.1" },
+    "captureId": { "$ref": "#/$defs/nonBlank" },
+    "tool": {
+      "type": "string",
+      "enum": ["foundry", "echidna", "medusa", "cargo-soroban", "slither"]
+    },
+    "toolVersion": { "$ref": "#/$defs/nonBlank" },
+    "run": { "$ref": "#/$defs/run" },
+    "subject": { "$ref": "#/$defs/subject" },
+    "toolArtifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/toolArtifact" }
+    },
+    "observations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/observation" }
+    },
+    "invariants": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/invariant" }
+    },
+    "forbiddenTransitions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/forbiddenTransition" }
+    },
+    "scope": { "$ref": "#/$defs/nonBlank" }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": { "tool": { "const": "slither" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "properties": {
+          "toolArtifacts": { "minItems": 1, "maxItems": 1 },
+          "observations": { "maxItems": 0 },
+          "invariants": { "maxItems": 0 },
+          "forbiddenTransitions": { "maxItems": 0 }
+        }
+      },
+      "else": {
+        "properties": {
+          "observations": { "minItems": 2 },
+          "invariants": { "minItems": 1 },
+          "forbiddenTransitions": { "minItems": 1 },
+          "run": {
+            "properties": {
+              "exitCode": { "type": "integer", "minimum": 0 },
+              "termination": { "const": "completed" },
+              "bounds": {
+                "properties": {
+                  "testLimit": { "type": "integer", "minimum": 1 },
+                  "maxSequenceLength": { "type": "integer", "minimum": 1 },
+                  "timeLimitSeconds": { "type": "integer", "minimum": 1 },
+                  "workers": { "type": "integer", "minimum": 1 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "foundry" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "properties": {
+          "toolArtifacts": {
+            "contains": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": { "kind": { "const": "foundry-test-output" } }
+            },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "echidna" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "properties": {
+          "toolArtifacts": {
+            "contains": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": { "kind": { "const": "echidna-campaign-json" } }
+            },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "medusa" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "properties": {
+          "toolArtifacts": {
+            "contains": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": { "kind": { "const": "medusa-counterexample" } }
+            },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "cargo-soroban" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "properties": {
+          "toolArtifacts": {
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "cargo-soroban-transition-receipt",
+                    "soroban-state-snapshot"
+                  ]
+                }
+              }
+            },
+            "contains": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": { "const": "cargo-soroban-transition-receipt" }
+              }
+            },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "tool": { "const": "slither" } },
+        "required": ["tool"]
+      },
+      "then": {
+        "properties": {
+          "toolArtifacts": {
+            "contains": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": { "kind": { "const": "slither-json" } }
+            },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonBlank": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "portableRelativePath": {
+      "allOf": [
+        { "$ref": "#/$defs/nonBlank" },
+        {
+          "type": "string",
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!\\.\\.?$)(?!\\.\\.?/)(?!.*//)(?!.*\\/$)(?!.*\\/\\.\\.?(?:\\/|$))(?!.*\\\\).+$"
+        }
+      ]
+    },
+    "nullableInteger": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "type": "null" }
+      ]
+    },
+    "nullableString": {
+      "oneOf": [
+        { "$ref": "#/$defs/nonBlank" },
+        { "type": "null" }
+      ]
+    },
+    "nullablePositiveInteger": {
+      "oneOf": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "null" }
+      ]
+    },
+    "bounds": {
+      "type": "object",
+      "required": ["testLimit", "maxSequenceLength", "timeLimitSeconds", "workers"],
+      "properties": {
+        "testLimit": { "$ref": "#/$defs/nullableInteger" },
+        "maxSequenceLength": { "$ref": "#/$defs/nullableInteger" },
+        "timeLimitSeconds": { "$ref": "#/$defs/nullableInteger" },
+        "workers": { "$ref": "#/$defs/nullablePositiveInteger" }
+      },
+      "additionalProperties": false
+    },
+    "run": {
+      "type": "object",
+      "required": ["argv", "exitCode", "termination", "seed", "bounds"],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonBlank" }
+        },
+        "exitCode": { "$ref": "#/$defs/nullableInteger" },
+        "termination": {
+          "type": "string",
+          "enum": ["completed", "failed", "timed-out", "interrupted", "crashed", "unknown"]
+        },
+        "seed": { "$ref": "#/$defs/nullableString" },
+        "bounds": { "$ref": "#/$defs/bounds" }
+      },
+      "additionalProperties": false
+    },
+    "subjectArtifact": {
+      "type": "object",
+      "required": ["path", "digest"],
+      "properties": {
+        "path": { "$ref": "#/$defs/portableRelativePath" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "subject": {
+      "type": "object",
+      "required": ["repository", "revision", "artifacts"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/nonBlank" },
+        "revision": { "$ref": "#/$defs/nonBlank" },
+        "artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/subjectArtifact" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "toolArtifact": {
+      "type": "object",
+      "required": ["id", "kind", "path", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "kind": { "$ref": "#/$defs/nonBlank" },
+        "path": { "$ref": "#/$defs/portableRelativePath" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "time": {
+      "type": "object",
+      "required": ["block", "timestamp", "epoch"],
+      "properties": {
+        "block": { "type": "integer", "minimum": 0 },
+        "timestamp": { "type": "integer", "minimum": 0 },
+        "epoch": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "space": {
+      "type": "object",
+      "required": ["chainId", "contract", "callFrame", "storageDomain", "protocolLocation"],
+      "properties": {
+        "chainId": { "$ref": "#/$defs/nonBlank" },
+        "contract": { "$ref": "#/$defs/nonBlank" },
+        "callFrame": { "$ref": "#/$defs/nonBlank" },
+        "storageDomain": { "$ref": "#/$defs/nonBlank" },
+        "protocolLocation": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "state": {
+      "type": "object",
+      "required": ["phase", "values"],
+      "properties": {
+        "phase": { "$ref": "#/$defs/nonBlank" },
+        "values": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": ["oracleState", "tokenModel", "feeMode", "implementation"],
+      "properties": {
+        "oracleState": { "$ref": "#/$defs/nonBlank" },
+        "tokenModel": { "$ref": "#/$defs/nonBlank" },
+        "feeMode": { "$ref": "#/$defs/nonBlank" },
+        "implementation": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "actor": {
+      "type": "object",
+      "required": ["identity", "role"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/nonBlank" },
+        "role": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["epoch", "status"],
+      "properties": {
+        "epoch": { "type": "integer", "minimum": 0 },
+        "status": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "value": {
+      "type": "object",
+      "required": ["unit", "locked", "moved"],
+      "properties": {
+        "unit": { "$ref": "#/$defs/nonBlank" },
+        "locked": { "type": "integer", "minimum": 0 },
+        "moved": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "incoming": {
+      "type": "object",
+      "required": ["id", "cause", "action", "evidenceRefs"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "cause": { "$ref": "#/$defs/nonBlank" },
+        "action": { "$ref": "#/$defs/nonBlank" },
+        "evidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonBlank" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "observation": {
+      "type": "object",
+      "required": [
+        "id",
+        "incoming",
+        "time",
+        "space",
+        "state",
+        "environment",
+        "actor",
+        "authority",
+        "value"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "incoming": {
+          "oneOf": [
+            { "$ref": "#/$defs/incoming" },
+            { "type": "null" }
+          ]
+        },
+        "time": { "$ref": "#/$defs/time" },
+        "space": { "$ref": "#/$defs/space" },
+        "state": { "$ref": "#/$defs/state" },
+        "environment": { "$ref": "#/$defs/environment" },
+        "actor": { "$ref": "#/$defs/actor" },
+        "authority": { "$ref": "#/$defs/authority" },
+        "value": { "$ref": "#/$defs/value" }
+      },
+      "additionalProperties": false
+    },
+    "invariant": {
+      "type": "object",
+      "required": ["id", "kind", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "safety",
+            "liveness",
+            "conservation",
+            "authorization",
+            "replay",
+            "temporal",
+            "spatial",
+            "environmental",
+            "causal"
+          ]
+        },
+        "description": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "forbiddenTransition": {
+      "type": "object",
+      "required": ["id", "fromPhase", "toPhase", "invariantId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "fromPhase": { "$ref": "#/$defs/nonBlank" },
+        "toPhase": { "$ref": "#/$defs/nonBlank" },
+        "invariantId": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

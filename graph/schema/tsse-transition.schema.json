@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.qa/schema/tsse-transition.schema.json",
+  "title": "ContractGraph-QA TSSE Transition Model v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "modelId",
+    "exactSubject",
+    "evidence",
+    "nodes",
+    "transitions",
+    "invariants",
+    "forbiddenTransitions",
+    "requirements",
+    "scope"
+  ],
+  "properties": {
+    "schema": { "const": "cgqa/tsse-transition-model/v0.1" },
+    "modelId": { "$ref": "#/$defs/nonBlank" },
+    "exactSubject": { "$ref": "#/$defs/exactSubject" },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "transitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/transition" }
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/invariant" }
+    },
+    "forbiddenTransitions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/forbiddenTransition" }
+    },
+    "requirements": { "$ref": "#/$defs/requirements" },
+    "scope": { "$ref": "#/$defs/nonBlank" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonBlank": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:\\S|\\S[\\s\\S]*\\S)$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "exactSubject": {
+      "type": "object",
+      "required": ["repository", "commit", "adapter"],
+      "properties": {
+        "repository": { "$ref": "#/$defs/nonBlank" },
+        "commit": { "$ref": "#/$defs/nonBlank" },
+        "adapter": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["id", "subjectHash", "kind", "source", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "subjectHash": { "$ref": "#/$defs/sha256" },
+        "kind": { "$ref": "#/$defs/nonBlank" },
+        "source": { "$ref": "#/$defs/nonBlank" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "time": {
+      "type": "object",
+      "required": ["block", "timestamp", "epoch", "causalStep"],
+      "properties": {
+        "block": { "type": "integer", "minimum": 0 },
+        "timestamp": { "type": "integer", "minimum": 0 },
+        "epoch": { "type": "integer", "minimum": 0 },
+        "causalStep": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "space": {
+      "type": "object",
+      "required": ["chainId", "contract", "callFrame", "storageDomain", "protocolLocation"],
+      "properties": {
+        "chainId": { "$ref": "#/$defs/nonBlank" },
+        "contract": { "$ref": "#/$defs/nonBlank" },
+        "callFrame": { "$ref": "#/$defs/nonBlank" },
+        "storageDomain": { "$ref": "#/$defs/nonBlank" },
+        "protocolLocation": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "state": {
+      "type": "object",
+      "required": ["phase", "stateHash", "values"],
+      "properties": {
+        "phase": { "$ref": "#/$defs/nonBlank" },
+        "stateHash": { "$ref": "#/$defs/sha256" },
+        "values": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": ["oracleState", "tokenModel", "feeMode", "implementation", "externalStateHash"],
+      "properties": {
+        "oracleState": { "$ref": "#/$defs/nonBlank" },
+        "tokenModel": { "$ref": "#/$defs/nonBlank" },
+        "feeMode": { "$ref": "#/$defs/nonBlank" },
+        "implementation": { "$ref": "#/$defs/nonBlank" },
+        "externalStateHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "actor": {
+      "type": "object",
+      "required": ["identity", "role"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/nonBlank" },
+        "role": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["epoch", "status"],
+      "properties": {
+        "epoch": { "type": "integer", "minimum": 0 },
+        "status": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "value": {
+      "type": "object",
+      "required": ["unit", "locked", "moved"],
+      "properties": {
+        "unit": { "$ref": "#/$defs/nonBlank" },
+        "locked": { "type": "integer", "minimum": 0 },
+        "moved": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "subjectHash",
+        "time",
+        "space",
+        "state",
+        "environment",
+        "actor",
+        "authority",
+        "value"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "subjectHash": { "$ref": "#/$defs/sha256" },
+        "time": { "$ref": "#/$defs/time" },
+        "space": { "$ref": "#/$defs/space" },
+        "state": { "$ref": "#/$defs/state" },
+        "environment": { "$ref": "#/$defs/environment" },
+        "actor": { "$ref": "#/$defs/actor" },
+        "authority": { "$ref": "#/$defs/authority" },
+        "value": { "$ref": "#/$defs/value" }
+      },
+      "additionalProperties": false
+    },
+    "boundary": {
+      "type": "string",
+      "enum": ["time", "space", "state", "environment", "actor", "authority", "value"]
+    },
+    "transition": {
+      "type": "object",
+      "required": [
+        "id",
+        "sequence",
+        "predecessorId",
+        "sourceId",
+        "targetId",
+        "cause",
+        "action",
+        "evidenceRefs",
+        "crossedBoundaries"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "predecessorId": {
+          "oneOf": [
+            { "$ref": "#/$defs/nonBlank" },
+            { "type": "null" }
+          ]
+        },
+        "sourceId": { "$ref": "#/$defs/nonBlank" },
+        "targetId": { "$ref": "#/$defs/nonBlank" },
+        "cause": { "$ref": "#/$defs/nonBlank" },
+        "action": { "$ref": "#/$defs/nonBlank" },
+        "evidenceRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonBlank" }
+        },
+        "crossedBoundaries": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/boundary" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "invariant": {
+      "type": "object",
+      "required": ["id", "kind", "description"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "safety",
+            "liveness",
+            "conservation",
+            "authorization",
+            "replay",
+            "temporal",
+            "spatial",
+            "environmental",
+            "causal"
+          ]
+        },
+        "description": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "forbiddenTransition": {
+      "type": "object",
+      "required": ["id", "fromPhase", "toPhase", "invariantId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlank" },
+        "fromPhase": { "$ref": "#/$defs/nonBlank" },
+        "toPhase": { "$ref": "#/$defs/nonBlank" },
+        "invariantId": { "$ref": "#/$defs/nonBlank" }
+      },
+      "additionalProperties": false
+    },
+    "requirements": {
+      "type": "object",
+      "required": [
+        "requireMonotonicTime",
+        "requireCausalContinuity",
+        "requireExactSubjectBinding",
+        "requireEvidenceBindings"
+      ],
+      "properties": {
+        "requireMonotonicTime": { "type": "boolean" },
+        "requireCausalContinuity": { "type": "boolean" },
+        "requireExactSubjectBinding": { "type": "boolean" },
+        "requireEvidenceBindings": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

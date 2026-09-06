@@ -8,13 +8,17 @@ import sys
 from pathlib import Path
 
 from contractgraph_qa import (
+    action_guard_cli,
     active_verification_cli,
     causal_temporal_cli,
+    graph_layers_cli,
     legacy_cli,
     liminalqa_interop_cli,
     ltp_continuity_bridge_cli,
     proof_integrity_cli,
     project_quickstart_cli,
+    tsse_adapter_cli,
+    tsse_cli,
 )
 from contractgraph_qa.agent_payment_decision import (
     AgentPaymentDecisionError,
@@ -85,6 +89,12 @@ def _normalize_subcli_exit(code: int) -> int:
     return code
 
 
+def _normalize_tsse_exit(code: int) -> int:
+    if code in {1, 2}:
+        return EXIT_VALIDATION
+    return code
+
+
 def _print_unified_help() -> None:
     print(legacy_cli._build_parser().format_help().rstrip())
     print(
@@ -103,6 +113,10 @@ LiminalQA interoperability:
   liminalqa-conformance     Run the pinned portable golden and fail-closed vectors
 
 Causal-temporal vNext:
+  tsse                       Verify a saved Time-Space-State-Environment transition model
+  tsse-adapt                 Import reviewed scanner evidence and run eligible TSSE traces
+  graph-layers               Compare idea, plan, and observed fact graph layers
+  action-guard               Check agent actions against authorization, monitoring, and evidence
   geometry                   Compare operation-order and loop path dependence
   ancestry                   Evaluate local versus inherited causal validity
   orient                     Aggregate causal-context readiness
@@ -507,6 +521,17 @@ def main(argv: list[str] | None = None) -> int:
         return project_quickstart_cli.main(effective[1:])
     if effective[0] == "continuity-export":
         return ltp_continuity_bridge_cli.main(effective[1:])
+    if effective[0] == "tsse":
+        return _normalize_tsse_exit(tsse_cli.main(effective[1:], prog="cgqa tsse"))
+    if effective[0] == "tsse-adapt":
+        return _normalize_tsse_exit(
+            tsse_adapter_cli.main(effective[1:], prog="cgqa tsse-adapt")
+        )
+    if effective[0] == "graph-layers":
+        return _normalize_subcli_exit(graph_layers_cli.main(effective[1:]))
+    if effective[0] == "action-guard":
+        code = action_guard_cli.main(effective[1:], prog="cgqa action-guard")
+        return EXIT_OK if code == action_guard_cli.EXIT_PASS else EXIT_VALIDATION
     if effective[0] == "export-liminalqa":
         return liminalqa_interop_cli.export_main(effective[1:])
     if effective[0] == "import-liminalqa-candidates":

@@ -1,0 +1,230 @@
+{
+  "schema": "cgqa/tsse-transition-model/v0.1",
+  "modelId": "tsse-payment-lifecycle-v0.1",
+  "exactSubject": {
+    "repository": "local://contractgraph-qa/tsse-fixture",
+    "commit": "fixture-tsse-payment-lifecycle-v0.1",
+    "adapter": "reviewed-local-trace-v0.1"
+  },
+  "evidence": [
+    {
+      "id": "evidence-authorize",
+      "subjectHash": "0c20aff3f62f8aed4870edbb5f84e227fce9036b93bba7d00e6817a567e867f1",
+      "kind": "synthetic-local-trace",
+      "source": "repository-fixture:authorize",
+      "digest": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "id": "evidence-settle",
+      "subjectHash": "0c20aff3f62f8aed4870edbb5f84e227fce9036b93bba7d00e6817a567e867f1",
+      "kind": "synthetic-local-trace",
+      "source": "repository-fixture:settle",
+      "digest": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "payment-created",
+      "subjectHash": "0c20aff3f62f8aed4870edbb5f84e227fce9036b93bba7d00e6817a567e867f1",
+      "time": {
+        "block": 100,
+        "timestamp": 1000,
+        "epoch": 1,
+        "causalStep": 0
+      },
+      "space": {
+        "chainId": "local-fixture",
+        "contract": "PaymentCoordinator",
+        "callFrame": "request",
+        "storageDomain": "payment-request",
+        "protocolLocation": "payment:created"
+      },
+      "state": {
+        "phase": "CREATED",
+        "stateHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "values": {
+          "amount": 100,
+          "authorized": false,
+          "settled": false
+        }
+      },
+      "environment": {
+        "oracleState": "not-applicable",
+        "tokenModel": "internal-ledger",
+        "feeMode": "fixed-zero",
+        "implementation": "PaymentCoordinator@fixture-v0.1",
+        "externalStateHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "actor": {
+        "identity": "fixture-buyer",
+        "role": "payer"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "unbound"
+      },
+      "value": {
+        "unit": "FIXTURE_UNIT",
+        "locked": 0,
+        "moved": 0
+      }
+    },
+    {
+      "id": "payment-authorized",
+      "subjectHash": "0c20aff3f62f8aed4870edbb5f84e227fce9036b93bba7d00e6817a567e867f1",
+      "time": {
+        "block": 101,
+        "timestamp": 1001,
+        "epoch": 1,
+        "causalStep": 1
+      },
+      "space": {
+        "chainId": "local-fixture",
+        "contract": "PaymentCoordinator",
+        "callFrame": "authorize",
+        "storageDomain": "payment-authorization",
+        "protocolLocation": "payment:authorized"
+      },
+      "state": {
+        "phase": "AUTHORIZED",
+        "stateHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "values": {
+          "amount": 100,
+          "authorized": true,
+          "settled": false
+        }
+      },
+      "environment": {
+        "oracleState": "not-applicable",
+        "tokenModel": "internal-ledger",
+        "feeMode": "fixed-zero",
+        "implementation": "PaymentCoordinator@fixture-v0.1",
+        "externalStateHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "actor": {
+        "identity": "fixture-authority",
+        "role": "authorizer"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "granted"
+      },
+      "value": {
+        "unit": "FIXTURE_UNIT",
+        "locked": 100,
+        "moved": 0
+      }
+    },
+    {
+      "id": "payment-settled",
+      "subjectHash": "0c20aff3f62f8aed4870edbb5f84e227fce9036b93bba7d00e6817a567e867f1",
+      "time": {
+        "block": 102,
+        "timestamp": 1002,
+        "epoch": 1,
+        "causalStep": 2
+      },
+      "space": {
+        "chainId": "local-fixture",
+        "contract": "SettlementLedger",
+        "callFrame": "settle",
+        "storageDomain": "payment-settlement",
+        "protocolLocation": "payment:settled"
+      },
+      "state": {
+        "phase": "SETTLED",
+        "stateHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "values": {
+          "amount": 100,
+          "authorized": true,
+          "settled": true
+        }
+      },
+      "environment": {
+        "oracleState": "not-applicable",
+        "tokenModel": "internal-ledger",
+        "feeMode": "fixed-zero",
+        "implementation": "SettlementLedger@fixture-v0.1",
+        "externalStateHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "actor": {
+        "identity": "fixture-settlement-service",
+        "role": "settler"
+      },
+      "authority": {
+        "epoch": 1,
+        "status": "consumed"
+      },
+      "value": {
+        "unit": "FIXTURE_UNIT",
+        "locked": 0,
+        "moved": 100
+      }
+    }
+  ],
+  "transitions": [
+    {
+      "id": "authorize-payment",
+      "sequence": 0,
+      "predecessorId": null,
+      "sourceId": "payment-created",
+      "targetId": "payment-authorized",
+      "cause": "reviewed local authorization event",
+      "action": "authorize",
+      "evidenceRefs": [
+        "evidence-authorize"
+      ],
+      "crossedBoundaries": [
+        "time",
+        "space",
+        "state",
+        "actor",
+        "authority",
+        "value"
+      ]
+    },
+    {
+      "id": "settle-payment",
+      "sequence": 1,
+      "predecessorId": "authorize-payment",
+      "sourceId": "payment-authorized",
+      "targetId": "payment-settled",
+      "cause": "reviewed local settlement event",
+      "action": "settle",
+      "evidenceRefs": [
+        "evidence-settle"
+      ],
+      "crossedBoundaries": [
+        "time",
+        "space",
+        "state",
+        "environment",
+        "actor",
+        "authority",
+        "value"
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "CGQ-TSSE-SAFE-001",
+      "kind": "safety",
+      "description": "A settled payment must not return to an authorization phase."
+    }
+  ],
+  "forbiddenTransitions": [
+    {
+      "id": "settled-to-authorized",
+      "fromPhase": "SETTLED",
+      "toPhase": "AUTHORIZED",
+      "invariantId": "CGQ-TSSE-SAFE-001"
+    }
+  ],
+  "requirements": {
+    "requireMonotonicTime": true,
+    "requireCausalContinuity": true,
+    "requireExactSubjectBinding": true,
+    "requireEvidenceBindings": true
+  },
+  "scope": "Repository-owned synthetic payment lifecycle fixture; no external execution or production claim."
+}

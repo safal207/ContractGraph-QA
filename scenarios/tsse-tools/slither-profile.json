@@ -1,0 +1,21 @@
+{
+  "schema": "cgqa/tsse-tool-profile/v0.1",
+  "profileId": "slither-payment-seed-policy-v0.1",
+  "tool": "slither",
+  "acceptedToolVersions": ["slither-fixture-v0.1"],
+  "acceptedExitCodes": [0],
+  "observationHash": null,
+  "subject": {
+    "repository": "local://contractgraph-qa/tsse-tool-fixture",
+    "revision": "fixture-tsse-tool-capture-v0.1",
+    "artifacts": [
+      {
+        "path": "artifacts/PaymentCoordinator.sol",
+        "digest": "f84c21bdb64f68caae9e1a34b88c4b4f0daa1d593ebd0e92adf49c0e8073a75f"
+      }
+    ]
+  },
+  "invariants": [],
+  "forbiddenTransitions": [],
+  "scope": "Repository-owned synthetic Slither output; static findings are replay seeds only."
+}
