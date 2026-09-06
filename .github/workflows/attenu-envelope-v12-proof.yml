@@ -1,0 +1,194 @@
+name: Attenu observer-envelope v1.2 proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/attenu-envelope-v12-proof.yml'
+      - 'proofs/attenu-envelope-v1.2-independent/**'
+      - 'proofs/attenu-envelope-v1.1-independent/verify_envelope_vectors.py'
+      - 'proofs/attenu-guard-v0.12.1-independent/independent_bundle_verifier.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/attenu-envelope-v12-proof.yml'
+      - 'proofs/attenu-envelope-v1.2-independent/**'
+      - 'proofs/attenu-envelope-v1.1-independent/verify_envelope_vectors.py'
+      - 'proofs/attenu-guard-v0.12.1-independent/independent_bundle_verifier.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-envelope-v12-score:
+    name: Python repository, PyPI, and TypeScript repository — 19-case score
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out ContractGraph-QA
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Check out exact Python source subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: attenu-io/attenu-guard
+          ref: 8a8d598e2036d6815b50df01b776a13777c1d72b
+          path: external/attenu-guard
+          persist-credentials: false
+
+      - name: Check out exact TypeScript source subject
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: attenu-io/attenu-guard-ts
+          ref: ae055c92ce2f23e476c42b1a742c3babfa543bb2
+          path: external/attenu-guard-ts
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12.13'
+
+      - name: Install independent cryptographic backend
+        run: python -m pip install --disable-pip-version-check 'cryptography==46.0.4'
+
+      - name: Prove the verification core is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp \
+            proofs/attenu-envelope-v1.1-independent/verify_envelope_vectors.py \
+            proofs/attenu-envelope-v1.2-independent/verify_envelope_vectors.py
+          python -m py_compile \
+            proofs/attenu-envelope-v1.2-independent/verify_envelope_vectors.py \
+            proofs/attenu-envelope-v1.2-independent/run_pinned_proof.py
+
+      - name: Download exact PyPI artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/attenu-envelope-v12"
+          python -m pip download --disable-pip-version-check --no-deps --only-binary=:all: \
+            --dest "$RUNNER_TEMP/attenu-envelope-v12" 'attenu-guard==0.15.0'
+
+      - name: Extract and compare all published vector copies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from hashlib import sha256
+          from pathlib import Path
+          from zipfile import ZipFile
+          import os
+
+          pin = 'a8be5ff764a86122ca09e94340416b7169531bf5d0cc76a0b1fc87f8272eb16e'
+          expected_bytes = 197_346
+          root = Path(os.environ['RUNNER_TEMP']) / 'attenu-envelope-v12'
+          wheel = next(root.glob('attenu_guard-0.15.0-*.whl'))
+          python_repo = Path(
+              'external/attenu-guard/tests/vectors/envelopes/envelope_vectors_v1.json'
+          )
+          ts_repo = Path(
+              'external/attenu-guard-ts/test/fixtures/vectors/envelopes/'
+              'envelope_vectors_v1.json'
+          )
+
+          with ZipFile(wheel) as archive:
+              candidates = [
+                  (name, archive.read(name))
+                  for name in archive.namelist()
+                  if name.endswith('/vectors/envelopes/envelope_vectors_v1.json')
+              ]
+          matches = [(name, raw) for name, raw in candidates if sha256(raw).hexdigest() == pin]
+          if len(matches) != 1:
+              observed = [(name, len(raw), sha256(raw).hexdigest()) for name, raw in candidates]
+              raise SystemExit(f'wheel vector match count={len(matches)}; observed={observed}')
+          wheel_raw = matches[0][1]
+          wheel_path = root / 'python-envelope.json'
+          wheel_path.write_bytes(wheel_raw)
+
+          copies = {
+              'python_repository': python_repo.read_bytes(),
+              'pypi_wheel': wheel_raw,
+              'typescript_repository': ts_repo.read_bytes(),
+          }
+          for name, raw in copies.items():
+              digest = sha256(raw).hexdigest()
+              if len(raw) != expected_bytes or digest != pin:
+                  raise SystemExit(
+                      f'{name}: bytes={len(raw)} sha256={digest}; '
+                      f'expected bytes={expected_bytes} sha256={pin}'
+                  )
+          if len({raw for raw in copies.values()}) != 1:
+              raise SystemExit('published vector copies are not byte-identical')
+          print(f'vector_bytes={expected_bytes}')
+          print(f'vector_sha256={pin}')
+          print('source_copies=3 byte-identical')
+          PY
+
+      - name: Regenerate independent report
+        shell: bash
+        run: |
+          set -euo pipefail
+          proof='proofs/attenu-envelope-v1.2-independent'
+          python "$proof/run_pinned_proof.py" \
+            --vectors external/attenu-guard/tests/vectors/envelopes/envelope_vectors_v1.json \
+            --python-vector "$RUNNER_TEMP/attenu-envelope-v12/python-envelope.json" \
+            --typescript-vector \
+              external/attenu-guard-ts/test/fixtures/vectors/envelopes/envelope_vectors_v1.json \
+            --json-out "$RUNNER_TEMP/attenu-envelope-v12-report.json"
+
+      - name: Require exact 19-case result and row-19 discrimination
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import os
+
+          path = Path(os.environ['RUNNER_TEMP']) / 'attenu-envelope-v12-report.json'
+          report = json.loads(path.read_text(encoding='utf-8'))
+          summary = report['summary']
+          assert summary == {
+              'accept_cases': 5,
+              'agree': 19,
+              'cases': 19,
+              'disagree': 0,
+              'failure_vocabulary_covered': 7,
+              'overall': 'AGREE',
+              'reject_cases': 14,
+          }, summary
+          row = report['row19_discrimination']
+          assert row['claim_first_full_row']['required_failure'] == {
+              'node': 'vectors:n1',
+              'reason': 'envelope_duplicate_subject',
+              'seq': 1,
+          }
+          assert row['claim_first_full_row']['state_seq_1'] == 'process-asserted'
+          assert row['first_envelope_alone'] == {
+              'failures': [],
+              'state_seq_1': 'witness-signed',
+          }
+          assert row['defective_second_alone']['required_failure'] == {
+              'node': 'vectors:n1',
+              'reason': 'envelope_bad_signature',
+              'seq': 1,
+          }
+          assert row['defective_second_alone']['state_seq_1'] == 'process-asserted'
+          digest = hashlib.sha256(path.read_bytes()).hexdigest()
+          assert digest == '4328c5a38e647b601b73fa5ff4a8b8f9f5375296318ba1a5d440372c9edbbd6b', digest
+          print(f'report_sha256={digest}')
+          print('result=19/19 AGREE')
+          PY
+
+      - name: Require deterministic committed report
+        shell: bash
+        run: |
+          set -euo pipefail
+          diff -u \
+            proofs/attenu-envelope-v1.2-independent/report.json \
+            "$RUNNER_TEMP/attenu-envelope-v12-report.json"
