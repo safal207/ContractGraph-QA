@@ -22,12 +22,27 @@ class EvidenceOutputTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "result.json"
             write_text_atomic(output, '{"version": 1}\n')
-            with self.assertRaises(FileExistsError):
+            with self.assertRaisesRegex(FileExistsError, "output already exists"):
                 write_text_atomic(output, '{"version": 2}\n')
             self.assertEqual(output.read_bytes(), b'{"version": 1}\n')
             write_text_atomic(output, '{"version": 2}\n', force=True)
             self.assertEqual(output.read_bytes(), b'{"version": 2}\n')
             self.assertEqual(list(output.parent.glob(".*.tmp")), [])
+
+    def test_collision_message_is_independent_of_operating_system(self) -> None:
+        for message in ("File exists", "Cannot create a file when that file already exists"):
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "result.json"
+                output.write_bytes(b"original\n")
+                collision = FileExistsError(17, message)
+                with mock.patch("contractgraph_qa.evidence_io.os.link", side_effect=collision):
+                    with self.assertRaisesRegex(
+                        FileExistsError, "output already exists: .*; pass --force to replace it"
+                    ) as raised:
+                        write_text_atomic(output, "replacement\n")
+                self.assertIs(raised.exception.__cause__, collision)
+                self.assertEqual(output.read_bytes(), b"original\n")
+                self.assertEqual(list(output.parent.glob(".*.tmp")), [])
 
     def test_concurrent_publication_preserves_one_complete_result(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

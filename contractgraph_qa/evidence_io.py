@@ -34,7 +34,12 @@ def write_text_atomic(path: Path, rendered: str, *, force: bool = False) -> None
         if force:
             os.replace(temporary, path)
         else:
-            os.link(temporary, path)
+            try:
+                os.link(temporary, path)
+            except FileExistsError as exc:
+                raise FileExistsError(
+                    f"output already exists: {path}; pass --force to replace it"
+                ) from exc
     finally:
         if temporary is not None:
             try:
