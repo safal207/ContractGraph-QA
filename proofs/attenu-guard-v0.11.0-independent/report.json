@@ -1,0 +1,219 @@
+{
+  "cases": [
+    {
+      "expected": "accept",
+      "failure_details": [],
+      "missing_required_failures": [],
+      "name": "valid_bundle_v2",
+      "observed": "accept",
+      "passed": true,
+      "required_failures": []
+    },
+    {
+      "expected": "reject",
+      "failure_details": [
+        {
+          "call_id": "eb099aeb221783e1442261f15df4fb35",
+          "detail": "invoked_params_hash differs from authorized_params_hash",
+          "node": "vectors:n0",
+          "reason": "params_mismatch",
+          "seq": 3
+        }
+      ],
+      "missing_required_failures": [],
+      "name": "reject_params_mismatch",
+      "observed": "reject",
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "params_mismatch",
+          "seq": 3
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "failure_details": [
+        {
+          "call_id": "0123456789abcdef0123456789abcdef",
+          "detail": "no allow exists for call_id=0123456789abcdef0123456789abcdef",
+          "node": "vectors:n1",
+          "reason": "outcome_without_allow",
+          "seq": 6
+        }
+      ],
+      "missing_required_failures": [],
+      "name": "reject_outcome_without_allow",
+      "observed": "reject",
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "outcome_without_allow",
+          "seq": 6
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "failure_details": [
+        {
+          "call_id": "eb099aeb221783e1442261f15df4fb35",
+          "detail": "outcome at 2 precedes allow at 3",
+          "node": "vectors:n0",
+          "reason": "outcome_before_allow",
+          "seq": 2
+        }
+      ],
+      "missing_required_failures": [],
+      "name": "reject_outcome_before_allow",
+      "observed": "reject",
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "outcome_before_allow",
+          "seq": 2
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "failure_details": [
+        {
+          "call_id": "eb099aeb221783e1442261f15df4fb35",
+          "detail": "second terminal for call_id=eb099aeb221783e1442261f15df4fb35",
+          "node": "vectors:n0",
+          "reason": "duplicate_outcome",
+          "seq": 4
+        }
+      ],
+      "missing_required_failures": [],
+      "name": "reject_duplicate_outcome",
+      "observed": "reject",
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "duplicate_outcome",
+          "seq": 4
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "failure_details": [
+        {
+          "call_id": "eb099aeb221783e1442261f15df4fb35",
+          "detail": "no allow exists for call_id=eb099aeb221783e1442261f15df4fb35",
+          "node": "vectors:n0",
+          "reason": "outcome_without_allow",
+          "seq": 3
+        },
+        {
+          "call_id": "15d42567717e39b8ff1881a14ec42f96",
+          "detail": "second allow for call_id=15d42567717e39b8ff1881a14ec42f96",
+          "node": "vectors:n1",
+          "reason": "duplicate_call_id",
+          "seq": 4
+        },
+        {
+          "call_id": "15d42567717e39b8ff1881a14ec42f96",
+          "detail": "allow node='vectors:n0', outcome node='vectors:n1'",
+          "node": "vectors:n1",
+          "reason": "outcome_node_mismatch",
+          "seq": 6
+        },
+        {
+          "call_id": "15d42567717e39b8ff1881a14ec42f96",
+          "detail": "invoked_params_hash differs from authorized_params_hash",
+          "node": "vectors:n1",
+          "reason": "params_mismatch",
+          "seq": 6
+        }
+      ],
+      "missing_required_failures": [],
+      "name": "reject_duplicate_call_id",
+      "observed": "reject",
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n1",
+          "reason": "duplicate_call_id",
+          "seq": 4
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "failure_details": [
+        {
+          "call_id": null,
+          "detail": "anchor mismatch: seq/head/signature/version/chain binding failed; anchor_seq=8, ledger_seq=8, anchor_head='53349075656990a1bde24c34e2a4bcd4b70826a208924a86c9cf2647a3a0fc9e', ledger_head='e728a2bde8b8c92954dc4da771387018695315550ae76b07614c9956e0478d29'",
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        }
+      ],
+      "missing_required_failures": [],
+      "name": "reject_rehashed_chain",
+      "observed": "reject",
+      "passed": true,
+      "required_failures": [
+        {
+          "node": null,
+          "reason": "integrity(anchor)",
+          "seq": null
+        }
+      ]
+    },
+    {
+      "expected": "reject",
+      "failure_details": [
+        {
+          "call_id": "eb099aeb221783e1442261f15df4fb35",
+          "detail": "entry chain mismatch at position=3: seq=3, prev='6a55969c228f85cca9e5c4ff195fce20fc3a76d8d2afae4788bfa0f3e621340b', stored='b5c9da99d2ba0874a150e05307994b35b5c6c3cc7a2dda35a067632404988f62', calculated=9f656ad6f5b0caebab7d4c8ea772f96db775f01319b7148002cd135598d3aa02",
+          "node": "vectors:n0",
+          "reason": "integrity",
+          "seq": 3
+        }
+      ],
+      "missing_required_failures": [],
+      "name": "reject_tampered_entry",
+      "observed": "reject",
+      "passed": true,
+      "required_failures": [
+        {
+          "node": "vectors:n0",
+          "reason": "integrity",
+          "seq": 3
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "implementation": "CPython",
+    "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "python": "3.12.3"
+  },
+  "input": {
+    "bytes": 69573,
+    "contract": "bundle_vectors_v1",
+    "path": "proofs/attenu-guard-v0.11.0-independent/bundle_vectors_v1.json",
+    "pinned_sha256": "90d7fa70eabe92cbfa4df04bad50ac78995b57e83812cc5671e1ba9de01619ce",
+    "sha256": "90d7fa70eabe92cbfa4df04bad50ac78995b57e83812cc5671e1ba9de01619ce"
+  },
+  "summary": {
+    "cases_passed": 8,
+    "cases_total": 8,
+    "passed": true
+  },
+  "verifier": {
+    "claim_boundary": "released bundle_vectors_v1 corpus only; not a general audit or runtime certification",
+    "id": "safal207-independent-bundle-v1",
+    "independence_boundary": "stdlib-only; no attenu_guard imports; fixture read as raw bytes",
+    "source_sha256": "16b5a0f867a2d4b02c4b03a57ac993793df816cbd2f6e5ed82b62a13ee757bd0",
+    "version": "0.1.0"
+  }
+}

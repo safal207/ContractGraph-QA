@@ -13,6 +13,7 @@ from contractgraph_qa import (
     causal_temporal_cli,
     graph_layers_cli,
     legacy_cli,
+    liminalqa_interop_cli,
     ltp_continuity_bridge_cli,
     proof_integrity_cli,
     project_quickstart_cli,
@@ -104,6 +105,12 @@ Universal onboarding:
 
 Smart-contract continuity:
   continuity-export         Export reviewed CGQA evidence to the normative LTP v0.1 input contract
+
+LiminalQA interoperability:
+  export-liminalqa          Export bounded evidence with exact subject and provenance binding
+  import-liminalqa-candidates
+                             Accept LiminalQA candidates only as non-authoritative search seeds
+  liminalqa-conformance     Run the pinned portable golden and fail-closed vectors
 
 Causal-temporal vNext:
   tsse                       Verify a saved Time-Space-State-Environment transition model
@@ -525,6 +532,12 @@ def main(argv: list[str] | None = None) -> int:
     if effective[0] == "action-guard":
         code = action_guard_cli.main(effective[1:], prog="cgqa action-guard")
         return EXIT_OK if code == action_guard_cli.EXIT_PASS else EXIT_VALIDATION
+    if effective[0] == "export-liminalqa":
+        return liminalqa_interop_cli.export_main(effective[1:])
+    if effective[0] == "import-liminalqa-candidates":
+        return liminalqa_interop_cli.import_candidates_main(effective[1:])
+    if effective[0] == "liminalqa-conformance":
+        return liminalqa_interop_cli.conformance_main(effective[1:])
     if effective[0] in PHASE2_COMMANDS:
         return _normalize_subcli_exit(causal_temporal_cli.main(effective))
     if effective[0] in PROOF_COMMANDS:

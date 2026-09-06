@@ -1,0 +1,599 @@
+{
+  "artifacts": {
+    "python_after": {
+      "bytes": 317617,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu_guard-0.12.0-py3-none-any.whl",
+      "format": "wheel",
+      "package": "attenu-guard",
+      "sha256": "0c17b0f14379ac2f85d091abcb30b5180bce0b6e19d97a88a080c985abec5dc7",
+      "version": "0.12.0"
+    },
+    "python_before": {
+      "bytes": 312444,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu_guard-0.11.0-py3-none-any.whl",
+      "format": "wheel",
+      "package": "attenu-guard",
+      "sha256": "cae895475f116deb862295b6c8938f5e586f115ea20bdd6df2f6b2e38df880b0",
+      "version": "0.11.0"
+    },
+    "typescript_after": {
+      "bytes": 214352,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu-guard-0.7.0.tgz",
+      "format": "npm-tarball",
+      "package": "attenu-guard",
+      "sha256": "6461138a638a2ac991000f4fcf1c84f317aee1155eef6f53bbc5a932e8b30b12",
+      "version": "0.7.0"
+    },
+    "typescript_before": {
+      "bytes": 222495,
+      "execution_source": "same verified in-memory bytes",
+      "filename": "attenu-guard-0.6.0.tgz",
+      "format": "npm-tarball",
+      "package": "attenu-guard",
+      "sha256": "9099da7270cda6e662a76ddf6ca08bd568bd8232970078cd1e47e76dd2377a13",
+      "version": "0.6.0"
+    }
+  },
+  "bundle_inputs": {
+    "canonicalization": "sorted-key compact JSON UTF-8",
+    "params_salt_hex": "00000000000000000000000000000000",
+    "per_case_sha256": {
+      "dropped_ceiling": "08907d83ef206a49a60f92435a62b2a43deb932fd0e77bcec92bec633d5ddcb2",
+      "increased_ttl": "62c239c748843a1093659c5bdf179961acc65f8da1fb58ab0fbedc4a819bb738",
+      "literal_subset_base": "920042b85bbb06ece4e0b27886d686e997964613e79bb18f4a1cf526f2f82aba",
+      "loosened_ceiling": "b5a8286a2c11020aeeff4775ef2d93d4e08b1f4934e82a4d6488997991cf3ba5",
+      "unbounded_ttl": "aaa97e5e23d46027ca7e1949d23ffb3771e752a31f7be54bf3caf018d4522ea6",
+      "widened_scope_control": "d4b272a43105c4b46fcb81f646330669971f7eee370f04ab7185afa9a8df3cae"
+    }
+  },
+  "claim": "exact published Python and TypeScript artifacts change all four literal-subset authority-widening cases from false accept before the fix to monotonicity reject after the fix, while both controls remain stable",
+  "claim_boundary": "published artifact runtime behavior only; no independent package-to-source build attestation; HS256 is a deterministic test signer",
+  "probes": {
+    "python": {
+      "path": "reference_python_probe.py",
+      "sha256": "b2031baab8593ae1245da1a253d5703a7a6517ab68003ee9687d6269e000515e"
+    },
+    "typescript": {
+      "path": "reference_ts_probe.cjs",
+      "sha256": "b6cd21d7c6ee14c800111592ac7200e410b6f0dce2547355a18e714f49d22f41"
+    }
+  },
+  "results": {
+    "python_after": {
+      "bundle_profile": {
+        "canonicalization": "sorted-key compact JSON UTF-8",
+        "params_salt_hex": "00000000000000000000000000000000"
+      },
+      "cases": [
+        {
+          "bundle_sha256": "920042b85bbb06ece4e0b27886d686e997964613e79bb18f4a1cf526f2f82aba",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "literal_subset_base"
+        },
+        {
+          "bundle_sha256": "62c239c748843a1093659c5bdf179961acc65f8da1fb58ab0fbedc4a819bb738",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "increased_ttl"
+        },
+        {
+          "bundle_sha256": "b5a8286a2c11020aeeff4775ef2d93d4e08b1f4934e82a4d6488997991cf3ba5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "loosened_ceiling"
+        },
+        {
+          "bundle_sha256": "aaa97e5e23d46027ca7e1949d23ffb3771e752a31f7be54bf3caf018d4522ea6",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "unbounded_ttl"
+        },
+        {
+          "bundle_sha256": "08907d83ef206a49a60f92435a62b2a43deb932fd0e77bcec92bec633d5ddcb2",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "dropped_ceiling"
+        },
+        {
+          "bundle_sha256": "d4b272a43105c4b46fcb81f646330669971f7eee370f04ab7185afa9a8df3cae",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "widened_scope_control"
+        }
+      ],
+      "defect_cases": [
+        "dropped_ceiling",
+        "increased_ttl",
+        "loosened_ceiling",
+        "unbounded_ttl"
+      ],
+      "implementation": "python",
+      "package": "attenu-guard",
+      "runtime": {
+        "implementation": "CPython",
+        "machine": "x86_64",
+        "platform": "linux",
+        "version": "3.12.13"
+      },
+      "version": "0.12.0"
+    },
+    "python_before": {
+      "bundle_profile": {
+        "canonicalization": "sorted-key compact JSON UTF-8",
+        "params_salt_hex": "00000000000000000000000000000000"
+      },
+      "cases": [
+        {
+          "bundle_sha256": "920042b85bbb06ece4e0b27886d686e997964613e79bb18f4a1cf526f2f82aba",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "literal_subset_base"
+        },
+        {
+          "bundle_sha256": "62c239c748843a1093659c5bdf179961acc65f8da1fb58ab0fbedc4a819bb738",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "increased_ttl"
+        },
+        {
+          "bundle_sha256": "b5a8286a2c11020aeeff4775ef2d93d4e08b1f4934e82a4d6488997991cf3ba5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "loosened_ceiling"
+        },
+        {
+          "bundle_sha256": "aaa97e5e23d46027ca7e1949d23ffb3771e752a31f7be54bf3caf018d4522ea6",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "unbounded_ttl"
+        },
+        {
+          "bundle_sha256": "08907d83ef206a49a60f92435a62b2a43deb932fd0e77bcec92bec633d5ddcb2",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "dropped_ceiling"
+        },
+        {
+          "bundle_sha256": "d4b272a43105c4b46fcb81f646330669971f7eee370f04ab7185afa9a8df3cae",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "widened_scope_control"
+        }
+      ],
+      "defect_cases": [
+        "dropped_ceiling",
+        "increased_ttl",
+        "loosened_ceiling",
+        "unbounded_ttl"
+      ],
+      "implementation": "python",
+      "package": "attenu-guard",
+      "runtime": {
+        "implementation": "CPython",
+        "machine": "x86_64",
+        "platform": "linux",
+        "version": "3.12.13"
+      },
+      "version": "0.11.0"
+    },
+    "typescript_after": {
+      "bundle_profile": {
+        "canonicalization": "sorted-key compact JSON UTF-8",
+        "params_salt_hex": "00000000000000000000000000000000"
+      },
+      "cases": [
+        {
+          "bundle_sha256": "920042b85bbb06ece4e0b27886d686e997964613e79bb18f4a1cf526f2f82aba",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "literal_subset_base"
+        },
+        {
+          "bundle_sha256": "62c239c748843a1093659c5bdf179961acc65f8da1fb58ab0fbedc4a819bb738",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "increased_ttl"
+        },
+        {
+          "bundle_sha256": "b5a8286a2c11020aeeff4775ef2d93d4e08b1f4934e82a4d6488997991cf3ba5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "loosened_ceiling"
+        },
+        {
+          "bundle_sha256": "aaa97e5e23d46027ca7e1949d23ffb3771e752a31f7be54bf3caf018d4522ea6",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "unbounded_ttl"
+        },
+        {
+          "bundle_sha256": "08907d83ef206a49a60f92435a62b2a43deb932fd0e77bcec92bec633d5ddcb2",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "dropped_ceiling"
+        },
+        {
+          "bundle_sha256": "d4b272a43105c4b46fcb81f646330669971f7eee370f04ab7185afa9a8df3cae",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "widened_scope_control"
+        }
+      ],
+      "defect_cases": [
+        "dropped_ceiling",
+        "increased_ttl",
+        "loosened_ceiling",
+        "unbounded_ttl"
+      ],
+      "implementation": "typescript",
+      "package": "attenu-guard",
+      "runtime": {
+        "arch": "x64",
+        "node": "v24.19.0",
+        "platform": "linux"
+      },
+      "version": "0.7.0"
+    },
+    "typescript_before": {
+      "bundle_profile": {
+        "canonicalization": "sorted-key compact JSON UTF-8",
+        "params_salt_hex": "00000000000000000000000000000000"
+      },
+      "cases": [
+        {
+          "bundle_sha256": "920042b85bbb06ece4e0b27886d686e997964613e79bb18f4a1cf526f2f82aba",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "literal_subset_base"
+        },
+        {
+          "bundle_sha256": "62c239c748843a1093659c5bdf179961acc65f8da1fb58ab0fbedc4a819bb738",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "increased_ttl"
+        },
+        {
+          "bundle_sha256": "b5a8286a2c11020aeeff4775ef2d93d4e08b1f4934e82a4d6488997991cf3ba5",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "loosened_ceiling"
+        },
+        {
+          "bundle_sha256": "aaa97e5e23d46027ca7e1949d23ffb3771e752a31f7be54bf3caf018d4522ea6",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "unbounded_ttl"
+        },
+        {
+          "bundle_sha256": "08907d83ef206a49a60f92435a62b2a43deb932fd0e77bcec92bec633d5ddcb2",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": true
+          },
+          "decision": "accept",
+          "expected_decision": "accept",
+          "failure_positions": [],
+          "matched": true,
+          "name": "dropped_ceiling"
+        },
+        {
+          "bundle_sha256": "d4b272a43105c4b46fcb81f646330669971f7eee370f04ab7185afa9a8df3cae",
+          "checks": {
+            "anchor": "verified",
+            "containment": true,
+            "integrity": true,
+            "monotonicity": false
+          },
+          "decision": "reject",
+          "expected_decision": "reject",
+          "failure_positions": [
+            {
+              "node": "t:n1",
+              "reason": "monotonicity",
+              "seq": 1
+            }
+          ],
+          "matched": true,
+          "name": "widened_scope_control"
+        }
+      ],
+      "defect_cases": [
+        "dropped_ceiling",
+        "increased_ttl",
+        "loosened_ceiling",
+        "unbounded_ttl"
+      ],
+      "implementation": "typescript",
+      "package": "attenu-guard",
+      "runtime": {
+        "arch": "x64",
+        "node": "v24.19.0",
+        "platform": "linux"
+      },
+      "version": "0.6.0"
+    }
+  },
+  "runtime_identities": {
+    "python": {
+      "implementation": "CPython",
+      "machine": "x86_64",
+      "platform": "linux",
+      "version": "3.12.13"
+    },
+    "typescript": {
+      "arch": "x64",
+      "node": "v24.19.0",
+      "platform": "linux"
+    }
+  },
+  "summary": {
+    "defect_transitions_proved": 8,
+    "observations_matched": 24,
+    "observations_total": 24,
+    "passed": true
+  },
+  "transitions": {
+    "python": {
+      "after": "0.12.0",
+      "before": "0.11.0",
+      "controls_stable": 2,
+      "defect_cases_flipped": 4,
+      "passed": true
+    },
+    "typescript": {
+      "after": "0.7.0",
+      "before": "0.6.0",
+      "controls_stable": 2,
+      "defect_cases_flipped": 4,
+      "passed": true
+    }
+  }
+}
