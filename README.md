@@ -19,7 +19,7 @@ one authorized intent → at most one economic effect
 UNKNOWN outcome → no new financial action
 ```
 
-[Read the Recovery Design Partner Lab](PILOT.md) · [Open the Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md) · [See the synthetic case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Run the local demo](#run-a-local-proof)
+[Read the Recovery Design Partner Lab](PILOT.md) · [View the proof-backed offer](docs/client-proof/EXTERNAL_RECOVERY_PROOF_CHECK.md) · [Open the Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md) · [See the synthetic case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) · [Run the local demo](#run-a-local-proof)
 <!-- seo-product-intro:end -->
 
 ---
@@ -39,10 +39,12 @@ ContractGraph-QA is currently delivered **productized-service first**: the clien
 ## Recovery Design Partner Lab
 
 - **Capacity:** maximum **5 design partners**
-- **Design-partner price:** **$750 fixed per one-boundary pilot**
+- **Design-partner price:** **$1,000 fixed per one-boundary pilot**
+- **Payment:** **$500 upfront** after written scope agreement; **$500 within 3 business days after acceptance** of the initial evidence pack
 - **Scope:** one named recovery boundary
-- **Target delivery window:** five business days after the Boundary Brief and required inputs are accepted
-- **Communication:** async by default
+- **Target delivery window:** five business days after written scope agreement, required inputs or authorized sandbox/test access, and upfront payment
+- **Communication:** email-only and asynchronous
+- **Effort cap:** up to 12 hours — 10 hours for the initial package and 2 hours for one bounded retest
 - **Retest:** one bounded retest for an in-scope fix delivered within 14 calendar days
 
 A typical boundary looks like:
@@ -71,7 +73,7 @@ The pilot includes:
 
 The initial fixture can start from public documentation, synthetic traces, status definitions, webhook schemas, and a declared authoritative-evidence rule. Production credentials, customer data, and real-value transactions are not required.
 
-[Lab workflow, checkpoints, and acceptance criteria →](PILOT.md) · [One-page Boundary Brief →](docs/client-proof/BOUNDARY_BRIEF.md)
+[Lab workflow, checkpoints, and acceptance criteria →](PILOT.md) · [Proof-backed commercial offer →](docs/client-proof/EXTERNAL_RECOVERY_PROOF_CHECK.md) · [One-page Boundary Brief →](docs/client-proof/BOUNDARY_BRIEF.md)
 
 ---
 
@@ -323,6 +325,7 @@ The generated scaffold starts fail-closed until the operator supplies the author
 Key documents:
 
 - [Recovery Design Partner Lab](PILOT.md)
+- [External Recovery Proof Check](docs/client-proof/EXTERNAL_RECOVERY_PROOF_CHECK.md)
 - [One-page Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md)
 - [Synthetic Recovery Case Study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md)
 - [Product runtime](docs/PRODUCT.md)
