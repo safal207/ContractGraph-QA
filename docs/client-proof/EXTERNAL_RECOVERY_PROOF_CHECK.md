@@ -64,7 +64,7 @@ These are public engineering signals, not client endorsements or full-platform a
 
 In [x402 Foundation issue #3379](https://github.com/x402-foundation/x402/issues/3379), a bounded review requested exact record membership, algorithm-specific hash handling, honest source labels, cross-purchase substitution controls, and explicit non-claims.
 
-The external project then published a pairing fixture, separated SHA-256 from Keccak-256, labeled fields as simulated, observed, or derived, added tamper-negative controls, and reported a 20/20 aggregate control suite. A later independent replay confirmed the published positive checks and tamper rejections while retaining the limits: record/byte integrity and binding do not independently establish settlement finality, buyer acceptance, effect count, or exactly-once execution.
+The external project then published a [public pairing fixture at pinned commit `a2e9576`](https://github.com/goun7/tamga-protocol/blob/a2e9576aa0cfcdb85ca87ba11aae68948fa2b19f/docs/PAIRING-FIXTURE.md), separated SHA-256 from Keccak-256, labeled fields as simulated, observed, or derived, added four tamper-negative controls, and reported a 20-control aggregate suite. A [separate replay of that pinned fixture](https://github.com/x402-foundation/x402/issues/3379#issuecomment-5560832395) confirmed all five verifier checks and all four published tamper rejections, while also identifying two remaining verifier gaps. The joined vector remained partial: its settlement side was simulated, and record/byte integrity and binding did not independently establish execution, settlement finality, buyer acceptance, effect count, or exactly-once execution.
 
 ### 2. A neighboring review surfaced a real read-path defect
 
@@ -74,7 +74,7 @@ This was not an x402 core defect. It is evidence that a narrow external question
 
 ### 3. Bounded live wallet-watch recovery evidence
 
-[resonance-arbitrage-graph PR #85](https://github.com/safal207/resonance-arbitrage-graph/pull/85) records bounded live checks against existing public Ethereum USDC transfers. Separate transaction and block-scan paths observed one event and one local notification; ordinary restart and replay added zero events and zero notifications. A second recent-block scenario resumed from a durable checkpoint, advanced one block, and replayed the original transfer without adding another event.
+An [immutable live wallet-watch report](https://github.com/safal207/resonance-arbitrage-graph/blob/dc445bfac231ba6a3bcaac9c6388805d163c3c75/docs/evidence/wallet-watch-pr85/README.md) records bounded checks against one existing public Ethereum USDC transfer. Separate transaction and block-scan paths observed one event and one local notification; ordinary restart and replay added zero events and zero notifications. A [second immutable recent-block report](https://github.com/safal207/resonance-arbitrage-graph/blob/34e99b59424924a50f5e35966bfd531d16eb1e2b/docs/evidence/wallet-watch-pr85/recent-resume-20260906/README.md) used a new database, resumed from a durable checkpoint, advanced one block, and replayed the original transfer without adding another event.
 
 The published limits remain explicit: one RPC provider, no independent consensus or completeness proof, no continuous-watch certification, and no exactly-once delivery claim.
 
@@ -100,7 +100,7 @@ logical operation identity
 | Scope | One named ambiguous-outcome recovery boundary |
 | Fixed price | **$1,000** |
 | Payment | **$500 upfront** after written scope agreement; **$500 within 3 business days after acceptance** of the initial evidence pack |
-| Delivery | Five business days after written scope agreement, required non-sensitive inputs or authorized sandbox/test access, and upfront payment |
+| Delivery | Five business days after the confirmed Boundary Brief, required non-sensitive inputs or authorized sandbox/test access, and upfront payment are accepted |
 | Effort cap | Up to 12 hours: 10 hours for the initial package and 2 hours for one bounded retest |
 | Communication | Email-only and asynchronous |
 | Production access | Not required for the initial public-documentation, synthetic, local, or sandbox-backed fixture |
