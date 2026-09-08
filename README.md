@@ -42,7 +42,7 @@ ContractGraph-QA is currently delivered **productized-service first**: the clien
 - **Design-partner price:** **$1,000 fixed per one-boundary pilot**
 - **Payment:** **$500 upfront** after written scope agreement; **$500 within 3 business days after acceptance** of the initial evidence pack
 - **Scope:** one named recovery boundary
-- **Target delivery window:** five business days after written scope agreement, required inputs or authorized sandbox/test access, and upfront payment
+- **Target delivery window:** five business days after the confirmed Boundary Brief, required inputs or authorized sandbox/test access, and upfront payment are accepted
 - **Communication:** email-only and asynchronous
 - **Effort cap:** up to 12 hours — 10 hours for the initial package and 2 hours for one bounded retest
 - **Retest:** one bounded retest for an in-scope fix delivered within 14 calendar days
@@ -347,8 +347,11 @@ Key documents:
 question
 → mirror boundary
 → confirm Boundary Brief
+→ $500 upfront
 → paid fixture
 → evidence pack
+→ acceptance
+→ $500 balance
 → bounded retest
 → product learning
 ```
@@ -357,7 +360,7 @@ A good first question is:
 
 > After dispatch returns an ambiguous result, which evidence is authoritative before another monetary attempt is permitted: platform state, external rail, processor or wallet receipt, customer ledger, or an explicit `UNKNOWN` reconciliation hold?
 
-A one-line answer is enough to begin the mirror. The paid scope starts only after the one-page Boundary Brief is confirmed.
+A one-line answer is enough to begin the mirror. The paid scope starts only after the one-page Boundary Brief is confirmed and the upfront payment is accepted.
 
 ---
 
