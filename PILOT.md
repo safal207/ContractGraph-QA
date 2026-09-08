@@ -9,12 +9,14 @@ The Lab accepts at most **five design partners**. Each partner brings one real r
 | Item | Terms |
 |---|---|
 | Lab capacity | Maximum **5 design partners** |
-| Price | **$750 fixed per one-boundary pilot** |
+| Price | **$1,000 fixed per one-boundary pilot** |
+| Payment | **$500 upfront** after written scope agreement; **$500 within 3 business days after acceptance** of the initial evidence pack |
 | Scope | One named ambiguous-outcome recovery boundary |
-| Delivery target | Five business days after the Boundary Brief and required inputs are accepted |
-| Communication | Async by default |
+| Delivery target | Five business days after the Boundary Brief, required inputs or authorized sandbox/test access, and upfront payment are accepted |
+| Communication | Email-only and asynchronous |
+| Effort cap | Up to 12 hours: 10 hours for the initial package and 2 hours for one bounded retest |
 | Retest | One bounded retest for an in-scope fix delivered within 14 calendar days |
-| Production access | Not required for the initial synthetic or sandbox-backed fixture |
+| Production access | Not required for the initial synthetic, local, public-documentation, or sandbox-backed fixture |
 
 The price applies only to the bounded scope below. A second provider, rail, wallet, ledger, or independently modeled business operation requires a separate scope.
 
@@ -66,8 +68,11 @@ Examples:
 question
 → mirror boundary
 → confirm Boundary Brief
+→ $500 upfront
 → paid fixture
 → evidence pack
+→ acceptance
+→ $500 balance
 → bounded retest
 → product learning
 ```
@@ -90,8 +95,10 @@ The first answer starts the conversation; it does not silently define the scope.
 4. Define the `ZERO / ONE / UNKNOWN` recovery state machine.
 5. Implement or adapt one local or sandbox-backed executable fixture.
 6. Run positive, negative, duplicate, delayed, out-of-order, retry, and identity-drift cases.
-7. Produce deterministic results and a bounded findings report.
+7. Produce deterministic `PASS`, `FAIL`, or `BLOCKED` results and a bounded findings report.
 8. Provide one in-scope retest when a fix is supplied within the retest window.
+
+`BLOCKED` is not a passing result. Missing, inaccessible, conflicting, or non-authoritative evidence remains visible in the report.
 
 ## Minimum test matrix
 
@@ -147,14 +154,15 @@ Production credentials, customer data, and real-value transactions are not requi
 
 ## Acceptance criteria
 
-The pilot is complete when:
+The initial package is accepted when the agreed deliverables are supplied and:
 
 - every retry decision maps to explicit evidence;
 - `UNKNOWN` is represented as a first-class state rather than inferred from silence;
 - the same trace produces the same classification and verdict on replay;
 - the fixture deterministically detects any modeled path that permits a second economic effect while the operation is unresolved;
 - identity continuity and authority ancestry are preserved across attempts;
-- all claims remain bounded to the supplied model, evidence, adapter, and environment.
+- all claims remain bounded to the supplied model, evidence, adapter, and environment;
+- any inaccessible or insufficient evidence is reported as `BLOCKED`, not silently treated as a clean result.
 
 ## Good fit
 
@@ -168,6 +176,8 @@ The pilot is complete when:
 - No explicit testing authorization exists for active production access.
 - The goal is live exploitation, fund movement, or collection of customer data.
 - The team expects a webhook or internal status to be treated as authoritative without declaring why.
+- The requested scope includes a product implementation, new production connector, or public disclosure of client material.
+- The expected output is a legal, compliance, financial, or full-platform security certification.
 
 ## Existing executable foundation
 
@@ -178,7 +188,7 @@ The pilot is backed by the vendor-neutral [Agent Payment Recovery Benchmark v0.1
 - retry before reconciliation;
 - idempotency drift across retry.
 
-See the [synthetic buyer-readable case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md).
+See the [synthetic buyer-readable case study](docs/case-studies/AMBIGUOUS_PAYMENT_RECOVERY.md) and the [proof-backed commercial offer](docs/client-proof/EXTERNAL_RECOVERY_PROOF_CHECK.md).
 
 ## Start with one question
 
@@ -186,10 +196,10 @@ See the [synthetic buyer-readable case study](docs/case-studies/AMBIGUOUS_PAYMEN
 
 A one-line answer is enough to begin the mirror. Scope starts only after the Boundary Brief and required inputs are confirmed.
 
-[Open the Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md) · [Discuss one bounded Lab pilot](mailto:safal0645@gmail.com?subject=Recovery%20Design%20Partner%20Lab) · [View the engine](README.md)
+[Open the Boundary Brief](docs/client-proof/BOUNDARY_BRIEF.md) · [Review the External Recovery Proof Check](docs/client-proof/EXTERNAL_RECOVERY_PROOF_CHECK.md) · [Discuss one bounded Lab pilot](mailto:safal0645@gmail.com?subject=Recovery%20Design%20Partner%20Lab) · [View the engine](README.md)
 
 ## Scope and assurance boundary
 
 This pilot does not certify an entire payment platform and does not assume that any status, webhook, receipt, ledger record, or chain observation is authoritative without a declared contract or authorized evidence review.
 
-Results remain bounded to the supplied model, evidence, adapter, environment, and executed test scope.
+Results remain bounded to the supplied model, evidence, adapter, environment, and executed test scope. Active non-local testing still requires explicit written authorization.
