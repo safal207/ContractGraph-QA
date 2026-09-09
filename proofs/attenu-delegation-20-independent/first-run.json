@@ -1,0 +1,470 @@
+{
+  "schema": "cgqa.attenu-delegation-corpus-report.v1",
+  "subject": {
+    "repository": "attenu-io/attenu-guard",
+    "commit": "419f6584c120736688aa946b9c46cfe1c8124292",
+    "path": "tests/vectors",
+    "specification": "draft-asor-wimse-agent-delegation-chain-01",
+    "source_pins_sha256": "d141d80ff3af8553df38ac90da5a85cd9880b887574276e1b521a7d0217d0556",
+    "corpus_bytes": 30695,
+    "cgqa_base": "f861b934d77e64fd35f768e2a33bb4a00963bc19"
+  },
+  "implementation": [
+    {
+      "file": "verifier.mjs",
+      "sha256": "0d0101d0b32892938a36634e55b6f986fb85409c8444a1104e72f015f3ee0389"
+    },
+    {
+      "file": "run-proof.mjs",
+      "sha256": "de8bf6534251881f93f492cdf08ccec70464d34101dc28a7f74923779dd2b1ae"
+    },
+    {
+      "file": "PLAN.md",
+      "sha256": "0fe475041516e309c82acdb6f31d002ac6002dd0c48a536deb783b0483d9deac"
+    }
+  ],
+  "boundary": {
+    "profile": "offline HS256 public-test-key, one signer, corpus JSON numeric domain",
+    "steps_executed_on_accept": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "steps_not_run": [
+      6,
+      7,
+      8
+    ],
+    "no_claims": [
+      "production Ed25519",
+      "holder possession",
+      "revocation",
+      "audience policy",
+      "live action authorization",
+      "general draft conformance",
+      "security certification",
+      "complete verifier coverage",
+      "independent human review"
+    ]
+  },
+  "summary": {
+    "cases": 20,
+    "accept_cases": 7,
+    "reject_cases": 13,
+    "agree": 20,
+    "disagree": 0,
+    "errors": 0,
+    "declared_rejection_reasons": 8,
+    "overall": "PASS_WITHIN_BOUND"
+  },
+  "cases": [
+    {
+      "file": "reject_bad_signature.json",
+      "sha256": "108aa4fce3131e64f947b17ca5f23d5b18c697620929dd211424a4ab38868db6",
+      "expected": "signature_invalid",
+      "actual": {
+        "accepted": false,
+        "reason": "signature_invalid",
+        "stage": "1_signature",
+        "token_index": 2,
+        "detail": "JWS signature does not verify",
+        "completed": [
+          "json_jcs"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_bare_wildcard.json",
+      "sha256": "98b4ee322fc5920b23371730ac5ce46888123072130bf710bd4c8d7ac9f7200e",
+      "expected": "malformed",
+      "actual": {
+        "accepted": false,
+        "reason": "malformed",
+        "stage": "4_authority",
+        "token_index": 1,
+        "detail": "invalid scope syntax",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_depth_exceeded.json",
+      "sha256": "9f56a17ff61e6660fa677a92c14542d36c686d89b6bfb77a3a381853ef57a9a5",
+      "expected": "depth_invalid",
+      "actual": {
+        "accepted": false,
+        "reason": "depth_invalid",
+        "stage": "3_depth",
+        "token_index": 0,
+        "detail": "root chain-length bound exceeded or invalid",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_duplicate_member.json",
+      "sha256": "41252beea0d6502a717578c08a0e0cd94a67dda5dd64908d54e218f1dbe32833",
+      "expected": "duplicate_member",
+      "actual": {
+        "accepted": false,
+        "reason": "duplicate_member",
+        "stage": "json_jcs",
+        "token_index": 0,
+        "detail": "duplicate JSON object member",
+        "completed": []
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_exceeded_ceiling.json",
+      "sha256": "5e6b067de8500cbfc9371ecef50fb7b1a55c8db56d79abcac242c1e6341dbc03",
+      "expected": "not_narrower",
+      "actual": {
+        "accepted": false,
+        "reason": "not_narrower",
+        "stage": "4_authority",
+        "token_index": 2,
+        "detail": "parent constraint was omitted, changed kind or loosened",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_non_finite.json",
+      "sha256": "f7f82ab9edf52c36fd2db6fd4ee841fefc9becb76cf95358460248cea29b9dbc",
+      "expected": "non_finite",
+      "actual": {
+        "accepted": false,
+        "reason": "non_finite",
+        "stage": "json_jcs",
+        "token_index": 0,
+        "detail": "non-finite number",
+        "completed": []
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_nonmonotonic_exp.json",
+      "sha256": "29e3ef2b48f3d2548176fb63630d7ff8331b5965342091afa4c11aca893e26cb",
+      "expected": "expired",
+      "actual": {
+        "accepted": false,
+        "reason": "expired",
+        "stage": "4_authority",
+        "token_index": 2,
+        "detail": "absolute expiry increases from parent",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_nonterminal_wildcard.json",
+      "sha256": "ca829207be593d1e25671ae012aa6f4d1bf63561da48804c8d4e1ac1be9df070",
+      "expected": "malformed",
+      "actual": {
+        "accepted": false,
+        "reason": "malformed",
+        "stage": "4_authority",
+        "token_index": 1,
+        "detail": "invalid scope syntax",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_spliced_parent.json",
+      "sha256": "9821d5de8acd2a3edd83d6cae8459e3ad6977cc3f3aa4b16355caa762a20a897",
+      "expected": "par_hash_mismatch",
+      "actual": {
+        "accepted": false,
+        "reason": "par_hash_mismatch",
+        "stage": "2_parent_commitment",
+        "token_index": 1,
+        "detail": "parent Signing Input commitment differs",
+        "completed": [
+          "json_jcs",
+          "1_signature"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_unsafe_integer.json",
+      "sha256": "f42aaaa9ecbcc5570545cfe8a6792a470da3403de88b1ce23f13990fede0e7dd",
+      "expected": "malformed",
+      "actual": {
+        "accepted": false,
+        "reason": "malformed",
+        "stage": "json_jcs",
+        "token_index": 0,
+        "detail": "integer outside corpus safe range",
+        "completed": []
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_widened_scope.json",
+      "sha256": "8c317254b747a7730936de74695f8c84571d0d6a5ea75a1ae1a3b540c62e8e51",
+      "expected": "not_narrower",
+      "actual": {
+        "accepted": false,
+        "reason": "not_narrower",
+        "stage": "4_authority",
+        "token_index": 2,
+        "detail": "child scope is not covered by parent",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_wildcard_boundary.json",
+      "sha256": "688ebfdca5cc1b40138c78ea42ac160b1a5ea26e8cdb12a6bf243f5eb668cd23",
+      "expected": "not_narrower",
+      "actual": {
+        "accepted": false,
+        "reason": "not_narrower",
+        "stage": "4_authority",
+        "token_index": 1,
+        "detail": "child scope is not covered by parent",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "reject_wildcard_widening.json",
+      "sha256": "2d2c643c630e55670e75a94bee17f8686d0697321d62c96852aeb4c0ae494ada",
+      "expected": "not_narrower",
+      "actual": {
+        "accepted": false,
+        "reason": "not_narrower",
+        "stage": "4_authority",
+        "token_index": 2,
+        "detail": "child scope is not covered by parent",
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "valid_chain.json",
+      "sha256": "96b9e3bbfc3ce73e816857d585f83b31abaaccfbaea568fda9605f445f75c436",
+      "expected": "accept",
+      "actual": {
+        "accepted": true,
+        "reason": null,
+        "stage": null,
+        "token_index": null,
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth",
+          "4_authority",
+          "5_time"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "valid_jcs_big_integer.json",
+      "sha256": "3ee189bcbe8c8d4daa6474f524b36561ade0eded7ff34289414126191ed3f806",
+      "expected": "accept",
+      "actual": {
+        "accepted": true,
+        "reason": null,
+        "stage": null,
+        "token_index": null,
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth",
+          "4_authority",
+          "5_time"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "valid_jcs_exponent_form.json",
+      "sha256": "f63ac95f6599588949aa840baab5762e8e75c6860529cd0ad53acdcfbf446300",
+      "expected": "accept",
+      "actual": {
+        "accepted": true,
+        "reason": null,
+        "stage": null,
+        "token_index": null,
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth",
+          "4_authority",
+          "5_time"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "valid_jcs_integral_float.json",
+      "sha256": "9e641aa9e415c1db49b2053eda2eebdc95473c0a169c2707a34361fbc27b0b35",
+      "expected": "accept",
+      "actual": {
+        "accepted": true,
+        "reason": null,
+        "stage": null,
+        "token_index": null,
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth",
+          "4_authority",
+          "5_time"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "valid_jcs_non_ascii.json",
+      "sha256": "95ece691ce254140ddacb862847a077636529fc6bd877c396c713996b2641437",
+      "expected": "accept",
+      "actual": {
+        "accepted": true,
+        "reason": null,
+        "stage": null,
+        "token_index": null,
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth",
+          "4_authority",
+          "5_time"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "valid_jcs_unmarked_header.json",
+      "sha256": "dfbdcd74bb2103c1780ead0233c2b8ca7365bcc3bed5670a08a0113291769c88",
+      "expected": "accept",
+      "actual": {
+        "accepted": true,
+        "reason": null,
+        "stage": null,
+        "token_index": null,
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth",
+          "4_authority",
+          "5_time"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    },
+    {
+      "file": "valid_jcs_utf16_key_order.json",
+      "sha256": "38f81849c9c73dbb34682acca43bd8b7795e448542a133bd30cc78c8a2374057",
+      "expected": "accept",
+      "actual": {
+        "accepted": true,
+        "reason": null,
+        "stage": null,
+        "token_index": null,
+        "completed": [
+          "json_jcs",
+          "1_signature",
+          "2_parent_commitment",
+          "3_depth",
+          "4_authority",
+          "5_time"
+        ]
+      },
+      "verdict_matches": true,
+      "reason_matches": true,
+      "status": "AGREE"
+    }
+  ]
+}

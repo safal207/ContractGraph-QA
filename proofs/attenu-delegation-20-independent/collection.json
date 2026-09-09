@@ -1,0 +1,10 @@
+{
+  "collection_started_at": "2026-09-06T03:57:42.150862+00:00",
+  "initial_upstream_head": "419f6584c120736688aa946b9c46cfe1c8124292",
+  "initial_upstream_worktree": "clean",
+  "cgqa_base": "f861b934d77e64fd35f768e2a33bb4a00963bc19",
+  "initial_cgqa_worktree": "clean before isolated branch and plan",
+  "source_copy_identity": "all 20 tests/vectors files byte-identical to src/attenu_guard/vectors at pinned commit",
+  "reference_runtime_execution": "NOT_RUN",
+  "first_score": "NOT_RUN"
+}

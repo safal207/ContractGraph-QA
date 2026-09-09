@@ -1,0 +1,47 @@
+name: Attenu Delegation Token independent proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/attenu-delegation-proof.yml'
+      - 'proofs/attenu-delegation-20-independent/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/attenu-delegation-proof.yml'
+      - 'proofs/attenu-delegation-20-independent/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  delegation-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out proof
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Check out frozen source data
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: attenu-io/attenu-guard
+          ref: 419f6584c120736688aa946b9c46cfe1c8124292
+          path: external/attenu-guard
+          persist-credentials: false
+      - name: Set up independent runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.19.0'
+      - name: Require original source and packaged-source byte identity
+        run: node proofs/attenu-delegation-20-independent/check-sources.mjs external/attenu-guard
+      - name: Check artifact manifest
+        run: node proofs/attenu-delegation-20-independent/check-artifacts.mjs
+      - name: Exercise the independent verifier and observation controls
+        run: node --test proofs/attenu-delegation-20-independent/verify.test.mjs
+      - name: Regenerate the result from all twenty frozen files
+        run: >-
+          node proofs/attenu-delegation-20-independent/run-proof.mjs
+          --check proofs/attenu-delegation-20-independent/report.json

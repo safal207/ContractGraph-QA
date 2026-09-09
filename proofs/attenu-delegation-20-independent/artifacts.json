@@ -1,0 +1,204 @@
+{
+  "schema": "cgqa.attenu-delegation-artifacts.v1",
+  "repository": "safal207/ContractGraph-QA",
+  "base_sha": "f861b934d77e64fd35f768e2a33bb4a00963bc19",
+  "verifier_revision": "cb080a795f26bd1c0417d32cdd297960511cad88",
+  "upstream_sha": "419f6584c120736688aa946b9c46cfe1c8124292",
+  "artifacts": [
+    {
+      "path": ".github/workflows/attenu-delegation-proof.yml",
+      "bytes": 1780,
+      "sha256": "56c7779b52bfcff8c8004d0c136baa050a3d5ee1df91ebbb80696c5ea29f6a79"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/PLAN.md",
+      "bytes": 6164,
+      "sha256": "0fe475041516e309c82acdb6f31d002ac6002dd0c48a536deb783b0483d9deac"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/PR.md",
+      "bytes": 1701,
+      "sha256": "aad0e837e8f7518828401ad87ee10a8e9bfd22a891bf6f9a11a455a641996f0d"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/PUBLICATION.md",
+      "bytes": 2030,
+      "sha256": "70e35db02e160b9d1186f7bf5269f9f88b958757717dc5ffc99500f6e81ab533"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/README.md",
+      "bytes": 9719,
+      "sha256": "167ceb1c9c1d962b22a486031209839f472be0c67b83c80591c057a9f6730e5e"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/REVIEW.md",
+      "bytes": 9286,
+      "sha256": "f3d21e5d5de218eec46cc185cd14a2fc3a10bbcff75fb543d8fe36efd96b5951"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/UPSTREAM-LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/UPSTREAM-NOTICE",
+      "bytes": 157,
+      "sha256": "11010f771358236f76b6e28947da1f8b352b4496446bf9a5e5ba6eb0a01975e1"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/cgqa-checks.py",
+      "bytes": 3502,
+      "sha256": "1f2bc62abce30f882a8e35482d486eb45b30cea422c90346326c254834bff7a4"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/check-artifacts.mjs",
+      "bytes": 2138,
+      "sha256": "7d0feac50011eeacff908576db43b16dd63a72f0c1e35d21053c025acf9a989d"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/check-sources.mjs",
+      "bytes": 2156,
+      "sha256": "5e341069cc85dd878573869e29a644db72e3c15a6c3bd32d7dd85d2432caa465"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/collection.json",
+      "bytes": 492,
+      "sha256": "22dc564c0a18492efa47ad560566cdf518e9555d684384ca09684ac247e1c653"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/first-run.json",
+      "bytes": 12802,
+      "sha256": "33c5f099e014a8847a1ec8f86d489e1fa7d8590fc96b49786a6fd85920be34a3"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/report.json",
+      "bytes": 12802,
+      "sha256": "33c5f099e014a8847a1ec8f86d489e1fa7d8590fc96b49786a6fd85920be34a3"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/run-proof.mjs",
+      "bytes": 5663,
+      "sha256": "de8bf6534251881f93f492cdf08ccec70464d34101dc28a7f74923779dd2b1ae"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/source-pins.json",
+      "bytes": 4927,
+      "sha256": "d141d80ff3af8553df38ac90da5a85cd9880b887574276e1b521a7d0217d0556"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/validation.json",
+      "bytes": 6621,
+      "sha256": "686815d9e4ab751879e4923fe844647b6fd7fa69596d93182faf2e409ca627a0"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_bad_signature.json",
+      "bytes": 2032,
+      "sha256": "108aa4fce3131e64f947b17ca5f23d5b18c697620929dd211424a4ab38868db6"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_bare_wildcard.json",
+      "bytes": 1639,
+      "sha256": "98b4ee322fc5920b23371730ac5ce46888123072130bf710bd4c8d7ac9f7200e"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_depth_exceeded.json",
+      "bytes": 2200,
+      "sha256": "9f56a17ff61e6660fa677a92c14542d36c686d89b6bfb77a3a381853ef57a9a5"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_duplicate_member.json",
+      "bytes": 808,
+      "sha256": "41252beea0d6502a717578c08a0e0cd94a67dda5dd64908d54e218f1dbe32833"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_exceeded_ceiling.json",
+      "bytes": 2101,
+      "sha256": "5e6b067de8500cbfc9371ecef50fb7b1a55c8db56d79abcac242c1e6341dbc03"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_non_finite.json",
+      "bytes": 761,
+      "sha256": "f7f82ab9edf52c36fd2db6fd4ee841fefc9becb76cf95358460248cea29b9dbc"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_nonmonotonic_exp.json",
+      "bytes": 2257,
+      "sha256": "29e3ef2b48f3d2548176fb63630d7ff8331b5965342091afa4c11aca893e26cb"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_nonterminal_wildcard.json",
+      "bytes": 1642,
+      "sha256": "ca829207be593d1e25671ae012aa6f4d1bf63561da48804c8d4e1ac1be9df070"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_spliced_parent.json",
+      "bytes": 1956,
+      "sha256": "9821d5de8acd2a3edd83d6cae8459e3ad6977cc3f3aa4b16355caa762a20a897"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_unsafe_integer.json",
+      "bytes": 1057,
+      "sha256": "f42aaaa9ecbcc5570545cfe8a6792a470da3403de88b1ce23f13990fede0e7dd"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_widened_scope.json",
+      "bytes": 2128,
+      "sha256": "8c317254b747a7730936de74695f8c84571d0d6a5ea75a1ae1a3b540c62e8e51"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_wildcard_boundary.json",
+      "bytes": 2015,
+      "sha256": "688ebfdca5cc1b40138c78ea42ac160b1a5ea26e8cdb12a6bf243f5eb668cd23"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/reject_wildcard_widening.json",
+      "bytes": 2647,
+      "sha256": "2d2c643c630e55670e75a94bee17f8686d0697321d62c96852aeb4c0ae494ada"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/valid_chain.json",
+      "bytes": 2160,
+      "sha256": "96b9e3bbfc3ce73e816857d585f83b31abaaccfbaea568fda9605f445f75c436"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/valid_jcs_big_integer.json",
+      "bytes": 1074,
+      "sha256": "3ee189bcbe8c8d4daa6474f524b36561ade0eded7ff34289414126191ed3f806"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/valid_jcs_exponent_form.json",
+      "bytes": 1137,
+      "sha256": "f63ac95f6599588949aa840baab5762e8e75c6860529cd0ad53acdcfbf446300"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/valid_jcs_integral_float.json",
+      "bytes": 766,
+      "sha256": "9e641aa9e415c1db49b2053eda2eebdc95473c0a169c2707a34361fbc27b0b35"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/valid_jcs_non_ascii.json",
+      "bytes": 781,
+      "sha256": "95ece691ce254140ddacb862847a077636529fc6bd877c396c713996b2641437"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/valid_jcs_unmarked_header.json",
+      "bytes": 751,
+      "sha256": "dfbdcd74bb2103c1780ead0233c2b8ca7365bcc3bed5670a08a0113291769c88"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/vectors/valid_jcs_utf16_key_order.json",
+      "bytes": 783,
+      "sha256": "38f81849c9c73dbb34682acca43bd8b7795e448542a133bd30cc78c8a2374057"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/verifier.mjs",
+      "bytes": 14423,
+      "sha256": "0d0101d0b32892938a36634e55b6f986fb85409c8444a1104e72f015f3ee0389"
+    },
+    {
+      "path": "proofs/attenu-delegation-20-independent/verify.test.mjs",
+      "bytes": 7165,
+      "sha256": "07318f4d93dd4f5922d4aaa3a13042e3002cb0eb6dffada31fbd8368a12d1f1a"
+    }
+  ]
+}
