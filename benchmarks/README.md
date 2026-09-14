@@ -8,6 +8,7 @@ Repository-owned benchmark suites for reproducible verification research and pro
 - [`openescrow-partial-funding-v0.1`](openescrow-partial-funding-v0.1/) — source-pinned OpenEscrow multi-tenant partial-funding liveness case: one tenant funds, another stalls, and the funded tenant has no unilateral refund path.
 - [`contract-lattice-v0.1`](contract-lattice-v0.1/) — six-coordinate contract model binding state, version, value, authority, evidence, and time witnesses.
 - [`agent-payment-recovery-v0.1`](agent-payment-recovery-v0.1/) — agent payment recovery and evidence scenarios.
+- [`proof-carrying-agent-trajectories-v0.1`](proof-carrying-agent-trajectories-v0.1/) — execution-identity and predecessor-proof continuity across ambiguity, crash/resume, stale observation, retry, and multi-agent handoff.
 - [`crewai-tool-event-conformance-v0.1`](crewai-tool-event-conformance-v0.1/) — source-pinned CrewAI native tool-event witness projection benchmark.
 - [`langgraph-checkpoint-state-conformance-v0.1`](langgraph-checkpoint-state-conformance-v0.1/) — source-pinned LangGraph hosted checkpoint/state benchmark.
 - [`langgraph-recovery-safety-v0.1`](langgraph-recovery-safety-v0.1/) — live SIGKILL + resume RS1–RS3 benchmark with stable logical-action identity and receiver-dedup control.
