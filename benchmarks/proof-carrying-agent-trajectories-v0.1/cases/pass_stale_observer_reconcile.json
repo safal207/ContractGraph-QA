@@ -1,0 +1,20 @@
+{
+  "schema": "cgqa.proof-carrying-agent-trajectory-scenario.v0.1",
+  "benchmark": "proof-carrying-agent-trajectories-v0.1",
+  "scenarioId": "pass-stale-observer-reconcile",
+  "trajectoryId": "traj-order-42",
+  "policy": {
+    "name": "evidence-first-reconcile",
+    "requirePredecessorProof": true,
+    "requireTerminalEvidence": true
+  },
+  "events": [
+    {"seq": 1, "type": "authorize", "trajectoryId": "traj-order-42", "segmentId": "segment-1", "logicalOperationId": "op-charge-42"},
+    {"seq": 2, "type": "dispatch", "trajectoryId": "traj-order-42", "segmentId": "segment-1", "logicalOperationId": "op-charge-42", "agentId": "agent-a", "executionId": "exec-1"},
+    {"seq": 3, "type": "ambiguous", "trajectoryId": "traj-order-42", "segmentId": "segment-1", "logicalOperationId": "op-charge-42", "executionId": "exec-1", "reason": "stale_observer", "observerState": "not_found", "observerFreshness": "stale"},
+    {"seq": 4, "type": "reconcile", "trajectoryId": "traj-order-42", "segmentId": "segment-1", "logicalOperationId": "op-charge-42", "executionId": "exec-1", "outcome": "committed", "evidenceKind": "provider_receipt", "evidenceRef": "receipt:charge-42"},
+    {"seq": 5, "type": "terminal", "trajectoryId": "traj-order-42", "segmentId": "segment-1", "logicalOperationId": "op-charge-42", "outcome": "committed", "evidenceKind": "provider_receipt", "evidenceRef": "receipt:charge-42"}
+  ],
+  "expectedStatus": "pass",
+  "expectedViolationCodes": []
+}
