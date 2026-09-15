@@ -7,6 +7,29 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## CrewAI identity / authority adapter v0.1
+
+**Result: PASS — baseline 2 effects, guarded 1 effect with two tool entries.**
+Hosted CI installed exact `crewai==1.15.21` and ran an A/B experiment on the
+same synchronous retry surface used by the admitted external Crashpoint record.
+
+In the baseline, the first invocation commits an external effect and raises
+before returning; CrewAI re-enters the tool and the unguarded second invocation
+commits a second effect. In the guarded arm, the first invocation consumes a
+one-use permit and commits one effect; on the same CrewAI retry, a matching
+external receipt for the stable `action_id + target + intent_hash` produces
+`return_prior`, so the runtime still enters the tool twice but the external
+effect count remains one.
+
+This is a runtime adapter result, not a CrewAI framework fix. It is scoped to
+the pinned same-process synchronous retry path and a local SQLite receipt/permit
+store outside CrewAI runtime state.
+
+- [Proof README](proofs/crewai-identity-authority-adapter-v0.1/README.md)
+- [Machine-readable A/B report](proofs/crewai-identity-authority-adapter-v0.1/report.json)
+- [Executable runtime experiment](proofs/crewai-identity-authority-adapter-v0.1/run_experiment.py)
+- [Experiment issue #174](https://github.com/safal207/ContractGraph-QA/issues/174)
+
 ## Identity / authority boundary v0.1
 
 **Result: 6/6 PASS; 2/2 unsafe mutants detected.** A framework-neutral executable
@@ -64,7 +87,7 @@ nor the TypeScript reference implementation.
 
 Before scoring, hosted CI required byte identity among the Python-repository
 fixture, the exact PyPI wheel copy, and the TypeScript-repository fixture. The
-npm tarball is not claimed as a fixture source because it does not ship the
+npm tarball is not claimed as a raw-vector source because it does not ship the
 vector.
 
 ### Row 19: the state-lie discriminator
@@ -101,6 +124,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 
 | Frozen subject | Result | Main distinction | Artifact |
 |---|---:|---|---|
+| CrewAI identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Real CrewAI 1.15.21 retry still re-enters tool twice; receipt reconciliation suppresses second external effect | [Open](proofs/crewai-identity-authority-adapter-v0.1/README.md) |
 | Identity / authority boundary `v0.1` | **6/6 PASS; 2/2 mutants** | Stable identity survives recovery while execution authority does not | [Open](proofs/identity-authority-boundary-v0.1/README.md) |
 | CrewAI 1.15.21 recorded retry evidence | **ADMITTED / 90/90 receipt agreement** | Third-party evidence admission; same-process retry duplication; no independent rerun | [Open](proofs/crewai-retry-external-admission-v0.1/README.md) |
 | Attenu observer-envelope `v1.2` | **19/19 AGREE** | Claim-first duplicate-subject handling and exact evidence-state mapping | [Open](proofs/attenu-envelope-v1.2-independent/README.md) |
