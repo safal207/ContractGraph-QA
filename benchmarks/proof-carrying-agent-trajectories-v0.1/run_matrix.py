@@ -17,13 +17,36 @@ from contractgraph_qa.agent_trajectory import (  # noqa: E402
 )
 
 CASES_DIR = Path(__file__).resolve().parent / "cases"
+EXPECTED_CASE_NAMES = {
+    "fail_handoff_after_unknown_redispatch.json",
+    "fail_lost_ack_crash_resume_redispatch.json",
+    "fail_stale_observer_retry.json",
+    "pass_handoff_after_unknown_reconcile.json",
+    "pass_lost_ack_crash_resume_reconcile.json",
+    "pass_stale_observer_reconcile.json",
+}
 
 
 def main() -> int:
     rows: list[dict[str, object]] = []
     all_match = True
 
-    for path in sorted(CASES_DIR.glob("*.json")):
+    paths = sorted(CASES_DIR.glob("*.json"))
+    actual_case_names = {path.name for path in paths}
+    if actual_case_names != EXPECTED_CASE_NAMES:
+        summary = {
+            "benchmark": "proof-carrying-agent-trajectories-v0.1",
+            "matrixStatus": "invalid_matrix",
+            "cases": len(paths),
+            "matched": 0,
+            "missingCases": sorted(EXPECTED_CASE_NAMES - actual_case_names),
+            "unexpectedCases": sorted(actual_case_names - EXPECTED_CASE_NAMES),
+            "results": [],
+        }
+        print(json.dumps(summary, indent=2, ensure_ascii=False, sort_keys=True))
+        return 2
+
+    for path in paths:
         scenario = load_agent_trajectory_scenario(path)
         expected_status = scenario.get("expectedStatus")
         expected_codes_raw = scenario.get("expectedViolationCodes", [])
