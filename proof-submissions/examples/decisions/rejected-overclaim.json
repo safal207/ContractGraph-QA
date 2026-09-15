@@ -1,0 +1,13 @@
+{
+  "allowed_claims": [
+    "crewai.same_process_retry_duplication_observed"
+  ],
+  "decision_digest_sha256": "3f8f7c237ad1d1b64d0c4d6c4cb2c9605cb995feb356fc5846cf502ac1f882fa",
+  "reason": "requested claims exceed this trusted profile",
+  "rejected_claims": [
+    "crewai.global_exactly_once"
+  ],
+  "schema": "contractgraph.external-proof-admission-decision.v0.2",
+  "status": "REJECTED_CLAIM_OVERREACH",
+  "submission_id": "crashpoint-crewai-overclaim-control"
+}
