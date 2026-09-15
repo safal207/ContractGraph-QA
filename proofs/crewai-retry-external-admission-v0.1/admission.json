@@ -1,0 +1,97 @@
+{
+  "schema": "contractgraph.external-proof-admission.v0.1",
+  "admission_id": "crewai-retry-crashpoint-2026-09-15",
+  "status": "ADMITTED_BOUNDED",
+  "admitted_on": "2026-09-15",
+  "source": {
+    "producer": "mstevens843",
+    "repository": "mstevens843/crashpoint",
+    "publication_commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+    "evidence_path": "evidence/crewai_retry.json",
+    "evidence_git_blob_sha1": "13f35572ebd0d0f56f57e893c62e38132793f4b1",
+    "github_actions_run_id": 35008887794,
+    "github_actions_artifact_id": 10411829570,
+    "artifact_downloaded_for_admission": true,
+    "artifact_zip_sha256": "29158b7b3928fea8bc4d1737fee2db256c87472dce3fb7391490538a4684227d",
+    "files": {
+      "evidence/crewai_retry.json": {
+        "bytes": 581573,
+        "sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1"
+      },
+      "results/11-crewai-retry-prediction.json": {
+        "bytes": 2437,
+        "sha256": "94bb09e0c71f23cda96b985b495b765439b1e4a3ce1ebe40d573c4171e5aa1b4"
+      },
+      "results/11-crewai-retry.md": {
+        "bytes": 8735,
+        "sha256": "1e0ecda17afe903404811f0d241bb34f3e3f763c8fc0d520f7dd837177d855d0"
+      },
+      "manifest.json": {
+        "bytes": 2099,
+        "sha256": "7e2b121d044d23ef727fb2fa348d9698db1cd35edcd6c275a2686fc69ffa6129"
+      }
+    }
+  },
+  "recorded_experiment": {
+    "receipt": "cp1_a7376a114c8eeb06eb7042039a8557b00630fde0cf946788d8be9a2cdd22541d",
+    "experiment_commit": "a08ef36f435b68343befa1c39681c1b4691302af",
+    "runtime": "crewai",
+    "runtime_version": "1.15.21",
+    "runtime_source_commit": "a8d330de00812e52356f32d32c715b86392bfd41",
+    "trial_count": 90,
+    "cases": [
+      "clean",
+      "pre_effect",
+      "post_effect"
+    ]
+  },
+  "accepted_claim": "For the recorded CrewAI 1.15.21 same-process synchronous ToolUsage._use retry boundary, an unguarded tool whose external effect commits and then raises before returning can be re-entered by the built-in retry and produce a second external effect for one logical action.",
+  "independent_admission_checks": {
+    "artifact_file_hashes_match_producer_manifest": true,
+    "evidence_trial_count": 90,
+    "case_counts": {
+      "clean": 30,
+      "pre_effect": 30,
+      "post_effect": 30
+    },
+    "clean": {
+      "effect_count_1": "30/30",
+      "tool_attempts_1": "30/30",
+      "oracle_EXACTLY_ONCE": "30/30"
+    },
+    "pre_effect": {
+      "effect_count_1": "30/30",
+      "tool_attempts_2": "30/30",
+      "failure_before_first_effect": "30/30",
+      "oracle_EXACTLY_ONCE": "30/30"
+    },
+    "post_effect": {
+      "effect_count_2": "30/30",
+      "tool_attempts_2": "30/30",
+      "first_effect_before_injected_failure": "30/30",
+      "second_effect_after_retry_reentry": "30/30",
+      "oracle_DUPLICATED": "30/30"
+    },
+    "scope_flags_all_trials": {
+      "same_process": true,
+      "fresh_process": false,
+      "external_retrigger": false,
+      "agent_retries": 0
+    }
+  },
+  "admission_interpretation": "The source record is admitted as bounded external evidence because its published bytes are pinned, the downloaded artifact hashes match its manifest, and the raw 90-trial receipts independently recompute to the claimed case distributions and event ordering. Admission verifies the evidence record and its internal claim boundary; it is not an independent rerun of CrewAI.",
+  "non_claims": [
+    "No independent rerun of the 90 trials was performed by ContractGraph-QA.",
+    "The publication CI job explicitly did not execute the original experiment.",
+    "The record does not establish the original execution time or a clean original checkout.",
+    "No process crash, worker replacement, fresh-process recovery, checkpoint restore, or external retrigger is measured.",
+    "No real LLM or provider is measured.",
+    "No idempotency guard or deduplication boundary is measured.",
+    "Host power-loss durability of the external ledger is not measured.",
+    "This does not establish exactly-once execution for CrewAI generally or for untested versions and paths."
+  ],
+  "next_test": {
+    "question": "Can an observer outside the runtime bind the same stable logical action identity to a durable pre-execution claim and an external effect receipt, then prevent or classify redispatch without treating persisted state as fresh execution authority?",
+    "boundary": "stable action identity -> fresh authorization -> one-use permit -> dispatch -> external receipt/read-back"
+  }
+}

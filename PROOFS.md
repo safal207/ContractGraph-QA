@@ -7,6 +7,27 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## External evidence admission: CrewAI retry duplication v0.1
+
+**Status: ADMITTED (BOUNDED), 90/90 receipt agreement.** ContractGraph-QA
+independently downloaded the public `mstevens843/crashpoint` publication
+artifact, matched its published file hashes, and recomputed the raw 90-trial
+CrewAI retry receipts without relying on the producer's aggregate summary.
+
+The admitted result is deliberately narrower than an independent rerun. It
+establishes that the frozen evidence bytes support the recorded same-process
+CrewAI 1.15.21 claim: when an unguarded external effect commits and the tool
+then raises before returning, the built-in synchronous `ToolUsage._use` retry
+can re-enter the tool and produce a second external effect for the same logical
+action. It does **not** establish process-crash, fresh-worker, checkpoint/resume,
+real-provider, or idempotency-guard behavior.
+
+- [Admission README](proofs/crewai-retry-external-admission-v0.1/README.md)
+- [Machine-readable admission](proofs/crewai-retry-external-admission-v0.1/admission.json)
+- [Independent recomputation report](proofs/crewai-retry-external-admission-v0.1/report.json)
+- [Pinned verifier](proofs/crewai-retry-external-admission-v0.1/verify_admission.py)
+- [Frozen external source](https://github.com/mstevens843/crashpoint/blob/606893ebb353df5dab3ac68738051eb5fbb7286e/evidence/crewai_retry.json)
+
 ## Latest proof: Attenu observer-envelope v1.2
 
 **Result: 19/19 AGREE** — five accepting controls and fourteen rejecting
@@ -66,6 +87,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 
 | Frozen subject | Result | Main distinction | Artifact |
 |---|---:|---|---|
+| CrewAI 1.15.21 recorded retry evidence | **ADMITTED / 90/90 receipt agreement** | Third-party evidence admission; same-process retry duplication; no independent rerun | [Open](proofs/crewai-retry-external-admission-v0.1/README.md) |
 | Attenu observer-envelope `v1.2` | **19/19 AGREE** | Claim-first duplicate-subject handling and exact evidence-state mapping | [Open](proofs/attenu-envelope-v1.2-independent/README.md) |
 | Attenu observer-envelope `v1.1` | **18/18 AGREE** | Baseline envelope verdicts, positions, failure vocabulary, and states | [Open](proofs/attenu-envelope-v1.1-independent/README.md) |
 | Attenu bundle vectors `v1.2` | **17/17 conformant** | Released-corpus score plus old-versus-fixed release discrimination | [Open](proofs/attenu-guard-v0.12.1-independent/README.md) |
