@@ -1,0 +1,123 @@
+{
+  "authority_non_continuity": true,
+  "cases": [
+    {
+      "authority_continuity": "fresh_permit_required_and_consumed",
+      "case": "control-new",
+      "decision": "dispatch",
+      "dispatch_count_delta": 1,
+      "identity_continuity": "not_applicable_new_action",
+      "passed": true,
+      "persisted_action_id": null,
+      "prior_permit_consumed": false,
+      "prior_permit_id": null,
+      "readback": null,
+      "restored_action_id": "act_83da3fc95bc16e358c37b2a815346651"
+    },
+    {
+      "authority_continuity": "old_permit_not_reused",
+      "case": "recovery-confirmed",
+      "decision": "return_prior",
+      "dispatch_count_delta": 0,
+      "identity_continuity": "same_action_id",
+      "passed": true,
+      "persisted_action_id": "act_83da3fc95bc16e358c37b2a815346651",
+      "prior_permit_consumed": true,
+      "prior_permit_id": "permit_392150d623b6b53cb89a4ab1",
+      "readback": {
+        "action_id": "act_83da3fc95bc16e358c37b2a815346651",
+        "intent_hash": "11dce6c64afd26701bec53bde3a681bd11633d2ca2b53b1765b1f29a67e2728f",
+        "receipt_id": "rcpt_f7f895cfd86de716c4e3e027",
+        "status": "CONFIRMED",
+        "target": "ledger-A"
+      },
+      "restored_action_id": "act_83da3fc95bc16e358c37b2a815346651"
+    },
+    {
+      "authority_continuity": "no_authority_from_persisted_state",
+      "case": "recovery-unknown",
+      "decision": "fail_closed",
+      "dispatch_count_delta": 0,
+      "identity_continuity": "same_action_id",
+      "passed": true,
+      "persisted_action_id": "act_83da3fc95bc16e358c37b2a815346651",
+      "prior_permit_consumed": true,
+      "prior_permit_id": "permit_392150d623b6b53cb89a4ab1",
+      "readback": {
+        "action_id": "act_83da3fc95bc16e358c37b2a815346651",
+        "status": "UNKNOWN"
+      },
+      "restored_action_id": "act_83da3fc95bc16e358c37b2a815346651"
+    },
+    {
+      "authority_continuity": "new_permit_required",
+      "case": "recovery-not-executed",
+      "decision": "fresh_authorization",
+      "dispatch_count_delta": 1,
+      "identity_continuity": "same_action_id",
+      "new_permit_id": "permit_34c2934c222b0614c2eef831",
+      "passed": true,
+      "persisted_action_id": "act_83da3fc95bc16e358c37b2a815346651",
+      "prior_permit_consumed": true,
+      "prior_permit_id": "permit_392150d623b6b53cb89a4ab1",
+      "readback": {
+        "action_id": "act_83da3fc95bc16e358c37b2a815346651",
+        "status": "NOT_EXECUTED"
+      },
+      "restored_action_id": "act_83da3fc95bc16e358c37b2a815346651"
+    },
+    {
+      "authority_continuity": "reused_permit",
+      "case": "replay-old-permit",
+      "decision": "reject_reused_permit",
+      "dispatch_count_delta": 0,
+      "identity_continuity": "same_action_id",
+      "passed": true,
+      "persisted_action_id": "act_83da3fc95bc16e358c37b2a815346651",
+      "prior_permit_consumed": true,
+      "prior_permit_id": "permit_392150d623b6b53cb89a4ab1",
+      "readback": null,
+      "restored_action_id": "act_83da3fc95bc16e358c37b2a815346651"
+    },
+    {
+      "authority_continuity": "receipt_target_must_match",
+      "case": "target-mismatch",
+      "decision": "reject_target_mismatch",
+      "dispatch_count_delta": 0,
+      "identity_continuity": "same_action_id",
+      "passed": true,
+      "persisted_action_id": "act_83da3fc95bc16e358c37b2a815346651",
+      "prior_permit_consumed": true,
+      "prior_permit_id": "permit_392150d623b6b53cb89a4ab1",
+      "readback": {
+        "action_id": "act_83da3fc95bc16e358c37b2a815346651",
+        "intent_hash": "11dce6c64afd26701bec53bde3a681bd11633d2ca2b53b1765b1f29a67e2728f",
+        "receipt_id": "rcpt_mismatched_target",
+        "status": "CONFIRMED",
+        "target": "ledger-B"
+      },
+      "restored_action_id": "act_83da3fc95bc16e358c37b2a815346651"
+    }
+  ],
+  "identity_continuity": true,
+  "invariant": "Restoring action_id is evidence about which logical action this is; it is not permission to perform the action again.",
+  "issue": "https://github.com/safal207/ContractGraph-QA/issues/172",
+  "mutant_discrimination": {
+    "detected_mutants": 2,
+    "persisted_identity_authority_mutant_detected": true,
+    "reusable_permit_mutant_detected": true,
+    "total_mutants": 2
+  },
+  "non_claims": [
+    "This is a framework-neutral executable model, not a CrewAI/LangGraph/AutoGen runtime integration.",
+    "It does not prove global exactly-once execution.",
+    "It does not prove target availability or Byzantine correctness.",
+    "It assumes the AuthorityStore is durable and non-bypassable.",
+    "It does not prove distributed consensus."
+  ],
+  "passed_cases": 6,
+  "predecessor": "https://github.com/safal207/ContractGraph-QA/pull/171",
+  "result": "PASS",
+  "schema": "contractgraph.identity-authority-boundary.v0.1",
+  "total_cases": 6
+}
