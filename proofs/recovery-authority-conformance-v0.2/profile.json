@@ -1,0 +1,58 @@
+{
+  "aggregate": {
+    "kind": "vector",
+    "policy": "Do not collapse per-runtime evidence into one framework-wide safety verdict.",
+    "scalar_verdict": null
+  },
+  "issue": "https://github.com/safal207/ContractGraph-QA/issues/188",
+  "non_claims": [
+    "A PASS row applies only to the exact pinned runtime surface named by its evidence source.",
+    "UNTESTED does not inherit PASS from the framework-neutral contract or another runtime.",
+    "This profile does not prove global exactly-once execution, distributed consensus, or Byzantine receipt correctness.",
+    "This profile does not rank frameworks."
+  ],
+  "normative_rows": {
+    "CONFIRMED": {"redispatch_authority": false, "required_decision": "return_prior"},
+    "UNKNOWN": {"redispatch_authority": false, "required_decision": "fail_closed_unknown"},
+    "MISMATCH": {"redispatch_authority": false, "required_decision": "fail_closed_mismatch"},
+    "NOT_EXECUTED": {"redispatch_authority": "only_after_new_authorization", "required_decision": "fresh_authorization_required"}
+  },
+  "predecessor_profile": "proofs/recovery-authority-conformance-v0.1/profile.json",
+  "runtimes": {
+    "crewai-1.15.21": {
+      "surface": "same-process synchronous ToolUsage._use retry",
+      "rows": {
+        "CONFIRMED": {"status": "PASS", "evidence": "crewai_confirmed", "observed_decision": "return_prior"},
+        "UNKNOWN": {"status": "UNTESTED", "reason": "No real CrewAI 1.15.21 runtime experiment has exercised unavailable/UNKNOWN external read-back yet."},
+        "MISMATCH": {"status": "UNTESTED", "reason": "No real CrewAI 1.15.21 runtime experiment has exercised a mismatching external receipt yet."},
+        "NOT_EXECUTED": {"status": "UNTESTED", "reason": "The real CrewAI retry adapter has not yet exercised authoritative NOT_EXECUTED followed by fresh authorization."}
+      }
+    },
+    "langgraph-1.2.11-sqlite-3.1.1": {
+      "surface": "fresh-process b1 recovery with SQLite checkpointer",
+      "rows": {
+        "CONFIRMED": {"status": "PASS", "evidence": "langgraph_confirmed", "observed_decision": "return_prior"},
+        "UNKNOWN": {"status": "PASS", "evidence": "langgraph_visibility", "observed_decision": "fail_closed_unknown"},
+        "MISMATCH": {"status": "PASS", "evidence": "langgraph_visibility", "observed_decision": "fail_closed_mismatch"},
+        "NOT_EXECUTED": {"status": "UNTESTED", "reason": "The real LangGraph b1 runtime adapter has not yet exercised authoritative NOT_EXECUTED followed by fresh authorization."}
+      }
+    },
+    "autogen-core-0.7.5": {
+      "surface": "fresh-process SingleThreadedAgentRuntime save_state/load_state",
+      "rows": {
+        "CONFIRMED": {"status": "PASS", "evidence": "autogen_authority", "observed_decision": "return_prior"},
+        "UNKNOWN": {"status": "PASS", "evidence": "autogen_authority", "observed_decision": "fail_closed_unknown"},
+        "MISMATCH": {"status": "PASS", "evidence": "autogen_authority", "observed_decision": "fail_closed_mismatch"},
+        "NOT_EXECUTED": {"status": "PASS", "evidence": "autogen_authority", "observed_decision": "fresh_authorization_required"}
+      }
+    }
+  },
+  "schema": "contractgraph.recovery-authority-conformance.v0.2",
+  "sources": {
+    "contract": {"pr": 173, "merge_commit": "6d7873c40d792f3ec031b52819c83a246df9b54e", "path": "proofs/identity-authority-boundary-v0.1/report.json", "blob_sha1": "2001c3bc97e3cef7cb14e9227b640a4d7457efd8"},
+    "crewai_confirmed": {"pr": 175, "merge_commit": "9498b696f095db37406b174a2388349087cdd960", "path": "proofs/crewai-identity-authority-adapter-v0.1/report.json", "blob_sha1": "2ce696e28857193423a6cf4757246adba4587f9a"},
+    "langgraph_confirmed": {"pr": 179, "merge_commit": "2a22b82cd02f8a56d7c41d071f618f72a7ed3839", "path": "proofs/langgraph-b1-identity-authority-v0.1/report.json", "blob_sha1": "94bd3e9ad88ebc69b3f34a065484a0adc4c5a70a"},
+    "langgraph_visibility": {"pr": 183, "merge_commit": "bb3aeada02ae392d518f685ebfd2dbfb9b3ac408", "path": "proofs/langgraph-b1-receipt-visibility-v0.2/report.json", "blob_sha1": "9b1350d31d223274710a0bd0f0b1d7e7cc7b6e66"},
+    "autogen_authority": {"pr": 187, "merge_commit": "a7f11e0eedc066c973a5ef17b2b2926407e9e6e7", "path": "proofs/autogen-runtime-authority-v0.1/report.json", "blob_sha1": "d2997c2328f1db2c06bc8e007f371f69f76843d4"}
+  }
+}
