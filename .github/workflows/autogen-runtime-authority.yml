@@ -25,7 +25,7 @@ jobs:
           python -m pip install "autogen-core==0.7.5"
       - name: Run AutoGen save/load recovery-authority experiment
         run: |
-          python proofs/autogen-runtime-authority-v0.1/run_experiment.py \
+          python proofs/autogen-runtime-authority-v0.1/run_experiment_v2.py \
             --write-report /tmp/autogen-runtime-authority-report.json
           if [ -f proofs/autogen-runtime-authority-v0.1/report.json ]; then
             diff -u \
