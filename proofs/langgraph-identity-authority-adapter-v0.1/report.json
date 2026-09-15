@@ -1,0 +1,306 @@
+{
+  "all_pass": true,
+  "arms": {
+    "baseline": {
+      "decision_sequences": {
+        "dispatch->dispatch": 5
+      },
+      "effect_counts_after_recovery": {
+        "2": 5
+      },
+      "k": 5,
+      "passing": 5,
+      "verdicts": {
+        "DUPLICATED_ON_RECOVERY": 5
+      }
+    },
+    "guarded": {
+      "decision_sequences": {
+        "dispatch->return_prior": 5
+      },
+      "effect_counts_after_recovery": {
+        "1": 5
+      },
+      "k": 5,
+      "passing": 5,
+      "verdicts": {
+        "RECONCILED_NO_DUPLICATE": 5
+      }
+    }
+  },
+  "claim": "on the pinned local LangGraph SQLite checkpoint/resume surface, the incomplete side-effecting node is re-entered after abrupt process exit; external receipt reconciliation can preserve stable action identity while suppressing redispatch",
+  "external_reference": {
+    "publication_commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+    "repository": "mstevens843/crashpoint"
+  },
+  "k_per_arm": 5,
+  "non_claims": [
+    "not LangGraph Cloud heartbeat/sweeper evidence",
+    "not a LangGraph framework fix",
+    "not proof for every checkpointer or distributed worker race",
+    "not global exactly-once execution"
+  ],
+  "runtime": {
+    "langgraph": "1.2.11",
+    "langgraph-checkpoint": "4.2.0",
+    "langgraph-checkpoint-sqlite": "3.1.1"
+  },
+  "schema": "contractgraph.langgraph-identity-authority-adapter.v0.1",
+  "trials": [
+    {
+      "action_id": "lg-action-baseline-0",
+      "arm": "baseline",
+      "decisions": [
+        "dispatch",
+        "dispatch"
+      ],
+      "effect_count_after_recovery": 2,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject",
+        "recovery"
+      ],
+      "index": 0,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": null,
+      "receipt_result": null,
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-baseline-0",
+      "verdict": "DUPLICATED_ON_RECOVERY"
+    },
+    {
+      "action_id": "lg-action-baseline-1",
+      "arm": "baseline",
+      "decisions": [
+        "dispatch",
+        "dispatch"
+      ],
+      "effect_count_after_recovery": 2,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject",
+        "recovery"
+      ],
+      "index": 1,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": null,
+      "receipt_result": null,
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-baseline-1",
+      "verdict": "DUPLICATED_ON_RECOVERY"
+    },
+    {
+      "action_id": "lg-action-baseline-2",
+      "arm": "baseline",
+      "decisions": [
+        "dispatch",
+        "dispatch"
+      ],
+      "effect_count_after_recovery": 2,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject",
+        "recovery"
+      ],
+      "index": 2,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": null,
+      "receipt_result": null,
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-baseline-2",
+      "verdict": "DUPLICATED_ON_RECOVERY"
+    },
+    {
+      "action_id": "lg-action-baseline-3",
+      "arm": "baseline",
+      "decisions": [
+        "dispatch",
+        "dispatch"
+      ],
+      "effect_count_after_recovery": 2,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject",
+        "recovery"
+      ],
+      "index": 3,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": null,
+      "receipt_result": null,
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-baseline-3",
+      "verdict": "DUPLICATED_ON_RECOVERY"
+    },
+    {
+      "action_id": "lg-action-baseline-4",
+      "arm": "baseline",
+      "decisions": [
+        "dispatch",
+        "dispatch"
+      ],
+      "effect_count_after_recovery": 2,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject",
+        "recovery"
+      ],
+      "index": 4,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": null,
+      "receipt_result": null,
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-baseline-4",
+      "verdict": "DUPLICATED_ON_RECOVERY"
+    },
+    {
+      "action_id": "lg-action-guarded-0",
+      "arm": "guarded",
+      "decisions": [
+        "dispatch",
+        "return_prior"
+      ],
+      "effect_count_after_recovery": 1,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject"
+      ],
+      "index": 0,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": true,
+      "receipt_result": "external-effect-ok",
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-guarded-0",
+      "verdict": "RECONCILED_NO_DUPLICATE"
+    },
+    {
+      "action_id": "lg-action-guarded-1",
+      "arm": "guarded",
+      "decisions": [
+        "dispatch",
+        "return_prior"
+      ],
+      "effect_count_after_recovery": 1,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject"
+      ],
+      "index": 1,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": true,
+      "receipt_result": "external-effect-ok",
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-guarded-1",
+      "verdict": "RECONCILED_NO_DUPLICATE"
+    },
+    {
+      "action_id": "lg-action-guarded-2",
+      "arm": "guarded",
+      "decisions": [
+        "dispatch",
+        "return_prior"
+      ],
+      "effect_count_after_recovery": 1,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject"
+      ],
+      "index": 2,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": true,
+      "receipt_result": "external-effect-ok",
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-guarded-2",
+      "verdict": "RECONCILED_NO_DUPLICATE"
+    },
+    {
+      "action_id": "lg-action-guarded-3",
+      "arm": "guarded",
+      "decisions": [
+        "dispatch",
+        "return_prior"
+      ],
+      "effect_count_after_recovery": 1,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject"
+      ],
+      "index": 3,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": true,
+      "receipt_result": "external-effect-ok",
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-guarded-3",
+      "verdict": "RECONCILED_NO_DUPLICATE"
+    },
+    {
+      "action_id": "lg-action-guarded-4",
+      "arm": "guarded",
+      "decisions": [
+        "dispatch",
+        "return_prior"
+      ],
+      "effect_count_after_recovery": 1,
+      "effect_count_after_subject": 1,
+      "effect_phases": [
+        "subject"
+      ],
+      "index": 4,
+      "node_entries": [
+        "subject",
+        "recovery"
+      ],
+      "passed": true,
+      "permit_consumed": true,
+      "receipt_result": "external-effect-ok",
+      "recovery_returncode": 0,
+      "subject_returncode": 79,
+      "thread_id": "lg-thread-guarded-4",
+      "verdict": "RECONCILED_NO_DUPLICATE"
+    }
+  ]
+}
