@@ -1,0 +1,56 @@
+{
+  "baseline": {
+    "action_id": "act_2a8e740fa675d805452f4684c4a19200",
+    "agent_retries": 0,
+    "case": "baseline",
+    "effect_count": 2,
+    "guard_decisions": [],
+    "intent_hash": "c948b0e0568f6b81eb9a7684c91ba28bb61ca19446413bb513b148e51a10e6d8",
+    "llm_calls": 2,
+    "passed": true,
+    "permit_consumed": null,
+    "permit_id": null,
+    "runtime_result": "logical action complete",
+    "tool_attempts": 2,
+    "verdict": "DUPLICATED"
+  },
+  "claim_ceiling": [
+    "same-process synchronous CrewAI 1.15.21 retry path only",
+    "local SQLite is outside CrewAI runtime state but is not a separate host/process",
+    "not a CrewAI framework fix",
+    "no crash or fresh-worker recovery claim",
+    "no checkpoint/resume claim",
+    "no global exactly-once claim"
+  ],
+  "guarded": {
+    "action_id": "act_2a8e740fa675d805452f4684c4a19200",
+    "agent_retries": 0,
+    "case": "guarded",
+    "effect_count": 1,
+    "guard_decisions": [
+      "dispatch",
+      "return_prior"
+    ],
+    "intent_hash": "c948b0e0568f6b81eb9a7684c91ba28bb61ca19446413bb513b148e51a10e6d8",
+    "llm_calls": 2,
+    "passed": true,
+    "permit_consumed": true,
+    "permit_id": "permit_b19a3ce0a2c727f462795cd7",
+    "runtime_result": "logical action complete",
+    "tool_attempts": 2,
+    "verdict": "RECONCILED_NO_DUPLICATE"
+  },
+  "invariant": "A CrewAI retry may re-enter the tool, but a matching external receipt for the same stable action identity is evidence to return the prior result, not authority to perform the side effect again.",
+  "issue": "https://github.com/safal207/ContractGraph-QA/issues/174",
+  "predecessors": [
+    "https://github.com/safal207/ContractGraph-QA/pull/171",
+    "https://github.com/safal207/ContractGraph-QA/pull/173"
+  ],
+  "result": "PASS",
+  "runtime": {
+    "name": "crewai",
+    "version": "1.15.21"
+  },
+  "same_action_identity_across_ab": true,
+  "schema": "contractgraph.crewai-identity-authority-adapter.v0.1"
+}
