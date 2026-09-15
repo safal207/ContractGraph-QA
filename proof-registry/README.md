@@ -37,6 +37,7 @@ graph TD
 - `registry.v0.1.json` — frozen proof nodes, bounded claims, non-claims, and claim-carrying edges.
 - `schema.v0.1.json` — portable JSON Schema for registry consumers.
 - `verify_registry.py` — stdlib-only verifier used by CI.
+- `query_registry.py` — small CLI for claim ownership and proof-lineage queries.
 
 ## What the verifier proves
 
@@ -69,6 +70,24 @@ Optionally write a machine-readable verification summary:
 python proof-registry/verify_registry.py \
   --write-summary /tmp/proof-registry-summary.json
 ```
+
+## Query claim lineage
+
+Ask who owns a claim and where it flows next:
+
+```bash
+python proof-registry/query_registry.py \
+  --claim contract.unknown_not_retry_authority
+```
+
+Inspect one proof node, its predecessors, successors, claim inputs, claims and non-claims:
+
+```bash
+python proof-registry/query_registry.py \
+  --node recovery-authority-vector-v0.2
+```
+
+The query CLI reads the registry only; it does not turn an `UNTESTED` or non-claim into evidence.
 
 ## Claim ceiling
 
