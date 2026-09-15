@@ -1,0 +1,28 @@
+name: Identity authority boundary
+
+on:
+  pull_request:
+    paths:
+      - "proofs/identity-authority-boundary-v0.1/**"
+      - ".github/workflows/identity-authority-boundary.yml"
+      - "PROOFS.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run identity/authority boundary harness
+        run: |
+          python proofs/identity-authority-boundary-v0.1/harness.py \
+            --write-report /tmp/identity-authority-report.json
+          diff -u \
+            proofs/identity-authority-boundary-v0.1/report.json \
+            /tmp/identity-authority-report.json
