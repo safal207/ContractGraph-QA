@@ -1,0 +1,36 @@
+{
+  "schema": "cgqa.astra-post-settlement-reconciliation-checkpoint.v0.1",
+  "fixtureId": "coinbase-bazaar-solana-2026-09-15",
+  "observedAtUtc": "REPLACE_WITH_OBSERVATION_TIME",
+  "checkpointLabel": "T+24h",
+  "mode": "READ_ONLY_NO_PAYMENT",
+  "catalog": {
+    "queryUrl": "https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources?payTo=F1AbWuXJcBT9arW9wc6Xr2vom5NBtngWsz6Ht16jRBLM&limit=1000",
+    "access": "FAILED",
+    "httpStatus": null,
+    "matchingResourceUrls": [],
+    "classification": "UNKNOWN",
+    "error": "REPLACE_WITH_NULL_OR_ACCESS_ERROR"
+  },
+  "chain": [
+    {
+      "transactionSignature": "5Rf6x6o4XqtVH34dBKCfbAtdpfy2Kq5HcuzAb7v1osbKtxCChDrzDo74wfNbmA3YGRHBu8izjBn37djDaUpZ6TXd",
+      "classification": "UNKNOWN",
+      "slot": 447177595,
+      "error": null
+    },
+    {
+      "transactionSignature": "4RnXctJeiDZ1ooSStfWnLSo8ixiyBhwLLVMCA4gyuSTFZRq4oYoS9WY3uWtn5KcDjtdTXbtDtJx1PzTPf399BY1R",
+      "classification": "UNKNOWN",
+      "slot": 447177600,
+      "error": null
+    }
+  ],
+  "providerInternalState": "UNKNOWN",
+  "providerInternalStateSource": null,
+  "claimBoundary": {
+    "paymentSubmitted": false,
+    "walletKeyUsed": false,
+    "catalogAbsenceInterpretedAsPaymentFailure": false
+  }
+}
