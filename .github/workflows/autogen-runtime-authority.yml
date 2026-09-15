@@ -1,0 +1,38 @@
+name: AutoGen runtime recovery authority
+
+on:
+  pull_request:
+    paths:
+      - "proofs/autogen-runtime-authority-v0.1/**"
+      - ".github/workflows/autogen-runtime-authority.yml"
+      - "PROOFS.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned AutoGen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "autogen-core==0.7.5"
+      - name: Run AutoGen save/load recovery-authority experiment
+        run: |
+          python proofs/autogen-runtime-authority-v0.1/run_experiment_v2.py \
+            --write-report /tmp/autogen-runtime-authority-report.json
+          if [ -f proofs/autogen-runtime-authority-v0.1/report.json ]; then
+            diff -u \
+              proofs/autogen-runtime-authority-v0.1/report.json \
+              /tmp/autogen-runtime-authority-report.json
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autogen-runtime-authority-report
+          path: /tmp/autogen-runtime-authority-report.json

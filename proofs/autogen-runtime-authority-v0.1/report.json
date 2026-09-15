@@ -1,0 +1,459 @@
+{
+  "all_pass": true,
+  "cases": {
+    "confirmed": {
+      "after_first_recovery": {
+        "decisions": [
+          "dispatch",
+          "return_prior"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_4048c758ba3a02d11337e7dbe5187643",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_4048c758ba3a02d11337e7dbe5187643",
+            "phase": "subject"
+          },
+          {
+            "action_id": "act_4048c758ba3a02d11337e7dbe5187643",
+            "phase": "recovery"
+          }
+        ],
+        "outcome": null,
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_0de4fd2ae8f7bff7a43cf463"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": true
+        }
+      },
+      "after_second_recovery": null,
+      "before_recovery": {
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_4048c758ba3a02d11337e7dbe5187643",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_4048c758ba3a02d11337e7dbe5187643",
+            "phase": "subject"
+          }
+        ],
+        "outcome": null,
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_0de4fd2ae8f7bff7a43cf463"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": true
+        }
+      },
+      "case": "confirmed",
+      "first_recovery": {
+        "result": "external-effect-ok",
+        "status": "RETURN_PRIOR"
+      },
+      "passed": true,
+      "saved_agent_state": {
+        "action_id": "act_4048c758ba3a02d11337e7dbe5187643",
+        "intent_hash": "bce3303b22521c67edf741fcfb341a40152ceac5c2c485aac399cd60304dc7d1",
+        "schema": "contractgraph.autogen-authority-agent-state.v0.1",
+        "target": "local-sqlite-target"
+      },
+      "second_recovery": null,
+      "subject": {
+        "error": "RuntimeError: injected lost response after effect",
+        "permit_persisted": false,
+        "saved_action_id": "act_4048c758ba3a02d11337e7dbe5187643",
+        "saved_fields": [
+          "action_id",
+          "intent_hash",
+          "schema",
+          "target"
+        ]
+      },
+      "verdict": "CONFIRMED_RETURN_PRIOR"
+    },
+    "mismatch": {
+      "after_first_recovery": {
+        "decisions": [
+          "dispatch",
+          "fail_closed_mismatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_9527533ec116e2507fc0650715366846",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_9527533ec116e2507fc0650715366846",
+            "phase": "subject"
+          },
+          {
+            "action_id": "act_9527533ec116e2507fc0650715366846",
+            "phase": "recovery"
+          }
+        ],
+        "outcome": null,
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_28aea025b72bbe2ef70943b2"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "other-sqlite-target",
+          "visible": true
+        }
+      },
+      "after_second_recovery": null,
+      "before_recovery": {
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_9527533ec116e2507fc0650715366846",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_9527533ec116e2507fc0650715366846",
+            "phase": "subject"
+          }
+        ],
+        "outcome": null,
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_28aea025b72bbe2ef70943b2"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "other-sqlite-target",
+          "visible": true
+        }
+      },
+      "case": "mismatch",
+      "first_recovery": {
+        "status": "BLOCKED_MISMATCH"
+      },
+      "passed": true,
+      "saved_agent_state": {
+        "action_id": "act_9527533ec116e2507fc0650715366846",
+        "intent_hash": "bce3303b22521c67edf741fcfb341a40152ceac5c2c485aac399cd60304dc7d1",
+        "schema": "contractgraph.autogen-authority-agent-state.v0.1",
+        "target": "local-sqlite-target"
+      },
+      "second_recovery": null,
+      "subject": {
+        "error": "RuntimeError: injected lost response after effect",
+        "permit_persisted": false,
+        "saved_action_id": "act_9527533ec116e2507fc0650715366846",
+        "saved_fields": [
+          "action_id",
+          "intent_hash",
+          "schema",
+          "target"
+        ]
+      },
+      "verdict": "MISMATCH_FAIL_CLOSED"
+    },
+    "not_executed": {
+      "after_first_recovery": {
+        "decisions": [
+          "dispatch",
+          "fresh_authorization_required",
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_9ee30a1638063fc2d6f2b6d29ed03cd2",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_9ee30a1638063fc2d6f2b6d29ed03cd2",
+            "phase": "subject"
+          },
+          {
+            "action_id": "act_9ee30a1638063fc2d6f2b6d29ed03cd2",
+            "phase": "recovery"
+          }
+        ],
+        "outcome": "NOT_EXECUTED",
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_5a33bb82c6b86b8c9656d0b3"
+          },
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 2,
+            "permit_id": "permit_f1b361686c80daada2fe5932"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": true
+        }
+      },
+      "after_second_recovery": null,
+      "before_recovery": {
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 0,
+        "effects": [],
+        "entries": [
+          {
+            "action_id": "act_9ee30a1638063fc2d6f2b6d29ed03cd2",
+            "phase": "subject"
+          }
+        ],
+        "outcome": "NOT_EXECUTED",
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_5a33bb82c6b86b8c9656d0b3"
+          }
+        ],
+        "receipt": null
+      },
+      "case": "not_executed",
+      "first_recovery": {
+        "result": "external-effect-ok",
+        "status": "FRESH_DISPATCH"
+      },
+      "passed": true,
+      "saved_agent_state": {
+        "action_id": "act_9ee30a1638063fc2d6f2b6d29ed03cd2",
+        "intent_hash": "bce3303b22521c67edf741fcfb341a40152ceac5c2c485aac399cd60304dc7d1",
+        "schema": "contractgraph.autogen-authority-agent-state.v0.1",
+        "target": "local-sqlite-target"
+      },
+      "second_recovery": null,
+      "subject": {
+        "error": "RuntimeError: injected pre-effect failure",
+        "permit_persisted": false,
+        "saved_action_id": "act_9ee30a1638063fc2d6f2b6d29ed03cd2",
+        "saved_fields": [
+          "action_id",
+          "intent_hash",
+          "schema",
+          "target"
+        ]
+      },
+      "verdict": "NOT_EXECUTED_FRESH_AUTHORITY"
+    },
+    "unknown": {
+      "after_first_recovery": {
+        "decisions": [
+          "dispatch",
+          "fail_closed_unknown"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "phase": "subject"
+          },
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "phase": "recovery"
+          }
+        ],
+        "outcome": null,
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_369b5dbe3e7eb3f17b3b46b7"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": false
+        }
+      },
+      "after_second_recovery": {
+        "decisions": [
+          "dispatch",
+          "fail_closed_unknown",
+          "return_prior"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "phase": "subject"
+          },
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "phase": "recovery"
+          },
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "phase": "recovery"
+          }
+        ],
+        "outcome": null,
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_369b5dbe3e7eb3f17b3b46b7"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": true
+        }
+      },
+      "before_recovery": {
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "entries": [
+          {
+            "action_id": "act_202596914285a6e567d854a945b82046",
+            "phase": "subject"
+          }
+        ],
+        "outcome": null,
+        "permits": [
+          {
+            "consume_count": 1,
+            "consumed": true,
+            "generation": 1,
+            "permit_id": "permit_369b5dbe3e7eb3f17b3b46b7"
+          }
+        ],
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": false
+        }
+      },
+      "case": "unknown",
+      "first_recovery": {
+        "status": "BLOCKED_UNKNOWN"
+      },
+      "passed": true,
+      "saved_agent_state": {
+        "action_id": "act_202596914285a6e567d854a945b82046",
+        "intent_hash": "bce3303b22521c67edf741fcfb341a40152ceac5c2c485aac399cd60304dc7d1",
+        "schema": "contractgraph.autogen-authority-agent-state.v0.1",
+        "target": "local-sqlite-target"
+      },
+      "second_recovery": {
+        "result": "external-effect-ok",
+        "status": "RETURN_PRIOR"
+      },
+      "subject": {
+        "error": "RuntimeError: injected lost response after effect",
+        "permit_persisted": false,
+        "saved_action_id": "act_202596914285a6e567d854a945b82046",
+        "saved_fields": [
+          "action_id",
+          "intent_hash",
+          "schema",
+          "target"
+        ]
+      },
+      "verdict": "UNKNOWN_BLOCKED_THEN_CONFIRMED"
+    }
+  },
+  "claim": "AutoGen runtime save/load preserves stable action identity across fresh processes while execution permits remain external and recovery decisions follow the frozen authority profile.",
+  "non_claims": [
+    "does not prove AutoGen natively implements retry deduplication or external reconciliation",
+    "does not prove crash recovery of AutoGen runtime internals",
+    "does not prove global exactly-once execution",
+    "does not prove Byzantine external targets"
+  ],
+  "runtime": {
+    "autogen_core": "0.7.5"
+  },
+  "schema": "contractgraph.autogen-runtime-authority.v0.1",
+  "state_rule": "persist action_id, intent hash and target; never persist execution permit or derived replay authority",
+  "upstream": {
+    "commit": "027ecf0a379bcc1d09956d46d12d44a3ad9cee14",
+    "package_version_at_commit": "0.7.5",
+    "repository": "microsoft/autogen",
+    "state_boundary": "SingleThreadedAgentRuntime.save_state/load_state"
+  }
+}
