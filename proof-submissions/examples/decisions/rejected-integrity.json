@@ -1,0 +1,7 @@
+{
+  "decision_digest_sha256": "f38f67be2943cb7fd4ec1a3a54b0b6e3bd7bf4d2ae056abce12600dec558dc8e",
+  "reason": "declared source does not match the immutable source pin for this profile",
+  "schema": "contractgraph.external-proof-admission-decision.v0.2",
+  "status": "REJECTED_INTEGRITY",
+  "submission_id": "crashpoint-crewai-integrity-control"
+}
