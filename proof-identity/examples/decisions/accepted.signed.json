@@ -1,0 +1,150 @@
+{
+  "admission_decision": {
+    "accepted_claims": [
+      {
+        "id": "crewai.same_process_retry_duplication_observed",
+        "text": "For the recorded CrewAI 1.15.21 same-process synchronous ToolUsage._use retry boundary, an unguarded tool whose external effect commits and then raises before returning can be re-entered by the built-in retry and produce a second external effect for one logical action."
+      }
+    ],
+    "claim_ceiling": "Independent byte/invariant verification of the frozen CrewAI retry receipts only; not an attestation of the original execution environment or a framework-wide safety guarantee.",
+    "decision_digest_sha256": "204e69c126cb8e0dbbf52031b4c89058c4a87cbc09b4290390f74e053a084735",
+    "non_claims": [
+      "No claim is made that the fixture submitter is the producer of mstevens843/crashpoint.",
+      "No claim is made about fresh-process recovery or checkpoint/resume behavior.",
+      "No independent rerun of the original 90 trials is established by admission.",
+      "No fresh-process, checkpoint/resume, external-retrigger, global exactly-once, or framework-wide safety claim is established."
+    ],
+    "promotion_gate": {
+      "canonical_registry_mutated": false,
+      "requires_human_review": true,
+      "requires_immutable_merge_artifact": true
+    },
+    "protocol_namespace": "CGQA",
+    "registry_candidate": {
+      "claim_ceiling": "Independent byte/invariant verification of the frozen CrewAI retry receipts only; not an attestation of the original execution environment or a framework-wide safety guarantee.",
+      "claim_inputs": [],
+      "claims": [
+        "crewai.same_process_retry_duplication_observed"
+      ],
+      "id": "external-crashpoint-crewai-retry-signed-fixture-2026-09-15",
+      "kind": "external_submission_candidate",
+      "non_claims": [
+        "No claim is made that the fixture submitter is the producer of mstevens843/crashpoint.",
+        "No claim is made about fresh-process recovery or checkpoint/resume behavior.",
+        "No independent rerun of the original 90 trials is established by admission.",
+        "No fresh-process, checkpoint/resume, external-retrigger, global exactly-once, or framework-wide safety claim is established."
+      ],
+      "source": {
+        "bytes": 581573,
+        "commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+        "path": "evidence/crewai_retry.json",
+        "repository": "mstevens843/crashpoint",
+        "sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1"
+      },
+      "status": "candidate_pending_immutable_merge"
+    },
+    "schema": "contractgraph.external-proof-admission-decision.v0.2",
+    "source": {
+      "bytes": 581573,
+      "commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+      "path": "evidence/crewai_retry.json",
+      "repository": "mstevens843/crashpoint",
+      "sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1"
+    },
+    "source_integrity": {
+      "actual_bytes": 581573,
+      "actual_sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1",
+      "expected_bytes": 581573,
+      "expected_sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1"
+    },
+    "status": "ADMITTED_BOUNDED",
+    "submission_id": "crashpoint-crewai-retry-signed-fixture-2026-09-15",
+    "submitted_by": {
+      "id": "cgqa-fixture-submitter",
+      "kind": "agent"
+    },
+    "trusted_verifier": {
+      "blob_sha": "d86a75a998bc6a1f62349f47cf1912a4c19955c9",
+      "merge_commit": "fa4b3195b1213b367825ed5d615deeb0491048fb",
+      "path": "proofs/crewai-retry-external-admission-v0.1/verify_admission.py"
+    },
+    "verification_profile": "CGQA.crewai_retry_receipts.v1",
+    "verifier_report": {
+      "claim_ceiling": "Independent byte/invariant verification of the recorded receipts only; not an independent rerun of CrewAI or an attestation of the original execution environment.",
+      "evidence_bytes": 581573,
+      "evidence_sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1",
+      "publication_commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+      "recomputed": {
+        "clean": {
+          "effect_counts": {
+            "1": 30
+          },
+          "oracle_classifications": {
+            "EXACTLY_ONCE": 30
+          },
+          "tool_attempts": {
+            "1": 30
+          },
+          "trials": 30
+        },
+        "post_effect": {
+          "effect_counts": {
+            "2": 30
+          },
+          "oracle_classifications": {
+            "DUPLICATED": 30
+          },
+          "tool_attempts": {
+            "2": 30
+          },
+          "trials": 30
+        },
+        "pre_effect": {
+          "effect_counts": {
+            "1": 30
+          },
+          "oracle_classifications": {
+            "EXACTLY_ONCE": 30
+          },
+          "tool_attempts": {
+            "2": 30
+          },
+          "trials": 30
+        }
+      },
+      "result": "90/90 AGREE_WITH_BOUNDED_RECORDED_CLAIM",
+      "schema": "contractgraph.external-proof-admission-verification.v0.1",
+      "scope": {
+        "agent_retries": 0,
+        "external_retrigger": false,
+        "fresh_process": false,
+        "same_process": true
+      }
+    }
+  },
+  "claim_ceiling": "The submission signature proves possession of the registered Ed25519 private key for the exact manifest bytes. The nested admission decision retains its own evidence and claim ceiling. Neither signature nor admission proves real-world identity, source authorship, key-custody quality, claim truth, certification, or automatic registry ownership.",
+  "envelope_digest_sha256": "f3db85bb94b4e9469e51d83907f624b949e1eca0883cd63ead4d3905dd0786a8",
+  "platform_signature": {
+    "algorithm": "Ed25519",
+    "key_id": "fixture.platform.cgqa.v1",
+    "payload_digest_sha256": "b7ac5b98278fcd55b8082cc85e17c2a5063ab068146edf41e2bb6818a14377f1",
+    "signature_b64": "OQ1PoO1lBGMuyQkMa0edivyv1DD4f2RtWaLp6mMMcUHzyjplN7h0ObxwrDRM3oBrXctDdsL49fGWzZhY4TsMCQ=="
+  },
+  "proof_identity": {
+    "algorithm": "Ed25519",
+    "identity_claim_ceiling": "Fixture-only key binding for v0.3 conformance. It does not attest a GitHub account, legal person, organization, or source-producer identity.",
+    "key_id": "fixture.submitter.cgqa.v1",
+    "manifest_payload_digest_sha256": "91501c47c9e7b365813f3593f599dc678d1868f0d912a74fb097e7c2274a8115",
+    "public_key_spki_sha256": "c06a5ab6d9f0b2c7807047ec2fd2f86fb40beee31214ef72a35ed38ebfd6f7bd",
+    "registered_identity": {
+      "id": "cgqa-fixture-submitter",
+      "kind": "agent"
+    },
+    "signature_verified": true,
+    "source_authorship_attested_by_signature": false,
+    "source_repository": "mstevens843/crashpoint"
+  },
+  "schema": "contractgraph.proof-identity-decision.v0.3",
+  "status": "ADMITTED_BOUNDED",
+  "submission_id": "crashpoint-crewai-retry-signed-fixture-2026-09-15"
+}
