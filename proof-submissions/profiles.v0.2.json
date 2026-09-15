@@ -1,0 +1,34 @@
+{
+  "schema": "contractgraph.external-proof-profiles.v0.2",
+  "profiles": [
+    {
+      "id": "CGQA.crewai_retry_receipts.v1",
+      "enabled": true,
+      "protocol_namespace": "CGQA",
+      "description": "Verify the frozen mstevens843/crashpoint CrewAI retry receipt corpus using the immutable ContractGraph-QA admission verifier.",
+      "trusted_verifier": {
+        "merge_commit": "fa4b3195b1213b367825ed5d615deeb0491048fb",
+        "path": "proofs/crewai-retry-external-admission-v0.1/verify_admission.py",
+        "blob_sha": "d86a75a998bc6a1f62349f47cf1912a4c19955c9"
+      },
+      "source_constraints": {
+        "repository": "mstevens843/crashpoint",
+        "commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+        "path": "evidence/crewai_retry.json",
+        "sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1",
+        "bytes": 581573
+      },
+      "allowed_claims": [
+        {
+          "id": "crewai.same_process_retry_duplication_observed",
+          "text": "For the recorded CrewAI 1.15.21 same-process synchronous ToolUsage._use retry boundary, an unguarded tool whose external effect commits and then raises before returning can be re-entered by the built-in retry and produce a second external effect for one logical action."
+        }
+      ],
+      "required_non_claims": [
+        "No independent rerun of the original 90 trials is established by admission.",
+        "No fresh-process, checkpoint/resume, external-retrigger, global exactly-once, or framework-wide safety claim is established."
+      ],
+      "claim_ceiling": "Independent byte/invariant verification of the frozen CrewAI retry receipts only; not an attestation of the original execution environment or a framework-wide safety guarantee."
+    }
+  ]
+}

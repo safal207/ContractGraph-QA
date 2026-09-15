@@ -1,0 +1,22 @@
+{
+  "schema": "contractgraph.external-proof-submission.v0.2",
+  "submission_id": "crashpoint-crewai-overclaim-control",
+  "submitted_by": {
+    "kind": "github",
+    "id": "mstevens843"
+  },
+  "protocol_namespace": "CGQA",
+  "verification_profile": "CGQA.crewai_retry_receipts.v1",
+  "source": {
+    "repository": "mstevens843/crashpoint",
+    "commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+    "path": "evidence/crewai_retry.json",
+    "sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1",
+    "bytes": 581573
+  },
+  "requested_claims": [
+    "crewai.same_process_retry_duplication_observed",
+    "crewai.global_exactly_once"
+  ],
+  "non_claims": []
+}

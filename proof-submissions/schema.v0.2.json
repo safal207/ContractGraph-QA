@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph.dev/schemas/external-proof-submission.v0.2.json",
+  "title": "ContractGraph External Proof Submission v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "submission_id",
+    "submitted_by",
+    "protocol_namespace",
+    "verification_profile",
+    "source",
+    "requested_claims",
+    "non_claims"
+  ],
+  "properties": {
+    "schema": {
+      "const": "contractgraph.external-proof-submission.v0.2"
+    },
+    "submission_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "submitted_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {"enum": ["github", "organization", "person", "agent", "other"]},
+        "id": {"type": "string", "minLength": 1, "maxLength": 256}
+      }
+    },
+    "protocol_namespace": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9._-]{1,63}$"
+    },
+    "verification_profile": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "path", "sha256", "bytes"],
+      "properties": {
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "path": {"type": "string", "minLength": 1, "maxLength": 512},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "requested_claims": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,191}$"
+      }
+    },
+    "non_claims": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 512}
+    }
+  }
+}
