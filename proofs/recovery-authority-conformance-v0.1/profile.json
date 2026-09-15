@@ -1,0 +1,107 @@
+{
+  "aggregate": {
+    "kind": "vector",
+    "policy": "Do not collapse per-runtime evidence into one framework-wide safety verdict.",
+    "scalar_verdict": null
+  },
+  "issue": "https://github.com/safal207/ContractGraph-QA/issues/184",
+  "non_claims": [
+    "A PASS row applies only to the exact pinned runtime surface named by its evidence source.",
+    "UNTESTED does not inherit PASS from the framework-neutral contract.",
+    "This profile does not prove global exactly-once execution, distributed consensus, or Byzantine receipt correctness.",
+    "This profile does not rank frameworks."
+  ],
+  "normative_rows": {
+    "CONFIRMED": {
+      "redispatch_authority": false,
+      "required_decision": "return_prior"
+    },
+    "MISMATCH": {
+      "redispatch_authority": false,
+      "required_decision": "fail_closed_mismatch"
+    },
+    "NOT_EXECUTED": {
+      "redispatch_authority": "only_after_new_authorization",
+      "required_decision": "fresh_authorization_required"
+    },
+    "UNKNOWN": {
+      "redispatch_authority": false,
+      "required_decision": "fail_closed_unknown"
+    }
+  },
+  "runtimes": {
+    "crewai-1.15.21": {
+      "rows": {
+        "CONFIRMED": {
+          "evidence": "crewai_confirmed",
+          "observed_decision": "return_prior",
+          "status": "PASS"
+        },
+        "MISMATCH": {
+          "reason": "No real CrewAI 1.15.21 runtime experiment has exercised a mismatching external receipt yet.",
+          "status": "UNTESTED"
+        },
+        "NOT_EXECUTED": {
+          "reason": "The real CrewAI retry adapter has not yet exercised authoritative NOT_EXECUTED followed by fresh authorization.",
+          "status": "UNTESTED"
+        },
+        "UNKNOWN": {
+          "reason": "No real CrewAI 1.15.21 runtime experiment has exercised unavailable/UNKNOWN external read-back yet.",
+          "status": "UNTESTED"
+        }
+      },
+      "surface": "same-process synchronous ToolUsage._use retry"
+    },
+    "langgraph-1.2.11-sqlite-3.1.1": {
+      "rows": {
+        "CONFIRMED": {
+          "evidence": "langgraph_confirmed",
+          "observed_decision": "return_prior",
+          "status": "PASS"
+        },
+        "MISMATCH": {
+          "evidence": "langgraph_visibility",
+          "observed_decision": "fail_closed_mismatch",
+          "status": "PASS"
+        },
+        "NOT_EXECUTED": {
+          "reason": "The real LangGraph b1 runtime adapter has not yet exercised authoritative NOT_EXECUTED followed by fresh authorization.",
+          "status": "UNTESTED"
+        },
+        "UNKNOWN": {
+          "evidence": "langgraph_visibility",
+          "observed_decision": "fail_closed_unknown",
+          "status": "PASS"
+        }
+      },
+      "surface": "fresh-process b1 recovery with SQLite checkpointer"
+    }
+  },
+  "schema": "contractgraph.recovery-authority-conformance.v0.1",
+  "sources": {
+    "contract": {
+      "blob_sha1": "2001c3bc97e3cef7cb14e9227b640a4d7457efd8",
+      "merge_commit": "6d7873c40d792f3ec031b52819c83a246df9b54e",
+      "path": "proofs/identity-authority-boundary-v0.1/report.json",
+      "pr": 173
+    },
+    "crewai_confirmed": {
+      "blob_sha1": "2ce696e28857193423a6cf4757246adba4587f9a",
+      "merge_commit": "9498b696f095db37406b174a2388349087cdd960",
+      "path": "proofs/crewai-identity-authority-adapter-v0.1/report.json",
+      "pr": 175
+    },
+    "langgraph_confirmed": {
+      "blob_sha1": "94bd3e9ad88ebc69b3f34a065484a0adc4c5a70a",
+      "merge_commit": "2a22b82cd02f8a56d7c41d071f618f72a7ed3839",
+      "path": "proofs/langgraph-b1-identity-authority-v0.1/report.json",
+      "pr": 179
+    },
+    "langgraph_visibility": {
+      "blob_sha1": "9b1350d31d223274710a0bd0f0b1d7e7cc7b6e66",
+      "merge_commit": "bb3aeada02ae392d518f685ebfd2dbfb9b3ac408",
+      "path": "proofs/langgraph-b1-receipt-visibility-v0.2/report.json",
+      "pr": 183
+    }
+  }
+}
