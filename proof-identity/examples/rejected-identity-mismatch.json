@@ -1,0 +1,30 @@
+{
+  "schema": "contractgraph.external-proof-submission.v0.3",
+  "submission_id": "crashpoint-crewai-retry-signed-identity-mismatch-2026-09-15",
+  "submitted_by": {
+    "kind": "agent",
+    "id": "different-fixture-submitter"
+  },
+  "protocol_namespace": "CGQA",
+  "verification_profile": "CGQA.crewai_retry_receipts.v1",
+  "source": {
+    "repository": "mstevens843/crashpoint",
+    "commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+    "path": "evidence/crewai_retry.json",
+    "sha256": "0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1",
+    "bytes": 581573
+  },
+  "requested_claims": [
+    "crewai.same_process_retry_duplication_observed"
+  ],
+  "non_claims": [
+    "No claim is made that the fixture submitter is the producer of mstevens843/crashpoint.",
+    "No claim is made about fresh-process recovery or checkpoint/resume behavior."
+  ],
+  "signature": {
+    "algorithm": "Ed25519",
+    "key_id": "fixture.submitter.cgqa.v1",
+    "payload_digest_sha256": "eba06b468fc328cbec701576ecd3529a1f8cbc2588891b5723d2d399bf7225b1",
+    "signature_b64": "DHHl65T2/WSR0wGfD1WoQO3nWzlworKpFggpSqXbk27qU2FSrRxz5+Z4wc9DN9qIC6getvgaMo+aN13qRC3+AQ=="
+  }
+}

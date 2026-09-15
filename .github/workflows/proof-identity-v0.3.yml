@@ -1,0 +1,94 @@
+name: Proof identity v0.3
+
+on:
+  pull_request:
+    paths:
+      - "proof-identity/**"
+      - "proof-submissions/process_submission.py"
+      - "proof-submissions/profiles.v0.2.json"
+      - ".github/workflows/proof-identity-v0.3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check crypto tooling
+        run: |
+          openssl version
+          python -m py_compile \
+            proof-identity/identity_crypto.py \
+            proof-identity/process_signed_submission.py \
+            proof-identity/sign_decision.py \
+            proof-identity/verify_signed_decision.py
+      - name: Process signed submission and identity controls
+        run: |
+          python proof-identity/process_signed_submission.py \
+            --submission proof-identity/examples/accepted-signed.json \
+            --write-decision /tmp/accepted-core.json >/tmp/accepted.log
+          python proof-identity/process_signed_submission.py \
+            --submission proof-identity/examples/rejected-tampered.json \
+            --write-decision /tmp/rejected-tampered.json >/tmp/tampered.log
+          python proof-identity/process_signed_submission.py \
+            --submission proof-identity/examples/rejected-unknown-key.json \
+            --write-decision /tmp/rejected-unknown-key.json >/tmp/unknown.log
+          python proof-identity/process_signed_submission.py \
+            --submission proof-identity/examples/rejected-identity-mismatch.json \
+            --write-decision /tmp/rejected-identity-mismatch.json >/tmp/mismatch.log
+      - name: Assert role separation and fail-closed controls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          accepted = json.loads(Path('/tmp/accepted-core.json').read_text())
+          tampered = json.loads(Path('/tmp/rejected-tampered.json').read_text())
+          unknown = json.loads(Path('/tmp/rejected-unknown-key.json').read_text())
+          mismatch = json.loads(Path('/tmp/rejected-identity-mismatch.json').read_text())
+
+          assert accepted['status'] == 'ADMITTED_BOUNDED', accepted
+          assert accepted['proof_identity']['signature_verified'] is True
+          assert accepted['proof_identity']['registered_identity'] == {
+              'kind': 'agent', 'id': 'cgqa-fixture-submitter'
+          }
+          assert accepted['proof_identity']['source_repository'] == 'mstevens843/crashpoint'
+          assert accepted['proof_identity']['source_authorship_attested_by_signature'] is False
+          assert accepted['admission_decision']['status'] == 'ADMITTED_BOUNDED'
+          assert accepted['admission_decision']['promotion_gate']['canonical_registry_mutated'] is False
+
+          assert tampered['status'] == 'REJECTED_SIGNATURE', tampered
+          assert unknown['status'] == 'REJECTED_IDENTITY', unknown
+          assert mismatch['status'] == 'REJECTED_IDENTITY', mismatch
+          assert tampered['admission_decision'] is None
+          assert unknown['admission_decision'] is None
+          assert mismatch['admission_decision'] is None
+          PY
+      - name: Verify frozen platform-signed admission when present
+        run: |
+          if [ -f proof-identity/examples/decisions/accepted.signed.json ]; then
+            python proof-identity/verify_signed_decision.py \
+              --decision proof-identity/examples/decisions/accepted.signed.json \
+              --expected-core /tmp/accepted-core.json \
+              --write-report /tmp/platform-signature-verification.json
+          else
+            echo "acquisition run: frozen platform-signed decision not committed yet"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proof-identity-v0.3-decisions
+          path: |
+            /tmp/accepted-core.json
+            /tmp/rejected-tampered.json
+            /tmp/rejected-unknown-key.json
+            /tmp/rejected-identity-mismatch.json
+            /tmp/platform-signature-verification.json
+          if-no-files-found: ignore

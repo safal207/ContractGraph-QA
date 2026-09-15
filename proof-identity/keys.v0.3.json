@@ -1,0 +1,35 @@
+{
+  "schema": "contractgraph.proof-identity-keys.v0.3",
+  "keys": [
+    {
+      "key_id": "fixture.submitter.cgqa.v1",
+      "algorithm": "Ed25519",
+      "status": "active",
+      "purposes": [
+        "external_submission"
+      ],
+      "identity": {
+        "kind": "agent",
+        "id": "cgqa-fixture-submitter"
+      },
+      "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA1Revucqr0DAJyzgjR0lmKkbq4q2GUELCeEyUY3WSAyg=\n-----END PUBLIC KEY-----\n",
+      "public_key_spki_sha256": "c06a5ab6d9f0b2c7807047ec2fd2f86fb40beee31214ef72a35ed38ebfd6f7bd",
+      "claim_ceiling": "Fixture-only key binding for v0.3 conformance. It does not attest a GitHub account, legal person, organization, or source-producer identity."
+    },
+    {
+      "key_id": "fixture.platform.cgqa.v1",
+      "algorithm": "Ed25519",
+      "status": "active",
+      "purposes": [
+        "admission_decision"
+      ],
+      "identity": {
+        "kind": "platform",
+        "id": "safal207/ContractGraph-QA"
+      },
+      "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAZq0tid/TE5OKGS8oAp0xt50wO8AADIy4UZxWbb5J9RA=\n-----END PUBLIC KEY-----\n",
+      "public_key_spki_sha256": "7836923359387e4253188f10b0972693dceb22115db3fdc63ead5485642590d7",
+      "claim_ceiling": "Fixture-only platform signing key for frozen v0.3 admission-decision conformance. Production key custody is outside this fixture."
+    }
+  ]
+}
