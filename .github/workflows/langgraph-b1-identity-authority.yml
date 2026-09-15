@@ -1,0 +1,29 @@
+name: LangGraph b1 identity authority
+
+on:
+  pull_request:
+    paths:
+      - "proofs/langgraph-b1-identity-authority-v0.1/**"
+      - ".github/workflows/langgraph-b1-identity-authority.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned LangGraph runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "langgraph==1.2.11" "langgraph-checkpoint-sqlite==3.1.1"
+      - name: Run LangGraph b1 A/B acquisition
+        run: |
+          python proofs/langgraph-b1-identity-authority-v0.1/run_ab.py \
+            --write-report /tmp/langgraph-b1-report.json
+          cat /tmp/langgraph-b1-report.json
