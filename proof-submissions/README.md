@@ -38,6 +38,12 @@ A trusted-verifier commit/path/blob mismatch is **not** a submission rejection. 
 
 The admitted control uses the real external corpus at `mstevens843/crashpoint@606893ebb353df5dab3ac68738051eb5fbb7286e/evidence/crewai_retry.json` and the immutable verifier merged in ContractGraph-QA #171.
 
+## Promotion and identity boundaries
+
 An admitted result contains a `registry_candidate` object, but CI never mutates `proof-registry/registry.v0.1.json` automatically. Promotion into the canonical registry still requires review and an immutable merge commit.
+
+The candidate's requested/accepted claims are proposals for registry review; `ADMITTED_BOUNDED` does not by itself assign canonical claim ownership when that claim already exists or conflicts with another node.
+
+`submitted_by` is declarative metadata in v0.2. The intake layer does not yet cryptographically authenticate the claimed submitter identity, so an admission must not be read as proof that the named person, organization, GitHub user, or agent actually submitted the bytes.
 
 Tracking issue: #192.
