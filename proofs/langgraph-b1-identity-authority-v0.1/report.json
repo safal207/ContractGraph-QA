@@ -1,0 +1,152 @@
+{
+  "all_pass": true,
+  "arms": {
+    "baseline": {
+      "after_recovery": {
+        "action_ids": [
+          "act_657165623bbf673ecf670259b41f2d88",
+          "act_657165623bbf673ecf670259b41f2d88"
+        ],
+        "decisions": [
+          "dispatch",
+          "dispatch"
+        ],
+        "effect_count": 2,
+        "effects": [
+          {
+            "action_id": "act_657165623bbf673ecf670259b41f2d88",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          },
+          {
+            "action_id": "act_657165623bbf673ecf670259b41f2d88",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 2,
+        "permit": null,
+        "receipt": null
+      },
+      "arm": "baseline",
+      "before_recovery": {
+        "action_ids": [
+          "act_657165623bbf673ecf670259b41f2d88"
+        ],
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_657165623bbf673ecf670259b41f2d88",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 1,
+        "permit": null,
+        "receipt": null
+      },
+      "checkpoint_after_recovery": {
+        "checkpoints": 3,
+        "writes": 3
+      },
+      "checkpoint_before_recovery": {
+        "checkpoints": 2,
+        "writes": 2
+      },
+      "passed": true,
+      "recovery_returncode": 0,
+      "subject_returncode": -9,
+      "verdict": "DUPLICATED"
+    },
+    "guarded": {
+      "after_recovery": {
+        "action_ids": [
+          "act_92bd924f791d352bdf9c7bac146af8fd",
+          "act_92bd924f791d352bdf9c7bac146af8fd"
+        ],
+        "decisions": [
+          "dispatch",
+          "return_prior"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_92bd924f791d352bdf9c7bac146af8fd",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 2,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_38ad7641f8b49ba3e277af52"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target"
+        }
+      },
+      "arm": "guarded",
+      "before_recovery": {
+        "action_ids": [
+          "act_92bd924f791d352bdf9c7bac146af8fd"
+        ],
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_92bd924f791d352bdf9c7bac146af8fd",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 1,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_38ad7641f8b49ba3e277af52"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target"
+        }
+      },
+      "checkpoint_after_recovery": {
+        "checkpoints": 3,
+        "writes": 3
+      },
+      "checkpoint_before_recovery": {
+        "checkpoints": 2,
+        "writes": 2
+      },
+      "passed": true,
+      "recovery_returncode": 0,
+      "subject_returncode": -9,
+      "verdict": "RECONCILED_NO_DUPLICATE"
+    }
+  },
+  "barrier": "b1_after_effect_before_pending_writes",
+  "claim": "on the pinned local LangGraph b1 recovery boundary, external receipt reconciliation preserves stable action identity while preventing persisted/recovered state from becoming authority for a second side effect",
+  "external_reference": {
+    "adapter_blob": "9dea189cae3ebbcc573786c1df878094c61207fd",
+    "commit": "606893ebb353df5dab3ac68738051eb5fbb7286e",
+    "repository": "mstevens843/crashpoint"
+  },
+  "non_claims": [
+    "does not reproduce the LangGraph Cloud sweeper or its approximately 180-second timing",
+    "does not prove global exactly-once execution",
+    "does not prove distributed authorization or consensus",
+    "does not prove external target availability or Byzantine correctness"
+  ],
+  "runtime": {
+    "langgraph": "1.2.11",
+    "langgraph_checkpoint_sqlite": "3.1.1"
+  },
+  "schema": "contractgraph.langgraph-b1-identity-authority.v0.1"
+}

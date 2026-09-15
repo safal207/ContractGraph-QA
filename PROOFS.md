@@ -7,6 +7,34 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## LangGraph b1 identity / authority adapter v0.1
+
+**Result: PASS — baseline 2 effects, guarded 1 effect across fresh-process recovery.**
+Hosted CI installed exact `langgraph==1.2.11` and
+`langgraph-checkpoint-sqlite==3.1.1`, crashed the subject process at the
+deterministic `b1` boundary after the external effect but before pending writes
+persisted, then recovered from the same SQLite checkpoint in a fresh process.
+
+In the baseline, recovery re-entered the node and produced a second external
+effect. In the guarded arm, recovery still re-entered the node with the same
+stable `action_id`, but external receipt reconciliation produced `return_prior`;
+the one-use permit remained consumed exactly once and the external effect count
+stayed one.
+
+The first hosted run acquired the observed A/B result without a committed
+expected report. The result was then frozen as `report.json`; a second hosted run
+regenerated the report and matched it byte-for-byte.
+
+This is an application-side runtime adapter result, not a LangGraph framework
+fix. It is scoped to the pinned local SQLite `b1` recovery boundary and does not
+claim reproduction of the LangGraph Cloud ~180-second sweeper.
+
+- [Proof README](proofs/langgraph-b1-identity-authority-v0.1/README.md)
+- [Machine-readable A/B report](proofs/langgraph-b1-identity-authority-v0.1/report.json)
+- [Executable runtime experiment](proofs/langgraph-b1-identity-authority-v0.1/run_ab.py)
+- [Experiment issue #176](https://github.com/safal207/ContractGraph-QA/issues/176)
+- [Acquisition/freeze issue #177](https://github.com/safal207/ContractGraph-QA/issues/177)
+
 ## CrewAI identity / authority adapter v0.1
 
 **Result: PASS — baseline 2 effects, guarded 1 effect with two tool entries.**
@@ -124,6 +152,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 
 | Frozen subject | Result | Main distinction | Artifact |
 |---|---:|---|---|
+| LangGraph b1 identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Fresh-process recovery re-enters node; external receipt reconciliation suppresses the second effect | [Open](proofs/langgraph-b1-identity-authority-v0.1/README.md) |
 | CrewAI identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Real CrewAI 1.15.21 retry still re-enters tool twice; receipt reconciliation suppresses second external effect | [Open](proofs/crewai-identity-authority-adapter-v0.1/README.md) |
 | Identity / authority boundary `v0.1` | **6/6 PASS; 2/2 mutants** | Stable identity survives recovery while execution authority does not | [Open](proofs/identity-authority-boundary-v0.1/README.md) |
 | CrewAI 1.15.21 recorded retry evidence | **ADMITTED / 90/90 receipt agreement** | Third-party evidence admission; same-process retry duplication; no independent rerun | [Open](proofs/crewai-retry-external-admission-v0.1/README.md) |
