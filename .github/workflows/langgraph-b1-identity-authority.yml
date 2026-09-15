@@ -22,8 +22,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install "langgraph==1.2.11" "langgraph-checkpoint-sqlite==3.1.1"
-      - name: Run LangGraph b1 A/B acquisition
+      - name: Reproduce frozen LangGraph b1 A/B report
         run: |
           python proofs/langgraph-b1-identity-authority-v0.1/run_ab.py \
             --write-report /tmp/langgraph-b1-report.json
-          cat /tmp/langgraph-b1-report.json
+          diff -u \
+            proofs/langgraph-b1-identity-authority-v0.1/report.json \
+            /tmp/langgraph-b1-report.json
