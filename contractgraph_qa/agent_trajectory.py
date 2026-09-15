@@ -106,8 +106,9 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
     resolved_outcome: dict[str, str] = {}
     retry_authorized: set[str] = set()
     execution_to_operation: dict[str, str] = {}
-    execution_to_segment: dict[str, str] = {}
     last_execution: dict[str, str] = {}
+    active_segment: dict[str, str] = {}
+    reconciliation_evidence: dict[str, dict[str, str]] = {}
     seen_execution_ids: set[str] = set()
 
     ambiguity_count = 0
@@ -150,17 +151,25 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
             )
 
         if event_type == "authorize":
+            prior_segment = active_segment.get(logical_operation_id)
+            if prior_segment is not None and prior_segment != segment_id:
+                _violation(
+                    violations,
+                    "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
+                    expected_seq,
+                    "authorization moved an existing logical operation to a different active segment",
+                    critical=True,
+                    penalty=50,
+                )
             authorized_ops.add(logical_operation_id)
+            active_segment.setdefault(logical_operation_id, segment_id)
             continue
 
         if event_type in _EXECUTION_EVENTS:
             execution_id = _required_text(
                 event.get("executionId"), f"events[{expected_seq - 1}].executionId"
             )
-            agent_id = _required_text(
-                event.get("agentId"), f"events[{expected_seq - 1}].agentId"
-            )
-            del agent_id
+            _required_text(event.get("agentId"), f"events[{expected_seq - 1}].agentId")
 
             if execution_id in seen_execution_ids:
                 _violation(
@@ -179,6 +188,17 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
                     "PCT-006_UNAUTHORIZED_SIDE_EFFECT_EXECUTION",
                     expected_seq,
                     "side-effect-capable execution has no preceding authorization",
+                    critical=True,
+                    penalty=50,
+                )
+
+            current_segment = active_segment.get(logical_operation_id)
+            if current_segment is not None and segment_id != current_segment:
+                _violation(
+                    violations,
+                    "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
+                    expected_seq,
+                    "side-effect-capable execution is outside the active trajectory segment",
                     critical=True,
                     penalty=50,
                 )
@@ -231,27 +251,35 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
                 retry_authorized.discard(logical_operation_id)
 
             execution_to_operation[execution_id] = logical_operation_id
-            execution_to_segment[execution_id] = segment_id
             last_execution[logical_operation_id] = execution_id
+            active_segment.setdefault(logical_operation_id, segment_id)
             resolved_outcome.pop(logical_operation_id, None)
+            reconciliation_evidence.pop(logical_operation_id, None)
             continue
 
         if event_type == "ambiguous":
             execution_id = _required_text(
                 event.get("executionId"), f"events[{expected_seq - 1}].executionId"
             )
-            if execution_to_operation.get(execution_id) != logical_operation_id:
+            identity_valid = (
+                execution_to_operation.get(execution_id) == logical_operation_id
+                and last_execution.get(logical_operation_id) == execution_id
+                and active_segment.get(logical_operation_id) == segment_id
+            )
+            if not identity_valid:
                 _violation(
                     violations,
                     "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
                     expected_seq,
-                    "ambiguous observation is not bound to a known execution of this logical operation",
+                    "ambiguous observation is not bound to the latest execution and active segment",
                     critical=True,
                     penalty=50,
                 )
-            unresolved[logical_operation_id] = execution_id
-            resolved_outcome.pop(logical_operation_id, None)
-            retry_authorized.discard(logical_operation_id)
+            else:
+                unresolved[logical_operation_id] = execution_id
+                resolved_outcome.pop(logical_operation_id, None)
+                reconciliation_evidence.pop(logical_operation_id, None)
+                retry_authorized.discard(logical_operation_id)
             ambiguity_count += 1
             continue
 
@@ -260,12 +288,16 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
                 event.get("predecessorExecutionId"),
                 f"events[{expected_seq - 1}].predecessorExecutionId",
             )
-            if execution_to_operation.get(predecessor_execution_id) != logical_operation_id:
+            if (
+                execution_to_operation.get(predecessor_execution_id) != logical_operation_id
+                or last_execution.get(logical_operation_id) != predecessor_execution_id
+                or active_segment.get(logical_operation_id) != segment_id
+            ):
                 _violation(
                     violations,
                     "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
                     expected_seq,
-                    "crash boundary is not bound to the preceding execution of this logical operation",
+                    "crash boundary is not bound to the latest execution and active segment",
                     critical=True,
                     penalty=50,
                 )
@@ -282,30 +314,32 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
                     event.get("toAgentId"), f"events[{expected_seq - 1}].toAgentId"
                 )
             else:
-                _required_text(
-                    event.get("agentId"), f"events[{expected_seq - 1}].agentId"
-                )
+                _required_text(event.get("agentId"), f"events[{expected_seq - 1}].agentId")
 
             predecessor_execution_id = _optional_text(event.get("predecessorExecutionId"))
             predecessor_segment_id = _optional_text(event.get("predecessorSegmentId"))
             predecessor_proof_ref = _optional_text(event.get("predecessorProofRef"))
+            latest_execution = last_execution.get(logical_operation_id)
+            current_segment = active_segment.get(logical_operation_id)
 
-            if (
-                predecessor_execution_id is None
-                or execution_to_operation.get(predecessor_execution_id)
-                != logical_operation_id
-                or predecessor_segment_id is None
-                or execution_to_segment.get(predecessor_execution_id)
-                != predecessor_segment_id
-            ):
+            identity_valid = (
+                predecessor_execution_id is not None
+                and predecessor_execution_id == latest_execution
+                and execution_to_operation.get(predecessor_execution_id) == logical_operation_id
+                and predecessor_segment_id is not None
+                and predecessor_segment_id == current_segment
+            )
+            if not identity_valid:
                 _violation(
                     violations,
                     "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
                     expected_seq,
-                    "continuity boundary is not bound to the known predecessor execution and segment of the same logical operation",
+                    "continuity boundary is not bound to the latest execution and active segment",
                     critical=True,
                     penalty=50,
                 )
+            else:
+                active_segment[logical_operation_id] = segment_id
 
             if require_predecessor_proof and predecessor_proof_ref is None:
                 _violation(
@@ -328,7 +362,6 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
             evidence_ref = _required_text(
                 event.get("evidenceRef"), f"events[{expected_seq - 1}].evidenceRef"
             )
-            del evidence_kind, evidence_ref
             outcome = _required_text(
                 event.get("outcome"), f"events[{expected_seq - 1}].outcome"
             ).lower()
@@ -336,20 +369,35 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
                 raise AgentTrajectoryError(
                     "reconcile.outcome must be committed, failed, no_effect, pending, or unknown"
                 )
-            if execution_to_operation.get(execution_id) != logical_operation_id:
+
+            identity_valid = (
+                execution_to_operation.get(execution_id) == logical_operation_id
+                and last_execution.get(logical_operation_id) == execution_id
+                and active_segment.get(logical_operation_id) == segment_id
+            )
+            if not identity_valid:
                 _violation(
                     violations,
                     "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
                     expected_seq,
-                    "reconciliation evidence is not bound to a known execution of this logical operation",
+                    "reconciliation is not bound to the latest execution and active segment",
                     critical=True,
                     penalty=50,
                 )
+                reconciliation_count += 1
+                continue
 
             reconciliation_count += 1
             if outcome in _TERMINAL_OUTCOMES:
                 unresolved.pop(logical_operation_id, None)
                 resolved_outcome[logical_operation_id] = outcome
+                reconciliation_evidence[logical_operation_id] = {
+                    "executionId": execution_id,
+                    "segmentId": segment_id,
+                    "evidenceKind": evidence_kind,
+                    "evidenceRef": evidence_ref,
+                    "outcome": outcome,
+                }
                 if outcome in {"failed", "no_effect"}:
                     retry_flag = event.get("retryAuthorized", False)
                     if not isinstance(retry_flag, bool):
@@ -365,6 +413,7 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
             else:
                 unresolved[logical_operation_id] = execution_id
                 resolved_outcome.pop(logical_operation_id, None)
+                reconciliation_evidence.pop(logical_operation_id, None)
                 retry_authorized.discard(logical_operation_id)
             continue
 
@@ -377,30 +426,57 @@ def evaluate_agent_trajectory_scenario(payload: dict[str, Any]) -> dict[str, Any
                     "terminal.outcome must be committed, failed, or no_effect"
                 )
 
-            evidence_kind = _optional_text(event.get("evidenceKind"))
-            evidence_ref = _optional_text(event.get("evidenceRef"))
-            if require_terminal_evidence and (evidence_kind is None or evidence_ref is None):
+            if active_segment.get(logical_operation_id) != segment_id:
                 _violation(
                     violations,
-                    "PCT-004_TERMINAL_WITHOUT_EXTERNAL_PROOF",
+                    "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
                     expected_seq,
-                    "terminal state lacks a named external evidence surface and stable evidence reference",
+                    "terminal event is outside the active trajectory segment",
                     critical=True,
-                    penalty=45,
+                    penalty=50,
                 )
 
-            if resolved_outcome.get(logical_operation_id) != outcome:
+            evidence_kind = _optional_text(event.get("evidenceKind"))
+            evidence_ref = _optional_text(event.get("evidenceRef"))
+            stored_evidence = reconciliation_evidence.get(logical_operation_id)
+            proof_valid = resolved_outcome.get(logical_operation_id) == outcome
+
+            if require_terminal_evidence:
+                proof_valid = (
+                    proof_valid
+                    and evidence_kind is not None
+                    and evidence_ref is not None
+                    and stored_evidence is not None
+                    and stored_evidence.get("outcome") == outcome
+                    and stored_evidence.get("segmentId") == segment_id
+                    and stored_evidence.get("evidenceKind") == evidence_kind
+                    and stored_evidence.get("evidenceRef") == evidence_ref
+                    and stored_evidence.get("executionId")
+                    == last_execution.get(logical_operation_id)
+                )
+
+            if not proof_valid:
                 _violation(
                     violations,
                     "PCT-004_TERMINAL_WITHOUT_EXTERNAL_PROOF",
                     expected_seq,
-                    "terminal outcome is not backed by a matching prior reconciliation",
+                    "terminal outcome is not backed by matching reconciliation evidence for the latest execution",
                     critical=True,
                     penalty=45,
                 )
             continue
 
         if event_type == "stop":
+            current_segment = active_segment.get(logical_operation_id)
+            if current_segment is not None and current_segment != segment_id:
+                _violation(
+                    violations,
+                    "PCT-002_TRAJECTORY_IDENTITY_DRIFT",
+                    expected_seq,
+                    "stop event is outside the active trajectory segment",
+                    critical=True,
+                    penalty=50,
+                )
             continue
 
         raise AgentTrajectoryError(f"unsupported event type: {event_type}")
