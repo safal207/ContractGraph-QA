@@ -1,0 +1,324 @@
+{
+  "schema": "contractgraph.proof-registry.v0.1",
+  "title": "ContractGraph External Proof Registry v0.1",
+  "principle": "Each external proof lowers the cost of the next trust decision only when the exact claim boundary survives the handoff.",
+  "nodes": [
+    {
+      "id": "crewai-external-admission-v0.1",
+      "kind": "external_admission",
+      "status": "frozen",
+      "artifact": {
+        "merge_commit": "fa4b3195b1213b367825ed5d615deeb0491048fb",
+        "path": "proofs/crewai-retry-external-admission-v0.1/report.json",
+        "blob_sha": "0ddcb1cad43d2506390a820e53b1d47efc85f300"
+      },
+      "claim_inputs": [],
+      "claims": [
+        "crewai.same_process_retry_duplication_observed"
+      ],
+      "non_claims": [
+        "fresh_process_recovery",
+        "checkpoint_resume_safety",
+        "global_exactly_once"
+      ],
+      "claim_ceiling": "Frozen third-party evidence admission only: the recorded CrewAI 1.15.21 synchronous retry can duplicate an external effect after commit and before tool success returns."
+    },
+    {
+      "id": "identity-authority-contract-v0.1",
+      "kind": "framework_neutral_contract",
+      "status": "frozen",
+      "artifact": {
+        "merge_commit": "6d7873c40d792f3ec031b52819c83a246df9b54e",
+        "path": "proofs/identity-authority-boundary-v0.1/report.json",
+        "blob_sha": "2001c3bc97e3cef7cb14e9227b640a4d7457efd8"
+      },
+      "claim_inputs": [
+        "crewai.same_process_retry_duplication_observed"
+      ],
+      "claims": [
+        "contract.persisted_identity_not_authority",
+        "contract.unknown_not_retry_authority",
+        "contract.consumed_permit_not_reusable",
+        "contract.not_executed_requires_fresh_authorization",
+        "contract.target_mismatch_non_authorizing"
+      ],
+      "non_claims": [
+        "specific_runtime_conformance",
+        "global_exactly_once",
+        "distributed_consensus"
+      ],
+      "claim_ceiling": "Executable framework-neutral semantics only; no runtime receives PASS from this node by inheritance."
+    },
+    {
+      "id": "crewai-runtime-authority-v0.1",
+      "kind": "runtime_proof",
+      "status": "frozen",
+      "artifact": {
+        "merge_commit": "9498b696f095db37406b174a2388349087cdd960",
+        "path": "proofs/crewai-identity-authority-adapter-v0.1/report.json",
+        "blob_sha": "2ce696e28857193423a6cf4757246adba4587f9a"
+      },
+      "claim_inputs": [
+        "crewai.same_process_retry_duplication_observed",
+        "contract.persisted_identity_not_authority",
+        "contract.consumed_permit_not_reusable"
+      ],
+      "claims": [
+        "crewai.confirmed_return_prior_pass",
+        "crewai.baseline_duplicates_on_retry",
+        "crewai.one_use_permit_preserved"
+      ],
+      "non_claims": [
+        "crewai_fresh_process_recovery",
+        "crewai_checkpoint_resume_safety",
+        "global_exactly_once"
+      ],
+      "claim_ceiling": "CrewAI 1.15.21 same-process synchronous retry surface only."
+    },
+    {
+      "id": "langgraph-b1-authority-v0.1",
+      "kind": "runtime_proof",
+      "status": "frozen",
+      "artifact": {
+        "merge_commit": "2a22b82cd02f8a56d7c41d071f618f72a7ed3839",
+        "path": "proofs/langgraph-b1-identity-authority-v0.1/report.json",
+        "blob_sha": "94bd3e9ad88ebc69b3f34a065484a0adc4c5a70a"
+      },
+      "claim_inputs": [
+        "contract.persisted_identity_not_authority",
+        "contract.consumed_permit_not_reusable"
+      ],
+      "claims": [
+        "langgraph.confirmed_return_prior_pass",
+        "langgraph.baseline_duplicates_on_b1_recovery",
+        "langgraph.stable_action_id_across_fresh_process_recovery",
+        "langgraph.one_use_permit_preserved"
+      ],
+      "non_claims": [
+        "langgraph_cloud_sweeper_reproduction",
+        "global_exactly_once",
+        "distributed_authorization"
+      ],
+      "claim_ceiling": "Pinned local LangGraph 1.2.11 SQLite b1 fresh-process recovery boundary only."
+    },
+    {
+      "id": "langgraph-receipt-visibility-v0.2",
+      "kind": "runtime_proof",
+      "status": "frozen",
+      "artifact": {
+        "merge_commit": "bb3aeada02ae392d518f685ebfd2dbfb9b3ac408",
+        "path": "proofs/langgraph-b1-receipt-visibility-v0.2/report.json",
+        "blob_sha": "9b1350d31d223274710a0bd0f0b1d7e7cc7b6e66"
+      },
+      "claim_inputs": [
+        "langgraph.confirmed_return_prior_pass",
+        "contract.unknown_not_retry_authority",
+        "contract.target_mismatch_non_authorizing"
+      ],
+      "claims": [
+        "langgraph.unknown_fail_closed_pass",
+        "langgraph.mismatch_fail_closed_pass",
+        "langgraph.delayed_receipt_then_return_prior_pass"
+      ],
+      "non_claims": [
+        "arbitrary_eventual_consistency_correctness",
+        "byzantine_receipt_correctness",
+        "langgraph_cloud_sweeper_reproduction"
+      ],
+      "claim_ceiling": "Pinned local SQLite receipt-visibility fixture on the LangGraph b1 recovery boundary."
+    },
+    {
+      "id": "autogen-runtime-authority-v0.1",
+      "kind": "runtime_proof",
+      "status": "frozen",
+      "artifact": {
+        "merge_commit": "a7f11e0eedc066c973a5ef17b2b2926407e9e6e7",
+        "path": "proofs/autogen-runtime-authority-v0.1/report.json",
+        "blob_sha": "d2997c2328f1db2c06bc8e007f371f69f76843d4"
+      },
+      "claim_inputs": [
+        "contract.persisted_identity_not_authority",
+        "contract.unknown_not_retry_authority",
+        "contract.consumed_permit_not_reusable",
+        "contract.not_executed_requires_fresh_authorization",
+        "contract.target_mismatch_non_authorizing"
+      ],
+      "claims": [
+        "autogen.confirmed_return_prior_pass",
+        "autogen.unknown_fail_closed_pass",
+        "autogen.mismatch_fail_closed_pass",
+        "autogen.not_executed_fresh_authorization_pass",
+        "autogen.identity_survives_runtime_save_load",
+        "autogen.authority_not_serialized"
+      ],
+      "non_claims": [
+        "autogen_native_retry_deduplication",
+        "autogen_native_external_reconciliation",
+        "global_exactly_once"
+      ],
+      "claim_ceiling": "Application-side authority adapter over AutoGen core 0.7.5 runtime save/load only."
+    },
+    {
+      "id": "recovery-authority-vector-v0.2",
+      "kind": "cross_runtime_profile",
+      "status": "frozen",
+      "artifact": {
+        "merge_commit": "d1dd21501ad0f22f483774586bb810092943646c",
+        "path": "proofs/recovery-authority-conformance-v0.2/profile.json",
+        "blob_sha": "53796f661d87f15b728caee6400bb5dd46c39c1c"
+      },
+      "claim_inputs": [
+        "contract.persisted_identity_not_authority",
+        "contract.unknown_not_retry_authority",
+        "contract.consumed_permit_not_reusable",
+        "contract.not_executed_requires_fresh_authorization",
+        "contract.target_mismatch_non_authorizing",
+        "crewai.confirmed_return_prior_pass",
+        "langgraph.confirmed_return_prior_pass",
+        "langgraph.unknown_fail_closed_pass",
+        "langgraph.mismatch_fail_closed_pass",
+        "autogen.confirmed_return_prior_pass",
+        "autogen.unknown_fail_closed_pass",
+        "autogen.mismatch_fail_closed_pass",
+        "autogen.not_executed_fresh_authorization_pass"
+      ],
+      "claims": [
+        "profile.recovery_authority_vector_8_pass_4_untested",
+        "profile.untested_not_inherited_as_pass",
+        "profile.scalar_verdict_absent"
+      ],
+      "non_claims": [
+        "framework_ranking",
+        "framework_wide_safety",
+        "certification",
+        "global_exactly_once"
+      ],
+      "claim_ceiling": "Bounded cross-runtime evidence vector: 8 PASS, 4 UNTESTED, 0 FAIL, 0 UNSUPPORTED; no scalar framework verdict."
+    }
+  ],
+  "edges": [
+    {
+      "id": "e01",
+      "from": "crewai-external-admission-v0.1",
+      "to": "identity-authority-contract-v0.1",
+      "relation": "motivates_boundary",
+      "carries": [
+        "crewai.same_process_retry_duplication_observed"
+      ]
+    },
+    {
+      "id": "e02",
+      "from": "crewai-external-admission-v0.1",
+      "to": "crewai-runtime-authority-v0.1",
+      "relation": "runtime_failure_boundary",
+      "carries": [
+        "crewai.same_process_retry_duplication_observed"
+      ]
+    },
+    {
+      "id": "e03",
+      "from": "identity-authority-contract-v0.1",
+      "to": "crewai-runtime-authority-v0.1",
+      "relation": "normative_input",
+      "carries": [
+        "contract.persisted_identity_not_authority",
+        "contract.consumed_permit_not_reusable"
+      ]
+    },
+    {
+      "id": "e04",
+      "from": "identity-authority-contract-v0.1",
+      "to": "langgraph-b1-authority-v0.1",
+      "relation": "normative_input",
+      "carries": [
+        "contract.persisted_identity_not_authority",
+        "contract.consumed_permit_not_reusable"
+      ]
+    },
+    {
+      "id": "e05",
+      "from": "langgraph-b1-authority-v0.1",
+      "to": "langgraph-receipt-visibility-v0.2",
+      "relation": "runtime_predecessor",
+      "carries": [
+        "langgraph.confirmed_return_prior_pass"
+      ]
+    },
+    {
+      "id": "e06",
+      "from": "identity-authority-contract-v0.1",
+      "to": "langgraph-receipt-visibility-v0.2",
+      "relation": "normative_input",
+      "carries": [
+        "contract.unknown_not_retry_authority",
+        "contract.target_mismatch_non_authorizing"
+      ]
+    },
+    {
+      "id": "e07",
+      "from": "identity-authority-contract-v0.1",
+      "to": "autogen-runtime-authority-v0.1",
+      "relation": "normative_input",
+      "carries": [
+        "contract.persisted_identity_not_authority",
+        "contract.unknown_not_retry_authority",
+        "contract.consumed_permit_not_reusable",
+        "contract.not_executed_requires_fresh_authorization",
+        "contract.target_mismatch_non_authorizing"
+      ]
+    },
+    {
+      "id": "e08",
+      "from": "identity-authority-contract-v0.1",
+      "to": "recovery-authority-vector-v0.2",
+      "relation": "normative_profile",
+      "carries": [
+        "contract.persisted_identity_not_authority",
+        "contract.unknown_not_retry_authority",
+        "contract.consumed_permit_not_reusable",
+        "contract.not_executed_requires_fresh_authorization",
+        "contract.target_mismatch_non_authorizing"
+      ]
+    },
+    {
+      "id": "e09",
+      "from": "crewai-runtime-authority-v0.1",
+      "to": "recovery-authority-vector-v0.2",
+      "relation": "runtime_profile_input",
+      "carries": [
+        "crewai.confirmed_return_prior_pass"
+      ]
+    },
+    {
+      "id": "e10",
+      "from": "langgraph-b1-authority-v0.1",
+      "to": "recovery-authority-vector-v0.2",
+      "relation": "runtime_profile_input",
+      "carries": [
+        "langgraph.confirmed_return_prior_pass"
+      ]
+    },
+    {
+      "id": "e11",
+      "from": "langgraph-receipt-visibility-v0.2",
+      "to": "recovery-authority-vector-v0.2",
+      "relation": "runtime_profile_input",
+      "carries": [
+        "langgraph.unknown_fail_closed_pass",
+        "langgraph.mismatch_fail_closed_pass"
+      ]
+    },
+    {
+      "id": "e12",
+      "from": "autogen-runtime-authority-v0.1",
+      "to": "recovery-authority-vector-v0.2",
+      "relation": "runtime_profile_input",
+      "carries": [
+        "autogen.confirmed_return_prior_pass",
+        "autogen.unknown_fail_closed_pass",
+        "autogen.mismatch_fail_closed_pass",
+        "autogen.not_executed_fresh_authorization_pass"
+      ]
+    }
+  ]
+}
