@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/safal207/ContractGraph-QA/proof-registry/schema.v0.1.json",
+  "title": "ContractGraph Proof Registry v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "title", "principle", "nodes", "edges"],
+  "properties": {
+    "schema": {"const": "contractgraph.proof-registry.v0.1"},
+    "title": {"type": "string", "minLength": 1},
+    "principle": {"type": "string", "minLength": 1},
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "artifact",
+          "claim_inputs",
+          "claims",
+          "non_claims",
+          "claim_ceiling"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "kind": {
+            "enum": [
+              "external_admission",
+              "framework_neutral_contract",
+              "runtime_proof",
+              "cross_runtime_profile"
+            ]
+          },
+          "status": {"const": "frozen"},
+          "artifact": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["merge_commit", "path", "blob_sha"],
+            "properties": {
+              "merge_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+              "path": {"type": "string", "minLength": 1},
+              "blob_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+            }
+          },
+          "claim_inputs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "claims": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "non_claims": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "claim_ceiling": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "from", "to", "relation", "carries"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "from": {"type": "string", "minLength": 1},
+          "to": {"type": "string", "minLength": 1},
+          "relation": {"type": "string", "minLength": 1},
+          "carries": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}
