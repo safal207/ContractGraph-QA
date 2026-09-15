@@ -1,0 +1,30 @@
+name: CrewAI identity authority adapter
+
+on:
+  pull_request:
+    paths:
+      - "proofs/crewai-identity-authority-adapter-v0.1/**"
+      - ".github/workflows/crewai-identity-authority-adapter.yml"
+      - "PROOFS.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned CrewAI runtime
+        run: python -m pip install 'crewai==1.15.21'
+      - name: Run CrewAI A/B identity-authority experiment
+        run: |
+          python proofs/crewai-identity-authority-adapter-v0.1/run_experiment.py \
+            --write-report /tmp/crewai-identity-authority-report.json
+          diff -u \
+            proofs/crewai-identity-authority-adapter-v0.1/report.json \
+            /tmp/crewai-identity-authority-report.json
