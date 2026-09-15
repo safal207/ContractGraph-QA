@@ -1,0 +1,274 @@
+{
+  "all_pass": true,
+  "barrier": "b1_after_effect_before_pending_writes",
+  "cases": {
+    "confirmed": {
+      "after_first_recovery": {
+        "action_ids": [
+          "act_ce513fbb1586ae6d675439a1bbb4dcf8",
+          "act_ce513fbb1586ae6d675439a1bbb4dcf8"
+        ],
+        "decisions": [
+          "dispatch",
+          "return_prior"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_ce513fbb1586ae6d675439a1bbb4dcf8",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 2,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_c32e9e6bb4251057716c5e50"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": true
+        }
+      },
+      "after_second_recovery": null,
+      "before_recovery": {
+        "action_ids": [
+          "act_ce513fbb1586ae6d675439a1bbb4dcf8"
+        ],
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_ce513fbb1586ae6d675439a1bbb4dcf8",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 1,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_c32e9e6bb4251057716c5e50"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": true
+        }
+      },
+      "case": "confirmed",
+      "checkpoint_after_first_recovery": {
+        "checkpoints": 3,
+        "writes": 3
+      },
+      "checkpoint_after_second_recovery": null,
+      "checkpoint_before_recovery": {
+        "checkpoints": 2,
+        "writes": 2
+      },
+      "first_recovery_status": "COMPLETED",
+      "passed": true,
+      "second_recovery_status": null,
+      "subject_returncode": -9,
+      "verdict": "CONFIRMED_RETURN_PRIOR"
+    },
+    "delayed": {
+      "after_first_recovery": {
+        "action_ids": [
+          "act_a08f35fee600f0326391424c120537a0",
+          "act_a08f35fee600f0326391424c120537a0"
+        ],
+        "decisions": [
+          "dispatch",
+          "fail_closed_unknown"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_a08f35fee600f0326391424c120537a0",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 2,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_d6a16c8c0b944c993abbb53e"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": false
+        }
+      },
+      "after_second_recovery": {
+        "action_ids": [
+          "act_a08f35fee600f0326391424c120537a0",
+          "act_a08f35fee600f0326391424c120537a0",
+          "act_a08f35fee600f0326391424c120537a0"
+        ],
+        "decisions": [
+          "dispatch",
+          "fail_closed_unknown",
+          "return_prior"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_a08f35fee600f0326391424c120537a0",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 3,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_d6a16c8c0b944c993abbb53e"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": true
+        }
+      },
+      "before_recovery": {
+        "action_ids": [
+          "act_a08f35fee600f0326391424c120537a0"
+        ],
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_a08f35fee600f0326391424c120537a0",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 1,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_d6a16c8c0b944c993abbb53e"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "local-sqlite-target",
+          "visible": false
+        }
+      },
+      "case": "delayed",
+      "checkpoint_after_first_recovery": {
+        "checkpoints": 2,
+        "writes": 3
+      },
+      "checkpoint_after_second_recovery": {
+        "checkpoints": 3,
+        "writes": 4
+      },
+      "checkpoint_before_recovery": {
+        "checkpoints": 2,
+        "writes": 2
+      },
+      "first_recovery_status": "BLOCKED_UNKNOWN",
+      "passed": true,
+      "second_recovery_status": "COMPLETED",
+      "subject_returncode": -9,
+      "verdict": "UNKNOWN_BLOCKED_THEN_CONFIRMED"
+    },
+    "mismatch": {
+      "after_first_recovery": {
+        "action_ids": [
+          "act_46500e5ed649158344afd93dd82dc8a7",
+          "act_46500e5ed649158344afd93dd82dc8a7"
+        ],
+        "decisions": [
+          "dispatch",
+          "fail_closed_mismatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_46500e5ed649158344afd93dd82dc8a7",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 2,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_3f5b8ed8ca3970adaf9a79c8"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "other-sqlite-target",
+          "visible": true
+        }
+      },
+      "after_second_recovery": null,
+      "before_recovery": {
+        "action_ids": [
+          "act_46500e5ed649158344afd93dd82dc8a7"
+        ],
+        "decisions": [
+          "dispatch"
+        ],
+        "effect_count": 1,
+        "effects": [
+          {
+            "action_id": "act_46500e5ed649158344afd93dd82dc8a7",
+            "result": "external-effect-ok",
+            "target": "local-sqlite-target"
+          }
+        ],
+        "node_entries": 1,
+        "permit": {
+          "consume_count": 1,
+          "consumed": true,
+          "permit_id": "permit_3f5b8ed8ca3970adaf9a79c8"
+        },
+        "receipt": {
+          "result": "external-effect-ok",
+          "target": "other-sqlite-target",
+          "visible": true
+        }
+      },
+      "case": "mismatch",
+      "checkpoint_after_first_recovery": {
+        "checkpoints": 2,
+        "writes": 3
+      },
+      "checkpoint_after_second_recovery": null,
+      "checkpoint_before_recovery": {
+        "checkpoints": 2,
+        "writes": 2
+      },
+      "first_recovery_status": "BLOCKED_MISMATCH",
+      "passed": true,
+      "second_recovery_status": null,
+      "subject_returncode": -9,
+      "verdict": "MISMATCH_FAIL_CLOSED"
+    }
+  },
+  "claim": "on the pinned LangGraph b1 recovery boundary, absent or mismatching external commit visibility is not converted into redispatch authority; UNKNOWN blocks recovery until the original matching receipt becomes visible",
+  "non_claims": [
+    "does not reproduce LangGraph Cloud sweeper timing",
+    "does not prove arbitrary eventual-consistency behavior",
+    "does not prove Byzantine receipt-provider correctness",
+    "does not prove global exactly-once execution"
+  ],
+  "predecessor": "proofs/langgraph-b1-identity-authority-v0.1",
+  "runtime": {
+    "langgraph": "1.2.11",
+    "langgraph_checkpoint_sqlite": "3.1.1"
+  },
+  "schema": "contractgraph.langgraph-b1-receipt-visibility.v0.2"
+}
