@@ -7,6 +7,20 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## Identity / authority boundary v0.1
+
+**Result: 6/6 PASS; 2/2 unsafe mutants detected.** A framework-neutral executable
+contract now separates stable logical action identity from fresh execution
+authority. Recovery preserves the same `action_id`, but a consumed permit is
+never reusable and `UNKNOWN` read-back fails closed rather than redispatching.
+Only a proved `NOT_EXECUTED` result may proceed to an explicit new authorization
+and a newly issued one-use permit.
+
+- [Proof README](proofs/identity-authority-boundary-v0.1/README.md)
+- [Machine-readable report](proofs/identity-authority-boundary-v0.1/report.json)
+- [Executable harness](proofs/identity-authority-boundary-v0.1/harness.py)
+- [Boundary issue #172](https://github.com/safal207/ContractGraph-QA/issues/172)
+
 ## External evidence admission: CrewAI retry duplication v0.1
 
 **Status: ADMITTED (BOUNDED), 90/90 receipt agreement.** ContractGraph-QA
@@ -87,6 +101,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 
 | Frozen subject | Result | Main distinction | Artifact |
 |---|---:|---|---|
+| Identity / authority boundary `v0.1` | **6/6 PASS; 2/2 mutants** | Stable identity survives recovery while execution authority does not | [Open](proofs/identity-authority-boundary-v0.1/README.md) |
 | CrewAI 1.15.21 recorded retry evidence | **ADMITTED / 90/90 receipt agreement** | Third-party evidence admission; same-process retry duplication; no independent rerun | [Open](proofs/crewai-retry-external-admission-v0.1/README.md) |
 | Attenu observer-envelope `v1.2` | **19/19 AGREE** | Claim-first duplicate-subject handling and exact evidence-state mapping | [Open](proofs/attenu-envelope-v1.2-independent/README.md) |
 | Attenu observer-envelope `v1.1` | **18/18 AGREE** | Baseline envelope verdicts, positions, failure vocabulary, and states | [Open](proofs/attenu-envelope-v1.1-independent/README.md) |
