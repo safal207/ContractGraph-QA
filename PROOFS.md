@@ -7,6 +7,34 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## LangGraph b1 receipt visibility v0.2
+
+**Result: PASS — `CONFIRMED -> return_prior`; `UNKNOWN -> fail closed`; target mismatch -> fail closed.**
+Hosted CI installed exact `langgraph==1.2.11` and
+`langgraph-checkpoint-sqlite==3.1.1` on the same local `b1` recovery boundary as
+the v0.1 adapter.
+
+The new discriminating case commits the external effect, hides the already
+stored receipt during the first fresh-process recovery, and confirms that
+recovery records `fail_closed_unknown` without emitting a second effect or
+refreshing the consumed permit. The same receipt is then made visible without
+changing its bytes; the next recovery re-enters the node with the same stable
+`action_id` and completes through `return_prior`. Effect count stays one across
+all three node entries.
+
+A separate mismatch case proves that a visible receipt for the same action ID
+but a different target is also non-authorizing and fails closed without
+redispatch.
+
+This narrows the trust rule from “receipt prevents duplication” to the stronger
+boundary: **missing visibility is not proof of non-execution**.
+
+- [Proof README](proofs/langgraph-b1-receipt-visibility-v0.2/README.md)
+- [Machine-readable report](proofs/langgraph-b1-receipt-visibility-v0.2/report.json)
+- [Executable recovery experiment](proofs/langgraph-b1-receipt-visibility-v0.2/run_visibility.py)
+- [Experiment issue #182](https://github.com/safal207/ContractGraph-QA/issues/182)
+- [Proof PR #183](https://github.com/safal207/ContractGraph-QA/pull/183)
+
 ## LangGraph b1 identity / authority adapter v0.1
 
 **Result: PASS — baseline 2 effects, guarded 1 effect across fresh-process recovery.**
@@ -114,7 +142,7 @@ nor the TypeScript reference implementation.
 | Immutable merge | `3747cd2518ecee4051246c08ef24114f5fea432e` |
 
 Before scoring, hosted CI required byte identity among the Python-repository
-fixture, the exact PyPI wheel copy, and the TypeScript-repository fixture. The
+fixture, the exact PyPI wheel copy, and the pinned TypeScript repository fixture. The
 npm tarball is not claimed as a raw-vector source because it does not ship the
 vector.
 
@@ -152,6 +180,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 
 | Frozen subject | Result | Main distinction | Artifact |
 |---|---:|---|---|
+| LangGraph b1 receipt visibility `v0.2` | **PASS: UNKNOWN blocked; confirmed returns prior** | Delayed/missing visibility and target mismatch never become redispatch authority | [Open](proofs/langgraph-b1-receipt-visibility-v0.2/README.md) |
 | LangGraph b1 identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Fresh-process recovery re-enters node; external receipt reconciliation suppresses the second effect | [Open](proofs/langgraph-b1-identity-authority-v0.1/README.md) |
 | CrewAI identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Real CrewAI 1.15.21 retry still re-enters tool twice; receipt reconciliation suppresses second external effect | [Open](proofs/crewai-identity-authority-adapter-v0.1/README.md) |
 | Identity / authority boundary `v0.1` | **6/6 PASS; 2/2 mutants** | Stable identity survives recovery while execution authority does not | [Open](proofs/identity-authority-boundary-v0.1/README.md) |
