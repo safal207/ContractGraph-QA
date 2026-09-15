@@ -1,0 +1,31 @@
+name: Proof registry
+
+on:
+  pull_request:
+    paths:
+      - "proof-registry/**"
+      - ".github/workflows/proof-registry.yml"
+      - "PROOFS.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify immutable proof DAG
+        run: |
+          python proof-registry/verify_registry.py \
+            --write-summary /tmp/proof-registry-summary.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proof-registry-verification-summary
+          path: /tmp/proof-registry-summary.json
