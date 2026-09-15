@@ -1,0 +1,79 @@
+name: External proof submission v0.2
+
+on:
+  pull_request:
+    paths:
+      - "proof-submissions/**"
+      - ".github/workflows/external-proof-submission.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Process admitted external submission
+        run: |
+          python proof-submissions/process_submission.py \
+            proof-submissions/examples/accepted-crashpoint-crewai.json \
+            --write-decision /tmp/accepted.json \
+            --require-admitted
+      - name: Process rejection controls
+        run: |
+          python proof-submissions/process_submission.py \
+            proof-submissions/examples/rejected-overclaim.json \
+            --write-decision /tmp/rejected-overclaim.json
+          python proof-submissions/process_submission.py \
+            proof-submissions/examples/rejected-integrity.json \
+            --write-decision /tmp/rejected-integrity.json
+      - name: Assert admission decisions and promotion boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          accepted = json.loads(Path('/tmp/accepted.json').read_text())
+          overclaim = json.loads(Path('/tmp/rejected-overclaim.json').read_text())
+          integrity = json.loads(Path('/tmp/rejected-integrity.json').read_text())
+
+          assert accepted['status'] == 'ADMITTED_BOUNDED', accepted
+          assert [c['id'] for c in accepted['accepted_claims']] == [
+              'crewai.same_process_retry_duplication_observed'
+          ]
+          assert accepted['source_integrity']['actual_sha256'] == \
+              '0d2eb2cf3c835b022298d52e807f7d0328b023d5c4d88a669af5c1965f6b56d1'
+          assert accepted['trusted_verifier']['merge_commit'] == \
+              'fa4b3195b1213b367825ed5d615deeb0491048fb'
+          assert accepted['registry_candidate']['status'] == 'candidate_pending_immutable_merge'
+          assert accepted['promotion_gate'] == {
+              'canonical_registry_mutated': False,
+              'requires_human_review': True,
+              'requires_immutable_merge_artifact': True,
+          }
+
+          assert overclaim['status'] == 'REJECTED_CLAIM_OVERREACH', overclaim
+          assert overclaim['rejected_claims'] == ['crewai.global_exactly_once']
+          assert integrity['status'] == 'REJECTED_INTEGRITY', integrity
+          PY
+      - name: Compare frozen decisions when present
+        run: |
+          if [ -f proof-submissions/examples/decisions/accepted.json ]; then
+            diff -u proof-submissions/examples/decisions/accepted.json /tmp/accepted.json
+            diff -u proof-submissions/examples/decisions/rejected-overclaim.json /tmp/rejected-overclaim.json
+            diff -u proof-submissions/examples/decisions/rejected-integrity.json /tmp/rejected-integrity.json
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: external-proof-submission-decisions
+          path: |
+            /tmp/accepted.json
+            /tmp/rejected-overclaim.json
+            /tmp/rejected-integrity.json
