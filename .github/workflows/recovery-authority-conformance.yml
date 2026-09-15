@@ -1,0 +1,26 @@
+name: Recovery authority conformance vector
+
+on:
+  pull_request:
+    paths:
+      - "proofs/recovery-authority-conformance-v0.1/**"
+      - ".github/workflows/recovery-authority-conformance.yml"
+      - "PROOFS.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify immutable recovery-authority evidence vector
+        run: |
+          python proofs/recovery-authority-conformance-v0.1/verify_profile.py
