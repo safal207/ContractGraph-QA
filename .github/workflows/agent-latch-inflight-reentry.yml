@@ -1,0 +1,34 @@
+name: Agent Latch in-flight re-entry proof
+
+on:
+  pull_request:
+    paths:
+      - "proofs/agent-latch-inflight-reentry-v0.1/**"
+      - ".github/workflows/agent-latch-inflight-reentry.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run pinned upstream characterization
+        run: python proofs/agent-latch-inflight-reentry-v0.1/verify_upstream.py
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-latch-inflight-reentry-${{ github.run_id }}
+          path: .artifacts/agent-latch-inflight-reentry-report.json
+          if-no-files-found: error
+          retention-days: 30
