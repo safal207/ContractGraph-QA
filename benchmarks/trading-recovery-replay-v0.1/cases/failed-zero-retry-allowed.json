@@ -1,0 +1,30 @@
+{
+  "schema": "cgqa.trading-recovery-replay.v0.1",
+  "scenarioId": "TRR-001-FAILED-ZERO",
+  "logicalOperationId": "order-btc-001",
+  "effect": {
+    "actionId": "order:btc-001",
+    "effectKey": "exchange-order-acceptance"
+  },
+  "evidencePolicy": {
+    "reconciliationAuthoritative": true,
+    "effectEvidenceComplete": true
+  },
+  "recoveryScenario": {
+    "schema": "cgqa.agent-payment-recovery-scenario.v0.1",
+    "scenarioId": "TRR-001-RECOVERY",
+    "events": [
+      {"seq": 1, "type": "authorize", "logicalOperationId": "order-btc-001"},
+      {"seq": 2, "type": "submit", "logicalOperationId": "order-btc-001", "executionId": "attempt-a", "idempotencyKey": "order-btc-001"},
+      {"seq": 3, "type": "ambiguous", "logicalOperationId": "order-btc-001", "executionId": "attempt-a"},
+      {"seq": 4, "type": "reconcile", "logicalOperationId": "order-btc-001", "evidenceKind": "exchange-status-replay", "evidenceRef": "fixture:order-btc-001:not-found", "outcome": "failed"}
+    ]
+  },
+  "cardinalityModel": {
+    "schemaVersion": "economic-cardinality.v0.1",
+    "modelId": "TRR-001-CARDINALITY",
+    "invariantId": "CGQ-SAFE-001",
+    "scope": "replay-only synthetic trading fixture",
+    "events": []
+  }
+}
