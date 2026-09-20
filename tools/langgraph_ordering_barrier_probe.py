@@ -37,6 +37,7 @@ def _new_loop(loop_cls: type[Any], sentinel: object) -> Any:
     loop.specs = {}
     loop.channels = {}
     loop.durability = "sync"
+    loop.cache = None
     loop.checkpointer_put_writes = lambda *args, **kwargs: None
     loop.checkpointer_put_writes_accepts_task_path = False
     loop.checkpoint_config = {"configurable": {}}
