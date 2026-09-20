@@ -7,6 +7,31 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## Execution receipt durability v0.1
+
+**Result: PASS — durable PENDING survives real SIGKILL and recovery never
+redispatches blindly.** Exact-head CI ran three pinned Aegisora provider paths
+with separate SQLite receipt/receiver stores. In every case, `PENDING` was
+committed and independently re-read by a fresh process before provider dispatch;
+the subject then died by `SIGKILL` before any local terminal receipt.
+
+Observed recovery matrix:
+
+- matching effect -> `FINALIZE_EXISTING_NO_REDISPATCH`; attempts/effects stay `1/1`;
+- verified zero effect -> `NO_REDISPATCH_FRESH_AUTHORIZATION_REQUIRED`; attempts/effects stay `1/0`;
+- unavailable readback -> `INDETERMINATE / REVALIDATE` despite one retained fixture effect; later FULL readback finalizes the same action with attempts/effects still `1/1`.
+
+Independent verification re-opened the preserved SQLite DBs, ran integrity checks,
+recomputed the receipt/reconciliation SHA-256 chain, and confirmed no recovery
+increased provider attempt cardinality above one.
+
+- [Proof README](proofs/execution-receipt-durability-v0.1/README.md)
+- [Executable harness](proofs/execution-receipt-durability-v0.1/run.py)
+- [Experiment protocol](docs/external/EXECUTION_RECEIPT_DURABILITY_001.md)
+- Exact evidence run: `35543943339`
+- Evidence artifact: `execution-receipt-durability-001` / ID `10616320176`
+- Report SHA-256: `43c99fabb2e7c6fc2d42c59c1c09124a8f1fc7206b023a92a8302afba4372f4e`
+
 ## Execution receipt boundary v0.1
 
 **Status: RED(native) -> GREEN(adapter) proof in progress.** The framework-neutral
