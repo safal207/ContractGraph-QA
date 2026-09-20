@@ -82,7 +82,10 @@ jobs:
         run: |
           set -euo pipefail
           cd subject
-          pnpm install --frozen-lockfile --filter '@aegisora/runtime...'
+          cp pnpm-lock.yaml "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-before.yaml"
+          pnpm install --no-frozen-lockfile --filter '@aegisora/runtime...'
+          cp pnpm-lock.yaml "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-resolved.yaml"
+          git diff -- pnpm-lock.yaml | tee "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-diff.patch"
           pnpm --filter '@aegisora/runtime...' build
 
       - name: Inject external provider-binding probe
