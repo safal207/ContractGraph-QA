@@ -7,6 +7,25 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## Execution receipt durability v0.1
+
+**Status: process-crash durability proof in progress.** This proof takes the
+execution-receipt contract across a real `SIGKILL` boundary: durable SQLite
+`PENDING` is independently re-read before provider dispatch; the provider then
+crashes before any local terminal receipt; a fresh process reconciles only from
+authoritative receiver readback.
+
+Three cases are frozen:
+
+- matching effect -> `FINALIZE_EXISTING`, no redispatch;
+- verified zero effect -> `FRESH_AUTHORIZATION_REQUIRED`, no automatic retry;
+- unavailable readback -> `INDETERMINATE / REVALIDATE`, then later FULL readback
+  may finalize the same action without a second provider attempt.
+
+- [Proof README](proofs/execution-receipt-durability-v0.1/README.md)
+- [Executable harness](proofs/execution-receipt-durability-v0.1/run.py)
+- [Experiment protocol](docs/external/EXECUTION_RECEIPT_DURABILITY_001.md)
+
 ## Execution receipt boundary v0.1
 
 **Status: RED(native) -> GREEN(adapter) proof in progress.** The framework-neutral
