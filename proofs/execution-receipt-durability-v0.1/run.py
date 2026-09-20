@@ -692,7 +692,9 @@ def parse_json_stdout(proc: subprocess.CompletedProcess[str]) -> dict[str, Any]:
     try:
         value = json.loads(raw[-1])
     except json.JSONDecodeError as exc:
-        fail(f"invalid recovery JSON: {raw[-1]!r}") from exc
+        raise RuntimeError(
+            SYSTEM_CASE + ": invalid recovery JSON: " + repr(raw[-1])
+        ) from exc
     if not isinstance(value, dict):
         fail("recovery output is not an object")
     return value
