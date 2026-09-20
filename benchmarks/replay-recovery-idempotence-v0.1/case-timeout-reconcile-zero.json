@@ -1,0 +1,26 @@
+{
+  "schema": "cgqa.replay-recovery-scenario.v0.1",
+  "scenarioId": "RR-TIMEOUT-RECONCILE-ZERO",
+  "actionId": "order-42",
+  "effectKey": "broker-order-placement",
+  "evidence": [
+    {
+      "sourceId": "request-timeout-log",
+      "complete": false,
+      "occurrenceIds": []
+    },
+    {
+      "sourceId": "broker-order-history",
+      "complete": true,
+      "occurrenceIds": []
+    }
+  ],
+  "retry": {
+    "priorLogicalOperationId": "order-42",
+    "proposedLogicalOperationId": "order-42",
+    "priorExecutionId": "attempt-1",
+    "proposedExecutionId": "attempt-2",
+    "priorIdempotencyKey": "order-42",
+    "proposedIdempotencyKey": "order-42"
+  }
+}
