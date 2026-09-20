@@ -1,0 +1,166 @@
+name: Execution Receipt Durability
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - proof/execution-receipt-001
+    paths:
+      - "proofs/execution-receipt-durability-v0.1/**"
+      - "tests/external/aegisora_execution_receipt_durability_001.ts"
+      - "scripts/verify_execution_receipt_durability_001.py"
+      - "docs/external/EXECUTION_RECEIPT_DURABILITY_001.md"
+      - ".github/workflows/execution-receipt-durability.yml"
+      - "PROOFS.md"
+
+permissions:
+  contents: read
+
+env:
+  EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  AEGISORA_COMMIT: 2bac618215671f6f0ac8ebddf169830d4fc0f9b3
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Compile durability harness and verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            proofs/execution-receipt-durability-v0.1/run.py \
+            scripts/verify_execution_receipt_durability_001.py
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Activate pinned pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.20.0 --activate
+          pnpm --version
+
+      - name: Checkout pinned Aegisora subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/aegisora-ai/aegisora.git subject
+          git -C subject checkout --quiet --detach "$AEGISORA_COMMIT"
+          test "$(git -C subject rev-parse HEAD)" = "$AEGISORA_COMMIT"
+
+      - name: Capture pinned subject source digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          {
+            printf 'repository=aegisora-ai/aegisora\n'
+            printf 'commit=%s\n' "$AEGISORA_COMMIT"
+            for path in \
+              core/packages/runtime/src/enforcement/enforcement-gate.ts \
+              core/packages/runtime/src/enforcement/enterprise-audit-bridge.ts \
+              core/packages/runtime/src/providers/provider-execution-gateway.ts \
+              core/packages/runtime/src/providers/base-provider.ts
+            do
+              digest="$(git -C subject show "$AEGISORA_COMMIT:$path" | sha256sum | awk '{print $1}')"
+              printf '%s  %s\n' "$digest" "$path"
+            done
+          } | tee artifacts/aegisora-durability-subject-digests.txt
+
+      - name: Install pinned Aegisora runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd subject
+          cp pnpm-lock.yaml "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-before.yaml"
+          pnpm install --no-frozen-lockfile --filter '@aegisora/runtime...'
+          cp pnpm-lock.yaml "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-resolved.yaml"
+          git diff -- pnpm-lock.yaml | tee "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-diff.patch"
+          pnpm --filter '@aegisora/runtime...' build
+
+      - name: Inject durable crash subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp \
+            tests/external/aegisora_execution_receipt_durability_001.ts \
+            subject/core/packages/runtime/test/external-execution-receipt-durability-001.ts
+
+      - name: Execute real process-crash durability matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/durability-work
+          python3 proofs/execution-receipt-durability-v0.1/run.py run \
+            --subject-dir subject \
+            --subject-script test/external-execution-receipt-durability-001.ts \
+            --work-dir artifacts/durability-work \
+            --write-report artifacts/execution-receipt-durability-report.json \
+            | tee artifacts/execution-receipt-durability-console.txt
+
+      - name: Independently verify durable bytes and recovery semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_execution_receipt_durability_001.py \
+            --report artifacts/execution-receipt-durability-report.json \
+            --work-dir artifacts/durability-work \
+            --output artifacts/execution-receipt-durability-verification.json
+
+          {
+            sha256sum \
+              artifacts/execution-receipt-durability-report.json \
+              artifacts/execution-receipt-durability-verification.json \
+              artifacts/aegisora-durability-subject-digests.txt \
+              artifacts/aegisora-pnpm-lock-before.yaml \
+              artifacts/aegisora-pnpm-lock-resolved.yaml \
+              artifacts/aegisora-pnpm-lock-diff.patch
+
+            find artifacts/durability-work -type f -print0 \
+              | sort -z \
+              | xargs -0 sha256sum
+          } | tee artifacts/execution-receipt-durability-sha256.txt
+
+      - name: Upload EXECUTION-RECEIPT-DURABILITY-001 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-receipt-durability-001
+          path: |
+            artifacts/execution-receipt-durability-report.json
+            artifacts/execution-receipt-durability-verification.json
+            artifacts/execution-receipt-durability-console.txt
+            artifacts/execution-receipt-durability-sha256.txt
+            artifacts/aegisora-durability-subject-digests.txt
+            artifacts/aegisora-pnpm-lock-before.yaml
+            artifacts/aegisora-pnpm-lock-resolved.yaml
+            artifacts/aegisora-pnpm-lock-diff.patch
+            artifacts/durability-work/
+          if-no-files-found: warn
+          retention-days: 30
