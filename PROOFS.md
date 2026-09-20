@@ -7,6 +7,23 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## Execution receipt boundary v0.1
+
+**Status: RED(native) -> GREEN(adapter) proof in progress.** The framework-neutral
+contract separates pre-dispatch authorization evidence from terminal provider-call
+evidence. An authorized action creates a `PENDING / UNKNOWN` receipt; a local
+provider return appends `RETURNED_SUCCESS / UNVERIFIED`; a provider exception
+appends `THREW / UNKNOWN`. Missing terminal evidence remains
+`UNKNOWN -> REVALIDATE`, never `NO_EFFECT`.
+
+The pinned Aegisora runtime experiment freezes the current native terminal
+coverage at 1/3 (usage-bearing success only) and requires a minimal external
+adapter to reach 3/3 without changing Aegisora source.
+
+- [Framework-neutral contract](proofs/execution-receipt-boundary-v0.1/README.md)
+- [Executable harness](proofs/execution-receipt-boundary-v0.1/harness.py)
+- [Aegisora RED-to-GREEN protocol](docs/external/EXECUTION_RECEIPT_001.md)
+
 ## LangGraph b1 receipt visibility v0.2
 
 **Result: PASS — `CONFIRMED -> return_prior`; `UNKNOWN -> fail closed`; target mismatch -> fail closed.**
