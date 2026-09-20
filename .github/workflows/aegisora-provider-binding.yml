@@ -131,6 +131,9 @@ jobs:
             artifacts/aegisora-provider-binding-verification.json
             artifacts/aegisora-provider-binding-console.txt
             artifacts/aegisora-subject-source-digests.txt
+            artifacts/aegisora-pnpm-lock-before.yaml
+            artifacts/aegisora-pnpm-lock-resolved.yaml
+            artifacts/aegisora-pnpm-lock-diff.patch
             artifacts/aegisora-provider-binding-sha256.txt
           if-no-files-found: warn
           retention-days: 30
