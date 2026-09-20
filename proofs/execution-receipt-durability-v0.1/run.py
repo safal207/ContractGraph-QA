@@ -719,15 +719,17 @@ def run_case(
     action_id = stable_action_id(case_name)
     payload_digest = expected_payload_digest(case_name)
 
-    pnpm = shutil.which("pnpm")
-    if pnpm is None:
-        fail("pnpm not found")
+    node = shutil.which("node")
+    if node is None:
+        fail("node not found")
+
+    runtime_dir = subject_dir / "core" / "packages" / "runtime"
+    if not runtime_dir.is_dir():
+        fail("Aegisora runtime package directory not found")
 
     subject_argv = [
-        pnpm,
-        "--filter",
-        "@aegisora/runtime",
-        "exec",
+        node,
+        "--import",
         "tsx",
         subject_script,
         "--case",
@@ -746,7 +748,7 @@ def run_case(
 
     subject = run_process(
         subject_argv,
-        cwd=subject_dir,
+        cwd=runtime_dir,
         expected=-int(signal.SIGKILL),
     )
 
