@@ -1,0 +1,23 @@
+{
+  "payload": {
+    "case": "control-consistent",
+    "derived": {
+      "delivered": true,
+      "reconciled": true,
+      "settled": true
+    },
+    "logical_action_id": "act_astra_0001",
+    "primary": {
+      "delivery": "DELIVERED",
+      "finality": "FINAL",
+      "payment_attempt": "BROADCAST",
+      "receipt_binding": "BOUND"
+    },
+    "schema": "contractgraph.astra-signed-derived-field-fixture.v0.1"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "key_id": "astra-fixture-ed25519-v0.1",
+    "signature_b64": "Ey3UlXXFeWurqx10mQFjxpoRhQTEwm6t635t/ts5GmiFLIEojgzxPX0/AF8wys3jltm97wF53I7X+URMjk3cAQ=="
+  }
+}
