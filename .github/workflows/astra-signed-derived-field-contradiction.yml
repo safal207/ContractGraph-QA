@@ -1,0 +1,29 @@
+name: Astra signed derived-field contradiction
+
+on:
+  pull_request:
+    paths:
+      - "proofs/astra-signed-derived-field-contradiction-v0.1/**"
+      - ".github/workflows/astra-signed-derived-field-contradiction.yml"
+      - "PROOFS.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify signed semantic contradiction fixture
+        run: |
+          openssl version
+          python proofs/astra-signed-derived-field-contradiction-v0.1/harness.py \
+            --write-report /tmp/astra-signed-derived-report.json
+          diff -u \
+            proofs/astra-signed-derived-field-contradiction-v0.1/report.json \
+            /tmp/astra-signed-derived-report.json
