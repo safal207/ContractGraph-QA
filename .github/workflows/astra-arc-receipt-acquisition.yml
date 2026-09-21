@@ -1,0 +1,31 @@
+name: Astra Arc receipt acquisition
+
+on:
+  pull_request:
+    paths:
+      - "proofs/astra-arc-receipt-asset-event-v0.1/**"
+      - ".github/workflows/astra-arc-receipt-acquisition.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Acquire public Arc receipt read-only
+        run: |
+          python proofs/astra-arc-receipt-asset-event-v0.1/acquire_receipt.py \
+            --out-dir /tmp/astra-arc-receipt
+      - name: Upload acquisition artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-arc-receipt-acquisition-${{ github.sha }}
+          path: /tmp/astra-arc-receipt
+          if-no-files-found: error
+          retention-days: 14
