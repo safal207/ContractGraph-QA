@@ -121,6 +121,24 @@ real-provider, or idempotency-guard behavior.
 - [Pinned verifier](proofs/crewai-retry-external-admission-v0.1/verify_admission.py)
 - [Frozen external source](https://github.com/mstevens843/crashpoint/blob/606893ebb353df5dab3ac68738051eb5fbb7286e/evidence/crewai_retry.json)
 
+## Pinned external mapping: SafeAgent / Crashpoint v0.1
+
+**Status: EXTERNAL REPORT RECORDED; 12/12 adapter unit tests reproduced locally.**
+The 18-trial comparison remains attributed to `azender1`, not presented as a
+ContractGraph-QA recomputation: 6 `CONFIRMED`, 6 `CONTRADICTION`,
+3 `MISSING_EXTERNALLY`, and 3 `UNCERTAIN`. The published SafeAgent adapter,
+tests, and sanitized aggregate are pinned to `52049faa07a1f24da60a65a02025d72274006e50`;
+the separate Crashpoint action-readback corpus is pinned to
+`bb9cd47c4b0b02527aab7b369d17b32829cc4e20`.
+
+This is an external classification-mapping record, not an admission of raw
+18-trial evidence, a SafeAgent core run, a CrewAI fix, or a replay-safety claim.
+Do not combine it with the distinct 90-trial CrewAI retry corpus above.
+
+- [Scope, attribution, non-claims, and portfolio wording](proofs/safeagent-action-readback-external-v0.1/README.md)
+- [Source hashes and separated verification states](proofs/safeagent-action-readback-external-v0.1/evidence.json)
+- [Local adapter unit-test output](proofs/safeagent-action-readback-external-v0.1/local-unit-tests.stdout.txt)
+
 ## Latest proof: Attenu observer-envelope v1.2
 
 **Result: 19/19 AGREE** — five accepting controls and fourteen rejecting
@@ -185,6 +203,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 | CrewAI identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Real CrewAI 1.15.21 retry still re-enters tool twice; receipt reconciliation suppresses second external effect | [Open](proofs/crewai-identity-authority-adapter-v0.1/README.md) |
 | Identity / authority boundary `v0.1` | **6/6 PASS; 2/2 mutants** | Stable identity survives recovery while execution authority does not | [Open](proofs/identity-authority-boundary-v0.1/README.md) |
 | CrewAI 1.15.21 recorded retry evidence | **ADMITTED / 90/90 receipt agreement** | Third-party evidence admission; same-process retry duplication; no independent rerun | [Open](proofs/crewai-retry-external-admission-v0.1/README.md) |
+| SafeAgent / Crashpoint action-readback mapping `v0.1` | **External report: 18 trials; local unit tests: 12/12** | Published mapping only; raw 18-trial corpus not reverified here; reconciliation core not invoked | [Open](proofs/safeagent-action-readback-external-v0.1/README.md) |
 | Attenu observer-envelope `v1.2` | **19/19 AGREE** | Claim-first duplicate-subject handling and exact evidence-state mapping | [Open](proofs/attenu-envelope-v1.2-independent/README.md) |
 | Attenu observer-envelope `v1.1` | **18/18 AGREE** | Baseline envelope verdicts, positions, failure vocabulary, and states | [Open](proofs/attenu-envelope-v1.1-independent/README.md) |
 | Attenu bundle vectors `v1.2` | **17/17 conformant** | Released-corpus score plus old-versus-fixed release discrimination | [Open](proofs/attenu-guard-v0.12.1-independent/README.md) |
