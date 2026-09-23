@@ -1,0 +1,126 @@
+{
+  "schema": "cgqa.external-mapping-record.v1",
+  "record_id": "SAFEAGENT-ACTION-READBACK-EXTERNAL-001",
+  "review_date": "2026-09-23",
+  "record_status": "EXTERNAL_REPORT_RECORDED_WITH_LOCAL_ADAPTER_UNIT_TESTS",
+  "raw_evidence_admitted": false,
+  "claim_ceiling": "Bounded classification mapping of the named externally verified fixture contract; not end-to-end reconciliation or execution safety.",
+  "sources": {
+    "external_author": "azender1",
+    "publication_comment": "https://github.com/crewAIInc/crewAI/issues/5802#issuecomment-5770798945",
+    "publication_date": "2026-09-22",
+    "safeagent": {
+      "repository": "azender1/SafeAgent",
+      "commit": "52049faa07a1f24da60a65a02025d72274006e50",
+      "directory": "evidence/action-readback-control-v1",
+      "files": [
+        {
+          "path": "README.md",
+          "bytes": 1268,
+          "git_blob_sha1": "b8d6506751a878db17ada1423d8fb87d29752e70",
+          "sha256": "aa40c021c3a1304ffd876c5bc913bebc7d7f5594a89190a767b71dbc1de61117"
+        },
+        {
+          "path": "action_readback_adapter.py",
+          "bytes": 4792,
+          "git_blob_sha1": "330e463c680c375bbb59f5f17822a5a0e3a7a202",
+          "sha256": "5e2d8b0d83ba9d326bd245f3269c2b6b3879c8ff73359dc87c6ff5feab099c70"
+        },
+        {
+          "path": "test_action_readback_adapter.py",
+          "bytes": 2974,
+          "git_blob_sha1": "6e98a5712c2b5d97de4c1ea46c6e0e0f56981cbf",
+          "sha256": "8f67ffa569e7e6b834b8965c017f2cd48c1a6668f41435da1df7c659836fa9a6"
+        },
+        {
+          "path": "sanitized_result.json",
+          "bytes": 806,
+          "git_blob_sha1": "66194b97748f960d9939aa73c1d5890e6fbf406b",
+          "sha256": "5361b0f9c61850017fe8c6be8098897326984af8e1d43e28b814d8f7c12a8729"
+        }
+      ]
+    },
+    "crashpoint": {
+      "repository": "mstevens843/crashpoint",
+      "commit": "bb9cd47c4b0b02527aab7b369d17b32829cc4e20",
+      "bundle": "evidence/action_readback/action_readback_self_reviewed_v2",
+      "manifest_git_blob_sha1_from_github_metadata": "571cd3a886acdc9dbeda73b4954373a2582d8b61",
+      "manifest_bytes_verified_locally": false
+    }
+  },
+  "external_author_report": {
+    "status": "PUBLISHED_NOT_RECOMPUTED_HERE",
+    "trial_count": 18,
+    "result_counts": {
+      "CONFIRMED": 6,
+      "CONTRADICTION": 6,
+      "MISSING_EXTERNALLY": 3,
+      "UNCERTAIN": 3
+    },
+    "upstream_manifest_receipt_valid": true,
+    "upstream_verifier_problems": [],
+    "ci_python_versions_reported": [
+      "3.10",
+      "3.11",
+      "3.12"
+    ],
+    "ci_runs_verified_here": false,
+    "aggregate_contains_action_ids": false,
+    "aggregate_contains_payload_digests": false,
+    "aggregate_contains_provider_or_subject_identifiers": false,
+    "aggregate_contains_credentials": false
+  },
+  "local_review": {
+    "status": "PINNED_SOURCE_REVIEW_AND_UPSTREAM_UNIT_TEST_RERUN",
+    "source_acquisition": "GitHub connector UTF-8 content reconstructed locally; all four files matched pinned Git blob SHA-1 before execution.",
+    "matched_source_files": 4,
+    "source_sha256_computed_locally": true,
+    "upstream_authored_tests": true,
+    "independently_implemented_verifier": false,
+    "python": "3.13.5",
+    "pytest": "9.0.2",
+    "platform": "linux",
+    "command": "python -m pytest -q -p no:cacheprovider test_action_readback_adapter.py",
+    "environment": {
+      "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1"
+    },
+    "unit_tests_passed": 12,
+    "unit_tests_failed": 0,
+    "exit_code": 0,
+    "stdout_file": "local-unit-tests.stdout.txt",
+    "stdout_sha256": "6df767ed38fe5451f0df2743920fa44bfd2a5b997da138e26760828b07f2ef8e",
+    "stderr": "",
+    "raw_crashpoint_bundle_verification": "NOT_RUN",
+    "raw_18_trial_aggregate_recomputation": "NOT_RUN",
+    "raw_bundle_not_run_reason": "Container network unavailable; full raw corpus not materialized.",
+    "fresh_fixture_acquisition": "NOT_RUN",
+    "safeagent_reconciliation_core": "NOT_INVOKED",
+    "safeagent_full_suite": "NOT_RUN",
+    "crewai_runtime": "NOT_RUN"
+  },
+  "preserved_boundaries": {
+    "prediction_pass_is_confirmation": false,
+    "missing_externally_authorizes_replay": false,
+    "unavailable_readback_maps_to": "UNCERTAIN",
+    "all_adapter_trial_outputs_replay_authorized": false,
+    "claim_ttl_sweep_semantics_exercised": false,
+    "adapter_verifies_raw_receipts": false,
+    "adapter_authenticates_manifest_source_commit": false,
+    "adapter_precondition": "Already verified, correctly typed manifest from the named pinned corpus.",
+    "fail_closed_test_claim": "Only the published unit-test cases; not exhaustive hostile-input validation."
+  },
+  "non_claims": [
+    "global exactly-once execution",
+    "replay safety",
+    "provider-side idempotency",
+    "distributed durability",
+    "SafeAgent crash or fresh-worker recovery",
+    "end-to-end frozen-core reconciliation",
+    "CrewAI framework fix",
+    "production readiness",
+    "maintainer endorsement or certification"
+  ],
+  "related_but_distinct_evidence": "../crewai-retry-external-admission-v0.1/README.md"
+}
