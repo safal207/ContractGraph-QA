@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "tools/langgraph_ordering_barrier_probe.py"
+      - "tests/test_langgraph_ordering_barrier_probe.py"
       - "benchmarks/langgraph-ordering-barrier-red-first-v0.1/**"
       - ".github/workflows/langgraph-ordering-barrier-red-first.yml"
   pull_request:
     paths:
       - "tools/langgraph_ordering_barrier_probe.py"
+      - "tests/test_langgraph_ordering_barrier_probe.py"
       - "benchmarks/langgraph-ordering-barrier-red-first-v0.1/**"
       - ".github/workflows/langgraph-ordering-barrier-red-first.yml"
 
@@ -29,10 +31,20 @@ jobs:
             repository: langchain-ai/langgraph
             ref: aa742fb31e2827d569b843e3600aeda2e0528e4b
             expect: red
+            sync_failure: red
+            async_failure: red
           - label: pr-8055-head-green
             repository: i-anubhav-anand/langgraph
             ref: 1c2cf39b406f9207ab96b8ffca5e96abf75a4920
             expect: green
+            sync_failure: red
+            async_failure: green
+          - label: sync-failure-followup-green
+            repository: mstevens843/langgraph
+            ref: fc0e1c9ffdf92bc5bfd17811b3543fefd475d267
+            expect: green
+            sync_failure: green
+            async_failure: green
 
     steps:
       - name: Checkout ContractGraph-QA
@@ -60,17 +72,38 @@ jobs:
           python -m pip install --disable-pip-version-check -e .
           python -m pip install --disable-pip-version-check ./subject-langgraph/libs/langgraph
 
+      - name: Verify installed loop matches the exact source pin
+        env:
+          SUBJECT_REF: ${{ matrix.ref }}
+        run: |
+          test "$(git -C subject-langgraph rev-parse HEAD)" = "$SUBJECT_REF"
+          python - <<'PY'
+          from pathlib import Path
+          from langgraph.pregel import _loop
+          expected = Path("subject-langgraph/libs/langgraph/langgraph/pregel/_loop.py").read_bytes()
+          assert Path(_loop.__file__).read_bytes() == expected, "installed loop differs from pinned source"
+          PY
+
+      - name: Test the detector independently of barrier names
+        shell: bash
+        run: |
+          mkdir -p artifacts/langgraph-ordering-barrier
+          python -m unittest discover -s tests -p test_langgraph_ordering_barrier_probe.py -v \
+            2>&1 | tee artifacts/langgraph-ordering-barrier/detector-self-tests.txt
+
       - name: Run no-sleep RED→GREEN mechanism probe
         env:
           CGQA_SUBJECT_REPOSITORY: ${{ matrix.repository }}
           CGQA_SUBJECT_REF: ${{ matrix.ref }}
         run: |
-          mkdir -p artifacts/langgraph-ordering-barrier
           python -m tools.langgraph_ordering_barrier_probe \
             --expect "${{ matrix.expect }}" \
+            --expect-sync-failure-propagation "${{ matrix.sync_failure }}" \
+            --expect-async-failure-propagation "${{ matrix.async_failure }}" \
             --json "artifacts/langgraph-ordering-barrier/${{ matrix.label }}.json"
 
       - name: Publish job summary
+        if: always()
         env:
           RESULT: artifacts/langgraph-ordering-barrier/${{ matrix.label }}.json
         run: |
@@ -79,24 +112,35 @@ jobs:
           import os
           from pathlib import Path
 
-          result = json.loads(Path(os.environ["RESULT"]).read_text())
-          print("## LangGraph #8039 ordering barrier")
+          path = Path(os.environ["RESULT"])
+          if not path.exists():
+              print("No probe result produced; inspect the preceding failed step.")
+              raise SystemExit(0)
+          result = json.loads(path.read_text())
+          print("## LangGraph #8039: ordering != failure propagation")
           print()
-          print(f"- Subject: `{result['subject']['repository']}@{result['subject']['ref']}`")
-          print(f"- Verdict: **{result['verdict']}**")
-          print(f"- LangGraph package version: `{result['subject']['langgraph_version']}`")
-          print()
-          print("| Check | Result |")
-          print("|---|---|")
-          for name, ok in result["checks"].items():
-              print(f"| {name} | {'PASS' if ok else 'FAIL'} |")
-          print()
-          print(f"Registered barrier(s): `{result['evidence']['registered_barriers']}`")
+          print(f"Ordering verdict: **{result['verdict']}**")
+          if "harness_error" in result:
+              print(f"Harness ERROR (not expected RED): `{result['harness_error']}`")
+          else:
+              print(f"Subject: `{result['subject']['repository']}@{result['subject']['ref']}`")
+              print(f"Failure-propagation verdict: **{result['failure_propagation']['verdict']}**")
+              print()
+              print("| Axis | Check | Result |")
+              print("|---|---|---|")
+              for axis, checks in (("ordering", result["checks"]),
+                                   ("failure propagation", result["failure_propagation"]["checks"])):
+                  for name, ok in checks.items():
+                      print(f"| {axis} | {name} | {'GREEN' if ok else 'RED'} |")
+              print()
+              print(f"Diagnostics only (not verdict inputs): `{result['diagnostics']}`")
+              print(f"Expectation mismatches: `{result['expectation_mismatches']}`")
           print()
           print(result["claim_boundary"])
           PY
 
       - name: Upload machine-readable result
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: langgraph-ordering-barrier-${{ matrix.label }}
