@@ -1,0 +1,19 @@
+{
+  "effects": [],
+  "hook_counters": {
+    "x": 0,
+    "y": 1
+  },
+  "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/sdk-source/src/agents/_run_state_agent_identity.py",
+  "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+  "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+  "pid": 23,
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "saved_current_agent": {
+    "identity": "sub#2",
+    "name": "sub"
+  },
+  "sdk_distribution_version": "0.23.1",
+  "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/sdk-source/src/agents"
+}

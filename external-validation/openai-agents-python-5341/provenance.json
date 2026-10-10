@@ -1,0 +1,48 @@
+{
+  "authority_reference": "Current user instruction: \u0413\u043e, continuing the selected SDK validation and outreach step; no merge authority.",
+  "boundaries": [
+    "No SDK source modification",
+    "No live model or real external tool effects",
+    "Separate-process reconstruction; no unclean crash",
+    "Hashes are integrity relative to recorded manifest, not authenticity"
+  ],
+  "discovery_attribution": "digit50, issue #5341",
+  "engine_execution": "NOT_RUN",
+  "evidence_host_base_sha": "f13e586ea9118e026c69438b8c93d0585b8e38ba",
+  "execution_working_directory": "/workspace/scratch/5b0f6da052fa",
+  "identity_git_blob_sha": "db0db775c9ec9877096a463c7c64e66290a7c533",
+  "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+  "recorded_at_utc": "2026-10-10T22:05:31.678935+00:00",
+  "requirements_sha256": "f30fb83990370126376fd5ec1dbd0fb4bbb635d82a5457a335c0de4287298410",
+  "runner_sha256": "3293b055d1fd7c6dfd23f914ece888a19b88b058db37561e9b6c347e2ff8ca04",
+  "schema": "sdk-5341-execution-provenance/1",
+  "source_git_worktree_status": "clean",
+  "source_repository": "openai/openai-agents-python",
+  "source_sha": "125efa029b4bfd84238bd2c4fd69c3406f802663",
+  "source_tree_sha": "2b36e7911664ef8cd56f0a5b9b42a5724af5a253",
+  "subjects": [
+    {
+      "case_count": 8,
+      "error_count": 0,
+      "execution_command": "sdk-5341-20261011/venv/bin/python sdk-5341-20261011/packet/reproduce.py --output sdk-5341-20261011/runs/release-published --label release-0.23.1 --expect-known-bug",
+      "fail_count": 2,
+      "label": "release-0.23.1",
+      "observed_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+      "pass_count": 6,
+      "reproduction_command": ".venv/bin/python reproduce.py --output out-release-published --label release-0.23.1 --expect-known-bug",
+      "results_path": "evidence/release-0.23.1/results.json"
+    },
+    {
+      "case_count": 8,
+      "error_count": 0,
+      "execution_command": "sdk-5341-20261011/venv/bin/python sdk-5341-20261011/packet/reproduce.py --output sdk-5341-20261011/runs/main-published --sdk-src sdk-5341-20261011/sdk-source/src --label main-125efa029b4bfd84238bd2c4fd69c3406f802663 --expect-known-bug",
+      "fail_count": 2,
+      "label": "main-125efa029b4bfd84238bd2c4fd69c3406f802663",
+      "observed_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/sdk-source/src/agents",
+      "pass_count": 6,
+      "reproduction_command": ".venv/bin/python reproduce.py --output out-main-published --sdk-src sdk-source/src --label main-125efa029b4bfd84238bd2c4fd69c3406f802663 --expect-known-bug",
+      "results_path": "evidence/main-125efa029b4bfd84238bd2c4fd69c3406f802663/results.json"
+    }
+  ],
+  "validation_attribution": "Alexey Safonov / safal207; AI-assisted implementation and review"
+}

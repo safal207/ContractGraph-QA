@@ -1,0 +1,521 @@
+{
+  "cases": [
+    {
+      "case": "same-preserve-single",
+      "checks": {
+        "effects": true,
+        "final_output": true,
+        "interruptions": true,
+        "last_agent_owner": true,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "PASS",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": null,
+        "interruptions": [
+          {
+            "agent_owner": "y",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": null,
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 1
+        },
+        "interruptions": [
+          {
+            "agent_owner": "y",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "y",
+        "model_calls": {
+          "x": 0,
+          "y": 1
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 7,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "y",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    },
+    {
+      "case": "same-preserve-sticky",
+      "checks": {
+        "effects": true,
+        "final_output": true,
+        "interruptions": true,
+        "last_agent_owner": true,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "PASS",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": "done-y",
+        "interruptions": [],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": "done-y",
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 1
+        },
+        "interruptions": [],
+        "last_agent_owner": "y",
+        "model_calls": {
+          "x": 0,
+          "y": 2
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 13,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "y",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    },
+    {
+      "case": "same-reset-single",
+      "checks": {
+        "effects": false,
+        "final_output": true,
+        "interruptions": false,
+        "last_agent_owner": false,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "FAIL",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": null,
+        "interruptions": [
+          {
+            "agent_owner": "y",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "x"
+          }
+        ],
+        "final_output": null,
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 0
+        },
+        "interruptions": [
+          {
+            "agent_owner": "x",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "x",
+        "model_calls": {
+          "x": 1,
+          "y": 0
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 19,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "x",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    },
+    {
+      "case": "same-reset-sticky",
+      "checks": {
+        "effects": false,
+        "final_output": false,
+        "interruptions": true,
+        "last_agent_owner": false,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "FAIL",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": "done-y",
+        "interruptions": [],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "x"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "x"
+          }
+        ],
+        "final_output": "done-x",
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 0
+        },
+        "interruptions": [],
+        "last_agent_owner": "x",
+        "model_calls": {
+          "x": 2,
+          "y": 0
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 25,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "x",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    },
+    {
+      "case": "unique-preserve-single",
+      "checks": {
+        "effects": true,
+        "final_output": true,
+        "interruptions": true,
+        "last_agent_owner": true,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "PASS",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": null,
+        "interruptions": [
+          {
+            "agent_owner": "y",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": null,
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 1
+        },
+        "interruptions": [
+          {
+            "agent_owner": "y",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "y",
+        "model_calls": {
+          "x": 0,
+          "y": 1
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 31,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "y",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    },
+    {
+      "case": "unique-preserve-sticky",
+      "checks": {
+        "effects": true,
+        "final_output": true,
+        "interruptions": true,
+        "last_agent_owner": true,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "PASS",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": "done-y",
+        "interruptions": [],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": "done-y",
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 1
+        },
+        "interruptions": [],
+        "last_agent_owner": "y",
+        "model_calls": {
+          "x": 0,
+          "y": 2
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 37,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "y",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    },
+    {
+      "case": "unique-reset-single",
+      "checks": {
+        "effects": true,
+        "final_output": true,
+        "interruptions": true,
+        "last_agent_owner": true,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "PASS",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": null,
+        "interruptions": [
+          {
+            "agent_owner": "y",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": null,
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 0
+        },
+        "interruptions": [
+          {
+            "agent_owner": "y",
+            "call_id": "d2",
+            "tool_name": "record_effect"
+          }
+        ],
+        "last_agent_owner": "y",
+        "model_calls": {
+          "x": 0,
+          "y": 1
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 43,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "y",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    },
+    {
+      "case": "unique-reset-sticky",
+      "checks": {
+        "effects": true,
+        "final_output": true,
+        "interruptions": true,
+        "last_agent_owner": true,
+        "returned": true,
+        "separate_process": true
+      },
+      "contract": "PASS",
+      "expected": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": "done-y",
+        "interruptions": [],
+        "last_agent_owner": "y"
+      },
+      "observed": {
+        "effects": [
+          {
+            "operation": "approved-op",
+            "owner": "y"
+          },
+          {
+            "operation": "follow-up-op",
+            "owner": "y"
+          }
+        ],
+        "final_output": "done-y",
+        "fresh_graph": true,
+        "identity_source_path": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents/_run_state_agent_identity.py",
+        "identity_source_sha256": "c80b214b355f57fcbdaf4d13636ab7b3731da1e747363e445b472cef7b0de7ff",
+        "initial_hook_counters": {
+          "x": 0,
+          "y": 0
+        },
+        "interruptions": [],
+        "last_agent_owner": "y",
+        "model_calls": {
+          "x": 0,
+          "y": 2
+        },
+        "network_policy": "Python audit denies connect/getaddrinfo/sendto; tracing disabled",
+        "outcome": "RETURNED",
+        "pid": 49,
+        "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+        "python": "3.12.14",
+        "restored_owner_diagnostic": "y",
+        "sdk_distribution_version": "0.23.1",
+        "sdk_import_root": "/workspace/scratch/5b0f6da052fa/sdk-5341-20261011/venv/lib/python3.12/site-packages/agents",
+        "separate_process": true
+      }
+    }
+  ],
+  "error_count": 0,
+  "fail_count": 2,
+  "pass_count": 6,
+  "schema": "sdk-5341-fresh-graph-matrix/1",
+  "sdk_source_label": "release-0.23.1"
+}

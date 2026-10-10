@@ -1,0 +1,469 @@
+{
+  "$schemaVersion": "1.20",
+  "auto_previous_response_id": false,
+  "context": {
+    "approvals": {},
+    "context": null,
+    "context_meta": {
+      "omitted": false,
+      "original_type": "none",
+      "requires_deserializer": false,
+      "serialized_via": "none"
+    },
+    "function_tool_approvals": [
+      {
+        "agent": {
+          "identity": "sub#2",
+          "name": "sub"
+        },
+        "decision": {
+          "approved": [
+            "d1"
+          ],
+          "rejected": []
+        },
+        "tool_key": "record_effect"
+      }
+    ],
+    "tool_invocations": {
+      "d1": {
+        "approval_scope": "302fc935aca0c0f121ddaed84cf9d2abc92dd6e5e5bd3131a0a9c17525fe5a7d",
+        "completed": false,
+        "executed": false,
+        "fingerprint": "71e30c6c3ee9b327d42232fc8e0369a5dd698e3a3fd3afb2cac11c76e73897a0",
+        "type": "function_call"
+      },
+      "h1": {
+        "approval_scope": "227ef8de337b9c9a01a22d019fde4f30d1f9c7371c677a57a125d1bbb21d6ddb",
+        "completed": true,
+        "executed": true,
+        "fingerprint": "dedef30c79b898befd7926caf8be45f2dd4bc87c0c3b39b627e3f4257040d7ab",
+        "type": "function_call"
+      }
+    },
+    "usage": {
+      "input_tokens": 0,
+      "input_tokens_details": [
+        {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        }
+      ],
+      "output_tokens": 0,
+      "output_tokens_details": [
+        {
+          "reasoning_tokens": 0
+        }
+      ],
+      "request_usage_entries": [],
+      "requests": 2,
+      "total_tokens": 0
+    }
+  },
+  "conversation_id": null,
+  "current_agent": {
+    "identity": "sub#2",
+    "name": "sub"
+  },
+  "current_response_generated_item_ownership": {
+    "end": 4,
+    "interruptions": [
+      3
+    ],
+    "start": 2
+  },
+  "current_step": {
+    "data": {
+      "interruptions": [
+        {
+          "agent": {
+            "identity": "sub#2",
+            "name": "sub"
+          },
+          "raw_item": {
+            "arguments": "{\"operation\":\"approved-op\"}",
+            "call_id": "d1",
+            "id": "d1",
+            "name": "record_effect",
+            "type": "function_call"
+          },
+          "tool_lookup_key": {
+            "kind": "bare",
+            "name": "record_effect"
+          },
+          "tool_name": "record_effect",
+          "tool_origin": {
+            "type": "function"
+          },
+          "type": "tool_approval_item"
+        }
+      ],
+      "llm_end_hooks_started": true,
+      "response_accepted": false
+    },
+    "type": "next_step_interruption"
+  },
+  "current_turn": 2,
+  "current_turn_persisted_item_count": 0,
+  "generated_items": [
+    {
+      "agent": {
+        "name": "root"
+      },
+      "raw_item": {
+        "arguments": "{}",
+        "call_id": "h1",
+        "id": "h1",
+        "name": "to_y",
+        "type": "function_call"
+      },
+      "type": "handoff_call_item"
+    },
+    {
+      "agent": {
+        "name": "root"
+      },
+      "raw_item": {
+        "call_id": "h1",
+        "output": "{\"assistant\": \"sub\"}",
+        "type": "function_call_output"
+      },
+      "source_agent": {
+        "name": "root"
+      },
+      "target_agent": {
+        "identity": "sub#2",
+        "name": "sub"
+      },
+      "type": "handoff_output_item"
+    },
+    {
+      "agent": {
+        "identity": "sub#2",
+        "name": "sub"
+      },
+      "description": "Record a synthetic memory-only effect for an approved operation.",
+      "raw_item": {
+        "arguments": "{\"operation\":\"approved-op\"}",
+        "call_id": "d1",
+        "id": "d1",
+        "name": "record_effect",
+        "type": "function_call"
+      },
+      "tool_name": "record_effect",
+      "tool_origin": {
+        "type": "function"
+      },
+      "type": "tool_call_item"
+    },
+    {
+      "agent": {
+        "identity": "sub#2",
+        "name": "sub"
+      },
+      "raw_item": {
+        "arguments": "{\"operation\":\"approved-op\"}",
+        "call_id": "d1",
+        "id": "d1",
+        "name": "record_effect",
+        "type": "function_call"
+      },
+      "tool_lookup_key": {
+        "kind": "bare",
+        "name": "record_effect"
+      },
+      "tool_name": "record_effect",
+      "tool_origin": {
+        "type": "function"
+      },
+      "type": "tool_approval_item"
+    }
+  ],
+  "generated_prompt_cache_key": null,
+  "generated_session_item_indexes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "input_guardrail_results": [],
+  "last_model_response": {
+    "output": [
+      {
+        "arguments": "{\"operation\":\"approved-op\"}",
+        "call_id": "d1",
+        "id": "d1",
+        "name": "record_effect",
+        "type": "function_call"
+      }
+    ],
+    "request_id": null,
+    "response_id": "resp-789",
+    "usage": {
+      "input_tokens": 0,
+      "input_tokens_details": [
+        {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        }
+      ],
+      "output_tokens": 0,
+      "output_tokens_details": [
+        {
+          "reasoning_tokens": 0
+        }
+      ],
+      "request_usage_entries": [],
+      "requests": 1,
+      "total_tokens": 0
+    }
+  },
+  "last_processed_response": {
+    "apply_patch_actions": [],
+    "computer_actions": [],
+    "custom_tool_actions": [],
+    "functions": [
+      {
+        "tool": {
+          "description": "Record a synthetic memory-only effect for an approved operation.",
+          "lookupKey": {
+            "kind": "bare",
+            "name": "record_effect"
+          },
+          "name": "record_effect",
+          "paramsJsonSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "operation": {
+                "title": "Operation",
+                "type": "string"
+              }
+            },
+            "required": [
+              "operation"
+            ],
+            "title": "record_effect_args",
+            "type": "object"
+          }
+        },
+        "tool_call": {
+          "arguments": "{\"operation\":\"approved-op\"}",
+          "call_id": "d1",
+          "id": "d1",
+          "name": "record_effect",
+          "type": "function_call"
+        }
+      }
+    ],
+    "handoffs": [],
+    "interruptions": [
+      {
+        "agent": {
+          "identity": "sub#2",
+          "name": "sub"
+        },
+        "raw_item": {
+          "arguments": "{\"operation\":\"approved-op\"}",
+          "call_id": "d1",
+          "id": "d1",
+          "name": "record_effect",
+          "type": "function_call"
+        },
+        "tool_lookup_key": {
+          "kind": "bare",
+          "name": "record_effect"
+        },
+        "tool_name": "record_effect",
+        "tool_origin": {
+          "type": "function"
+        },
+        "type": "tool_approval_item"
+      }
+    ],
+    "local_shell_actions": [],
+    "mcp_approval_requests": [],
+    "mcp_tool_bindings": {},
+    "new_items": [
+      {
+        "agent": {
+          "identity": "sub#2",
+          "name": "sub"
+        },
+        "description": "Record a synthetic memory-only effect for an approved operation.",
+        "raw_item": {
+          "arguments": "{\"operation\":\"approved-op\"}",
+          "call_id": "d1",
+          "id": "d1",
+          "name": "record_effect",
+          "type": "function_call"
+        },
+        "tool_name": "record_effect",
+        "tool_origin": {
+          "type": "function"
+        },
+        "type": "tool_call_item"
+      }
+    ],
+    "shell_actions": [],
+    "tools_used": [
+      "record_effect"
+    ]
+  },
+  "max_turns": 5,
+  "model_responses": [
+    {
+      "output": [
+        {
+          "arguments": "{}",
+          "call_id": "h1",
+          "id": "h1",
+          "name": "to_y",
+          "type": "function_call"
+        }
+      ],
+      "request_id": null,
+      "response_id": "resp-789",
+      "usage": {
+        "input_tokens": 0,
+        "input_tokens_details": [
+          {
+            "cache_write_tokens": 0,
+            "cached_tokens": 0
+          }
+        ],
+        "output_tokens": 0,
+        "output_tokens_details": [
+          {
+            "reasoning_tokens": 0
+          }
+        ],
+        "request_usage_entries": [],
+        "requests": 1,
+        "total_tokens": 0
+      }
+    },
+    {
+      "output": [
+        {
+          "arguments": "{\"operation\":\"approved-op\"}",
+          "call_id": "d1",
+          "id": "d1",
+          "name": "record_effect",
+          "type": "function_call"
+        }
+      ],
+      "request_id": null,
+      "response_id": "resp-789",
+      "usage": {
+        "input_tokens": 0,
+        "input_tokens_details": [
+          {
+            "cache_write_tokens": 0,
+            "cached_tokens": 0
+          }
+        ],
+        "output_tokens": 0,
+        "output_tokens_details": [
+          {
+            "reasoning_tokens": 0
+          }
+        ],
+        "request_usage_entries": [],
+        "requests": 1,
+        "total_tokens": 0
+      }
+    }
+  ],
+  "nested_history_owned_session_item_refs": [],
+  "no_active_agent_run": true,
+  "original_input": "Synthetic request",
+  "output_guardrail_results": [],
+  "pending_input": [],
+  "previous_response_id": null,
+  "reasoning_item_id_policy": null,
+  "session_items": [
+    {
+      "agent": {
+        "name": "root"
+      },
+      "raw_item": {
+        "arguments": "{}",
+        "call_id": "h1",
+        "id": "h1",
+        "name": "to_y",
+        "type": "function_call"
+      },
+      "type": "handoff_call_item"
+    },
+    {
+      "agent": {
+        "name": "root"
+      },
+      "raw_item": {
+        "call_id": "h1",
+        "output": "{\"assistant\": \"sub\"}",
+        "type": "function_call_output"
+      },
+      "source_agent": {
+        "name": "root"
+      },
+      "target_agent": {
+        "identity": "sub#2",
+        "name": "sub"
+      },
+      "type": "handoff_output_item"
+    },
+    {
+      "agent": {
+        "identity": "sub#2",
+        "name": "sub"
+      },
+      "description": "Record a synthetic memory-only effect for an approved operation.",
+      "raw_item": {
+        "arguments": "{\"operation\":\"approved-op\"}",
+        "call_id": "d1",
+        "id": "d1",
+        "name": "record_effect",
+        "type": "function_call"
+      },
+      "tool_name": "record_effect",
+      "tool_origin": {
+        "type": "function"
+      },
+      "type": "tool_call_item"
+    },
+    {
+      "agent": {
+        "identity": "sub#2",
+        "name": "sub"
+      },
+      "raw_item": {
+        "arguments": "{\"operation\":\"approved-op\"}",
+        "call_id": "d1",
+        "id": "d1",
+        "name": "record_effect",
+        "type": "function_call"
+      },
+      "tool_lookup_key": {
+        "kind": "bare",
+        "name": "record_effect"
+      },
+      "tool_name": "record_effect",
+      "tool_origin": {
+        "type": "function"
+      },
+      "type": "tool_approval_item"
+    }
+  ],
+  "tool_input_guardrail_results": [],
+  "tool_output_guardrail_results": [],
+  "tool_use_tracker": {
+    "root": [
+      "to_y"
+    ],
+    "sub#2": [
+      "record_effect"
+    ]
+  },
+  "trace": null
+}
