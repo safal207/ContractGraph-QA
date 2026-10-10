@@ -1,0 +1,227 @@
+{
+  "repository": "goun7/tamga-protocol",
+  "base_sha": "7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b",
+  "fixed_sha": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+  "python": "3.12.14",
+  "scope": "historical fixture-verifier comparison",
+  "cgqa_engine": "NOT_RUN",
+  "upstream_full_suite": "NOT_RUN",
+  "sources": [
+    {
+      "key": "before_verify",
+      "revision": "7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b",
+      "path": "tools/verify_pairing_fixture.py",
+      "git_blob_sha1": "8195c659d38d7e94d71c8606a40ca54ba1f92a5e",
+      "sha256": "452675d6657a7546509041a216e5b33e2578591f6dd6f36b5ecba31a9c232271",
+      "bytes": 4320
+    },
+    {
+      "key": "after_verify",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "path": "tools/verify_pairing_fixture.py",
+      "git_blob_sha1": "bd72f616b9431322534c1b803cf23c58c09aa83b",
+      "sha256": "e028ff6a8ff04d04e135fd62f62e28573735085691528aa26bc6fda0f9e7c821",
+      "bytes": 4598
+    },
+    {
+      "key": "keccak",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "path": "tools/keccak256.py",
+      "git_blob_sha1": "e4c6724b3df72f12b93ba756b6bf2f105d2d4a3a",
+      "sha256": "bc500a3e8e07cb11a01a915c256a96e50f2397c5784369dde8d0fe7abab8b1ac",
+      "bytes": 3036
+    },
+    {
+      "key": "fixture",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "path": "docs/pairing/pairing-fixture.json",
+      "git_blob_sha1": "675142be41feef6847be069b62bdf9c7174ca1e8",
+      "sha256": "9f03e345a37bf2fc1b8687470feae63b910332070f49ed7bab243a4ed860c220",
+      "bytes": 2868
+    },
+    {
+      "key": "delivery",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "path": "docs/pairing/delivery.stdout",
+      "git_blob_sha1": "e561bdbf79a19065b7a0652fb2d67e3c5494f728",
+      "sha256": "c7023eda7dab3faf782149158fa55583a4f57cd3a230092da1933688d05f94be",
+      "bytes": 113
+    },
+    {
+      "key": "input",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "path": "docs/pairing/input.json",
+      "git_blob_sha1": "788df9a7f66f742d3efe4ac04602c0457cee3e04",
+      "sha256": "4a73430df8b6b8fda8cc15717d4d0652a965aa02373b796fc17f6a2f5cd45bcf",
+      "bytes": 36
+    }
+  ],
+  "runs": [
+    {
+      "scenario": "untouched",
+      "version": "before",
+      "revision": "7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b",
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "receiptHash": "36a8c38609c5e8d0dc89167581ef48122111bdcc8f831aecb3631834285214d6",
+        "stdout_sha256": "c7023eda7dab3faf782149158fa55583a4f57cd3a230092da1933688d05f94be",
+        "checks": [
+          "labeling",
+          "membership",
+          "delivery_sha256",
+          "delivery_keccak256",
+          "input_sha256"
+        ]
+      },
+      "stderr": "",
+      "expected_ok": true,
+      "expected_where": null,
+      "matches_expected": true
+    },
+    {
+      "scenario": "untouched",
+      "version": "after",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "receiptHash": "36a8c38609c5e8d0dc89167581ef48122111bdcc8f831aecb3631834285214d6",
+        "stdout_sha256": "c7023eda7dab3faf782149158fa55583a4f57cd3a230092da1933688d05f94be",
+        "checks": [
+          "labeling",
+          "membership",
+          "delivery_sha256",
+          "delivery_keccak256",
+          "input_sha256"
+        ]
+      },
+      "stderr": "",
+      "expected_ok": true,
+      "expected_where": null,
+      "matches_expected": true
+    },
+    {
+      "scenario": "stale_record_hash",
+      "version": "before",
+      "revision": "7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b",
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "receiptHash": "fd2fe2ecf1b534af1f1c47e166a3cec9c77cf93f7cb826cf19bf11757a4b4950",
+        "stdout_sha256": "c7023eda7dab3faf782149158fa55583a4f57cd3a230092da1933688d05f94be",
+        "checks": [
+          "labeling",
+          "membership",
+          "delivery_sha256",
+          "delivery_keccak256",
+          "input_sha256"
+        ]
+      },
+      "stderr": "",
+      "expected_ok": true,
+      "expected_where": null,
+      "matches_expected": true
+    },
+    {
+      "scenario": "stale_record_hash",
+      "version": "after",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "exit_code": 1,
+      "output": {
+        "ok": false,
+        "where": "membership",
+        "error": "recomputed h != receiptHash or charge.h"
+      },
+      "stderr": "",
+      "expected_ok": false,
+      "expected_where": "membership",
+      "matches_expected": true
+    },
+    {
+      "scenario": "stale_input_binding",
+      "version": "before",
+      "revision": "7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b",
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "receiptHash": "36a8c38609c5e8d0dc89167581ef48122111bdcc8f831aecb3631834285214d6",
+        "stdout_sha256": "c7023eda7dab3faf782149158fa55583a4f57cd3a230092da1933688d05f94be",
+        "checks": [
+          "labeling",
+          "membership",
+          "delivery_sha256",
+          "delivery_keccak256",
+          "input_sha256"
+        ]
+      },
+      "stderr": "",
+      "expected_ok": true,
+      "expected_where": null,
+      "matches_expected": true
+    },
+    {
+      "scenario": "stale_input_binding",
+      "version": "after",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "exit_code": 1,
+      "output": {
+        "ok": false,
+        "where": "input_commitment",
+        "error": "sha256(input.json) != fixture commitment or charge.input_sha256"
+      },
+      "stderr": "",
+      "expected_ok": false,
+      "expected_where": "input_commitment",
+      "matches_expected": true
+    },
+    {
+      "scenario": "consistent_rewrite",
+      "version": "before",
+      "revision": "7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b",
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "receiptHash": "5b6c9453d953ffa2c7c6cedc4a934260c5c76dc8746f4a765ace0b740c79bc69",
+        "stdout_sha256": "c7023eda7dab3faf782149158fa55583a4f57cd3a230092da1933688d05f94be",
+        "checks": [
+          "labeling",
+          "membership",
+          "delivery_sha256",
+          "delivery_keccak256",
+          "input_sha256"
+        ]
+      },
+      "stderr": "",
+      "expected_ok": true,
+      "expected_where": null,
+      "matches_expected": true
+    },
+    {
+      "scenario": "consistent_rewrite",
+      "version": "after",
+      "revision": "c62d4a822d7e3546931197905e137d0eb6fb490e",
+      "exit_code": 0,
+      "output": {
+        "ok": true,
+        "receiptHash": "5b6c9453d953ffa2c7c6cedc4a934260c5c76dc8746f4a765ace0b740c79bc69",
+        "stdout_sha256": "c7023eda7dab3faf782149158fa55583a4f57cd3a230092da1933688d05f94be",
+        "checks": [
+          "labeling",
+          "membership",
+          "delivery_sha256",
+          "delivery_keccak256",
+          "input_sha256"
+        ]
+      },
+      "stderr": "",
+      "expected_ok": true,
+      "expected_where": null,
+      "matches_expected": true
+    }
+  ],
+  "summary": {
+    "invocations": 8,
+    "matched": 8
+  }
+}
