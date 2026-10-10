@@ -1,0 +1,84 @@
+{
+  "packet_version": 1,
+  "subject_commit": "4d3f2387bd3f2db8007cca324ef8dea23264c248",
+  "host_base": "f13e586ea9118e026c69438b8c93d0585b8e38ba",
+  "artifacts": [
+    {
+      "path": "MESSAGE.md",
+      "bytes": 1721,
+      "sha256": "db5c323c833d7b0e9068b8bb66a17069cd86526e8dac2ee329ad915f84520e37"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4974,
+      "sha256": "8a32914ed09b74a4739dcf35d514302002581888e3e1f911bf566b654fec946d"
+    },
+    {
+      "path": "REPORT.md",
+      "bytes": 6457,
+      "sha256": "8ce00dcfbdd3015cc5bb99c1251fd3a54810a73d692a23fbfc8728618a40fc2d"
+    },
+    {
+      "path": "REVIEW.md",
+      "bytes": 4983,
+      "sha256": "a237b2ade80f97524d2049ed980e396a6200afba5a089b5a293f1e81ecc03f7a"
+    },
+    {
+      "path": "buyer-composition.test.ts",
+      "bytes": 16735,
+      "sha256": "a73f722ddabe3f17aed57052a3334604c643aeff70bfabde24d9243b4bf8336f"
+    },
+    {
+      "path": "evidence/attempt-1.json",
+      "bytes": 57461,
+      "sha256": "ce22d55b1a47e15d19d585e3e76fd0d7285df2881ea09ef2373744827ca33a8f"
+    },
+    {
+      "path": "evidence/attempt-2.json",
+      "bytes": 57461,
+      "sha256": "07a5e7a23dedac271478fc3d5c7f3bd0921dcc63fd183109d49de5f587b4bc71"
+    },
+    {
+      "path": "evidence/baseline-checks.json",
+      "bytes": 1721,
+      "sha256": "2dfc9b5bf7a315eedfe623c91616e3a5875264d29adadd2b1e93b3b6dbb16803"
+    },
+    {
+      "path": "evidence/semantic-replay.json",
+      "bytes": 2963,
+      "sha256": "6b8d6a9e8f86bb4c8f88a14b82310807edd68e0293245f0c83119af11b659358"
+    },
+    {
+      "path": "provenance.json",
+      "bytes": 2970,
+      "sha256": "3ba0012b5ebf73ab62d673521cd58737dd46bdcfc469baa8de29cb15f3a6b011"
+    },
+    {
+      "path": "replay.py",
+      "bytes": 4102,
+      "sha256": "255d74bca99f12c66e5e535774a6cce510db1c8c1f209dff3a177c83148abd01"
+    },
+    {
+      "path": "scope.md",
+      "bytes": 4010,
+      "sha256": "4b1114ddc0a09770b5cbdf84ea4ea0d7fac8add511fb6de947f5bb509f34aaeb"
+    },
+    {
+      "path": "source-bindings.json",
+      "bytes": 2231,
+      "sha256": "3acd0ad05b7f4c934bae5e2341f11c62230260c143867dc8bf2741a4b005283e"
+    },
+    {
+      "path": "verify-evidence.py",
+      "bytes": 1998,
+      "sha256": "304231812c4c7a5967ddaae5951b70429c58d2b8f57b58c58a77f68bcd455a6a"
+    }
+  ],
+  "repository_sources": [
+    {
+      "path": ".github/workflows/x402-3758.yml",
+      "bytes": 1588,
+      "sha256": "4e7ade8a0e9cfa5799e779ad07aa7db073538120cd3ff29eb31b1003565022d2"
+    }
+  ]
+}

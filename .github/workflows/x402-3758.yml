@@ -1,0 +1,47 @@
+name: x402 receipt buyer composition
+
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/x402-3758/**'
+      - '.github/workflows/x402-3758.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'benchmarks/x402-3758/**'
+      - '.github/workflows/x402-3758.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  composition:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: johnInarti/x402
+          ref: 4d3f2387bd3f2db8007cca324ef8dea23264c248
+          path: .native-x402
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '${{ matrix.node }}'
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.25.0 --ignore-scripts
+      - name: Verify retained packet
+        run: python3 benchmarks/x402-3758/verify-evidence.py
+      - name: Install native locked dependencies
+        working-directory: .native-x402/typescript
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @x402/core --filter @x402/extensions --filter @x402/fetch
+      - name: Run all three native composition controls
+        run: python3 benchmarks/x402-3758/replay.py .native-x402 /tmp/x402-3758-ci.json
+      - name: Show observed counters
+        run: cat /tmp/x402-3758-ci.json
