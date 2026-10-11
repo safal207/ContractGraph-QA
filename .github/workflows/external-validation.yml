@@ -37,3 +37,14 @@ jobs:
       - name: Reproduce temporal path
         working-directory: external-validation/gitlawb
         run: forge test -vvv --match-test test_timelySubmissionCanBeReopenedByThirdPartyAfterClaimDeadline
+
+  tamga-harness:
+    name: Tamga reproducer oracle regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Reject incomplete or altered verifier payloads
+        working-directory: external-validation/tamga-binding
+        run: python3 -I -S -B -m unittest discover -s . -p 'test_reproduce.py' -v

@@ -3,7 +3,9 @@
 ## Exact subject and authority
 
 - Subject: `goun7/tamga-protocol`, parent `7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b` -> fix `c62d4a822d7e3546931197905e137d0eb6fb490e`.
-- Hosting repository provenance: `safal207/ContractGraph-QA@f13e586ea9118e026c69438b8c93d0585b8e38ba`; CGQA engine **NOT_RUN**.
+- Hosting repository **base for the case branch**: `safal207/ContractGraph-QA@f13e586ea9118e026c69438b8c93d0585b8e38ba`. This base does not contain the case artifacts; CGQA engine **NOT_RUN** for this comparison.
+- Original evidence-bearing snapshot: [`3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6`](https://github.com/safal207/ContractGraph-QA/tree/3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6/external-validation/tamga-binding), containing the original case, reproducer, evidence notes, and recorded results.
+- Original reproducer snapshot: [`7d4e8682b3fdb364356299d3352d9b4e4c333203`](https://github.com/safal207/ContractGraph-QA/blob/7d4e8682b3fdb364356299d3352d9b4e4c333203/external-validation/tamga-binding/reproduce.py); Git blob `bb57f438ed957e9f9d68a556c818e02dc256693c`, SHA-256 `255784d59e50b4185281fcb033112186dbefa95f13ab3c0c4e37ed95a0926cb8`, 6919 bytes.
 - Spine: `tamga-binding-case-20261011`.
 - Authorization reference: `user-go-20261011T001058+0300`, approving the preceding case-publication and scoped author-review proposal. The initial publication route was a separate branch and draft PR; merge remains a separate decision.
 - Interpretation: `PASS_WITHIN_BOUND` for the four-scenario historical comparison. Author attribution and technical-scope accuracy **CONFIRMED** by [goun7 on 11 October 2026](https://github.com/safal207/ContractGraph-QA/pull/209#issuecomment-6111831002), for the [case submitted at `3a6bcd1`](https://github.com/safal207/ContractGraph-QA/blob/3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6/docs/case-studies/TAMGA_RECEIPT_BINDING.md). This discussion confirmation is not a formal PR approval.
@@ -12,9 +14,9 @@
 
 Before execution, the matrix required original acceptance on both versions, parent acceptance/fix rejection of each selected stale-field mutation at the expected location, and acceptance of a consistently rewritten fixture on both versions. Unexpected JSON, return code, stderr, identity, or branch outcomes prevent the corresponding claim.
 
-The same fixed-version committed fixture and Keccak dependency are used for both verifiers. The fix's parent relation and two-file diff show that these shared files are unchanged across the selected pair. The harness invokes exact verifier source bytes; it does not substitute a reimplemented verifier. Its independent assertions inspect `ok`, `where`, return code, and absence of stderr.
+The same fixed-version committed fixture and Keccak dependency are used for both verifiers. The fix's parent relation and two-file diff show that these shared files are unchanged across the selected pair. The harness invokes exact verifier source bytes; it does not substitute a reimplemented verifier. The original harness inspected `ok`, `where`, return code, and absence of stderr. The revised harness additionally requires the complete expected JSON payload, including success hashes and ordered checks or the exact scenario-specific failure reason. That stronger requirement is not retroactively attributed to the original execution.
 
-Observed: **8/8 expected outcomes**, repeated with identical result JSON. This means four scenarios across two versions. The accepted consistent rewrite is an intentional limitation control, not a successful security test. It updates the input, fixture commitment, charge input hash, record hash, and envelope hash while retaining the prior output bytes.
+Original recorded observation: **8/8 expected outcomes**, with an identical repeat reported at publication. The original second-run record was not separately committed. This means four scenarios across two versions. The accepted consistent rewrite is an intentional limitation control, not a successful security test. It updates the input, fixture commitment, charge input hash, record hash, and envelope hash while retaining the prior output bytes.
 
 Raw outputs and all six input source identities are in [results.json](results.json). Six Git blob identities are checked before every run. Source identities and raw results are committed with this case; source SHA-256 and sizes are also retained in the results.
 
@@ -25,6 +27,16 @@ Python 3.12.14; inspected stdlib-only harness plus upstream verifier and Keccak 
 The published reproducer does not install this local containment profile. Review fetched code before execution in your own environment. Its initial download needs network access; the verifier invocations operate on local bytes. No provider call or payment is performed.
 
 The full Tamga runtime, complete ledger verification, trusted anchor/signature verification, upstream full suite, and CGQA engine were **NOT_RUN**. The maintainer's historical report of 21 controls is not counted as our execution result. Source labels `observed`, `simulated`, and `derived` describe upstream fixture metadata, not an independently witnessed agent run.
+
+## Recorded review replay
+
+Codex review at `dcceead958e1ade2011590f4a7b3aa0372165f91` identified incomplete payload assertions, an ambiguous base/evidence reference, and the absent second-run record. This follow-up preserves [the original results at `3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6`](https://github.com/safal207/ContractGraph-QA/blob/3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6/external-validation/tamga-binding/results.json) and adds two **fresh** executions of the revised reproducer: [first output](review-results.json) and [repeat output](review-repeat-results.json). Each matched **8/8** expected outcomes; report bytes are identical. Their shared SHA-256 is `f752fcb01e20a09b663c86074970197e4c5acee8706c79077b810cdc5897c4b1`. [The replay record](REPLAY_VERIFICATION.json) binds both outputs, the revised harness, test file, commands, environment, and verification results.
+
+The revised harness used in those executions is Git blob `59b54b316d2a1aac1cbaf06cc25e10051e0bbd39`, SHA-256 `b8134596137e7ff5459f07cff610bc42918ee476d84e89edc00e75ff2b949819`, 8220 bytes. It was tested as a local overlay based on the reviewed head and is published with these records. Removing its added expected-payload and harness-identity metadata leaves the same historical source identities and outcomes as the original report. These fresh records demonstrate repeatability of the pinned historical comparison; they do not recover or independently attest to the unrecorded original repeat, and they do not assess current releases.
+
+The offline packet is now read explicitly as UTF-8. With a literal-Unicode packet under `LC_ALL=C` and Python UTF-8 mode disabled, the original harness raised `UnicodeDecodeError`; the revised harness completed both eight-invocation matrices. [Fourteen offline oracle regression tests](test_reproduce.py) pass. Replacing the full-payload comparator with the previous `ok/where/status/stderr` predicate produced 14 failing unittest entries, confirming that the tests detect its false-positive paths. These tests import the local harness without running upstream code. The dedicated CI job runs those oracle tests; its success is distinct from the separately recorded verifier replay.
+
+The original execution environment above remains a historical record. These review executions used Python 3.12.14, the six verified offline source contents, and isolated child interpreter flags; no new claim about the original external containment profile is made.
 
 ## Attribution and claim boundary
 
@@ -40,7 +52,7 @@ The compared verifier checks supplied fixture consistency. It does not authentic
 
 ## Capability classification
 
-The matrix below records the original historical comparison. This documentation refresh updates attribution/scope review status; it does not claim fresh verifier execution, change the source pins, or replace the recorded results.
+The matrix describes the bounded historical Tamga subject. Rows that mention the review replay are supported by the separately recorded fresh executions above. Original results and source pins remain unchanged; the stronger harness assertions are a distinct verification event.
 
 | Capability | Status | Evidence or reason |
 |---|---|---|
@@ -60,14 +72,14 @@ The matrix below records the original historical comparison. This documentation 
 | Negative Control | RUN | Parent accepts both mutations; fix rejects both at expected checks. |
 | Stateful / Property Search | NOT_APPLICABLE | Fixed enumerated matrix; no stateful/property exploration claimed. |
 | Independent Witness | RUN | Fresh execution of pinned verifier. Maintainer provenance labels and execution remain independently unwitnessed. |
-| Trace Integrity | RUN | Source hashes, raw JSON outputs, exit codes, and stderr retained; deterministic replay identical. |
+| Trace Integrity | RUN | Source hashes, raw JSON outputs, exit codes, and stderr retained; revised harness blob/SHA-256 and both fresh outputs bound in REPLAY_VERIFICATION.json. |
 | Evidence Type / Readiness | RUN | Fresh CLI results distinguished from maintainer comments and simulated settlement metadata. |
 | Counterexample Minimization | RUN | Single record field plus one envelope digest; input bytes plus one fixture commitment. Mirrors native controls, not a global minimum proof. |
 | Root-Cause Collapse | RUN | Two missing equalities identified in parent and added in fix. |
-| Deterministic Replay | RUN | Second eight-invocation run matched first result byte-for-byte. |
+| Deterministic Replay | RUN | Two fresh revised-harness outputs are committed separately with identical bytes and matching SHA-256 in REPLAY_VERIFICATION.json; original second-run record was not separately committed. |
 | Metamorphic / Round-Trip Verification | RUN | Consistent input rebind intentionally remains accepted, bounding the claim; no semantic input-output relation verified. |
 | Native Regression | RUN | AT-007g/h mutation shapes executed against native verifier; upstream Bash suite not run. |
-| Durable Evidence Reopen / Integrity | RUN | Saved result reopened and compared with repeat; publication readback is a separate delivery gate. |
+| Durable Evidence Reopen / Integrity | RUN | Fresh outputs reopened and compared; script/test/output digests independently checked; original results retained; publication readback remains a separate delivery gate. |
 | Verification Debt | RUN | Author attribution/scope confirmed; independent third-party reproduction pending; current releases and full suites not assessed. |
 | Active Verification Planning | RUN | Selected tests discriminate parent/fix; no additional production changes proposed. |
 | Meaning Trajectory | RUN | Review -> attributed fix -> native controls -> historical replay -> bounded public case. |
@@ -83,3 +95,5 @@ A separate AI static review agreed with source attribution, mutations, and asser
 
 Stop and revise the case if a source identity or result differs, or if author feedback identifies an attribution or scope error. Preserve the historical evidence and append corrections through a new commit. Author accuracy review is complete for attribution and technical scope. Remaining continuation: final PR review and independent third-party reproduction. No automated recurring watchpoint is created.
 
+
+Review learning decision: **PROMOTE** the focused oracle regressions and explicit replay record into this same case PR. Applicability is limited to this pinned verifier comparison and its result assertions; no general security rule or production change is inferred. Merge remains a separate decision.

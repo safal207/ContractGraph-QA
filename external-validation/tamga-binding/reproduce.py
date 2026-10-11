@@ -38,12 +38,33 @@ def record_hash(charge):
     return hashlib.sha256((charge["prev"] + encoded).encode("utf-8")).hexdigest()
 
 
+def expected_payload(charge, delivery, wanted_ok, wanted_where):
+    if wanted_ok:
+        return {"ok": True, "receiptHash": record_hash(charge),
+                "stdout_sha256": hashlib.sha256(delivery).hexdigest(),
+                "checks": ["labeling", "membership", "delivery_sha256",
+                           "delivery_keccak256", "input_sha256"]}
+    errors = {
+        "membership": "recomputed h != receiptHash or charge.h",
+        "input_commitment": "sha256(input.json) != fixture commitment or charge.input_sha256",
+    }
+    return {"ok": False, "where": wanted_where, "error": errors[wanted_where]}
+
+
+def matches_expected_result(outcome, expected_output, returncode, stderr):
+    return (isinstance(outcome, dict)
+            and outcome.get("ok") is expected_output["ok"]
+            and outcome == expected_output
+            and returncode == (0 if expected_output["ok"] else 1)
+            and stderr == "")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-packet", type=Path, help="offline packet with a contents mapping")
     parser.add_argument("--output", type=Path, default=Path("results.json"))
     args = parser.parse_args()
-    packet = json.loads(args.source_packet.read_text()) if args.source_packet else None
+    packet = json.loads(args.source_packet.read_text(encoding="utf-8")) if args.source_packet else None
     sources, identities = {}, []
     for key, (revision, path, expected) in FILES.items():
         url = f"https://raw.githubusercontent.com/goun7/tamga-protocol/{revision}/{path}"
@@ -103,17 +124,22 @@ def main():
                                          env={"PATH": os.defpath, "LC_ALL": "C.UTF-8", "PYTHONHASHSEED": "0"})
                 outcome = json.loads(process.stdout)
                 wanted_ok, wanted_where = expected[version]
-                matches = (outcome.get("ok") is wanted_ok and outcome.get("where") == wanted_where
-                           and process.returncode == (0 if wanted_ok else 1) and not process.stderr)
+                expected_output = expected_payload(charge, sources["delivery"], wanted_ok, wanted_where)
+                matches = matches_expected_result(outcome, expected_output, process.returncode, process.stderr)
                 runs.append({"scenario": name, "version": version,
                              "revision": BASE if version == "before" else FIXED,
                              "exit_code": process.returncode, "output": outcome,
                              "stderr": process.stderr, "expected_ok": wanted_ok,
-                             "expected_where": wanted_where, "matches_expected": matches})
+                             "expected_where": wanted_where, "expected_output": expected_output,
+                             "matches_expected": matches})
                 print(f"{name:22} {version:6} ok={outcome.get('ok')} where={outcome.get('where')} matched={matches}")
+    reproducer_bytes = Path(__file__).read_bytes()
     report = {"repository": "goun7/tamga-protocol", "base_sha": BASE, "fixed_sha": FIXED,
               "python": platform.python_version(), "scope": "historical fixture-verifier comparison",
               "cgqa_engine": "NOT_RUN", "upstream_full_suite": "NOT_RUN",
+              "reproducer": {"git_blob_sha1": git_blob(reproducer_bytes),
+                             "sha256": hashlib.sha256(reproducer_bytes).hexdigest(),
+                             "bytes": len(reproducer_bytes)},
               "sources": identities, "runs": runs,
               "summary": {"invocations": len(runs), "matched": sum(r["matches_expected"] for r in runs)}}
     args.output.parent.mkdir(parents=True, exist_ok=True)

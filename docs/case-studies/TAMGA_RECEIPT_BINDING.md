@@ -26,7 +26,9 @@ The same committed fixture was checked using the actual upstream verifier at par
 | Changed input and updated fixture commitment; stale charge.input_sha256 | Accept | Reject: `input_commitment` |
 | Changed input with all corresponding hashes updated consistently | Accept | Accept |
 
-**Eight verifier invocations matched all eight expected outcomes.** An identical repeat produced identical results. These are four scenarios across two versions, including intentional acceptance controls.
+**The original eight verifier invocations matched all eight expected outcomes.** An identical repeat was reported, but its second output was not separately committed. These are four scenarios across two versions, including intentional acceptance controls.
+
+The PR review follow-up records two fresh executions of the revised, stricter reproducer: [first output](../../external-validation/tamga-binding/review-results.json) and [repeat output](../../external-validation/tamga-binding/review-repeat-results.json). Each matched 8/8 expected outcomes; their report bytes match exactly. [The replay record](../../external-validation/tamga-binding/REPLAY_VERIFICATION.json) binds both outputs to the revised harness and records the comparison. This demonstrates fresh repeatability of the historical matrix; it does not recreate the original unrecorded repeat.
 
 The first two mutations reproduce the new AT-007g/h regression shapes. The fourth is counterevidence against a broader authenticity claim: a consistently rewritten fixture can still pass. It retains the old output bytes; acceptance does not verify that the changed input produced those bytes.
 
@@ -46,7 +48,7 @@ The [stdlib-only reproducer](../../external-validation/tamga-binding/reproduce.p
 python3 external-validation/tamga-binding/reproduce.py --output tamga-results.json
 ```
 
-It needs Python 3.9+ and network access for the initial source fetch. It does not install Tamga, run its full agent runtime, contact a payment provider, or make a payment. See the [recorded results](../../external-validation/tamga-binding/results.json) and [scope/evidence notes](../../external-validation/tamga-binding/EVIDENCE.md).
+It needs Python 3.9+ and network access for the initial source fetch. An optional `--source-packet` reads a UTF-8 JSON packet with a `contents` mapping keyed by the six entries in the script's `FILES` registry; the same Git blob checks apply. It does not install Tamga, run its full agent runtime, contact a payment provider, or make a payment. See the [recorded results](../../external-validation/tamga-binding/results.json) and [scope/evidence notes](../../external-validation/tamga-binding/EVIDENCE.md).
 
 **Credits:** independent review and this comparison — Alexey Safonov (`safal207`); Tamga verifier implementation and native regressions — `goun7`. Prepared with AI assistance.
 
