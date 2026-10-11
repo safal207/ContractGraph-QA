@@ -59,17 +59,30 @@ def matches_expected_result(outcome, expected_output, returncode, stderr):
             and stderr == "")
 
 
+def load_source_packet(path):
+    if path is None:
+        return None
+    packet = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(packet, dict) or not isinstance(packet.get("contents"), dict):
+        raise ValueError("--source-packet must contain a contents object")
+    contents = packet["contents"]
+    for key in FILES:
+        if not isinstance(contents.get(key), str):
+            raise ValueError(f"--source-packet contents[{key!r}] must be a string")
+    return contents
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-packet", type=Path, help="offline packet with a contents mapping")
     parser.add_argument("--output", type=Path, default=Path("results.json"))
     args = parser.parse_args()
-    packet = json.loads(args.source_packet.read_text(encoding="utf-8")) if args.source_packet else None
+    source_contents = load_source_packet(args.source_packet)
     sources, identities = {}, []
     for key, (revision, path, expected) in FILES.items():
         url = f"https://raw.githubusercontent.com/goun7/tamga-protocol/{revision}/{path}"
-        if packet:
-            data = packet["contents"][key].encode("utf-8")
+        if source_contents is not None:
+            data = source_contents[key].encode("utf-8")
         else:
             with urlopen(url, timeout=30) as response:
                 data = response.read()

@@ -1,12 +1,16 @@
 """Offline regression tests for the historical Tamga result oracle.
 
 Importing the local reproducer does not execute its main function or fetch/run
-any upstream code. These tests exercise only result comparison.
+any upstream code. These tests exercise result comparison and offline packet
+validation; main-boundary tests mock fetching and subprocess execution.
 """
 import copy
 import importlib.util
+import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest import mock
 
 
 MODULE_PATH = Path(__file__).with_name("reproduce.py")
@@ -176,6 +180,96 @@ class MatchesExpectedResultTests(unittest.TestCase):
                 self.assertFalse(
                     reproduce.matches_expected_result(outcome, SUCCESS, 0, "")
                 )
+
+
+class OfflineSourcePacketTests(unittest.TestCase):
+    @staticmethod
+    def valid_contents():
+        return {key: "Исторический источник — café\n" for key in reproduce.FILES}
+
+    def load_document(self, document):
+        with tempfile.TemporaryDirectory(prefix="tamga-packet-test-") as temporary:
+            packet_path = Path(temporary) / "packet.json"
+            packet_path.write_text(
+                json.dumps(document, ensure_ascii=False), encoding="utf-8"
+            )
+            return reproduce.load_source_packet(packet_path)
+
+    def test_absent_packet_intentionally_selects_online_mode(self):
+        self.assertIsNone(reproduce.load_source_packet(None))
+
+    def test_valid_packet_returns_unicode_contents(self):
+        contents = self.valid_contents()
+        self.assertEqual(self.load_document({"contents": contents}), contents)
+
+    def test_invalid_top_level_documents_are_rejected(self):
+        for document in (None, {}, [], False, True, 1, "packet"):
+            with self.subTest(document=document):
+                with self.assertRaises(ValueError):
+                    self.load_document(document)
+
+    def test_invalid_contents_shapes_are_rejected(self):
+        for contents in (None, [], False, True, 1, "contents"):
+            with self.subTest(contents=contents):
+                with self.assertRaises(ValueError):
+                    self.load_document({"contents": contents})
+
+    def test_empty_contents_are_rejected(self):
+        with self.assertRaises(ValueError):
+            self.load_document({"contents": {}})
+
+    def test_every_required_source_must_be_present(self):
+        for missing_key in reproduce.FILES:
+            with self.subTest(missing_key=missing_key):
+                contents = self.valid_contents()
+                del contents[missing_key]
+                with self.assertRaises(ValueError):
+                    self.load_document({"contents": contents})
+
+    def test_every_required_source_must_be_a_string(self):
+        for key in reproduce.FILES:
+            for invalid_value in (None, False, True, 1, [], {}):
+                with self.subTest(key=key, value=invalid_value):
+                    contents = self.valid_contents()
+                    contents[key] = invalid_value
+                    with self.assertRaises(ValueError):
+                        self.load_document({"contents": contents})
+
+    def test_invalid_offline_packet_never_fetches_or_executes_at_main_boundary(self):
+        incomplete_contents = self.valid_contents()
+        del incomplete_contents[next(iter(reproduce.FILES))]
+        nonstring_contents = self.valid_contents()
+        nonstring_contents[next(iter(reproduce.FILES))] = False
+        invalid_documents = (
+            None,
+            {},
+            [],
+            False,
+            {"contents": None},
+            {"contents": []},
+            {"contents": False},
+            {"contents": {}},
+            {"contents": incomplete_contents},
+            {"contents": nonstring_contents},
+        )
+        with tempfile.TemporaryDirectory(prefix="tamga-main-packet-test-") as temporary:
+            packet_path = Path(temporary) / "packet.json"
+            for document in invalid_documents:
+                with self.subTest(document=document):
+                    packet_path.write_text(json.dumps(document), encoding="utf-8")
+                    with (
+                        mock.patch.object(reproduce, "urlopen") as fetch,
+                        mock.patch.object(reproduce.subprocess, "run") as execute,
+                        mock.patch.object(
+                            reproduce.sys,
+                            "argv",
+                            ["reproduce.py", "--source-packet", str(packet_path)],
+                        ),
+                    ):
+                        with self.assertRaises(ValueError):
+                            reproduce.main()
+                        fetch.assert_not_called()
+                        execute.assert_not_called()
 
 
 if __name__ == "__main__":

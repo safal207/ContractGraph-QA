@@ -7,9 +7,9 @@
   "cgqa_engine": "NOT_RUN",
   "upstream_full_suite": "NOT_RUN",
   "reproducer": {
-    "git_blob_sha1": "59b54b316d2a1aac1cbaf06cc25e10051e0bbd39",
-    "sha256": "b8134596137e7ff5459f07cff610bc42918ee476d84e89edc00e75ff2b949819",
-    "bytes": 8220
+    "git_blob_sha1": "abf4c9087dc9ce14164f29c7ec8288bb69a544d0",
+    "sha256": "3cbc14e62ebf0b716bd8c3ce8f59fd6fa66ef69c8472de9a7e9f7d0dc396aab2",
+    "bytes": 8697
   },
   "sources": [
     {
