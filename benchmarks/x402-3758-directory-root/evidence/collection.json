@@ -1,0 +1,137 @@
+{
+  "packet_version": "1.0",
+  "spine_ref": "X402-3758-DIRECTORY-ROOT-20261011",
+  "authorization_ref": "USER-ACTION-X402-ROOT-20261011",
+  "target_identity": {
+    "repository": "johnInarti/x402",
+    "commit": "4d3f2387bd3f2db8007cca324ef8dea23264c248",
+    "issue": "https://github.com/x402-foundation/x402/issues/3758",
+    "directory_epoch": 1,
+    "production_build_identity": null
+  },
+  "source_identity": {
+    "directory": {
+      "url": "https://fractalai.net.co/.well-known/x402-receipt-keys",
+      "sha256": "eeb8badd5ad01dd622717651146bed7b9f138e69dd3a3a096268c13ff7217f2f",
+      "bytes": 10563,
+      "origin": "https://fractalai.net.co",
+      "trust_domain": "issuer-published public HTTPS",
+      "content_taint": "untrusted evidence",
+      "transformation": "direct HTTP body saved without byte changes"
+    },
+    "receipt": {
+      "url": "https://fractalai.net.co/x402/receipts/77795afae30c36075ed22e6593e28d0b4d7ae24c23acebfdcf8e0c0dc494b5fb",
+      "sha256": "91c153cb2bd6e8789209f896783d669e7c3a4f14230af911a370c380418fb654",
+      "bytes": 5411,
+      "transformation": "direct HTTP body saved without byte changes"
+    },
+    "external_comment": {
+      "id": 6103479775,
+      "created_at": "2026-10-10T23:51:08Z",
+      "updated_at": "2026-10-10T23:51:08Z",
+      "url": "https://github.com/x402-foundation/x402/issues/3758#issuecomment-6103479775"
+    }
+  },
+  "scope_and_authority": {
+    "included": [
+      "public catalogue digest",
+      "pinned normative formula",
+      "static reference source",
+      "independent offline fixture checks"
+    ],
+    "excluded": [
+      "paid calls",
+      "wallets",
+      "RPC",
+      "production mutation",
+      "merge",
+      "ML-DSA verification",
+      "response body verification",
+      "issuer trust",
+      "epoch-chain verification"
+    ]
+  },
+  "environment": {
+    "node": "24.19.0",
+    "node_openssl": "3.5.7",
+    "python": "3.12.14",
+    "timezone": "UTC",
+    "test_dependencies": "standard libraries only"
+  },
+  "ordered_trace": [
+    {
+      "trace_id": "TRACE-001",
+      "sequence": 1,
+      "action": "read public issue comments and retained prior message",
+      "result": "OBSERVED",
+      "notes": "Prior synthetic composition check remains separate."
+    },
+    {
+      "trace_id": "TRACE-002",
+      "sequence": 2,
+      "action": "resolve and inspect immutable source",
+      "result": "OBSERVED",
+      "notes": "Normative seven-field formula and source implementation agree."
+    },
+    {
+      "trace_id": "TRACE-003",
+      "sequence": 3,
+      "action": "capture direct HTTP directory and receipt",
+      "result": "OBSERVED",
+      "evidence_refs": [
+        "fixtures/directory.json",
+        "fixtures/receipt.json"
+      ]
+    },
+    {
+      "trace_id": "TRACE-004",
+      "sequence": 4,
+      "action": "independent Node projection calculation",
+      "result": "OBSERVED",
+      "notes": "Normative root matches; all five alternative full digests reproduce external report."
+    },
+    {
+      "trace_id": "TRACE-005",
+      "sequence": 5,
+      "action": "independent guarded Python projection calculation",
+      "result": "OBSERVED",
+      "notes": "5906 preimage bytes; same root."
+    },
+    {
+      "trace_id": "TRACE-006",
+      "sequence": 6,
+      "observed_at": "2026-10-11T17:10:25Z",
+      "action": "repeat direct HTTP capture",
+      "result": "OBSERVED",
+      "notes": "200 JSON, no-cache response, byte-identical catalogue."
+    },
+    {
+      "trace_id": "TRACE-007",
+      "sequence": 7,
+      "action": "final immutable source identity GET",
+      "result": "OBSERVED",
+      "notes": "4d3f2387bd3f2db8007cca324ef8dea23264c248 unchanged."
+    }
+  ],
+  "observations": {
+    "normative_root": "9daec3d9df75826056ba182b0c176e6684b85aab723a59efbd4d75f4c999e538",
+    "preimage_bytes": 5906,
+    "production_generation_defect": "NOT_CONFIRMED",
+    "reference_projection_divergence": "NOT_OBSERVED",
+    "external_attempts": "five listed preimages are non-normative"
+  },
+  "evidence_grade": "F3",
+  "completion_state": "COMPLETE for declared digest construction; wider protocol verification outside scope",
+  "non_claims": [
+    "no deployed-code provenance",
+    "no paid response delivery conclusion",
+    "no current Polygon settlement verification",
+    "no PQC verification",
+    "no independently pinned governance authority"
+  ],
+  "gaps": [
+    "source algorithm was inspected statically, not run",
+    "same frozen snapshot is shared by Node/Python oracle",
+    "future epochs require new evidence"
+  ]
+}
