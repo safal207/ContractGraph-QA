@@ -1,6 +1,6 @@
 # Two receipt-binding gaps found through independent review: the Tamga case
 
-**Historical case · 11 October 2026 · author accuracy review pending**
+**Historical case · 11 October 2026 · attribution and technical scope confirmed by goun7**
 
 Independent review by **Alexey Safonov (`safal207`)** identified two missing consistency checks in Tamga's pairing-fixture verifier. **Tamga author `goun7` implemented the checks and added two tamper-negative regression controls.** A fresh comparison of the historical versions reproduces the difference.
 
@@ -17,7 +17,7 @@ The [implementation commit](https://github.com/goun7/tamga-protocol/commit/c62d4
 
 ## Reproduced result
 
-The same committed fixture was checked using the actual upstream verifier at parent `7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b` and fix `c62d4a822d7e3546931197905e137d0eb6fb490e`.
+The same committed fixture was checked using the actual upstream verifier at parent [`7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b`](https://github.com/goun7/tamga-protocol/commit/7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b) and fix [`c62d4a822d7e3546931197905e137d0eb6fb490e`](https://github.com/goun7/tamga-protocol/commit/c62d4a822d7e3546931197905e137d0eb6fb490e).
 
 | Fixture scenario | Parent | Fixed version |
 |---|---|---|
@@ -48,7 +48,9 @@ python3 external-validation/tamga-binding/reproduce.py --output tamga-results.js
 
 It needs Python 3.9+ and network access for the initial source fetch. It does not install Tamga, run its full agent runtime, contact a payment provider, or make a payment. See the [recorded results](../../external-validation/tamga-binding/results.json) and [scope/evidence notes](../../external-validation/tamga-binding/EVIDENCE.md).
 
-**Credits:** independent review and this comparison — Alexey Safonov (`safal207`); Tamga verifier implementation and native regressions — `goun7`. Prepared with AI assistance. This case is awaiting the author's accuracy review; it does not imply endorsement.
+**Credits:** independent review and this comparison — Alexey Safonov (`safal207`); Tamga verifier implementation and native regressions — `goun7`. Prepared with AI assistance.
+
+On 11 October 2026, [goun7 confirmed the attribution and technical scope](https://github.com/safal207/ContractGraph-QA/pull/209#issuecomment-6111831002) of the [case submitted for accuracy review at `3a6bcd1`](https://github.com/safal207/ContractGraph-QA/blob/3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6/docs/case-studies/TAMGA_RECEIPT_BINDING.md). He also stated that he is comfortable linking the case from the fixture documentation, provided the historical-commit note remains visible. This is confirmation of this bounded historical case, not formal PR approval, project adoption, or endorsement of ContractGraph-QA. No published upstream documentation link or current-release security guarantee is claimed.
 
 **Reusable review question:** when several artifacts reference the same operation, which exact bytes and fields bind them together, and what remains unverified?
 

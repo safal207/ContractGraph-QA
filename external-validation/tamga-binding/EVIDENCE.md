@@ -5,8 +5,8 @@
 - Subject: `goun7/tamga-protocol`, parent `7a4bc537cb1a974bae89bfc96f9be55bc05d0b4b` -> fix `c62d4a822d7e3546931197905e137d0eb6fb490e`.
 - Hosting repository provenance: `safal207/ContractGraph-QA@f13e586ea9118e026c69438b8c93d0585b8e38ba`; CGQA engine **NOT_RUN**.
 - Spine: `tamga-binding-case-20261011`.
-- Authorization reference: `user-go-20261011T001058+0300`, approving the preceding case-publication and scoped author-review proposal. Publication route is a separate branch and draft PR; merge is a separate decision.
-- Interpretation: `PASS_WITHIN_BOUND` for the four-scenario historical comparison. Author accuracy review **PENDING**.
+- Authorization reference: `user-go-20261011T001058+0300`, approving the preceding case-publication and scoped author-review proposal. The initial publication route was a separate branch and draft PR; merge remains a separate decision.
+- Interpretation: `PASS_WITHIN_BOUND` for the four-scenario historical comparison. Author attribution and technical-scope accuracy **CONFIRMED** by [goun7 on 11 October 2026](https://github.com/safal207/ContractGraph-QA/pull/209#issuecomment-6111831002), for the [case submitted at `3a6bcd1`](https://github.com/safal207/ContractGraph-QA/blob/3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6/docs/case-studies/TAMGA_RECEIPT_BINDING.md). This discussion confirmation is not a formal PR approval.
 
 ## Preregistered contract and observed result
 
@@ -31,19 +31,22 @@ The full Tamga runtime, complete ledger verification, trusted anchor/signature v
 - [Initial author acknowledgement of review](https://github.com/x402-foundation/x402/issues/3379#issuecomment-5560621478).
 - [Author links the fix, native controls, and adopted scope](https://github.com/x402-foundation/x402/issues/3379#issuecomment-5562472232).
 - [Attributed implementation commit](https://github.com/goun7/tamga-protocol/commit/c62d4a822d7e3546931197905e137d0eb6fb490e).
+- [Author confirmation of attribution, technical scope, and comfort linking the historical case](https://github.com/safal207/ContractGraph-QA/pull/209#issuecomment-6111831002).
 - [Native control source at the fixed revision](https://github.com/goun7/tamga-protocol/blob/c62d4a822d7e3546931197905e137d0eb6fb490e/tests/at007_pairing_fixture.sh).
 
-Review: Alexey Safonov (`safal207`). Implementation/native regression authorship: `goun7`. The phrase “updated fixture commitment” is intentional: the mutation recomputes hash metadata and does not digitally sign anything.
+Independent review and fresh reproduction: Alexey Safonov (`safal207`). Implementation/native regression authorship: `goun7`. Author confirmation applies to those distinct contributions and the stated historical scope. His agreement to link the case, with its historical-commit note visible, does not establish that an upstream documentation link has been published or that Tamga adopted or endorsed ContractGraph-QA. The phrase “updated fixture commitment” is intentional: the mutation recomputes hash metadata and does not digitally sign anything.
 
 The compared verifier checks supplied fixture consistency. It does not authenticate receipt provenance, establish global ledger completeness, verify input-to-output execution semantics, or establish execution, settlement finality, buyer receipt/acceptance, effect count, or exactly-once. A complete consistent rewrite remains accepted. This is not an attack on a separate ledger verifier or a claim about current Tamga/x402 releases.
 
 ## Capability classification
 
+The matrix below records the original historical comparison. This documentation refresh updates attribution/scope review status; it does not claim fresh verifier execution, change the source pins, or replace the recorded results.
+
 | Capability | Status | Evidence or reason |
 |---|---|---|
 | Exact Subject / Artifact Gate | RUN | Pinned parent/fix; six source blobs checked before invocation. |
 | Preregistered Verification Plan | RUN | Four scenarios and exact acceptance/failure locations recorded before execution. |
-| Orientation Center | RUN | Historical consistency claim resolved; author review and broader claims remain outside the result. |
+| Orientation Center | RUN | Historical consistency claim resolved; author attribution/scope confirmed separately; broader claims remain outside the result. |
 | Native Mapping / Adapter Review | RUN | Inspected upstream verifier, Keccak dependency, and AT-007g/h. Harness mutates inputs and invokes upstream CLI. |
 | Safety Invariants | RUN | Selected fixed-version stale-field acceptance forbidden; exact JSON location and process status checked. |
 | Liveness / Reachability | NOT_APPLICABLE | Stateless fixture verification; no lifecycle claim. |
@@ -65,7 +68,7 @@ The compared verifier checks supplied fixture consistency. It does not authentic
 | Metamorphic / Round-Trip Verification | RUN | Consistent input rebind intentionally remains accepted, bounding the claim; no semantic input-output relation verified. |
 | Native Regression | RUN | AT-007g/h mutation shapes executed against native verifier; upstream Bash suite not run. |
 | Durable Evidence Reopen / Integrity | RUN | Saved result reopened and compared with repeat; publication readback is a separate delivery gate. |
-| Verification Debt | RUN | Author accuracy review and third-party reproduction pending; current releases and full suites not assessed. |
+| Verification Debt | RUN | Author attribution/scope confirmed; independent third-party reproduction pending; current releases and full suites not assessed. |
 | Active Verification Planning | RUN | Selected tests discriminate parent/fix; no additional production changes proposed. |
 | Meaning Trajectory | RUN | Review -> attributed fix -> native controls -> historical replay -> bounded public case. |
 | Dormant Patterns / Watchpoints | NOT_APPLICABLE | No latent lifecycle pattern claimed. |
@@ -78,5 +81,5 @@ The compared verifier checks supplied fixture consistency. It does not authentic
 
 A separate AI static review agreed with source attribution, mutations, and assertions. It explicitly identified consistently rewritten metadata and retained output as counterevidence against execution/authenticity claims.
 
-Stop and revise the case if a source identity or result differs, or if author feedback identifies an attribution or scope error. Preserve the historical evidence and append corrections through a new commit. Remaining continuation: author accuracy review and independent third-party reproduction. No automated recurring watchpoint is created.
+Stop and revise the case if a source identity or result differs, or if author feedback identifies an attribution or scope error. Preserve the historical evidence and append corrections through a new commit. Author accuracy review is complete for attribution and technical scope. Remaining continuation: final PR review and independent third-party reproduction. No automated recurring watchpoint is created.
 
