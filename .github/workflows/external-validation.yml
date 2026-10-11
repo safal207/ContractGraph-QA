@@ -48,3 +48,9 @@ jobs:
       - name: Reject incomplete or altered verifier payloads
         working-directory: external-validation/tamga-binding
         run: python3 -I -S -B -m unittest discover -s . -p 'test_reproduce.py' -v
+      - name: Replay the pinned historical Tamga matrix twice offline
+        working-directory: external-validation/tamga-binding
+        run: |
+          LC_ALL=C python3 -I -S -B -X utf8=0 reproduce.py --source-packet utf8-source-packet.json --output "$RUNNER_TEMP/tamga-first.json"
+          LC_ALL=C python3 -I -S -B -X utf8=0 reproduce.py --source-packet utf8-source-packet.json --output "$RUNNER_TEMP/tamga-repeat.json"
+          cmp "$RUNNER_TEMP/tamga-first.json" "$RUNNER_TEMP/tamga-repeat.json"

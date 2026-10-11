@@ -1,11 +1,11 @@
 {
   "record_kind": "fresh_pr_review_replay",
-  "recorded_at": "2026-10-11T20:55:59.233Z",
-  "replay_collected_at": "2026-10-11T20:53:28.960Z",
+  "recorded_at": "2026-10-11T21:01:30.103Z",
+  "replay_collected_at": "2026-10-11T21:00:52.564Z",
   "hosting_repository": "safal207/ContractGraph-QA",
   "pr": 209,
   "repository_base_sha": "f13e586ea9118e026c69438b8c93d0585b8e38ba",
-  "reviewed_head_sha": "8b96f1cd2c5b4bf2d754294536ed857f071c487e",
+  "reviewed_head_sha": "5abd2d4f4617e205062984349b7e4d7301bf1ef0",
   "original_evidence_commit": "3a6bcd1e08cbf7c85a60e70abe8ca2392afdf3d6",
   "execution_subject": {
     "repository": "goun7/tamga-protocol",
@@ -55,6 +55,24 @@
       "bytes": 10058,
       "sha256": "7aec7cc504a054e85342e27b4c4409d862fb0e11976ed3e1d73ea7c68b095bd9",
       "git_blob_sha1": "848546d2c9064c527d242a541486ed337dafb6ef"
+    },
+    {
+      "path": "utf8-source-packet.json",
+      "bytes": 16070,
+      "sha256": "9d6461283d0e5e32ee8ee50ade84738cf25d762aeab22f7e8c0047f2a0b09307",
+      "git_blob_sha1": "e91fe543fc2055cc4ee7600a09026800f4da6fae"
+    },
+    {
+      "path": "TAMGA_LICENSE.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "bytes": 3010,
+      "sha256": "d3d77903783d9a805638ee0e3bcaf971ad8a0f4ef76adc4535a3364444236937",
+      "git_blob_sha1": "7238f355bdc51843b23e4a4907f87b3e03288b02"
     }
   ],
   "comparison": {
@@ -102,5 +120,33 @@
     "invalid_packets": "rejected before network fetch or verifier execution",
     "main_boundary_mocks": "neither urlopen nor subprocess.run called"
   },
-  "total_regression_tests": 22
+  "total_regression_tests": 22,
+  "working_directory": "external-validation/tamga-binding",
+  "offline_source_packet": {
+    "path": "utf8-source-packet.json",
+    "format": "UTF-8 JSON contents mapping; decoded source bytes unchanged",
+    "bytes": 16070,
+    "sha256": "9d6461283d0e5e32ee8ee50ade84738cf25d762aeab22f7e8c0047f2a0b09307",
+    "git_blob_sha1": "e91fe543fc2055cc4ee7600a09026800f4da6fae",
+    "source_identity_checks": 6,
+    "source_manifest": "review-results.json:sources",
+    "license": "Apache-2.0",
+    "license_copy": "TAMGA_LICENSE.txt",
+    "notices": "THIRD_PARTY_NOTICES.md"
+  },
+  "clean_directory_replay": {
+    "copied_inputs": [
+      "reproduce.py",
+      "test_reproduce.py",
+      "utf8-source-packet.json",
+      "TAMGA_LICENSE.txt",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "tests": 22,
+    "first_matched": 8,
+    "repeat_matched": 8,
+    "report_bytes_identical": true,
+    "reports_equal_committed_outputs": true,
+    "network_source_fetch": false
+  }
 }

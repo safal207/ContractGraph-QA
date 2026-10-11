@@ -48,7 +48,16 @@ The [stdlib-only reproducer](../../external-validation/tamga-binding/reproduce.p
 python3 external-validation/tamga-binding/reproduce.py --output tamga-results.json
 ```
 
-It needs Python 3.9+ and network access for the initial source fetch. An optional `--source-packet` reads a UTF-8 JSON packet with a `contents` mapping keyed by the six entries in the script's `FILES` registry; the same Git blob checks apply. Malformed or incomplete supplied packets are rejected before any network fetch or verifier invocation. It does not install Tamga, run its full agent runtime, contact a payment provider, or make a payment. See the [recorded results](../../external-validation/tamga-binding/results.json) and [scope/evidence notes](../../external-validation/tamga-binding/EVIDENCE.md).
+It needs Python 3.9+; the default initial source fetch requires network access. The committed [source packet](../../external-validation/tamga-binding/utf8-source-packet.json) supports offline reproduction from a fresh checkout:
+
+```bash
+cd external-validation/tamga-binding
+python3 -I -S -B reproduce.py --source-packet utf8-source-packet.json --output tamga-local-results.json
+python3 -I -S -B reproduce.py --source-packet utf8-source-packet.json --output tamga-local-repeat-results.json
+cmp tamga-local-results.json tamga-local-repeat-results.json
+```
+
+The packet's SHA-256 is `9d6461283d0e5e32ee8ee50ade84738cf25d762aeab22f7e8c0047f2a0b09307`; its decoded source bytes are unchanged, with upstream license and origin notices alongside it. An optional `--source-packet` reads a UTF-8 JSON packet with a `contents` mapping keyed by the six entries in the script's `FILES` registry; the same Git blob checks apply. Malformed or incomplete supplied packets are rejected before any network fetch or verifier invocation. It does not install Tamga, run its full agent runtime, contact a payment provider, or make a payment. See the [recorded results](../../external-validation/tamga-binding/results.json) and [scope/evidence notes](../../external-validation/tamga-binding/EVIDENCE.md).
 
 **Credits:** independent review and this comparison — Alexey Safonov (`safal207`); Tamga verifier implementation and native regressions — `goun7`. Prepared with AI assistance.
 
