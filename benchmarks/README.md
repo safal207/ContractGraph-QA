@@ -8,6 +8,7 @@ Repository-owned benchmark suites for reproducible verification research and pro
 - [`openescrow-partial-funding-v0.1`](openescrow-partial-funding-v0.1/) — source-pinned OpenEscrow multi-tenant partial-funding liveness case: one tenant funds, another stalls, and the funded tenant has no unilateral refund path.
 - [`contract-lattice-v0.1`](contract-lattice-v0.1/) — six-coordinate contract model binding state, version, value, authority, evidence, and time witnesses.
 - [`agent-payment-recovery-v0.1`](agent-payment-recovery-v0.1/) — agent payment recovery and evidence scenarios.
+- [`x402-3758-directory-root`](x402-3758-directory-root/) — independent §7.2 root recalculation from a frozen public production catalogue, with a guarded Python oracle and field-mutation controls; separate from synthetic payment-retry checks.
 - [`proof-carrying-agent-trajectories-v0.1`](proof-carrying-agent-trajectories-v0.1/) — execution-identity and predecessor-proof continuity across ambiguity, crash/resume, stale observation, retry, and multi-agent handoff.
 - [`crewai-tool-event-conformance-v0.1`](crewai-tool-event-conformance-v0.1/) — source-pinned CrewAI native tool-event witness projection benchmark.
 - [`langgraph-checkpoint-state-conformance-v0.1`](langgraph-checkpoint-state-conformance-v0.1/) — source-pinned LangGraph hosted checkpoint/state benchmark.

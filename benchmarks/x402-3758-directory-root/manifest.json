@@ -1,0 +1,73 @@
+{
+  "manifest_version": 1,
+  "scope": "frozen directory commitment packet and dedicated workflow",
+  "host_base_sha": "f13e586ea9118e026c69438b8c93d0585b8e38ba",
+  "upstream_sha": "4d3f2387bd3f2db8007cca324ef8dea23264c248",
+  "artifacts": [
+    {
+      "path": "benchmarks/x402-3758-directory-root/PLAN.md",
+      "bytes": 5375,
+      "sha256": "829358a9b0dda40c0f32cba508b5ec877355a51fa1d4e5e221e53a4a9ac06fa9"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/README.md",
+      "bytes": 7744,
+      "sha256": "7016e625336d70ecbbb5be622b25d528f08d11d14a934b3a98d4a72a80f383c0"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/REPORT.md",
+      "bytes": 12320,
+      "sha256": "35ace56f2c3be06b69bd43b49f4206290992e250753dd505e23ec0300ecc336e"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/directory-root.test.mjs",
+      "bytes": 13177,
+      "sha256": "e35b2c64a8bda0c67de2fc89b29e670b10a06bb93c7d3004bab80824fee552ed"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/evidence/attempt-1.tap",
+      "bytes": 8066,
+      "sha256": "8a9a62d5839f615b8e4f85730be3da9930d4c2373e51b31b5298d2126cff2f20"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/evidence/attempt-2.tap",
+      "bytes": 8063,
+      "sha256": "286eb1ab67b89abf5185801864e7487103dac1664ddd2abd40a6258cadbe9f57"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/evidence/collection.json",
+      "bytes": 4547,
+      "sha256": "0d97bb939eda270a44b85bee262cbcf202f5ce31c832aa9dacc4dadd0c73197f"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/evidence/python-oracle.json",
+      "bytes": 257,
+      "sha256": "2d6eafb2fe16a55be44f284bff4a5e32bb813c44c0c4746df5dd04b06dbe965c"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/fixtures/directory.json",
+      "bytes": 10563,
+      "sha256": "eeb8badd5ad01dd622717651146bed7b9f138e69dd3a3a096268c13ff7217f2f"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/fixtures/receipt.json",
+      "bytes": 5411,
+      "sha256": "91c153cb2bd6e8789209f896783d669e7c3a4f14230af911a370c380418fb654"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/oracle.py",
+      "bytes": 3261,
+      "sha256": "a80338a5d522308f4aa6487496de2feffd23338b4a5aeebd8b8abcff121ab59c"
+    },
+    {
+      "path": "benchmarks/x402-3758-directory-root/verify.mjs",
+      "bytes": 4180,
+      "sha256": "d9e39c9b70ac4c7d5016fe3576aafd01ce948b93df6113f4a86ee36415a47861"
+    },
+    {
+      "path": ".github/workflows/x402-directory-root.yml",
+      "bytes": 1109,
+      "sha256": "714e43bddc32bcefbc4e85465c516c260457b4a0d49632c1a14b888335dc5468"
+    }
+  ]
+}

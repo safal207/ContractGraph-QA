@@ -1,0 +1,269 @@
+TAP version 13
+# Subtest: freeze exact original HTTP bytes before parsing
+ok 1 - freeze exact original HTTP bytes before parsing
+  ---
+  duration_ms: 2.202893
+  type: 'test'
+  ...
+# Subtest: seven-field §7.2 projection independently reproduces the production epoch root
+ok 2 - seven-field §7.2 projection independently reproduces the production epoch root
+  ---
+  duration_ms: 1.282709
+  type: 'test'
+  ...
+# Subtest: independent guarded Python serialization emits the same 5906 preimage bytes
+ok 3 - independent guarded Python serialization emits the same 5906 preimage bytes
+  ---
+  duration_ms: 31.516333
+  type: 'test'
+  ...
+# Subtest: recursive member order and both normative array sorts preserve the root
+ok 4 - recursive member order and both normative array sorts preserve the root
+  ---
+  duration_ms: 29.210976
+  type: 'test'
+  ...
+# Subtest: repeated computation and rejection preserve input object and fixture bytes
+ok 5 - repeated computation and rejection preserve input object and fixture bytes
+  ---
+  duration_ms: 1.292184
+  type: 'test'
+  ...
+# Subtest: negative control: changed committed spec is rejected against unchanged published root
+ok 6 - negative control: changed committed spec is rejected against unchanged published root
+  ---
+  duration_ms: 28.783673
+  type: 'test'
+  ...
+# Subtest: negative control: changed committed issuer is rejected against unchanged published root
+ok 7 - negative control: changed committed issuer is rejected against unchanged published root
+  ---
+  duration_ms: 31.117132
+  type: 'test'
+  ...
+# Subtest: negative control: changed committed epoch is rejected against unchanged published root
+ok 8 - negative control: changed committed epoch is rejected against unchanged published root
+  ---
+  duration_ms: 30.011069
+  type: 'test'
+  ...
+# Subtest: negative control: changed committed prevRoot is rejected against unchanged published root
+ok 9 - negative control: changed committed prevRoot is rejected against unchanged published root
+  ---
+  duration_ms: 28.296911
+  type: 'test'
+  ...
+# Subtest: negative control: changed committed publishedAt is rejected against unchanged published root
+ok 10 - negative control: changed committed publishedAt is rejected against unchanged published root
+  ---
+  duration_ms: 29.562163
+  type: 'test'
+  ...
+# Subtest: negative control: changed committed governanceKeys is rejected against unchanged published root
+ok 11 - negative control: changed committed governanceKeys is rejected against unchanged published root
+  ---
+  duration_ms: 33.241188
+  type: 'test'
+  ...
+# Subtest: negative control: changed committed keys is rejected against unchanged published root
+ok 12 - negative control: changed committed keys is rejected against unchanged published root
+  ---
+  duration_ms: 32.793173
+  type: 'test'
+  ...
+# Subtest: every nested key and governance field participates in the commitment
+    # Subtest: governanceKeys[0].alg
+    ok 1 - governanceKeys[0].alg
+      ---
+      duration_ms: 0.464028
+      type: 'test'
+      ...
+    # Subtest: governanceKeys[0].publicKey
+    ok 2 - governanceKeys[0].publicKey
+      ---
+      duration_ms: 0.224588
+      type: 'test'
+      ...
+    # Subtest: governanceKeys[1].alg
+    ok 3 - governanceKeys[1].alg
+      ---
+      duration_ms: 0.640354
+      type: 'test'
+      ...
+    # Subtest: governanceKeys[1].publicKey
+    ok 4 - governanceKeys[1].publicKey
+      ---
+      duration_ms: 0.228704
+      type: 'test'
+      ...
+    # Subtest: keys[0].alg
+    ok 5 - keys[0].alg
+      ---
+      duration_ms: 0.143336
+      type: 'test'
+      ...
+    # Subtest: keys[0].kid
+    ok 6 - keys[0].kid
+      ---
+      duration_ms: 0.196085
+      type: 'test'
+      ...
+    # Subtest: keys[0].notAfter
+    ok 7 - keys[0].notAfter
+      ---
+      duration_ms: 0.157517
+      type: 'test'
+      ...
+    # Subtest: keys[0].notBefore
+    ok 8 - keys[0].notBefore
+      ---
+      duration_ms: 0.149705
+      type: 'test'
+      ...
+    # Subtest: keys[0].publicKey
+    ok 9 - keys[0].publicKey
+      ---
+      duration_ms: 0.150326
+      type: 'test'
+      ...
+    # Subtest: keys[0].revokedAt
+    ok 10 - keys[0].revokedAt
+      ---
+      duration_ms: 0.189785
+      type: 'test'
+      ...
+    # Subtest: keys[0].status
+    ok 11 - keys[0].status
+      ---
+      duration_ms: 0.172169
+      type: 'test'
+      ...
+    # Subtest: keys[0].use
+    ok 12 - keys[0].use
+      ---
+      duration_ms: 0.187191
+      type: 'test'
+      ...
+    # Subtest: keys[1].alg
+    ok 13 - keys[1].alg
+      ---
+      duration_ms: 0.129985
+      type: 'test'
+      ...
+    # Subtest: keys[1].kid
+    ok 14 - keys[1].kid
+      ---
+      duration_ms: 0.221373
+      type: 'test'
+      ...
+    # Subtest: keys[1].notAfter
+    ok 15 - keys[1].notAfter
+      ---
+      duration_ms: 0.178028
+      type: 'test'
+      ...
+    # Subtest: keys[1].notBefore
+    ok 16 - keys[1].notBefore
+      ---
+      duration_ms: 0.126941
+      type: 'test'
+      ...
+    # Subtest: keys[1].publicKey
+    ok 17 - keys[1].publicKey
+      ---
+      duration_ms: 0.241353
+      type: 'test'
+      ...
+    # Subtest: keys[1].revokedAt
+    ok 18 - keys[1].revokedAt
+      ---
+      duration_ms: 0.834905
+      type: 'test'
+      ...
+    # Subtest: keys[1].status
+    ok 19 - keys[1].status
+      ---
+      duration_ms: 1.015187
+      type: 'test'
+      ...
+    # Subtest: keys[1].use
+    ok 20 - keys[1].use
+      ---
+      duration_ms: 0.149405
+      type: 'test'
+      ...
+    1..20
+ok 13 - every nested key and governance field participates in the commitment
+  ---
+  duration_ms: 7.517608
+  type: 'test'
+  ...
+# Subtest: missing committed top-level fields are rejected rather than silently omitted
+ok 14 - missing committed top-level fields are rejected rather than silently omitted
+  ---
+  duration_ms: 0.886303
+  type: 'test'
+  ...
+# Subtest: null remains a committed value and is distinct from an absent nested lifecycle field
+ok 15 - null remains a committed value and is distinct from an absent nested lifecycle field
+  ---
+  duration_ms: 0.373962
+  type: 'test'
+  ...
+# Subtest: five incomplete researcher preimages fail, while exact §7.2 projection succeeds
+ok 16 - five incomplete researcher preimages fail, while exact §7.2 projection succeeds
+  ---
+  duration_ms: 0.699642
+  type: 'test'
+  ...
+# Subtest: published root and signatures are outside the preimage; equality still rejects a false root
+ok 17 - published root and signatures are outside the preimage; equality still rejects a false root
+  ---
+  duration_ms: 0.273932
+  type: 'test'
+  ...
+# Subtest: directory Ed25519 verifies over recomputed root and rejects changed message/signature
+ok 18 - directory Ed25519 verifies over recomputed root and rejects changed message/signature
+  ---
+  duration_ms: 2.775645
+  type: 'test'
+  ...
+# Subtest: receiptId recomputes and directory digest resolves to the independently recomputed root
+ok 19 - receiptId recomputes and directory digest resolves to the independently recomputed root
+  ---
+  duration_ms: 0.17944
+  type: 'test'
+  ...
+# Subtest: receipt Ed25519 verifies and rejects a one-bit message and signature change
+ok 20 - receipt Ed25519 verifies and rejects a one-bit message and signature change
+  ---
+  duration_ms: 1.038261
+  type: 'test'
+  ...
+# Subtest: fixture serializer rejects values outside its declared domain
+ok 21 - fixture serializer rejects values outside its declared domain
+  ---
+  duration_ms: 0.473151
+  type: 'test'
+  ...
+# Subtest: guarded Python oracle rejects duplicate members, non-ASCII, unsafe/float/-0 and a false published root
+ok 22 - guarded Python oracle rejects duplicate members, non-ASCII, unsafe/float/-0 and a false published root
+  ---
+  duration_ms: 182.087099
+  type: 'test'
+  ...
+# Subtest: explicit evidence boundary: ML-DSA fields present, cryptographic verification NOT_RUN
+ok 23 - explicit evidence boundary: ML-DSA fields present, cryptographic verification NOT_RUN
+  ---
+  duration_ms: 0.230597
+  type: 'test'
+  ...
+1..23
+# tests 43
+# suites 0
+# pass 43
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 582.538179
