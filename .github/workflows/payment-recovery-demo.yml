@@ -1,0 +1,23 @@
+name: Payment recovery demo evidence
+on:
+  pull_request:
+    paths:
+      - 'proofs/payment-recovery-demo/**'
+      - '.github/workflows/payment-recovery-demo.yml'
+      - 'contractgraph_qa/payment_recovery.py'
+      - 'benchmarks/agent-payment-recovery-v0.1/cases/**'
+  push:
+    branches: ['feat/payment-recovery-web-evidence']
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Recompute pinned evidence and isolated candidate
+        run: python proofs/payment-recovery-demo/reproduce.py --check

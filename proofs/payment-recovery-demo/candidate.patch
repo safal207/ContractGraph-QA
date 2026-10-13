@@ -1,0 +1,24 @@
+--- a/contractgraph_qa/payment_recovery.py
++++ b/contractgraph_qa/payment_recovery.py
+@@ -131,6 +131,21 @@
+                 "financial action has no preceding authorization for its logical operation",
+                 critical=True,
+                 penalty=50,
++            )
++
++        # Local candidate: reject the same committed operation under a new submit label.
++        # This closes only this event-label gap; it is not a full finality model.
++        if (
++            event_type in {"submit", "new_payment"}
++            and resolved_outcome.get(logical_operation_id) == "committed"
++        ):
++            _violation(
++                violations,
++                "APR-010_SUBMISSION_AFTER_COMMIT",
++                expected_seq,
++                "submission occurred after reconciliation already established commit for this logical operation",
++                critical=True,
++                penalty=60,
+             )
+ 
+         if event_type in {"submit", "retry", "new_payment"}:
