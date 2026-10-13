@@ -1,0 +1,56 @@
+{
+  "repository": "johnInarti/x402",
+  "commit": "4d3f2387bd3f2db8007cca324ef8dea23264c248",
+  "host_base": "f13e586ea9118e026c69438b8c93d0585b8e38ba",
+  "files": [
+    {
+      "path": "typescript/pnpm-lock.yaml",
+      "bytes": 791049,
+      "sha256": "4a7bd4b2e1571808666ebab2fca3e05bc303da0d006e4e395d44b12a4b7fb4f8",
+      "git_blob_sha": "71750678e44fbae93ed6fc50ffa84063ae62b786"
+    },
+    {
+      "path": "typescript/packages/core/src/client/x402Client.ts",
+      "bytes": 39922,
+      "sha256": "5d26d0ef62a655648620ae8e96845462984cae67570d464103ea3661fc40907a",
+      "git_blob_sha": "30b534b0966c7e3999c28b0e66d9bc4bdf233c34"
+    },
+    {
+      "path": "typescript/packages/core/src/http/x402HTTPClient.ts",
+      "bytes": 10612,
+      "sha256": "8db58b9031c17263259a8a92a98c91968b9601a42567b9d5787655e5d4a88904",
+      "git_blob_sha": "7f11c1ef39b4c61640313c681b810d809d102acf"
+    },
+    {
+      "path": "typescript/packages/http/fetch/src/index.ts",
+      "bytes": 6858,
+      "sha256": "86777167734691db442c7636a4fd12318aa0c5f1ebc73f86103cae0d12f8df8a",
+      "git_blob_sha": "9d5a3f2391630c96e13f292a567dd3eb411df99f"
+    },
+    {
+      "path": "typescript/packages/extensions/src/delivery-receipt/client.ts",
+      "bytes": 37063,
+      "sha256": "2868c3f285c90d522d542a6d933ec760c984578d150b0a65dfede95519f41d49",
+      "git_blob_sha": "7462afcae263004c4521c46959d3da432a401a22"
+    },
+    {
+      "path": "typescript/packages/extensions/test/delivery-receipt.test.ts",
+      "bytes": 60343,
+      "sha256": "89722f69a1160141dad08dee9dbb4bc0a777bae3146c766edb12d1b9b089ae33",
+      "git_blob_sha": "e0d484a20385c6440a67a19ac0202f24b8851f65"
+    },
+    {
+      "path": "typescript/packages/http/fetch/src/index.test.ts",
+      "bytes": 22676,
+      "sha256": "1fdef4ba4ba50fa62c2ad8806579a154635d13064fc0bbdbb33dfec37b712b56",
+      "git_blob_sha": "21365664678c170ae33d165c50f9d8e02c617129"
+    },
+    {
+      "path": "specs/extensions/delivery-receipt.md",
+      "bytes": 75546,
+      "sha256": "409c1d9f9f68a1e9f527b2c68622c81ddfb00d598fd1e273e97fc82e58a859cc",
+      "git_blob_sha": "ee8f4e0674e61dc7e22c1965f33febb5f742ce69"
+    }
+  ],
+  "native_worktree_final": "CLEAN; tracked and untracked status empty"
+}

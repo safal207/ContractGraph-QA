@@ -1,0 +1,105 @@
+{
+  "result": "PASS_WITHIN_BOUND",
+  "attempt_ids": [
+    "62aa5878-f5e2-42d5-ac46-8a066f9b3d1e",
+    "b51a5ff9-4139-42c5-b05d-309d262e014f"
+  ],
+  "comparison": "case/outcome/counters/events/exact_body; signed receipt bytes are not required identical",
+  "observed": [
+    {
+      "case": "valid-receipt-positive",
+      "outcome": "RETURN",
+      "counts": {
+        "buyer": 1,
+        "unpaid": 1,
+        "payload": 1,
+        "paid": 1,
+        "syntheticSettlement": 1,
+        "receiptResult": 1,
+        "responseHook": 1,
+        "directory": 1
+      },
+      "events": [
+        "outer_buyer_invoked",
+        "unpaid_dispatch_402",
+        "synthetic_payload_created",
+        "paid_dispatch",
+        "synthetic_settlement_applied",
+        "paid_response_returned",
+        "synthetic_directory_read",
+        "receipt_onResult",
+        "native_payment_response_hook",
+        "outer_return"
+      ],
+      "bodyHex": [
+        "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a"
+      ]
+    },
+    {
+      "case": "missing-receipt-evidence-aware-HOLD",
+      "outcome": "HOLD",
+      "counts": {
+        "buyer": 1,
+        "unpaid": 1,
+        "payload": 1,
+        "paid": 1,
+        "syntheticSettlement": 1,
+        "receiptResult": 1,
+        "responseHook": 0,
+        "directory": 0
+      },
+      "events": [
+        "outer_buyer_invoked",
+        "unpaid_dispatch_402",
+        "synthetic_payload_created",
+        "paid_dispatch",
+        "synthetic_settlement_applied",
+        "paid_response_returned",
+        "receipt_onResult",
+        "outer_catch",
+        "outer_HOLD_no_reinvocation"
+      ],
+      "bodyHex": [
+        "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a"
+      ]
+    },
+    {
+      "case": "unsafe-outer-reinvocation-negative",
+      "outcome": "DETECTED_UNSAFE_CONTROL",
+      "counts": {
+        "buyer": 2,
+        "unpaid": 2,
+        "payload": 2,
+        "paid": 2,
+        "syntheticSettlement": 2,
+        "receiptResult": 2,
+        "responseHook": 0,
+        "directory": 0
+      },
+      "events": [
+        "outer_buyer_invoked",
+        "unpaid_dispatch_402",
+        "synthetic_payload_created",
+        "paid_dispatch",
+        "synthetic_settlement_applied",
+        "paid_response_returned",
+        "receipt_onResult",
+        "unsafe_outer_catch",
+        "unsafe_outer_reinvoke_once",
+        "outer_buyer_invoked",
+        "unpaid_dispatch_402",
+        "synthetic_payload_created",
+        "paid_dispatch",
+        "synthetic_settlement_applied",
+        "paid_response_returned",
+        "receipt_onResult",
+        "unsafe_outer_second_catch",
+        "unsafe_control_detected"
+      ],
+      "bodyHex": [
+        "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a",
+        "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a"
+      ]
+    }
+  ]
+}

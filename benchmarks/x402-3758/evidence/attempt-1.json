@@ -1,0 +1,1077 @@
+{
+  "packet_version": 1,
+  "attempt_id": "62aa5878-f5e2-42d5-ac46-8a066f9b3d1e",
+  "source_repository": "johnInarti/x402",
+  "source_commit": "4d3f2387bd3f2db8007cca324ef8dea23264c248",
+  "started_at": "2026-10-10T22:33:52.186423+00:00",
+  "completed_at": "2026-10-10T22:33:53.825151+00:00",
+  "test_sha256": "a73f722ddabe3f17aed57052a3334604c643aeff70bfabde24d9243b4bf8336f",
+  "environment": {
+    "node": "v24.19.0",
+    "pnpm": "11.25.0",
+    "python": "3.12.14",
+    "platform": "Linux"
+  },
+  "tracked_source_unchanged": true,
+  "core_rebuilt_from_source": true,
+  "overlay": "typescript/packages/extensions/test/buyer-composition.test.ts",
+  "native_assertions": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "observations": {
+    "schema": "x402-3758-body-buyer-composition/1",
+    "source_repository": "johnInarti/x402",
+    "source_sha": "4d3f2387bd3f2db8007cca324ef8dea23264c248",
+    "cgqa_base_sha": "f13e586ea9118e026c69438b8c93d0585b8e38ba",
+    "overlay_sha256": "a73f722ddabe3f17aed57052a3334604c643aeff70bfabde24d9243b4bf8336f",
+    "node": "v24.19.0",
+    "synthetic_receipt_clock_seconds": 1790473960,
+    "public_test_seeds": {
+      "governance": 1,
+      "receipt": 2,
+      "bytes": 32,
+      "generation": "fill"
+    },
+    "body_hex": "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a",
+    "live_network": "DENIED",
+    "cases": [
+      {
+        "case": "valid-receipt-positive",
+        "outcome": "RETURN",
+        "counts": {
+          "buyer": 1,
+          "unpaid": 1,
+          "payload": 1,
+          "paid": 1,
+          "syntheticSettlement": 1,
+          "receiptResult": 1,
+          "responseHook": 1,
+          "directory": 1
+        },
+        "transactions": [
+          "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+        ],
+        "captures": [
+          {
+            "receipt": {
+              "valid": true,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [
+                "ml-dsa-65"
+              ],
+              "signaturesVerified": [
+                {
+                  "alg": "ed25519",
+                  "kid": "153053ad13ee065b",
+                  "engine": "webcrypto"
+                }
+              ],
+              "levels": {
+                "integrity": true,
+                "authentic": true,
+                "trusted": true,
+                "settlement": true,
+                "delivery": true
+              },
+              "receiptId": "02246a0aa76eae60ed4802c92958865118b7da263b63d3702dc5a7b4835f8191",
+              "trustBasis": "pinned",
+              "directoryEpoch": 1,
+              "latestDirectoryEpoch": 1,
+              "reasons": []
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111",
+              "extensions": {
+                "delivery-receipt": {
+                  "info": {
+                    "receipt": {
+                      "payload": {
+                        "version": 1,
+                        "issuer": "https://buyer-composition.example",
+                        "resourceUrl": "https://buyer-composition.example/body",
+                        "method": "GET",
+                        "scheme": "exact",
+                        "network": "eip155:8453",
+                        "asset": "0x2222222222222222222222222222222222222222",
+                        "payTo": "0x3333333333333333333333333333333333333333",
+                        "amount": "10",
+                        "payer": "0x1111111111111111111111111111111111111111",
+                        "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+                        "logIndex": null,
+                        "paymentId": null,
+                        "responseStatus": 200,
+                        "responseContentType": "application/json",
+                        "delivery": {
+                          "mode": "body",
+                          "sha256": "4bb5d172eb18f3aca1192d1fc833ddcd81550edc2d91ee36bb25bf425aba6b05"
+                        },
+                        "keyDirectoryEpoch": 1,
+                        "keyDirectoryDigest": "18127c3195d3d0f4361dee064046ae8907209c88ef044bea9a537e5ff5324bb0",
+                        "issuedAt": 1790473960
+                      },
+                      "signatures": [
+                        {
+                          "alg": "ed25519",
+                          "kid": "153053ad13ee065b",
+                          "signature": "o/CJNPPae+tTgaqhpy1mHc8p2qEeAeZALr6GMzZ8Em8V5Y0coNZbiypGSRC0E60Go/JhwgnUQDfUPa4pTdpqCA=="
+                        },
+                        {
+                          "alg": "ml-dsa-65",
+                          "kid": "c47ca781ddf6ace8",
+                          "signature": "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"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "rawSettlementHeader": "eyJzdWNjZXNzIjp0cnVlLCJ0cmFuc2FjdGlvbiI6IjB4YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEwMSIsIm5ldHdvcmsiOiJlaXAxNTU6ODQ1MyIsInBheWVyIjoiMHgxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIiwiZXh0ZW5zaW9ucyI6eyJkZWxpdmVyeS1yZWNlaXB0Ijp7ImluZm8iOnsicmVjZWlwdCI6eyJwYXlsb2FkIjp7InZlcnNpb24iOjEsImlzc3VlciI6Imh0dHBzOi8vYnV5ZXItY29tcG9zaXRpb24uZXhhbXBsZSIsInJlc291cmNlVXJsIjoiaHR0cHM6Ly9idXllci1jb21wb3NpdGlvbi5leGFtcGxlL2JvZHkiLCJtZXRob2QiOiJHRVQiLCJzY2hlbWUiOiJleGFjdCIsIm5ldHdvcmsiOiJlaXAxNTU6ODQ1MyIsImFzc2V0IjoiMHgyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyIiwicGF5VG8iOiIweDMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMiLCJhbW91bnQiOiIxMCIsInBheWVyIjoiMHgxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIiwidHJhbnNhY3Rpb24iOiIweGFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhMDEiLCJsb2dJbmRleCI6bnVsbCwicGF5bWVudElkIjpudWxsLCJyZXNwb25zZVN0YXR1cyI6MjAwLCJyZXNwb25zZUNvbnRlbnRUeXBlIjoiYXBwbGljYXRpb24vanNvbiIsImRlbGl2ZXJ5Ijp7Im1vZGUiOiJib2R5Iiwic2hhMjU2IjoiNGJiNWQxNzJlYjE4ZjNhY2ExMTkyZDFmYzgzM2RkY2Q4MTU1MGVkYzJkOTFlZTM2YmIyNWJmNDI1YWJhNmIwNSJ9LCJrZXlEaXJlY3RvcnlFcG9jaCI6MSwia2V5RGlyZWN0b3J5RGlnZXN0IjoiMTgxMjdjMzE5NWQzZDBmNDM2MWRlZTA2NDA0NmFlODkwNzIwOWM4OGVmMDQ0YmVhOWE1MzdlNWZmNTMyNGJiMCIsImlzc3VlZEF0IjoxNzkwNDczOTYwfSwic2lnbmF0dXJlcyI6W3siYWxnIjoiZWQyNTUxOSIsImtpZCI6IjE1MzA1M2FkMTNlZTA2NWIiLCJzaWduYXR1cmUiOiJvL0NKTlBQYWUrdFRnYXFocHkxbUhjOHAycUVlQWVaQUxyNkdNelo4RW04VjVZMGNvTlpiaXlwR1NSQzBFNjBHby9KaHdnblVRRGZVUGE0cFRkcHFDQT09In0seyJhbGciOiJtbC1kc2EtNjUiLCJraWQiOiJjNDdjYTc4MWRkZjZhY2U4Iiwic2lnbmF0dXJlIjoiQmVRZmI4WXYrWElHTENLbUNPNWUva2NkWVFHaWNzc1oxVm9zTUQraGFJS2dtVnFnQTk2bG0wb3M1RUZ1V28xSDRhMWRKeXZheWQ2Q1h5cTlCT3ExNk1obUlWZnhvcGh3eVAxM2x5a2hhcGw0RUFZMjZCV0VxcnJPTkw4a3REa3NQbElMZWJ1NFF2VXVkemsvVElYRnptTUdnUzhYUE1PWGVaNUxrNkJ6S0dOYmdZWE1yU3BSbFdUQyt6OUtFTi81VGJOdENTc1NLKzRJNFI3QzRWd2hlUlAzb0Y4bGtCZ2NVWTRWMHpIZXFmb1A3RXZIMlkrQlJIU0hXNFNTMm9HV295WUlseDZuZ045UzFCSjNLYUFTalRaRnpFVXZTQjRkZzZLZ1BkUzJRcFhvQ256YnY0T1FFTWtRUndaNWdSQmU5TU1qRnlFMUs0TGZONjZEM01FM2hsd0RkZlpmYklJd2hCWDdvSjhTWCtpZCtJaEZWdW56R0VQMVQ5SWF3S1dCZXowYVFjY0pvR0JPVTgxQ2xKd0dMYTVVNmtYNlkydHpDSG8xWTE5cUJwQUs2VHRuRG9NUWtnTUFuZzNUTTcyYk0raGZKeDYxaE42V2ZldEF6MWZ3MXBYMm84elEzNEc1NUg2dy9ET2lNQmJSSHFWdUpDdGQ4eEgwNC85WThsRmdMZXlaSHFwS0doeGp3eFZiTWl3UkJ3Wk9YVkRKVkc1WmlTbjI0MTZxN093aDVBU3JRVDZ4NlZHNDkrMnJHaTJETFRoeFFsN09rZDZydTVzcTIvRWVqK3JqVU9kRGFNbEZjemJ5dDlROE1abXJoTERjWkRXb3pzY2xpdzJpUEdhZkJ0cmlsMkNQNEF0d3VvWkp0and5TUhkRnN4NVI1bG12ZmNCcm9YUUR0Syt5eityVVRNZGpEd004T1hhTWhDaUNJdEV1Sys0Nll1OHpGOTFYRlB2Qjg1RDJMQTVTMjRMc2psSkJnNVJndlpwMi9RYnI4ZmZ4UWR5U2QrbnhYYWp1N0NhcWd0TWUxZnJaWERrQXdXVGxXWWMyTmxnUzVoclNWUGRPd0RWOVFUZzI3alNaZElUK2VaYTV0eTdjMUhLZDVDRzcxSGVRZk96eHg1d2UwT0dJQjhpNlZOeTJsTzlZeTYxUGlsckp6bTFSTjNOTW9FRXFXVEp6MFRiWkxUNHRRTGtaVkowdHowU2hNRWlHMzZrUC9lMFVoOXZIMklsOGtNbXEvclhROGdqT0hSWXNmcmJNa0FBT21lZ28raFc0azZENUlQN3MxRWFZRmZqK0xMY3VRV2ZtM1N3WlRTVkZXazRtWHNuZHhEeUt1WW1iMlJtRmVVOXhKdC9nVHpRL0h0bFpFUUVrbjdyMGJyak5kODJxZlFpemV1OG5sd080MmtyUlVpV0JDYXNPNnhsMHVqU1Boaktzb3FSUzlrUk51TXVwTVQvYWo1UmJ5NGptZmgwaVY0MFJiYW1pVWxCVDNaUTZXZlRrczd3THF2WkM1TU1VLzllSkhuQkI1Nm9KUHZWN1dWeVp0ZkdhUy9uTFBjMTZYM3d3QWdVNTBBSW1QOExveTBnSWpBYjdJVmhHaEJtb2ZqRUZGdnpPR2w4QkxmNldCWmRTUFB3em5wa0hmTUUvWUpkekVnRkVXWVo4Q01GY3RFWDJhUkU4Y0J2NklqdU9rOHhEaHg1cEg4aEZ1aXh4ajJWazZEblVndXdPWVZkcVBaVTg5UUNOYWFyS0kxRDA1dng4WlJGYy8xWjMvdkdNMDliUUpaT093T1M2cyt3WWFTdGRTNzMxTW50Mk9HQ2RwcjJrd21Iemx3Vm1lOWEvdTBEVzkxVVNZL1VCRUptYUx6UXk4d1JUUHpCUWNUR3NvdEdoU3ovTXpyMnFvY00ra21qRXhWdDhzZC83SjdqMFVkK0R1S1IxMnRHcGg2RUN5RFc1cURqTy9kYk5wWXc5U00yWnBYR0VIMDVvVCtrOFNKa1QxZ2l2S3RSc3JWR1k4VnpCNnZUb2t3TU4yMDZSdUs3TFFRUUVVS3E2WTJETGVsOUtTVlBhZ04wN28veXczc2trQXhXNUNiQWtHYlpkK1EzYWkwS0RBLzRRU0dkdDVWd3pSb2ZrY0pDV3BWK21yZ3I3bUdMbWc5UllhbW16TklrRGIrVkg4ampEUkJPbEdzR29YaEJBdUprRjBKbkJkV3RlMEZ5NzJaaGwxbHRuVnMwODZzOGlZWXluaWxPbjJIaTdwcW5wbGZibWgydUhXbXJhU1hmcVpQRDRkTmVzOWhqLy9DUzJMTTdKRm1QN05NSnZjZnBSOTF4bTZHTUlBQVJ1KzljQnlqOWVyZDk4SjBEcFdyOThUeStZTHZZVUl0UmRRRzN2NmZQeHJISUpiTk9wbnc2T1FrUWFiVXl5cVByVFdEcjhmTmh4UHdKeEdkRllHNnhMTUlQUUVpQ1k4MDVlSStpYmZHYzBsMUdjc29xbDFSNTBVQk4xdHNPNUhHS1plSVZkc1lsVkhuT0lLQWtmM3JSK2ZibmpmK2x3dEZ2M2RsNkFwODRkV3BUanhROWtPeHozS2p6N3lwTWFzbmlUakFBT0RwcDlhdWtxNEptY1J6dmlxdFg1WkswL0lNWi9JRXJ1Q0tWVm9KbkdPV0pISmNGeWtidzdNUVM3dUlDa0Z4VXc1K0tXVHpJN3lrSC82MDRrZmJzdVczQUJQMEtjRjNKdTRudnVpY2tKREhxaXZLNjV5OElsK1hPeFRSMkt4eUlTZURrWUJNM2hxMjNwWXFzdUo4ckd2bjcwMlh0UmNyWTZnaHhXL1NaQkp4QjJiYXNGWkh6WUd3UjRaY0U3MkVhS1VxWlVhZXVZc1pTay9pNEVQZ1doY1JLemlONHFNVDZhamZEcDdacnFneVBJUGI1Q0ZPTW4yTkpHUTZnd1YrUGhYUFdmNmdTVlVQT1N6QzM4UnZwVy9TTXBTWXA2NnRjWFd6OFdUUmp6KzhtaVBhY1RBaW1jS09WU1UrVHQzUmY0dkpCRzlERUlLR3NQaVBMZzRhN2c4RVV6ZTZncEI0OEpPV0NoY1N6eGNOVlExWGZpaE1FbEhlam5XRnIzY0JnL1BVUkp1b1hveXBWdHArMDRPbjBOQ05DK1R2bHpsdHpOTTI3NE94WjVYenRMVnl5c2k1ZHV5M0xaRnB2MTV0WEFkY05BQndmSFhrbktUdVU1S0Y1ZjNIUkpBeXJNdUFxTm9UWnVNbW1UWGx2dkR1VXpuMTJoM0orbFRpQ3ZmV05jeVJxME5TZnVlcnRVUGFLNEhPeFlQY3ljMEt4bnJHNnh4NWh0UHN2Sm1EUndkbmVtTEFWLzJyRllaR05pVVczRUVhTXhvK0ZrQXhHUTZCRlc4bHZZa0VBL0NvRlhVUTN4WDNzd2lIRE9EMjQ0R2hyQ3pQWFhkQ2J3bGFqOVA2NUhZaEVMbTluckVTOW9BaTFSYy9CaUtYWnkwdkMrd0JRTmFPRzAyTTZGVm8yTWJPNFdYK2ZwcGtKeVJsSml5czE1TFpNKzZ5QVo4TFlxWWxnSndWcU9NZXJqNGNQMmwwMExhTXhNbWlMMTl1cUJMSnVuTnloTUh0V3dCNDd6WU8vb1lCcjRXdGVKQWV5ZVI5QnVGbTg0WVI5SlNkTjFpSm5RM3ZpRDlEU0pWUkpHMk5ZZ044Z1d1UTlBQXNtVWxkOGIzQ3VrY3dHeXpHd1diSS9hQUpWWmJMYWg4QkJER2FZMHFISGo4UG1CUkV5YXhUVWN5dWxoTzZKV21PMy9LL0M5cUFlWEpSbm9hcWZJNE5OYmh6ZFh3NVRMcWhGTmtrSTNTUzl3ZUxCeU9VK2pDMzhIdnJ1Vy9sSWw3RnI0b3BuVTRxRkR6K24vWlI1YytIa2NEandVWVd2d01XdnpTVWZ5YW9yaXArMjZnZGdMenByZHdoWnFDOHd4dnBBWCtYZVd6ODU0WXNSaHlhdWg4SG11aFMwL3VIUG00L3ZHQmNaN25qU3V5VmsxQ2wvRzZTQVlFU3hRUmIrZ2JtK2I1dnY0d241bmVoWXZZSXBscktzOTQxN09Tb0ltanVFVGZsNVdadmQvYVMyOGJINXpNWDl0RTRET3hSQjlPRHJxdWU0LzRkZDBoK0hEdkhvNjQ4NFdaK2gvbU5yWjVxZVI0blpqbFh4RXNwMjhmZ2pyMXNWaVpxcHNKZ21tYi9Cc3dOaTlvMW9BaEgzYWtUV0xhRldwUW9vTmY3U21mUlYzaG80WWhQY2Q3a1l3WERPRmV5aVRGNXN5VitlU3pIZlA1KzVWdFdSS2JsRzJ2cG85MVY5aTVNYXhIaFJZYXRSRVVOT3lrZWRWbWZBelRFK0VQZEp6QzZ5YjdTVnlnSlk3dFoxdUtPc21HdHVQWFRYSTdYbmZCbEZWL3dmYUdGNFFmT29WUXFlVWozQVk0M2dsZ1Z1TjVGcVJsQlRSWG9HelA1UTBQdko3SUo5eHZSYW01SFJ5aCtyaDNTS214R3NaQU5oVVUrUlFFdGJGcDVBMjR2ejhES0hUcWNlOUI1RVRjWFBBdFZtU0tlSjBXUm1Ra2RCL1NOZ3lSM1psdzIxU3RaTS9nSlpsS2k3eWJuc3BsK0V5emJQY1haWGtZTmhPVml0SXZpNlN5cVNEOFlPbTA4YXo2M0ZyWTNNSU5XM0o1SFdZZktDUENqTDgvTG0rN2FRajN5SzNMYmtXTm1Iek1zYXdEN3pZV3VUMmp4UzFYQ1l2dzNYMGpxdWNWaXg3ZGc3dW9BUDVHeUhPdWxFdi81VmNsMU83c290d1hmVnYxU0VYemM5TGVXYTk5cW5LM2pucmJrbHVtQUVJc0IweGF3Ty9jUnFUYnBUZU9Pc1NTNDNMZ3d3OEdTOHpoTTZiclNyT204SWkxOVZEV3ZDb0R1dmZKMTZiVngrSVA5OW5yWUJ0ajBwM0hkRktobG1DbDA3a0FoeVVVUTNReXVibjFpaElEdWUwaGRGditOaEFnTDRidlRlSmlEZisreHVpL3locmJpSkMyWFlMNEF3RzJWUk9oQklFWGpPRUlGdGNibmVjOFhjZUYzRVUzNnRrbU1yQldBYzA5M01YaGNPVFBsa3I4M29PT3ZGV2F3OEFNSW9vMVAxUm9DVW5UT3BZNWJxdEpIYm9yV2V0VVZ3TEtRZkpGT25OczZoeHlpWVZCTkdWMTYvUS8wVFloaVE1MklYTzZ2M2xOaEhlLzlyYnhGQ3FtcFRablV2MzBJYmt3bkg1cVNBQXg1RGdaNDJBSzIveXNlM3ZOcHE4d0JMK0d2VlgvRmFlaEw4b204M0lYUGErQXZ0MkxGSmZISmd2bzhxZXFta2QwTkViRjVQUDVXaExsL3YwWEFZUXpLVHdzeVV3K2FEa2pjZGlPSHB1MmFaMDRpQ2xCa1dQeWFZUGp2TXV2UWp3Sy9ocmVqT1kvdnhXbm1ob05tSURhOFd5Qlk5RmdRdjBPYlhjU0ZnMVlVZjNCbFdzdDBmeU5wVDFVREMxWC9BNy85T1JxSU43dnJwRTZheXZYUURURnpXZGdOZStTMUJjZ3dkc3VUQXpHQWFjVElEK2RPeDJFblUxTEZ2dGxIRnMzM0JqcjBXVkxWNjI0dkVucGpSMHJXWmtDOS9CL3o1eTZ2SFU0UmpqSEkvSEh6QlpTWkNMWUowTStYeXpMYi84QkVNVUY3OTNCakFTcENPcGpWOXZHZVZKbzRYakZSd2tzS2ZlQUx6SDFvWnMxUUZVSUZHa3lOWndRelVPSkVqNERWSy8vd01NRHpBNFM0U2FuZXY5RlNWSFkyNTFoSTJSNC9rSER6Q2h0UTh3WEdteUFBQUFBQUFBQUFBQUFBQUFBQUFBQkFnVEhpTW8ifV19fX19fQ==",
+            "bodyHex": "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a"
+          }
+        ],
+        "trace": [
+          {
+            "sequence": 1,
+            "event": "outer_buyer_invoked",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 0,
+              "payload": 0,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 2,
+            "event": "unpaid_dispatch_402",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 0,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 3,
+            "event": "synthetic_payload_created",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 1
+          },
+          {
+            "sequence": 4,
+            "event": "paid_dispatch",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 1
+          },
+          {
+            "sequence": 5,
+            "event": "synthetic_settlement_applied",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+          },
+          {
+            "sequence": 6,
+            "event": "paid_response_returned",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+            "receiptIncluded": true
+          },
+          {
+            "sequence": 7,
+            "event": "synthetic_directory_read",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 1
+            }
+          },
+          {
+            "sequence": 8,
+            "event": "receipt_onResult",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 1
+            },
+            "receipt": {
+              "valid": true,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [
+                "ml-dsa-65"
+              ],
+              "signaturesVerified": [
+                {
+                  "alg": "ed25519",
+                  "kid": "153053ad13ee065b",
+                  "engine": "webcrypto"
+                }
+              ],
+              "levels": {
+                "integrity": true,
+                "authentic": true,
+                "trusted": true,
+                "settlement": true,
+                "delivery": true
+              },
+              "receiptId": "02246a0aa76eae60ed4802c92958865118b7da263b63d3702dc5a7b4835f8191",
+              "trustBasis": "pinned",
+              "directoryEpoch": 1,
+              "latestDirectoryEpoch": 1,
+              "reasons": []
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111",
+              "extensions": {
+                "delivery-receipt": {
+                  "info": {
+                    "receipt": {
+                      "payload": {
+                        "version": 1,
+                        "issuer": "https://buyer-composition.example",
+                        "resourceUrl": "https://buyer-composition.example/body",
+                        "method": "GET",
+                        "scheme": "exact",
+                        "network": "eip155:8453",
+                        "asset": "0x2222222222222222222222222222222222222222",
+                        "payTo": "0x3333333333333333333333333333333333333333",
+                        "amount": "10",
+                        "payer": "0x1111111111111111111111111111111111111111",
+                        "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+                        "logIndex": null,
+                        "paymentId": null,
+                        "responseStatus": 200,
+                        "responseContentType": "application/json",
+                        "delivery": {
+                          "mode": "body",
+                          "sha256": "4bb5d172eb18f3aca1192d1fc833ddcd81550edc2d91ee36bb25bf425aba6b05"
+                        },
+                        "keyDirectoryEpoch": 1,
+                        "keyDirectoryDigest": "18127c3195d3d0f4361dee064046ae8907209c88ef044bea9a537e5ff5324bb0",
+                        "issuedAt": 1790473960
+                      },
+                      "signatures": [
+                        {
+                          "alg": "ed25519",
+                          "kid": "153053ad13ee065b",
+                          "signature": "o/CJNPPae+tTgaqhpy1mHc8p2qEeAeZALr6GMzZ8Em8V5Y0coNZbiypGSRC0E60Go/JhwgnUQDfUPa4pTdpqCA=="
+                        },
+                        {
+                          "alg": "ml-dsa-65",
+                          "kid": "c47ca781ddf6ace8",
+                          "signature": "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"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "sequence": 9,
+            "event": "native_payment_response_hook",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 1,
+              "directory": 1
+            },
+            "settle": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111",
+              "extensions": {
+                "delivery-receipt": {
+                  "info": {
+                    "receipt": {
+                      "payload": {
+                        "version": 1,
+                        "issuer": "https://buyer-composition.example",
+                        "resourceUrl": "https://buyer-composition.example/body",
+                        "method": "GET",
+                        "scheme": "exact",
+                        "network": "eip155:8453",
+                        "asset": "0x2222222222222222222222222222222222222222",
+                        "payTo": "0x3333333333333333333333333333333333333333",
+                        "amount": "10",
+                        "payer": "0x1111111111111111111111111111111111111111",
+                        "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+                        "logIndex": null,
+                        "paymentId": null,
+                        "responseStatus": 200,
+                        "responseContentType": "application/json",
+                        "delivery": {
+                          "mode": "body",
+                          "sha256": "4bb5d172eb18f3aca1192d1fc833ddcd81550edc2d91ee36bb25bf425aba6b05"
+                        },
+                        "keyDirectoryEpoch": 1,
+                        "keyDirectoryDigest": "18127c3195d3d0f4361dee064046ae8907209c88ef044bea9a537e5ff5324bb0",
+                        "issuedAt": 1790473960
+                      },
+                      "signatures": [
+                        {
+                          "alg": "ed25519",
+                          "kid": "153053ad13ee065b",
+                          "signature": "o/CJNPPae+tTgaqhpy1mHc8p2qEeAeZALr6GMzZ8Em8V5Y0coNZbiypGSRC0E60Go/JhwgnUQDfUPa4pTdpqCA=="
+                        },
+                        {
+                          "alg": "ml-dsa-65",
+                          "kid": "c47ca781ddf6ace8",
+                          "signature": "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"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "sequence": 10,
+            "event": "outer_return",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 1,
+              "directory": 1
+            }
+          }
+        ],
+        "assertions": "PASS_WITHIN_BOUND"
+      },
+      {
+        "case": "missing-receipt-evidence-aware-HOLD",
+        "outcome": "HOLD",
+        "counts": {
+          "buyer": 1,
+          "unpaid": 1,
+          "payload": 1,
+          "paid": 1,
+          "syntheticSettlement": 1,
+          "receiptResult": 1,
+          "responseHook": 0,
+          "directory": 0
+        },
+        "transactions": [
+          "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+        ],
+        "error": {
+          "name": "Error",
+          "message": "delivery-receipt: invalid receipt (RECEIPT_MISSING); the payment was settled in 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+        },
+        "captures": [
+          {
+            "receipt": {
+              "valid": false,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [],
+              "signaturesVerified": [],
+              "levels": {
+                "integrity": false,
+                "authentic": null,
+                "trusted": null,
+                "settlement": null,
+                "delivery": null
+              },
+              "receiptId": null,
+              "trustBasis": "none",
+              "directoryEpoch": null,
+              "latestDirectoryEpoch": null,
+              "reasons": [
+                {
+                  "level": "integrity",
+                  "code": "RECEIPT_MISSING"
+                }
+              ]
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111"
+            },
+            "rawSettlementHeader": "eyJzdWNjZXNzIjp0cnVlLCJ0cmFuc2FjdGlvbiI6IjB4YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEwMSIsIm5ldHdvcmsiOiJlaXAxNTU6ODQ1MyIsInBheWVyIjoiMHgxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIn0=",
+            "bodyHex": "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a"
+          }
+        ],
+        "trace": [
+          {
+            "sequence": 1,
+            "event": "outer_buyer_invoked",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 0,
+              "payload": 0,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 2,
+            "event": "unpaid_dispatch_402",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 0,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 3,
+            "event": "synthetic_payload_created",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 1
+          },
+          {
+            "sequence": 4,
+            "event": "paid_dispatch",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 1
+          },
+          {
+            "sequence": 5,
+            "event": "synthetic_settlement_applied",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+          },
+          {
+            "sequence": 6,
+            "event": "paid_response_returned",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+            "receiptIncluded": false
+          },
+          {
+            "sequence": 7,
+            "event": "receipt_onResult",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "receipt": {
+              "valid": false,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [],
+              "signaturesVerified": [],
+              "levels": {
+                "integrity": false,
+                "authentic": null,
+                "trusted": null,
+                "settlement": null,
+                "delivery": null
+              },
+              "receiptId": null,
+              "trustBasis": "none",
+              "directoryEpoch": null,
+              "latestDirectoryEpoch": null,
+              "reasons": [
+                {
+                  "level": "integrity",
+                  "code": "RECEIPT_MISSING"
+                }
+              ]
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111"
+            }
+          },
+          {
+            "sequence": 8,
+            "event": "outer_catch",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "error": {
+              "name": "Error",
+              "message": "delivery-receipt: invalid receipt (RECEIPT_MISSING); the payment was settled in 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+            }
+          },
+          {
+            "sequence": 9,
+            "event": "outer_HOLD_no_reinvocation",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            }
+          }
+        ],
+        "assertions": "PASS_WITHIN_BOUND"
+      },
+      {
+        "case": "unsafe-outer-reinvocation-negative",
+        "outcome": "DETECTED_UNSAFE_CONTROL",
+        "counts": {
+          "buyer": 2,
+          "unpaid": 2,
+          "payload": 2,
+          "paid": 2,
+          "syntheticSettlement": 2,
+          "receiptResult": 2,
+          "responseHook": 0,
+          "directory": 0
+        },
+        "transactions": [
+          "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+          "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02"
+        ],
+        "errors": [
+          {
+            "name": "Error",
+            "message": "delivery-receipt: invalid receipt (RECEIPT_MISSING); the payment was settled in 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+          },
+          {
+            "name": "Error",
+            "message": "delivery-receipt: invalid receipt (RECEIPT_MISSING); the payment was settled in 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02"
+          }
+        ],
+        "captures": [
+          {
+            "receipt": {
+              "valid": false,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [],
+              "signaturesVerified": [],
+              "levels": {
+                "integrity": false,
+                "authentic": null,
+                "trusted": null,
+                "settlement": null,
+                "delivery": null
+              },
+              "receiptId": null,
+              "trustBasis": "none",
+              "directoryEpoch": null,
+              "latestDirectoryEpoch": null,
+              "reasons": [
+                {
+                  "level": "integrity",
+                  "code": "RECEIPT_MISSING"
+                }
+              ]
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111"
+            },
+            "rawSettlementHeader": "eyJzdWNjZXNzIjp0cnVlLCJ0cmFuc2FjdGlvbiI6IjB4YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEwMSIsIm5ldHdvcmsiOiJlaXAxNTU6ODQ1MyIsInBheWVyIjoiMHgxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIn0=",
+            "bodyHex": "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a"
+          },
+          {
+            "receipt": {
+              "valid": false,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [],
+              "signaturesVerified": [],
+              "levels": {
+                "integrity": false,
+                "authentic": null,
+                "trusted": null,
+                "settlement": null,
+                "delivery": null
+              },
+              "receiptId": null,
+              "trustBasis": "none",
+              "directoryEpoch": null,
+              "latestDirectoryEpoch": null,
+              "reasons": [
+                {
+                  "level": "integrity",
+                  "code": "RECEIPT_MISSING"
+                }
+              ]
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111"
+            },
+            "rawSettlementHeader": "eyJzdWNjZXNzIjp0cnVlLCJ0cmFuc2FjdGlvbiI6IjB4YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEwMiIsIm5ldHdvcmsiOiJlaXAxNTU6ODQ1MyIsInBheWVyIjoiMHgxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIn0=",
+            "bodyHex": "7b2273796e746865746963223a227061696420626f6479222c22756e69636f6465223a22cf80227d0d0a"
+          }
+        ],
+        "trace": [
+          {
+            "sequence": 1,
+            "event": "outer_buyer_invoked",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 0,
+              "payload": 0,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 2,
+            "event": "unpaid_dispatch_402",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 0,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 3,
+            "event": "synthetic_payload_created",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 0,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 1
+          },
+          {
+            "sequence": 4,
+            "event": "paid_dispatch",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 0,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 1
+          },
+          {
+            "sequence": 5,
+            "event": "synthetic_settlement_applied",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+          },
+          {
+            "sequence": 6,
+            "event": "paid_response_returned",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 0,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+            "receiptIncluded": false
+          },
+          {
+            "sequence": 7,
+            "event": "receipt_onResult",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "receipt": {
+              "valid": false,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [],
+              "signaturesVerified": [],
+              "levels": {
+                "integrity": false,
+                "authentic": null,
+                "trusted": null,
+                "settlement": null,
+                "delivery": null
+              },
+              "receiptId": null,
+              "trustBasis": "none",
+              "directoryEpoch": null,
+              "latestDirectoryEpoch": null,
+              "reasons": [
+                {
+                  "level": "integrity",
+                  "code": "RECEIPT_MISSING"
+                }
+              ]
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111"
+            }
+          },
+          {
+            "sequence": 8,
+            "event": "unsafe_outer_catch",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "error": {
+              "name": "Error",
+              "message": "delivery-receipt: invalid receipt (RECEIPT_MISSING); the payment was settled in 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa01"
+            }
+          },
+          {
+            "sequence": 9,
+            "event": "unsafe_outer_reinvoke_once",
+            "counts": {
+              "buyer": 1,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 10,
+            "event": "outer_buyer_invoked",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 1,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 11,
+            "event": "unpaid_dispatch_402",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 1,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            }
+          },
+          {
+            "sequence": 12,
+            "event": "synthetic_payload_created",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 2,
+              "paid": 1,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 2
+          },
+          {
+            "sequence": 13,
+            "event": "paid_dispatch",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 2,
+              "paid": 2,
+              "syntheticSettlement": 1,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "payloadAttempt": 2
+          },
+          {
+            "sequence": 14,
+            "event": "synthetic_settlement_applied",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 2,
+              "paid": 2,
+              "syntheticSettlement": 2,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02"
+          },
+          {
+            "sequence": 15,
+            "event": "paid_response_returned",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 2,
+              "paid": 2,
+              "syntheticSettlement": 2,
+              "receiptResult": 1,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+            "receiptIncluded": false
+          },
+          {
+            "sequence": 16,
+            "event": "receipt_onResult",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 2,
+              "paid": 2,
+              "syntheticSettlement": 2,
+              "receiptResult": 2,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "receipt": {
+              "valid": false,
+              "path": "session",
+              "longTermEvidence": false,
+              "unverifiedAlgorithms": [],
+              "signaturesVerified": [],
+              "levels": {
+                "integrity": false,
+                "authentic": null,
+                "trusted": null,
+                "settlement": null,
+                "delivery": null
+              },
+              "receiptId": null,
+              "trustBasis": "none",
+              "directoryEpoch": null,
+              "latestDirectoryEpoch": null,
+              "reasons": [
+                {
+                  "level": "integrity",
+                  "code": "RECEIPT_MISSING"
+                }
+              ]
+            },
+            "reportedSettlement": {
+              "success": true,
+              "transaction": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02",
+              "network": "eip155:8453",
+              "payer": "0x1111111111111111111111111111111111111111"
+            }
+          },
+          {
+            "sequence": 17,
+            "event": "unsafe_outer_second_catch",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 2,
+              "paid": 2,
+              "syntheticSettlement": 2,
+              "receiptResult": 2,
+              "responseHook": 0,
+              "directory": 0
+            },
+            "error": {
+              "name": "Error",
+              "message": "delivery-receipt: invalid receipt (RECEIPT_MISSING); the payment was settled in 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa02"
+            }
+          },
+          {
+            "sequence": 18,
+            "event": "unsafe_control_detected",
+            "counts": {
+              "buyer": 2,
+              "unpaid": 2,
+              "payload": 2,
+              "paid": 2,
+              "syntheticSettlement": 2,
+              "receiptResult": 2,
+              "responseHook": 0,
+              "directory": 0
+            }
+          }
+        ],
+        "assertions": "PASS_WITHIN_BOUND; expected unsafe application control detected"
+      }
+    ],
+    "pass_count": 3,
+    "negative_control": "DETECTED_UNSAFE_OUTER_REINVOCATION; not internal SDK retry"
+  },
+  "completion_state": "COMPLETE",
+  "verdict": "PASS_WITHIN_BOUND"
+}

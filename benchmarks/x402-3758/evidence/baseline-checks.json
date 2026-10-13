@@ -1,0 +1,30 @@
+{
+  "subject": "johnInarti/x402@4d3f2387bd3f2db8007cca324ef8dea23264c248",
+  "host_base": "safal207/ContractGraph-QA@f13e586ea9118e026c69438b8c93d0585b8e38ba",
+  "native_receipt_tests": {
+    "command": "pnpm --filter @x402/extensions exec vitest run test/delivery-receipt.test.ts test/delivery-receipt-redteam.test.ts --coverage.enabled=false",
+    "chunk_id": "8b7de6",
+    "wall_time_seconds": 0.000029669,
+    "exit_code": 0,
+    "original_token_count": 75,
+    "output": " ✓ test/delivery-receipt-redteam.test.ts (17 tests) 559ms\n ✓ test/delivery-receipt.test.ts (54 tests) 1558ms\n\n Test Files  2 passed (2)\n      Tests  71 passed (71)\n   Start at  18:30:21\n   Duration  2.31s (transform 284ms, setup 0ms, collect 1.02s, tests 2.12s, environment 0ms, prepare 129ms)\n\n"
+  },
+  "native_fetch_tests": {
+    "command": "pnpm --filter @x402/fetch exec vitest run src/index.test.ts --coverage.enabled=false",
+    "chunk_id": "a8bd4b",
+    "wall_time_seconds": 0.000027041,
+    "exit_code": 0,
+    "original_token_count": 56,
+    "output": " ✓ src/index.test.ts (24 tests) 28ms\n\n Test Files  1 passed (1)\n      Tests  24 passed (24)\n   Start at  18:30:22\n   Duration  438ms (transform 150ms, setup 0ms, collect 190ms, tests 28ms, environment 0ms, prepare 60ms)\n\n"
+  },
+  "host_payment_regressions": {
+    "command": "python3 -m unittest tools.tests.test_payment_fulfillment tools.tests.test_payment_recovery tools.tests.test_provider_payment_decision",
+    "exit_code": 0,
+    "tests": 35
+  },
+  "install": {
+    "command": "pnpm install --frozen-lockfile --ignore-scripts --filter @x402/core --filter @x402/extensions --filter @x402/fetch",
+    "pnpm": "11.25.0",
+    "lockfile_modified": false
+  }
+}
