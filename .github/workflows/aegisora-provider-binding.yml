@@ -1,0 +1,139 @@
+name: Aegisora Provider Binding Proof
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "tests/external/aegisora_provider_binding_001.ts"
+      - "scripts/verify_aegisora_provider_binding_001.py"
+      - "docs/external/AEGISORA_PROVIDER_BINDING_001.md"
+      - ".github/workflows/aegisora-provider-binding.yml"
+
+permissions:
+  contents: read
+
+env:
+  EXACT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+  AEGISORA_COMMIT: 2bac618215671f6f0ac8ebddf169830d4fc0f9b3
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Activate pinned pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@11.20.0 --activate
+          pnpm --version
+
+      - name: Checkout pinned Aegisora subject
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/aegisora-ai/aegisora.git subject
+          git -C subject checkout --quiet --detach "$AEGISORA_COMMIT"
+          test "$(git -C subject rev-parse HEAD)" = "$AEGISORA_COMMIT"
+
+      - name: Capture pinned subject source digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          {
+            printf 'repository=aegisora-ai/aegisora\n'
+            printf 'commit=%s\n' "$AEGISORA_COMMIT"
+            for path in \
+              core/packages/runtime/src/approval/approval-engine.ts \
+              core/packages/runtime/src/enforcement/enforcement-gate.ts \
+              core/packages/runtime/src/providers/provider-execution-gateway.ts \
+              core/packages/runtime/src/permissions/permission-engine.ts
+            do
+              digest="$(git -C subject show "$AEGISORA_COMMIT:$path" | sha256sum | awk '{print $1}')"
+              printf '%s  %s\n' "$digest" "$path"
+            done
+          } | tee artifacts/aegisora-subject-source-digests.txt
+
+      - name: Install pinned Aegisora runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd subject
+          cp pnpm-lock.yaml "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-before.yaml"
+          pnpm install --no-frozen-lockfile --filter '@aegisora/runtime...'
+          cp pnpm-lock.yaml "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-resolved.yaml"
+          git diff -- pnpm-lock.yaml | tee "$GITHUB_WORKSPACE/artifacts/aegisora-pnpm-lock-diff.patch"
+          pnpm --filter '@aegisora/runtime...' build
+
+      - name: Inject external provider-binding probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp \
+            tests/external/aegisora_provider_binding_001.ts \
+            subject/core/packages/runtime/test/external-provider-binding-001.ts
+
+      - name: Execute provider-binding probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cd subject
+          EVIDENCE_OUT="$GITHUB_WORKSPACE/artifacts/aegisora-provider-binding-subject.json" \
+            pnpm --filter @aegisora/runtime exec tsx \
+            test/external-provider-binding-001.ts \
+            | tee "$GITHUB_WORKSPACE/artifacts/aegisora-provider-binding-console.txt"
+
+      - name: Independently verify observed evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_aegisora_provider_binding_001.py \
+            --report artifacts/aegisora-provider-binding-subject.json \
+            --output artifacts/aegisora-provider-binding-verification.json
+
+          sha256sum \
+            artifacts/aegisora-provider-binding-subject.json \
+            artifacts/aegisora-provider-binding-verification.json \
+            artifacts/aegisora-subject-source-digests.txt \
+            | tee artifacts/aegisora-provider-binding-sha256.txt
+
+      - name: Upload AEGISORA-PROVIDER-BINDING-001 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegisora-provider-binding-001
+          path: |
+            artifacts/aegisora-provider-binding-subject.json
+            artifacts/aegisora-provider-binding-verification.json
+            artifacts/aegisora-provider-binding-console.txt
+            artifacts/aegisora-subject-source-digests.txt
+            artifacts/aegisora-pnpm-lock-before.yaml
+            artifacts/aegisora-pnpm-lock-resolved.yaml
+            artifacts/aegisora-pnpm-lock-diff.patch
+            artifacts/aegisora-provider-binding-sha256.txt
+          if-no-files-found: warn
+          retention-days: 30
