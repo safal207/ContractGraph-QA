@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contractgraph-qa.example/schemas/astra-post-settlement-reconciliation-checkpoint-v0.1.json",
+  "title": "Astra Post-Settlement Reconciliation Checkpoint v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "fixtureId",
+    "observedAtUtc",
+    "mode",
+    "catalog",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schema": {
+      "const": "cgqa.astra-post-settlement-reconciliation-checkpoint.v0.1"
+    },
+    "fixtureId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observedAtUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "checkpointLabel": {
+      "type": "string",
+      "enum": ["T+24h", "T+48h", "AD_HOC"]
+    },
+    "mode": {
+      "const": "READ_ONLY_NO_PAYMENT"
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queryUrl",
+        "access",
+        "matchingResourceUrls",
+        "classification"
+      ],
+      "properties": {
+        "queryUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "access": {
+          "type": "string",
+          "enum": ["SUCCESS", "FAILED"]
+        },
+        "httpStatus": {
+          "type": ["integer", "null"]
+        },
+        "matchingResourceUrls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "uniqueItems": true
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "ESTABLISHED_LATE",
+            "STILL_UNRESOLVED",
+            "UNKNOWN"
+          ]
+        },
+        "error": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "chain": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "transactionSignature",
+          "classification"
+        ],
+        "properties": {
+          "transactionSignature": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classification": {
+            "type": "string",
+            "enum": ["FINALIZED", "NONFINAL_OR_FAILED", "UNKNOWN"]
+          },
+          "slot": {
+            "type": ["integer", "null"]
+          },
+          "error": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "providerInternalState": {
+      "type": "string",
+      "enum": [
+        "NOT_ATTEMPTED",
+        "PROCESSING",
+        "REJECTED",
+        "INDEXED",
+        "UNKNOWN"
+      ]
+    },
+    "providerInternalStateSource": {
+      "type": ["string", "null"]
+    },
+    "claimBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paymentSubmitted",
+        "walletKeyUsed",
+        "catalogAbsenceInterpretedAsPaymentFailure"
+      ],
+      "properties": {
+        "paymentSubmitted": {
+          "const": false
+        },
+        "walletKeyUsed": {
+          "const": false
+        },
+        "catalogAbsenceInterpretedAsPaymentFailure": {
+          "const": false
+        }
+      }
+    }
+  }
+}

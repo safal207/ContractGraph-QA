@@ -1,0 +1,122 @@
+{
+  "schema": "cgqa.astra-post-settlement-reconciliation.v0.1",
+  "fixtureId": "coinbase-bazaar-solana-2026-09-15",
+  "provider": "Coinbase CDP x402 / Bazaar",
+  "protocol": "x402-v2",
+  "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+  "asset": "USDC",
+  "payTo": "F1AbWuXJcBT9arW9wc6Xr2vom5NBtngWsz6Ht16jRBLM",
+  "sourceEvidence": {
+    "primaryIssue": "https://github.com/x402-foundation/x402/issues/3284",
+    "settlementAndDeliveryComment": "https://github.com/x402-foundation/x402/issues/3284#issuecomment-5675671394",
+    "extensionResponseComment": "https://github.com/x402-foundation/x402/issues/3284#issuecomment-5678803463",
+    "sellerImplementation": "https://github.com/twzrd-sol/x402-reader/commit/706e62c55b731644c0db24fb54f4f47d49d74545"
+  },
+  "causalBoundary": {
+    "from": "ACTUAL_SETTLEMENT_FINALITY",
+    "through": [
+      "RECEIPT",
+      "RESOURCE_OUTCOME_DELIVERY"
+    ],
+    "to": "RECONCILIATION"
+  },
+  "stateSummary": {
+    "paymentAttempt": "ESTABLISHED_BY_PUBLIC_REPORT",
+    "claimedResult": "HTTP_200_ESTABLISHED_BY_PUBLIC_REPORT",
+    "actualSettlementFinality": "ESTABLISHED_BY_PUBLIC_REPORT",
+    "receiptBinding": "PARTIAL_OR_UNKNOWN",
+    "resourceOutcomeDelivery": "ESTABLISHED_BY_PUBLIC_REPORT",
+    "reconciliation": "UNKNOWN_AT_PUBLISHED_T_PLUS_10M_CHECKPOINT",
+    "rootCause": "UNKNOWN"
+  },
+  "records": [
+    {
+      "recordId": "reader",
+      "resourceUrl": "https://reader.outbid.sh/scrape?url=https%3A%2F%2Fexample.com",
+      "serviceName": "x402 Reader",
+      "settlement": {
+        "transactionSignature": "5Rf6x6o4XqtVH34dBKCfbAtdpfy2Kq5HcuzAb7v1osbKtxCChDrzDo74wfNbmA3YGRHBu8izjBn37djDaUpZ6TXd",
+        "slot": 447177595,
+        "amountAtomic": 5000,
+        "asset": "USDC",
+        "metaErr": null,
+        "status": "ESTABLISHED_BY_PUBLIC_REPORT"
+      },
+      "delivery": {
+        "httpStatus": 200,
+        "status": "ESTABLISHED_BY_PUBLIC_REPORT",
+        "exactBodyDigestPublished": false
+      },
+      "facilitatorObservability": {
+        "verifyExtensionResponses": {},
+        "settleExtensionResponses": {},
+        "providerInternalIngestionState": "UNKNOWN"
+      }
+    },
+    {
+      "recordId": "digital-atom",
+      "resourceUrl": "https://tick.twzrd.xyz/sku/DIGITAL.ATOM.1",
+      "serviceName": "Digital Atom",
+      "settlement": {
+        "transactionSignature": "4RnXctJeiDZ1ooSStfWnLSo8ixiyBhwLLVMCA4gyuSTFZRq4oYoS9WY3uWtn5KcDjtdTXbtDtJx1PzTPf399BY1R",
+        "slot": 447177600,
+        "amountAtomic": 5000,
+        "asset": "USDC",
+        "metaErr": null,
+        "status": "ESTABLISHED_BY_PUBLIC_REPORT"
+      },
+      "delivery": {
+        "httpStatus": 200,
+        "status": "ESTABLISHED_BY_PUBLIC_REPORT",
+        "exactBodyDigestPublished": false
+      },
+      "facilitatorObservability": {
+        "verifyExtensionResponses": {},
+        "settleExtensionResponses": {},
+        "providerInternalIngestionState": "UNKNOWN"
+      }
+    }
+  ],
+  "publishedCheckpoint": {
+    "label": "T+10m",
+    "queryPath": "/platform/v2/x402/discovery/resources?payTo=F1AbWuXJcBT9arW9wc6Xr2vom5NBtngWsz6Ht16jRBLM&limit=1000",
+    "payToRows": 0,
+    "classification": "RECONCILIATION_UNKNOWN",
+    "reason": "A missing public catalog row does not distinguish delayed processing, rejection, not-attempted ingestion, or another provider-internal state."
+  },
+  "futureCheckpoints": [
+    {
+      "label": "T+24h",
+      "status": "NOT_YET_ESTABLISHED_IN_THIS_FIXTURE"
+    },
+    {
+      "label": "T+48h",
+      "status": "NOT_YET_ESTABLISHED_IN_THIS_FIXTURE"
+    }
+  ],
+  "invariants": [
+    {
+      "id": "ASTRA-PSR-001",
+      "statement": "Established settlement must not be rewritten as failed solely because downstream reconciliation is absent or unknown."
+    },
+    {
+      "id": "ASTRA-PSR-002",
+      "statement": "Established buyer-visible delivery must remain distinct from discovery/catalog reconciliation."
+    },
+    {
+      "id": "ASTRA-PSR-003",
+      "statement": "Absence of a public reconciliation row must remain UNKNOWN unless an authoritative source proves rejected, not-attempted, processing, or another specific state."
+    },
+    {
+      "id": "ASTRA-PSR-004",
+      "statement": "No new payment is required to refresh this evidence; later checkpoints should be read-only observations."
+    }
+  ],
+  "claimBoundary": {
+    "vulnerabilityClaimed": false,
+    "financialLossClaimed": false,
+    "systemicSolanaFailureClaimed": false,
+    "internalCoinbaseCauseClaimed": false,
+    "notes": "This fixture preserves published public evidence and the unresolved reconciliation boundary only."
+  }
+}
