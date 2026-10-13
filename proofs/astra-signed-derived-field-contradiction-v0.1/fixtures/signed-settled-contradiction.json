@@ -1,0 +1,23 @@
+{
+  "payload": {
+    "case": "signed-settled-contradiction",
+    "derived": {
+      "delivered": false,
+      "reconciled": false,
+      "settled": true
+    },
+    "logical_action_id": "act_astra_0001",
+    "primary": {
+      "delivery": "UNKNOWN",
+      "finality": "UNKNOWN",
+      "payment_attempt": "BROADCAST",
+      "receipt_binding": "UNKNOWN"
+    },
+    "schema": "contractgraph.astra-signed-derived-field-fixture.v0.1"
+  },
+  "signature": {
+    "alg": "Ed25519",
+    "key_id": "astra-fixture-ed25519-v0.1",
+    "signature_b64": "QThZ/q9pTIPSpZRQv7SDLf5y7izUF0myi2G1k3wrTf9p4FOtLRIJNiumt4tvq06InqKSJu0vHoOwiD2hg7AsCA=="
+  }
+}

@@ -7,6 +7,27 @@ A green result here means **agreement with one named, frozen corpus at the
 pinned boundary**. It does not mean that the upstream implementation, a live
 deployment, or every untested path is secure, complete, certified, or endorsed.
 
+## Astra signed derived-field contradiction v0.1
+
+**Result: 2/2 PASS; 1/1 unsafe signature-only mutant detected.**
+Two frozen synthetic Ed25519-signed records separate cryptographic integrity
+from semantic derivation. The positive control has final settlement, bound
+receipt, and delivered outcome, so the recomputed derived fields agree with the
+signed record. The negative control is also correctly signed but claims
+`settled=true` while primary finality remains `UNKNOWN`; the reference
+verifier rejects it as `FAIL_SIGNED_DERIVED_FIELD_CONTRADICTION`.
+
+The unsafe mutant accepts any record with a valid signature and therefore
+accepts the contradiction. This proof establishes only the synthetic
+field-recomputation boundary; it does not claim that any live payment settled,
+that any production receipt schema exposes sufficient primary evidence, or that
+Ed25519/OpenSSL themselves are proven correct.
+
+- [Proof README](proofs/astra-signed-derived-field-contradiction-v0.1/README.md)
+- [Machine-readable report](proofs/astra-signed-derived-field-contradiction-v0.1/report.json)
+- [Executable harness](proofs/astra-signed-derived-field-contradiction-v0.1/harness.py)
+- [Astra matrix issue #196](https://github.com/safal207/ContractGraph-QA/issues/196)
+
 ## LangGraph b1 receipt visibility v0.2
 
 **Result: PASS — `CONFIRMED -> return_prior`; `UNKNOWN -> fail closed`; target mismatch -> fail closed.**
@@ -180,6 +201,7 @@ to the verifier used for the earlier v1.1 18/18 proof.
 
 | Frozen subject | Result | Main distinction | Artifact |
 |---|---:|---|---|
+| Astra signed derived-field contradiction `v0.1` | **2/2 PASS; 1/1 mutant** | Valid signature does not authorize a false deterministic `settled` conclusion | [Open](proofs/astra-signed-derived-field-contradiction-v0.1/README.md) |
 | LangGraph b1 receipt visibility `v0.2` | **PASS: UNKNOWN blocked; confirmed returns prior** | Delayed/missing visibility and target mismatch never become redispatch authority | [Open](proofs/langgraph-b1-receipt-visibility-v0.2/README.md) |
 | LangGraph b1 identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Fresh-process recovery re-enters node; external receipt reconciliation suppresses the second effect | [Open](proofs/langgraph-b1-identity-authority-v0.1/README.md) |
 | CrewAI identity / authority adapter `v0.1` | **PASS: 2 effects -> 1 effect** | Real CrewAI 1.15.21 retry still re-enters tool twice; receipt reconciliation suppresses second external effect | [Open](proofs/crewai-identity-authority-adapter-v0.1/README.md) |
