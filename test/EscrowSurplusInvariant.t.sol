@@ -69,9 +69,8 @@ contract EscrowSurplusInvariantTest {
 
     function _attempt(Escrow escrow, address actor, bool refund) internal returns (bool ok) {
         vm.prank(actor);
-        (ok,) = address(escrow).call(
-            abi.encodeWithSelector(refund ? Escrow.refund.selector : Escrow.release.selector)
-        );
+        (ok,) = address(escrow)
+            .call(abi.encodeWithSelector(refund ? Escrow.refund.selector : Escrow.release.selector));
     }
 
     function _run(uint256 principal, uint256 surplus, bool refund, uint8 timing) internal {
@@ -99,7 +98,9 @@ contract EscrowSurplusInvariantTest {
         uint256 otherBefore = other.balance;
         assert(_attempt(escrow, BUYER, refund));
         assert(
-            _conserved(principal, surplus, recipient.balance - recipientBefore, address(escrow).balance)
+            _conserved(
+                principal, surplus, recipient.balance - recipientBefore, address(escrow).balance
+            )
         );
         assert(other.balance == otherBefore);
         assert(escrow.depositedAmount() == principal);
